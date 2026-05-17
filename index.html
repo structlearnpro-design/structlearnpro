@@ -450,17 +450,18 @@ async function verifyOTP(){
   document.getElementById('v-btn').disabled=true;
   setMsg('o-msg','Verifying...','');
   const mob=pending.mob;
-  const {data:toks}=await db.from('otp_tokens').select('*').eq('mobile',mob).eq('used',false).gt('expires_at',new Date().toISOString()).order('created_at',{ascending:false}).limit(1);
-  if(!toks||!toks.length){setMsg('o-msg','OTP expired. Request a new one.','err');document.getElementById('v-btn').disabled=false;return;}
-  const tok=toks[0];
-  if(tok.attempts>=3){setMsg('o-msg','Too many attempts. Request new OTP.','err');document.getElementById('v-btn').disabled=false;return;}
-  // TEST MODE: accept fixed OTP
+
+  // TEST MODE: skip database check entirely
   if(TEST_MODE && otp===TEST_OTP){
-    await db.from('otp_tokens').update({used:true}).eq('id',tok.id);
     pending.type==='signup'?await doSignup(mob):await doLogin(mob);
     document.getElementById('v-btn').disabled=false;
     return;
   }
+
+  const {data:toks}=await db.from('otp_tokens').select('*').eq('mobile',mob).eq('used',false).gt('expires_at',new Date().toISOString()).order('created_at',{ascending:false}).limit(1);
+  if(!toks||!toks.length){setMsg('o-msg','OTP expired. Request a new one.','err');document.getElementById('v-btn').disabled=false;return;}
+  const tok=toks[0];
+  if(tok.attempts>=3){setMsg('o-msg','Too many attempts. Request new OTP.','err');document.getElementById('v-btn').disabled=false;return;}
   if(tok.otp!==otp){
     await db.from('otp_tokens').update({attempts:tok.attempts+1}).eq('id',tok.id);
     setMsg('o-msg','Wrong OTP. '+(2-tok.attempts)+' attempt(s) left.','err');
