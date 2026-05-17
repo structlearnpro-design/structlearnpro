@@ -478,7 +478,7 @@ async function doSignup(mob){
   const fe='u'+mob+'@structlearnpro.com';
   const pw='SLP_'+mob+'_'+Math.random().toString(36).slice(2,10);
   // Store pw in profiles so login can use it
-  const {data:au,error}=await db.auth.signUp({email:fe,password:pw});
+  const {data:au,error}=await db.auth.signUp({email:fe,password:pw,options:{emailRedirectTo:null,data:{mobile:mob}}});
   if(error){setMsg('o-msg',error.message,'err');return;}
   // Store the password hash reference in profiles for future login
   await db.from('profiles').update({
