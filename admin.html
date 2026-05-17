@@ -109,6 +109,7 @@ tr:hover td{background:rgba(56,189,248,0.03);}
       <button class="anav-btn on" onclick="showSec('dashboard')">Dashboard</button>
       <button class="anav-btn" onclick="showSec('users')">Users</button>
       <button class="anav-btn" onclick="showSec('projects')">Projects</button>
+      <button class="anav-btn" onclick="showSec('certificates')">Certificates</button>
     </div>
     <button onclick="adminLogout()"
       style="padding:5px 12px;border:1px solid #334155;border-radius:6px;
@@ -121,7 +122,10 @@ tr:hover td{background:rgba(56,189,248,0.03);}
 
     <!-- DASHBOARD -->
     <div id="sec-dashboard" class="sec on">
-      <div style="font-size:18px;font-weight:800;margin-bottom:16px">Overview</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <div style="font-size:18px;font-weight:800;">Overview</div>
+      <button onclick="loadAll()" style="padding:6px 14px;background:#1d4ed8;border:none;border-radius:6px;color:white;font-size:11px;font-weight:700;cursor:pointer;">↻ Refresh</button>
+    </div>
       <div class="stat-grid">
         <div class="stat-card">
           <div class="stat-label">Total Users</div>
@@ -157,6 +161,22 @@ tr:hover td{background:rgba(56,189,248,0.03);}
 
       <div style="font-size:14px;font-weight:700;margin-bottom:12px">User Breakdown by Purpose</div>
       <div id="pur-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;margin-bottom:24px"></div>
+
+      <div style="font-size:14px;font-weight:700;margin-bottom:12px;margin-top:8px">Certificates Issued</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-bottom:24px" id="cert-dash-grid">
+        <div style="background:var(--bg2);border:1px solid var(--b2);border-radius:8px;padding:14px">
+          <div style="font-size:10px;color:var(--txt3);font-weight:700;text-transform:uppercase;margin-bottom:6px">Foundation 🥉</div>
+          <div id="d-cert-f" style="font-size:24px;font-weight:900;color:#d97706">—</div>
+        </div>
+        <div style="background:var(--bg2);border:1px solid var(--b2);border-radius:8px;padding:14px">
+          <div style="font-size:10px;color:var(--txt3);font-weight:700;text-transform:uppercase;margin-bottom:6px">Proficiency 🥈</div>
+          <div id="d-cert-p" style="font-size:24px;font-weight:900;color:#94a3b8">—</div>
+        </div>
+        <div style="background:var(--bg2);border:1px solid var(--b2);border-radius:8px;padding:14px">
+          <div style="font-size:10px;color:var(--txt3);font-weight:700;text-transform:uppercase;margin-bottom:6px">Competent 🥇</div>
+          <div id="d-cert-c" style="font-size:24px;font-weight:900;color:#b8860b">—</div>
+        </div>
+      </div>
 
       <div style="font-size:14px;font-weight:700;margin-bottom:12px">Recent Signups</div>
       <div class="tbl-wrap">
@@ -219,9 +239,19 @@ const ADMIN_EMAIL = 'structlearnpro@gmail.com'; // ← your admin email
 const {createClient} = supabase;
 const db = createClient(SUPA_URL, SUPA_KEY);
 // Admin client uses service role key to bypass RLS
-const adminDb = createClient(SUPA_URL, SERVICE_KEY);
+const adminDb = createClient(SUPA_URL, SERVICE_KEY, {
+  auth: {
+    autoRefreshToken: false,
+    persistSession: false
+  },
+  global: {
+    headers: {
+      Authorization: 'Bearer ' + SERVICE_KEY
+    }
+  }
+});
 
-let allUsers=[], allProjs=[];
+let allUsers=[], allProjs=[], allCerts=[];
 
 // ── LOGIN ─────────────────────────────────────────────────────
 async function adminLogin(){
@@ -242,15 +272,18 @@ async function adminLogout(){
 
 // ── LOAD DATA ────────────────────────────────────────────────
 async function loadAll(){
-  const [ur,pr]=await Promise.all([
+  const [ur,pr,cr]=await Promise.all([
     adminDb.from('profiles').select('*').order('created_at',{ascending:false}),
-    adminDb.from('projects').select('*').order('created_at',{ascending:false})
+    adminDb.from('projects').select('*').order('created_at',{ascending:false}),
+    adminDb.from('certificates').select('*').order('issued_date',{ascending:false}),
   ]);
   allUsers=ur.data||[];
   allProjs=pr.data||[];
+  allCerts=cr.data||[];
   renderDashboard();
   renderUsers(allUsers);
   renderProjects(allProjs);
+  renderCerts(allCerts);
 }
 
 // ── DASHBOARD ────────────────────────────────────────────────
@@ -266,6 +299,14 @@ function renderDashboard(){
   document.getElementById('s-proj').textContent=allProjs.length;
   document.getElementById('s-rev').textContent='₹'+rev.toLocaleString('en-IN');
   document.getElementById('s-conv').textContent=conv+'%';
+
+  // Certificate stats on dashboard
+  const certF = allCerts.filter(c=>c.level==='foundation'&&c.is_valid).length;
+  const certP = allCerts.filter(c=>c.level==='proficiency'&&c.is_valid).length;
+  const certC = allCerts.filter(c=>c.level==='competent'&&c.is_valid).length;
+  const dcf = document.getElementById('d-cert-f'); if(dcf) dcf.textContent = certF;
+  const dcp = document.getElementById('d-cert-p'); if(dcp) dcp.textContent = certP;
+  const dcc = document.getElementById('d-cert-c'); if(dcc) dcc.textContent = certC;
 
   // Purpose breakdown
   const pmap={student:'🎓 Student',professional:'💼 Professional',professor:'📚 Professor',business:'🏢 Business'};
@@ -354,12 +395,86 @@ function filterProjects(){
   renderProjects(s?allProjs.filter(p=>p.name.toLowerCase().includes(s)):allProjs);
 }
 
+// ── CERTIFICATES ─────────────────────────────────────────────
+function renderCerts(certs){
+  // Stats
+  const total = certs.length;
+  const byLevel = {foundation:0, proficiency:0, competent:0};
+  certs.forEach(c => { if(byLevel[c.level]!==undefined) byLevel[c.level]++; });
+  const statsEl = document.getElementById('cert-stats');
+  if(statsEl) statsEl.innerHTML =
+    `Total: <strong style="color:#f1f5f9">${total}</strong> &nbsp;·&nbsp;
+     🥉 Foundation: <strong style="color:#d97706">${byLevel.foundation}</strong> &nbsp;·&nbsp;
+     🥈 Proficiency: <strong style="color:#94a3b8">${byLevel.proficiency}</strong> &nbsp;·&nbsp;
+     🥇 Competent: <strong style="color:#b8860b">${byLevel.competent}</strong>`;
+
+  const tbody = document.getElementById('certs-tbody');
+  if(!tbody) return;
+
+  if(!certs.length){
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#334155;padding:24px">No certificates issued yet</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = certs.map(c => {
+    const medalMap = {foundation:'🥉 Foundation', proficiency:'🥈 Proficiency', competent:'🥇 Competent'};
+    const colorMap = {foundation:'#d97706', proficiency:'#94a3b8', competent:'#b8860b'};
+    const medal = medalMap[c.level] || c.level;
+    const color = colorMap[c.level] || '#38bdf8';
+    const dt = new Date(c.issued_date).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'2-digit'});
+    const statusBadge = c.is_valid
+      ? '<span class="badge pass">✓ Valid</span>'
+      : '<span class="badge fail">✗ Revoked</span>';
+    const actionBtn = c.is_valid
+      ? `<button class="action-btn dn" onclick="revokeCert('${c.id}','${c.cert_id}')">Revoke</button>`
+      : `<button class="action-btn up" onclick="restoreCert('${c.id}','${c.cert_id}')">Restore</button>`;
+    return `<tr>
+      <td style="font-family:monospace;font-size:11px;color:#38bdf8">${c.cert_id}</td>
+      <td style="font-weight:600">${c.student_name||'—'}</td>
+      <td style="color:${color};font-weight:700">${medal}</td>
+      <td>${dt}</td>
+      <td>${statusBadge}</td>
+      <td>${actionBtn}</td>
+    </tr>`;
+  }).join('');
+}
+
+function filterCerts(){
+  const s = document.getElementById('c-search').value.toLowerCase();
+  renderCerts(s ? allCerts.filter(c =>
+    (c.student_name||'').toLowerCase().includes(s) ||
+    (c.cert_id||'').toLowerCase().includes(s)
+  ) : allCerts);
+}
+
+async function revokeCert(id, certId){
+  if(!confirm(`Revoke certificate ${certId}? The verification page will show it as invalid.`)) return;
+  await adminDb.from('certificates').update({is_valid:false}).eq('id',id);
+  const c = allCerts.find(x=>x.id===id);
+  if(c) c.is_valid = false;
+  renderCerts(allCerts);
+  renderDashboard();
+  alert('Certificate revoked ✓');
+}
+
+async function restoreCert(id, certId){
+  if(!confirm(`Restore certificate ${certId}?`)) return;
+  await adminDb.from('certificates').update({is_valid:true}).eq('id',id);
+  const c = allCerts.find(x=>x.id===id);
+  if(c) c.is_valid = true;
+  renderCerts(allCerts);
+  renderDashboard();
+  alert('Certificate restored ✓');
+}
+
 // ── SECTION SWITCH ───────────────────────────────────────────
 function showSec(id){
   document.querySelectorAll('.sec').forEach(s=>s.classList.remove('on'));
   document.querySelectorAll('.anav-btn').forEach(b=>b.classList.remove('on'));
   document.getElementById('sec-'+id).classList.add('on');
-  document.querySelectorAll('.anav-btn').forEach(b=>{if(b.textContent.toLowerCase().includes(id.slice(0,4)))b.classList.add('on');});
+  document.querySelectorAll('.anav-btn').forEach(b=>{
+    if(b.textContent.toLowerCase().includes(id.slice(0,4))) b.classList.add('on');
+  });
 }
 
 // ── AUTO LOGIN IF SESSION ─────────────────────────────────────
