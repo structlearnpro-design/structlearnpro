@@ -506,7 +506,7 @@ async function doSignup(mob){
   const {data:ex}=await db.from('profiles').select('id').eq('mobile',mob).maybeSingle();
   if(ex){await doLogin(mob);return;}
   const fe='u'+mob+'@structlearnpro.com';
-  const pw='SLP_'+mob+'_'+Math.random().toString(36).slice(2,10);
+  const pw='SLP_v2_'+btoa(mob).replace(/=/g,'');
   // Store pw in profiles so login can use it
   const {data:au,error}=await db.auth.signUp({email:fe,password:pw,options:{emailRedirectTo:null,data:{mobile:mob}}});
   if(error){setMsg('o-msg',error.message,'err');return;}
@@ -522,7 +522,7 @@ async function doSignup(mob){
     purpose:pending.purpose,
     plan:'free'
   },{onConflict:'id'});
-  localStorage.setItem('slp_'+mob, pw);
+  localStorage.setItem('slp_'+mob, pw); // cached for speed
   U=au.user;
   const {data:prof}=await db.from('profiles').select('*').eq('id',U.id).single();
   P=prof;plan=P?.plan||'free';
@@ -534,11 +534,16 @@ async function doLogin(mob){
   const {data:prof}=await db.from('profiles').select('*').eq('mobile',mob).maybeSingle();
   if(!prof){setMsg('o-msg','Account not found. Please sign up.','err');return;}
   const fe='u'+mob+'@structlearnpro.com';
-  const pw=localStorage.getItem('slp_'+mob);
-  if(!pw){setMsg('o-msg','Please use the device you signed up from, or contact support.','err');return;}
+  // Compute deterministic password — same on any device
+  let pw = localStorage.getItem('slp_'+mob);
+  if(!pw) pw = 'SLP_v2_'+btoa(mob).replace(/=/g,'');
   const {data:sd,error}=await db.auth.signInWithPassword({email:fe,password:pw});
   if(error){setMsg('o-msg',error.message,'err');return;}
   U=sd.user;P=prof;plan=P?.plan||'free';
+  // Write session token — kicks out any other active session
+  const _tok = Date.now().toString(36)+Math.random().toString(36).slice(2);
+  localStorage.setItem('slp_tok_'+mob, _tok);
+  await db.from('profiles').update({session_token:_tok, last_login:new Date().toISOString()}).eq('id',U.id);
   updTop();goTo('projects');
   toast('Welcome back, '+(P.full_name||mob)+'! 👋');
 }
@@ -882,6 +887,43 @@ async function flushStudentSession(data) {
       analysis_runs: data.analysisRuns || 0
     }, { onConflict: 'user_id,session_date', ignoreDuplicates: false });
   } catch(e) { console.log('Flush session error', e); }
+}
+
+// ── SESSION GUARD ─────────────────────────────────────────────
+// Ensures only one active session per account across all devices
+let _sessionGuardTimer = null;
+
+async function startSessionGuard() {
+  if(_sessionGuardTimer) clearInterval(_sessionGuardTimer);
+  _sessionGuardTimer = setInterval(async function() {
+    if(!U || !P) return;
+    try {
+      const mob = P.mobile;
+      const localTok = localStorage.getItem('slp_tok_'+mob);
+      if(!localTok) return; // no token stored, skip check
+      const {data} = await db.from('profiles').select('session_token').eq('id',U.id).single();
+      if(data && data.session_token && data.session_token !== localTok) {
+        // Another device logged in — force logout this session
+        clearInterval(_sessionGuardTimer);
+        await db.auth.signOut();
+        U=null; P=null;
+        document.getElementById('app').style.display='none';
+        document.getElementById('login-screen').style.display='';
+        showToast('You were signed in on another device. This session has been ended.', 'warn');
+      }
+    } catch(e) { /* silently ignore network errors */ }
+  }, 60000); // check every 60 seconds
+}
+
+function showToast(msg, type) {
+  const t = document.createElement('div');
+  t.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);'
+    + 'background:'+(type==='warn'?'#7c3aed':'#059669')+';color:white;padding:12px 24px;'
+    + 'border-radius:8px;font-size:13px;font-weight:600;z-index:99999;'
+    + 'font-family:Segoe UI,sans-serif;box-shadow:0 4px 20px rgba(0,0,0,0.4);max-width:400px;text-align:center;';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(function(){ t.remove(); }, 6000);
 }
 
 </script>

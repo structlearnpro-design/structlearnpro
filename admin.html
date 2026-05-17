@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>StructLearn Pro — Admin Panel</title>
+<title>StructLearn Pro \u2014 Admin Panel</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root{
@@ -76,6 +76,7 @@ tr:hover td{background:rgba(56,189,248,0.03);}
 /* SECTION TOGGLE */
 .sec{display:none;}
 .sec.on{display:block;}
+.prof-row{border-bottom:1px solid #0f172a;cursor:pointer;transition:background 0.15s;}.prof-row:hover{background:#0d2040;}
 </style>
 </head>
 <body>
@@ -83,18 +84,18 @@ tr:hover td{background:rgba(56,189,248,0.03);}
 <!-- LOGIN -->
 <div id="login-screen">
   <div class="login-box">
-    <div class="login-title">🔐 Admin Panel</div>
-    <div class="login-sub">StructLearn Pro — Owner Access Only</div>
+    <div class="login-title">\ud83d\udd10 Admin Panel</div>
+    <div class="login-sub">StructLearn Pro \u2014 Owner Access Only</div>
     <div class="field">
       <label>Admin Email</label>
       <input type="email" id="adm-email" placeholder="your@email.com">
     </div>
     <div class="field">
       <label>Password</label>
-      <input type="password" id="adm-pass" placeholder="••••••••"
+      <input type="password" id="adm-pass" placeholder="\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022"
         onkeydown="if(event.key==='Enter')adminLogin()">
     </div>
-    <button class="btn-primary" onclick="adminLogin()">Sign In →</button>
+    <button class="btn-primary" onclick="adminLogin()">Sign In \u2192</button>
     <div class="err-msg" id="adm-err"></div>
   </div>
 </div>
@@ -109,11 +110,6 @@ tr:hover td{background:rgba(56,189,248,0.03);}
       <button class="anav-btn on" onclick="showSec('dashboard')">Dashboard</button>
       <button class="anav-btn" onclick="showSec('users')">Users</button>
       <button class="anav-btn" onclick="showSec('projects')">Projects</button>
-      <button class="anav-btn" onclick="showSec('certificates')">Certificates</button>
-      <button class="anav-btn" onclick="showSec('coupons')">Coupons</button>
-      <button class="anav-btn" onclick="showSec('payments')">Payments</button>
-      <button class="anav-btn" onclick="showSec('profiles');renderProfiles()">Student Profiles</button>
-      <button class="anav-btn" onclick="showSec('settings')">Settings</button>
     </div>
     <button onclick="adminLogout()"
       style="padding:5px 12px;border:1px solid #334155;border-radius:6px;
@@ -126,61 +122,42 @@ tr:hover td{background:rgba(56,189,248,0.03);}
 
     <!-- DASHBOARD -->
     <div id="sec-dashboard" class="sec on">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-      <div style="font-size:18px;font-weight:800;">Overview</div>
-      <button onclick="loadAll()" style="padding:6px 14px;background:#1d4ed8;border:none;border-radius:6px;color:white;font-size:11px;font-weight:700;cursor:pointer;">↻ Refresh</button>
-    </div>
+      <div style="font-size:18px;font-weight:800;margin-bottom:16px">Overview</div>
       <div class="stat-grid">
         <div class="stat-card">
           <div class="stat-label">Total Users</div>
-          <div class="stat-val" id="s-total" style="color:var(--blue)">—</div>
+          <div class="stat-val" id="s-total" style="color:var(--blue)">\u2014</div>
           <div class="stat-sub">all accounts</div>
         </div>
         <div class="stat-card">
           <div class="stat-label">Pro Subscribers</div>
-          <div class="stat-val" id="s-pro" style="color:var(--green)">—</div>
+          <div class="stat-val" id="s-pro" style="color:var(--green)">\u2014</div>
           <div class="stat-sub">paying users</div>
         </div>
         <div class="stat-card">
           <div class="stat-label">Free Users</div>
-          <div class="stat-val" id="s-free" style="color:var(--txt2)">—</div>
+          <div class="stat-val" id="s-free" style="color:var(--txt2)">\u2014</div>
           <div class="stat-sub">not yet paying</div>
         </div>
         <div class="stat-card">
           <div class="stat-label">Total Projects</div>
-          <div class="stat-val" id="s-proj" style="color:var(--purple)">—</div>
+          <div class="stat-val" id="s-proj" style="color:var(--purple)">\u2014</div>
           <div class="stat-sub">across all users</div>
         </div>
         <div class="stat-card">
           <div class="stat-label">Monthly Revenue</div>
-          <div class="stat-val" id="s-rev" style="color:var(--yellow)">—</div>
+          <div class="stat-val" id="s-rev" style="color:var(--yellow)">\u2014</div>
           <div class="stat-sub">estimated MRR</div>
         </div>
         <div class="stat-card">
           <div class="stat-label">Conversion Rate</div>
-          <div class="stat-val" id="s-conv" style="color:var(--orange)">—</div>
-          <div class="stat-sub">free → pro</div>
+          <div class="stat-val" id="s-conv" style="color:var(--orange)">\u2014</div>
+          <div class="stat-sub">free \u2192 pro</div>
         </div>
       </div>
 
       <div style="font-size:14px;font-weight:700;margin-bottom:12px">User Breakdown by Purpose</div>
       <div id="pur-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;margin-bottom:24px"></div>
-
-      <div style="font-size:14px;font-weight:700;margin-bottom:12px;margin-top:8px">Certificates Issued</div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-bottom:24px" id="cert-dash-grid">
-        <div style="background:var(--bg2);border:1px solid var(--b2);border-radius:8px;padding:14px">
-          <div style="font-size:10px;color:var(--txt3);font-weight:700;text-transform:uppercase;margin-bottom:6px">Foundation 🥉</div>
-          <div id="d-cert-f" style="font-size:24px;font-weight:900;color:#d97706">—</div>
-        </div>
-        <div style="background:var(--bg2);border:1px solid var(--b2);border-radius:8px;padding:14px">
-          <div style="font-size:10px;color:var(--txt3);font-weight:700;text-transform:uppercase;margin-bottom:6px">Proficiency 🥈</div>
-          <div id="d-cert-p" style="font-size:24px;font-weight:900;color:#94a3b8">—</div>
-        </div>
-        <div style="background:var(--bg2);border:1px solid var(--b2);border-radius:8px;padding:14px">
-          <div style="font-size:10px;color:var(--txt3);font-weight:700;text-transform:uppercase;margin-bottom:6px">Competent 🥇</div>
-          <div id="d-cert-c" style="font-size:24px;font-weight:900;color:#b8860b">—</div>
-        </div>
-      </div>
 
       <div style="font-size:14px;font-weight:700;margin-bottom:12px">Recent Signups</div>
       <div class="tbl-wrap">
@@ -229,125 +206,25 @@ tr:hover td{background:rgba(56,189,248,0.03);}
       </div>
     </div>
 
-    <!-- CERTIFICATES SECTION -->
-    <div id="sec-certificates" class="sec">
-      <div class="tbl-wrap">
-        <div class="tbl-head">
-          <div>
-            <div class="tbl-title">Certificates Issued</div>
-            <div id="cert-stats" style="font-size:11px;color:#475569;margin-top:4px"></div>
-          </div>
-          <input class="tbl-search" type="text" id="c-search" placeholder="Search by name or ID..." oninput="filterCerts()">
-        </div>
-        <table>
-          <thead><tr><th>Certificate ID</th><th>Student Name</th><th>Level</th><th>Issued Date</th><th>Status</th><th>Action</th></tr></thead>
-          <tbody id="certs-tbody"></tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- COUPONS SECTION -->
-    <div id="sec-coupons" class="sec">
-      <div class="tbl-wrap" style="margin-bottom:16px">
-        <div class="tbl-head"><div class="tbl-title">Create New Coupon</div></div>
-        <div style="padding:16px;display:grid;grid-template-columns:1fr 1fr;gap:12px">
-          <div><label style="font-size:11px;color:var(--txt3);display:block;margin-bottom:4px">Coupon Code</label><input id="cp-code" class="tbl-search" style="width:100%" placeholder="e.g. DIWALI25" oninput="this.value=this.value.toUpperCase()"></div>
-          <div><label style="font-size:11px;color:var(--txt3);display:block;margin-bottom:4px">Discount Type</label><select id="cp-type" class="tbl-search" style="width:100%"><option value="percentage">Percentage (%)</option><option value="fixed">Fixed Amount (Rs)</option></select></div>
-          <div><label style="font-size:11px;color:var(--txt3);display:block;margin-bottom:4px">Discount Value</label><input id="cp-val" class="tbl-search" style="width:100%" type="number" placeholder="25 for 25% or 50 for Rs50"></div>
-          <div><label style="font-size:11px;color:var(--txt3);display:block;margin-bottom:4px">Applies To</label><select id="cp-applies" class="tbl-search" style="width:100%"><option value="both">Both Plans</option><option value="monthly">Monthly Only</option><option value="annual">Annual Only</option></select></div>
-          <div><label style="font-size:11px;color:var(--txt3);display:block;margin-bottom:4px">Valid From</label><input id="cp-from" class="tbl-search" style="width:100%" type="date"></div>
-          <div><label style="font-size:11px;color:var(--txt3);display:block;margin-bottom:4px">Valid Until</label><input id="cp-until" class="tbl-search" style="width:100%" type="date"></div>
-          <div><label style="font-size:11px;color:var(--txt3);display:block;margin-bottom:4px">Max Uses (0 = unlimited)</label><input id="cp-maxuses" class="tbl-search" style="width:100%" type="number" value="0"></div>
-          <div style="display:flex;align-items:flex-end"><button onclick="createCoupon()" style="width:100%;padding:10px;background:#1d4ed8;border:none;border-radius:6px;color:white;font-size:12px;font-weight:700;cursor:pointer">+ Create Coupon</button></div>
-        </div>
-      </div>
-      <div class="tbl-wrap">
-        <div class="tbl-head"><div class="tbl-title">All Coupons</div><div id="coupon-stats" style="font-size:11px;color:var(--txt3)"></div></div>
-        <table><thead><tr><th>Code</th><th>Discount</th><th>Applies To</th><th>Valid Until</th><th>Uses</th><th>Status</th><th>Actions</th></tr></thead><tbody id="coupons-tbody"></tbody></table>
-      </div>
-    </div>
-
-    <!-- PAYMENTS SECTION -->
-    <div id="sec-payments" class="sec">
-      <div id="failed-alert" style="margin-bottom:12px;padding:12px 16px;background:rgba(248,113,113,0.08);border:1px solid #f87171;border-radius:8px;display:none;justify-content:space-between;align-items:center">
-        <div style="font-size:12px;color:#f87171" id="failed-alert-text"></div>
-        <button onclick="sendBulkReminder()" style="padding:6px 14px;background:#dc2626;border:none;border-radius:6px;color:white;font-size:11px;font-weight:700;cursor:pointer">Send Reminder SMS to All</button>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
-        <div class="tbl-wrap">
-          <div class="tbl-head"><div class="tbl-title">Payment History</div></div>
-          <table><thead><tr><th>User</th><th>Amount</th><th>Plan</th><th>Coupon</th><th>Date</th><th>Status</th></tr></thead><tbody id="payments-tbody"></tbody></table>
-        </div>
-        <div class="tbl-wrap">
-          <div class="tbl-head"><div class="tbl-title" style="color:#f87171">Failed / Expired</div></div>
-          <table><thead><tr><th>User</th><th>Mobile</th><th>Plan</th><th>Expired</th><th>Action</th></tr></thead><tbody id="failed-tbody"></tbody></table>
-        </div>
-      </div>
-    </div>
-
-    <!-- SETTINGS SECTION -->
-    <div id="sec-settings" class="sec">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
-        <div class="tbl-wrap">
-          <div class="tbl-head"><div class="tbl-title">Pricing Settings</div></div>
-          <div style="padding:16px">
-            <div style="margin-bottom:14px"><label style="font-size:11px;color:var(--txt3);display:block;margin-bottom:6px;font-weight:700">Monthly Plan Price (Rs)</label><input id="set-monthly" class="tbl-search" style="width:100%;font-size:18px;font-weight:700" type="number" placeholder="299"><div style="font-size:10px;color:var(--txt3);margin-top:4px">Current: <span id="cur-monthly" style="color:#38bdf8">loading...</span></div></div>
-            <div style="margin-bottom:16px"><label style="font-size:11px;color:var(--txt3);display:block;margin-bottom:6px;font-weight:700">Annual Plan Price (Rs)</label><input id="set-annual" class="tbl-search" style="width:100%;font-size:18px;font-weight:700" type="number" placeholder="2990"><div style="font-size:10px;color:var(--txt3);margin-top:4px">Current: <span id="cur-annual" style="color:#38bdf8">loading...</span></div></div>
-            <button onclick="savePrices()" style="width:100%;padding:10px;background:linear-gradient(135deg,#1d4ed8,#2563eb);border:none;border-radius:6px;color:white;font-size:13px;font-weight:700;cursor:pointer">Save Prices</button>
-            <div style="font-size:10px;color:var(--txt3);margin-top:8px;line-height:1.6">Price changes apply to new payments only. Existing Pro users are not affected.</div>
-          </div>
-        </div>
-        <div class="tbl-wrap">
-          <div class="tbl-head"><div class="tbl-title">Manual User Upgrade</div></div>
-          <div style="padding:16px">
-            <div style="margin-bottom:12px"><label style="font-size:11px;color:var(--txt3);display:block;margin-bottom:6px;font-weight:700">User Mobile Number</label><input id="upg-mobile" class="tbl-search" style="width:100%" placeholder="Enter mobile number"></div>
-            <div style="margin-bottom:12px"><label style="font-size:11px;color:var(--txt3);display:block;margin-bottom:6px;font-weight:700">Duration</label><select id="upg-duration" class="tbl-search" style="width:100%" onchange="document.getElementById('upg-custom-wrap').style.display=this.value==='custom'?'block':'none'"><option value="1">1 Month</option><option value="3">3 Months</option><option value="6">6 Months</option><option value="12">1 Year</option><option value="24">2 Years</option><option value="9999">Lifetime</option><option value="custom">Custom Date</option></select></div>
-            <div id="upg-custom-wrap" style="display:none;margin-bottom:12px"><label style="font-size:11px;color:var(--txt3);display:block;margin-bottom:6px;font-weight:700">Custom Expiry Date</label><input id="upg-custom-date" class="tbl-search" style="width:100%" type="date"></div>
-            <div style="margin-bottom:14px"><label style="font-size:11px;color:var(--txt3);display:block;margin-bottom:6px;font-weight:700">Reason (internal note)</label><input id="upg-reason" class="tbl-search" style="width:100%" placeholder="e.g. Competition winner, Demo"></div>
-            <button onclick="manualUpgrade()" style="width:100%;padding:10px;background:linear-gradient(135deg,#065f46,#059669);border:none;border-radius:6px;color:white;font-size:13px;font-weight:700;cursor:pointer">Upgrade for Free</button>
-          </div>
-        </div>
-        <div class="tbl-wrap" style="grid-column:1/-1">
-          <div class="tbl-head"><div class="tbl-title">Refund Management</div></div>
-          <div style="padding:16px">
-            <div style="font-size:12px;color:var(--txt2);margin-bottom:14px;line-height:1.7">To process a refund: (1) Find the user below, (2) Click Razorpay link to open their payment, (3) Process refund in Razorpay, (4) Click Downgrade to remove Pro access.</div>
-            <input id="refund-search" class="tbl-search" style="width:100%;margin-bottom:12px" placeholder="Search user by name or mobile..." oninput="filterRefund(this.value)">
-            <table><thead><tr><th>Name</th><th>Mobile</th><th>Plan</th><th>Razorpay Payment ID</th><th>Paid On</th><th>Actions</th></tr></thead><tbody id="refund-tbody"></tbody></table>
-          </div>
-        </div>
-      </div>
-    </div>
-
   </div>
-    <div class="sec" id="sec-profiles"></div>
 </div>
 
 <script>
 const SUPA_URL   = 'https://rpjdveuxxjeoeomkwrfx.supabase.co';
 const SUPA_KEY   = 'sb_publishable_L1RWkjtz41gT5sZKhRRnsw_BB3WfJWI';
-// IMPORTANT: Replace with your Service Role Key from Supabase → Settings → API → service_role key
-// Keep this secret — never share publicly
-const SERVICE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJwamR2ZXV4eGplb2VvbWt3cmZ4Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3ODkzNjc3MiwiZXhwIjoyMDk0NTEyNzcyfQ._hCmrpMwzCoYwkRRv6dUbs1TmMpR79X4WYQHxZsKwF4';
-const ADMIN_EMAIL = 'structlearnpro@gmail.com'; // ← your admin email
+// IMPORTANT: Replace with your Service Role Key from Supabase \u2192 Settings \u2192 API \u2192 service_role key
+// Keep this secret \u2014 never share publicly
+const SERVICE_KEY = 'YOUR_SERVICE_ROLE_KEY_HERE';
+const ADMIN_EMAIL = 'structlearnpro@gmail.com'; // \u2190 your admin email
 
 const {createClient} = supabase;
 const db = createClient(SUPA_URL, SUPA_KEY);
 // Admin client uses service role key to bypass RLS
-const adminDb = createClient(SUPA_URL, SERVICE_KEY, {
-  auth: {
-    autoRefreshToken: false,
-    persistSession: false
-  },
-  global: {
-    headers: {
-      Authorization: 'Bearer ' + SERVICE_KEY
-    }
-  }
-});
+const adminDb = createClient(SUPA_URL, SERVICE_KEY);
 
-let allUsers=[], allProjs=[], allCerts=[];
+let allUsers=[], allProjs=[];
 
-// ── LOGIN ─────────────────────────────────────────────────────
+// \u2500\u2500 LOGIN \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 async function adminLogin(){
   const email=document.getElementById('adm-email').value.trim();
   const pass=document.getElementById('adm-pass').value;
@@ -364,23 +241,20 @@ async function adminLogout(){
   location.reload();
 }
 
-// ── LOAD DATA ────────────────────────────────────────────────
+// \u2500\u2500 LOAD DATA \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 async function loadAll(){
-  const [ur,pr,cr]=await Promise.all([
+  const [ur,pr]=await Promise.all([
     adminDb.from('profiles').select('*').order('created_at',{ascending:false}),
-    adminDb.from('projects').select('*').order('created_at',{ascending:false}),
-    adminDb.from('certificates').select('*').order('issued_date',{ascending:false}),
+    adminDb.from('projects').select('*').order('created_at',{ascending:false})
   ]);
   allUsers=ur.data||[];
   allProjs=pr.data||[];
-  allCerts=cr.data||[];
   renderDashboard();
   renderUsers(allUsers);
   renderProjects(allProjs);
-  renderCerts(allCerts);
 }
 
-// ── DASHBOARD ────────────────────────────────────────────────
+// \u2500\u2500 DASHBOARD \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 function renderDashboard(){
   const total=allUsers.length;
   const pro=allUsers.filter(u=>u.plan==='pro').length;
@@ -391,19 +265,11 @@ function renderDashboard(){
   document.getElementById('s-pro').textContent=pro;
   document.getElementById('s-free').textContent=free;
   document.getElementById('s-proj').textContent=allProjs.length;
-  document.getElementById('s-rev').textContent='₹'+rev.toLocaleString('en-IN');
+  document.getElementById('s-rev').textContent='\u20b9'+rev.toLocaleString('en-IN');
   document.getElementById('s-conv').textContent=conv+'%';
 
-  // Certificate stats on dashboard
-  const certF = allCerts.filter(c=>c.level==='foundation'&&c.is_valid).length;
-  const certP = allCerts.filter(c=>c.level==='proficiency'&&c.is_valid).length;
-  const certC = allCerts.filter(c=>c.level==='competent'&&c.is_valid).length;
-  const dcf = document.getElementById('d-cert-f'); if(dcf) dcf.textContent = certF;
-  const dcp = document.getElementById('d-cert-p'); if(dcp) dcp.textContent = certP;
-  const dcc = document.getElementById('d-cert-c'); if(dcc) dcc.textContent = certC;
-
   // Purpose breakdown
-  const pmap={student:'🎓 Student',professional:'💼 Professional',professor:'📚 Professor',business:'🏢 Business'};
+  const pmap={student:'\ud83c\udf93 Student',professional:'\ud83d\udcbc Professional',professor:'\ud83d\udcda Professor',business:'\ud83c\udfe2 Business'};
   const pcount={student:0,professional:0,professor:0,business:0};
   allUsers.forEach(u=>{if(pcount[u.purpose]!==undefined)pcount[u.purpose]++;});
   document.getElementById('pur-grid').innerHTML=Object.entries(pmap).map(([k,v])=>`
@@ -416,31 +282,31 @@ function renderDashboard(){
   const recent=allUsers.slice(0,10);
   document.getElementById('recent-tbody').innerHTML=recent.map(u=>`
     <tr>
-      <td>${u.full_name||'—'}</td>
-      <td style="font-family:monospace">${u.mobile||'—'}</td>
-      <td>${({student:'Student',professional:'Professional',professor:'Professor',business:'Business'})[u.purpose]||'—'}</td>
+      <td>${u.full_name||'\u2014'}</td>
+      <td style="font-family:monospace">${u.mobile||'\u2014'}</td>
+      <td>${({student:'Student',professional:'Professional',professor:'Professor',business:'Business'})[u.purpose]||'\u2014'}</td>
       <td><span class="badge ${u.plan||'free'}">${u.plan==='pro'?'PRO':'FREE'}</span></td>
       <td>${new Date(u.created_at).toLocaleDateString('en-IN',{day:'numeric',month:'short'})}</td>
     </tr>`).join('');
 }
 
-// ── USERS TABLE ──────────────────────────────────────────────
+// \u2500\u2500 USERS TABLE \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 function renderUsers(users){
   document.getElementById('users-tbody').innerHTML=users.map(u=>{
     const pc=allProjs.filter(p=>p.user_id===u.id).length;
     const dt=new Date(u.created_at).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'2-digit'});
     return`<tr>
-      <td>${u.full_name||'—'}</td>
-      <td style="font-family:monospace">${u.mobile||'—'}</td>
-      <td style="font-size:11px">${u.email||'—'}</td>
-      <td>${({student:'Student',professional:'Professional',professor:'Professor',business:'Business'})[u.purpose]||'—'}</td>
+      <td>${u.full_name||'\u2014'}</td>
+      <td style="font-family:monospace">${u.mobile||'\u2014'}</td>
+      <td style="font-size:11px">${u.email||'\u2014'}</td>
+      <td>${({student:'Student',professional:'Professional',professor:'Professor',business:'Business'})[u.purpose]||'\u2014'}</td>
       <td><span class="badge ${u.plan||'free'}">${u.plan==='pro'?'PRO':'FREE'}</span></td>
       <td style="text-align:center">${pc}</td>
       <td>${dt}</td>
       <td>
         ${u.plan!=='pro'
-          ?`<button class="action-btn up" onclick="upgUser('${u.id}')">→ Pro</button>`
-          :`<button class="action-btn dn" onclick="dngUser('${u.id}')">→ Free</button>`}
+          ?`<button class="action-btn up" onclick="upgUser('${u.id}')">\u2192 Pro</button>`
+          :`<button class="action-btn dn" onclick="dngUser('${u.id}')">\u2192 Free</button>`}
       </td>
     </tr>`;
   }).join('');
@@ -455,29 +321,29 @@ async function upgUser(id){
   await adminDb.from('profiles').update({plan:'pro',plan_expires_at:exp.toISOString()}).eq('id',id);
   const u=allUsers.find(x=>x.id===id);if(u){u.plan='pro';u.plan_expires_at=exp.toISOString();}
   renderUsers(allUsers);renderDashboard();
-  alert('User upgraded to Pro ✓');
+  alert('User upgraded to Pro \u2713');
 }
 async function dngUser(id){
   if(!confirm('Downgrade this user to Free?'))return;
   await adminDb.from('profiles').update({plan:'free',plan_expires_at:null}).eq('id',id);
   const u=allUsers.find(x=>x.id===id);if(u){u.plan='free';}
   renderUsers(allUsers);renderDashboard();
-  alert('User downgraded to Free ✓');
+  alert('User downgraded to Free \u2713');
 }
 
-// ── PROJECTS TABLE ───────────────────────────────────────────
+// \u2500\u2500 PROJECTS TABLE \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 function renderProjects(projs){
   document.getElementById('proj-tbody').innerHTML=projs.map(p=>{
     const owner=allUsers.find(u=>u.id===p.user_id);
     const sc=p.status==='pass'?'pass':p.status==='fail'?'fail':'draft';
-    const sl=p.status==='pass'?'✓ Pass':p.status==='fail'?'⚠ Fail':'Draft';
+    const sl=p.status==='pass'?'\u2713 Pass':p.status==='fail'?'\u26a0 Fail':'Draft';
     const cd=new Date(p.created_at).toLocaleDateString('en-IN',{day:'numeric',month:'short'});
     const ud=new Date(p.updated_at).toLocaleDateString('en-IN',{day:'numeric',month:'short'});
     return`<tr>
       <td style="font-weight:600">${p.name}</td>
-      <td style="font-size:11px">${owner?.full_name||owner?.mobile||'—'}</td>
-      <td style="text-align:center">${p.floors||'—'}</td>
-      <td style="text-align:center">${p.spans_x&&p.spans_y?p.spans_x+'×'+p.spans_y:'—'}</td>
+      <td style="font-size:11px">${owner?.full_name||owner?.mobile||'\u2014'}</td>
+      <td style="text-align:center">${p.floors||'\u2014'}</td>
+      <td style="text-align:center">${p.spans_x&&p.spans_y?p.spans_x+'\u00d7'+p.spans_y:'\u2014'}</td>
       <td><span class="badge ${sc}">${sl}</span></td>
       <td>${cd}</td>
       <td>${ud}</td>
@@ -489,89 +355,15 @@ function filterProjects(){
   renderProjects(s?allProjs.filter(p=>p.name.toLowerCase().includes(s)):allProjs);
 }
 
-// ── CERTIFICATES ─────────────────────────────────────────────
-function renderCerts(certs){
-  // Stats
-  const total = certs.length;
-  const byLevel = {foundation:0, proficiency:0, competent:0};
-  certs.forEach(c => { if(byLevel[c.level]!==undefined) byLevel[c.level]++; });
-  const statsEl = document.getElementById('cert-stats');
-  if(statsEl) statsEl.innerHTML =
-    `Total: <strong style="color:#f1f5f9">${total}</strong> &nbsp;·&nbsp;
-     🥉 Foundation: <strong style="color:#d97706">${byLevel.foundation}</strong> &nbsp;·&nbsp;
-     🥈 Proficiency: <strong style="color:#94a3b8">${byLevel.proficiency}</strong> &nbsp;·&nbsp;
-     🥇 Competent: <strong style="color:#b8860b">${byLevel.competent}</strong>`;
-
-  const tbody = document.getElementById('certs-tbody');
-  if(!tbody) return;
-
-  if(!certs.length){
-    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#334155;padding:24px">No certificates issued yet</td></tr>';
-    return;
-  }
-
-  tbody.innerHTML = certs.map(c => {
-    const medalMap = {foundation:'🥉 Foundation', proficiency:'🥈 Proficiency', competent:'🥇 Competent'};
-    const colorMap = {foundation:'#d97706', proficiency:'#94a3b8', competent:'#b8860b'};
-    const medal = medalMap[c.level] || c.level;
-    const color = colorMap[c.level] || '#38bdf8';
-    const dt = new Date(c.issued_date).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'2-digit'});
-    const statusBadge = c.is_valid
-      ? '<span class="badge pass">✓ Valid</span>'
-      : '<span class="badge fail">✗ Revoked</span>';
-    const actionBtn = c.is_valid
-      ? `<button class="action-btn dn" onclick="revokeCert('${c.id}','${c.cert_id}')">Revoke</button>`
-      : `<button class="action-btn up" onclick="restoreCert('${c.id}','${c.cert_id}')">Restore</button>`;
-    return `<tr>
-      <td style="font-family:monospace;font-size:11px;color:#38bdf8">${c.cert_id}</td>
-      <td style="font-weight:600">${c.student_name||'—'}</td>
-      <td style="color:${color};font-weight:700">${medal}</td>
-      <td>${dt}</td>
-      <td>${statusBadge}</td>
-      <td>${actionBtn}</td>
-    </tr>`;
-  }).join('');
-}
-
-function filterCerts(){
-  const s = document.getElementById('c-search').value.toLowerCase();
-  renderCerts(s ? allCerts.filter(c =>
-    (c.student_name||'').toLowerCase().includes(s) ||
-    (c.cert_id||'').toLowerCase().includes(s)
-  ) : allCerts);
-}
-
-async function revokeCert(id, certId){
-  if(!confirm(`Revoke certificate ${certId}? The verification page will show it as invalid.`)) return;
-  await adminDb.from('certificates').update({is_valid:false}).eq('id',id);
-  const c = allCerts.find(x=>x.id===id);
-  if(c) c.is_valid = false;
-  renderCerts(allCerts);
-  renderDashboard();
-  alert('Certificate revoked ✓');
-}
-
-async function restoreCert(id, certId){
-  if(!confirm(`Restore certificate ${certId}?`)) return;
-  await adminDb.from('certificates').update({is_valid:true}).eq('id',id);
-  const c = allCerts.find(x=>x.id===id);
-  if(c) c.is_valid = true;
-  renderCerts(allCerts);
-  renderDashboard();
-  alert('Certificate restored ✓');
-}
-
-// ── SECTION SWITCH ───────────────────────────────────────────
+// \u2500\u2500 SECTION SWITCH \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 function showSec(id){
   document.querySelectorAll('.sec').forEach(s=>s.classList.remove('on'));
   document.querySelectorAll('.anav-btn').forEach(b=>b.classList.remove('on'));
   document.getElementById('sec-'+id).classList.add('on');
-  document.querySelectorAll('.anav-btn').forEach(b=>{
-    if(b.textContent.toLowerCase().includes(id.slice(0,4))) b.classList.add('on');
-  });
+  document.querySelectorAll('.anav-btn').forEach(b=>{if(b.textContent.toLowerCase().includes(id.slice(0,4)))b.classList.add('on');});
 }
 
-// ── AUTO LOGIN IF SESSION ─────────────────────────────────────
+// \u2500\u2500 AUTO LOGIN IF SESSION \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 (async()=>{
   const {data:{session}}=await db.auth.getSession();
   if(session?.user?.email===ADMIN_EMAIL){
@@ -581,370 +373,11 @@ function showSec(id){
     loadAll();
   }
 })();
-
-// ── LOAD ALL — updated to include payments & coupons ─────────
-// Already defined above, patch to add new data
-const _origLoadAll = loadAll;
-loadAll = async function(){
-  const [ur,pr,cr,pmr,cpr] = await Promise.all([
-    adminDb.from('profiles').select('*').order('created_at',{ascending:false}),
-    adminDb.from('projects').select('*').order('created_at',{ascending:false}),
-    adminDb.from('certificates').select('*').order('issued_date',{ascending:false}),
-    adminDb.from('payment_history').select('*').order('created_at',{ascending:false}),
-    adminDb.from('coupons').select('*').order('created_at',{ascending:false}),
-  ]);
-  allUsers  = ur.data||[];
-  allProjs  = pr.data||[];
-  allCerts  = cr.data||[];
-  allPayments = pmr.data||[];
-  allCoupons  = cpr.data||[];
-  renderDashboard();
-  renderUsers(allUsers);
-  renderProjects(allProjs);
-  renderCerts(allCerts);
-  renderPayments();
-  renderCoupons(allCoupons);
-  loadSettings();
-  loadRefundTable(allUsers);
-};
-
-let allPayments=[], allCoupons=[];
-
-// ── SETTINGS ─────────────────────────────────────────────────
-let currentSettings = { price_monthly:'299', price_annual:'2990' };
-
-async function loadSettings(){
-  const {data} = await adminDb.from('settings').select('*');
-  if(data) data.forEach(row => { currentSettings[row.key]=row.value; });
-
-  const monthly = currentSettings['price_monthly_display']||currentSettings['price_monthly']||'299';
-  const annual  = currentSettings['price_annual_display']||currentSettings['price_annual']||'2990';
-
-  const cm = document.getElementById('cur-monthly');
-  const ca = document.getElementById('cur-annual');
-  const sm = document.getElementById('set-monthly');
-  const sa = document.getElementById('set-annual');
-  if(cm) cm.textContent = '₹'+monthly+'/month';
-  if(ca) ca.textContent = '₹'+annual+'/year';
-  if(sm) sm.value = monthly;
-  if(sa) sa.value = annual;
+// ── PROF ROW CLICK ───────────────────────────────────────────
+function profRowClick(el) {
+  var uid = el.dataset.uid;
+  if(uid) viewFullProfile(uid);
 }
-
-async function savePrices(){
-  const monthly = parseInt(document.getElementById('set-monthly').value)||299;
-  const annual  = parseInt(document.getElementById('set-annual').value)||2990;
-
-  if(monthly < 1 || annual < 1){ alert('Please enter valid prices'); return; }
-  if(!confirm(`Set prices to:
-Monthly: ₹${monthly}/month
-Annual: ₹${annual}/year
-
-This affects all new payments immediately.`)) return;
-
-  await Promise.all([
-    adminDb.from('settings').upsert({key:'price_monthly',        value:String(monthly*100),   updated_at:new Date().toISOString()},{onConflict:'key'}),
-    adminDb.from('settings').upsert({key:'price_monthly_display',value:String(monthly),        updated_at:new Date().toISOString()},{onConflict:'key'}),
-    adminDb.from('settings').upsert({key:'price_annual',         value:String(annual*100),     updated_at:new Date().toISOString()},{onConflict:'key'}),
-    adminDb.from('settings').upsert({key:'price_annual_display', value:String(annual),         updated_at:new Date().toISOString()},{onConflict:'key'}),
-  ]);
-
-  alert(`✓ Prices updated!
-Monthly: ₹${monthly}/month
-Annual: ₹${annual}/year`);
-  loadSettings();
-}
-
-// ── MANUAL UPGRADE ────────────────────────────────────────────
-document.getElementById('upg-duration').addEventListener('change', function(){
-  document.getElementById('upg-custom-wrap').style.display = this.value==='custom'?'block':'none';
-});
-
-async function manualUpgrade(){
-  const mobile  = document.getElementById('upg-mobile').value.trim();
-  const duration= document.getElementById('upg-duration').value;
-  const reason  = document.getElementById('upg-reason').value.trim()||'Admin upgrade';
-  const customDate = document.getElementById('upg-custom-date').value;
-
-  if(!mobile){ alert('Enter user mobile number'); return; }
-
-  const user = allUsers.find(u=>u.mobile===mobile);
-  if(!user){ alert('User not found with that mobile number'); return; }
-
-  let expiry;
-  if(duration==='9999'){
-    expiry = new Date('2099-12-31').toISOString();
-  } else if(duration==='custom'){
-    if(!customDate){ alert('Select a custom expiry date'); return; }
-    expiry = new Date(customDate).toISOString();
-  } else {
-    expiry = new Date();
-    expiry.setMonth(expiry.getMonth() + parseInt(duration));
-    expiry = expiry.toISOString();
-  }
-
-  const label = duration==='9999'?'Lifetime':duration==='custom'?customDate:`${duration} month(s)`;
-  if(!confirm(`Upgrade ${user.full_name||mobile} to Pro for ${label}?
-Reason: ${reason}`)) return;
-
-  await adminDb.from('profiles').update({
-    plan:'pro',
-    plan_expires_at: expiry,
-  }).eq('id', user.id);
-
-  await adminDb.from('admin_notes').insert({
-    user_id: user.id,
-    note: reason,
-    action: `Manual upgrade — ${label}`,
-    created_by: 'Admin',
-  });
-
-  const u = allUsers.find(x=>x.id===user.id);
-  if(u){ u.plan='pro'; u.plan_expires_at=expiry; }
-  renderUsers(allUsers);
-  renderDashboard();
-
-  document.getElementById('upg-mobile').value='';
-  document.getElementById('upg-reason').value='';
-  alert(`✓ ${user.full_name||mobile} upgraded to Pro (${label}) successfully!`);
-}
-
-// ── COUPONS ───────────────────────────────────────────────────
-function renderCoupons(coupons){
-  const tbody = document.getElementById('coupons-tbody');
-  if(!tbody) return;
-
-  const stats = document.getElementById('coupon-stats');
-  if(stats) stats.textContent = `Total: ${coupons.length} | Active: ${coupons.filter(c=>c.is_active).length}`;
-
-  if(!coupons.length){
-    tbody.innerHTML='<tr><td colspan="7" style="text-align:center;color:#334155;padding:20px">No coupons created yet</td></tr>';
-    return;
-  }
-
-  tbody.innerHTML = coupons.map(c=>{
-    const disc = c.discount_type==='percentage'?`${c.discount_value}% off`:`₹${c.discount_value} off`;
-    const until = c.valid_until ? new Date(c.valid_until).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'2-digit'}) : 'No expiry';
-    const uses  = c.max_uses > 0 ? `${c.used_count}/${c.max_uses}` : `${c.used_count}/∞`;
-    const expired = c.valid_until && new Date(c.valid_until) < new Date();
-    const statusBadge = !c.is_active?'<span class="badge fail">Paused</span>':expired?'<span class="badge fail">Expired</span>':'<span class="badge pass">Active</span>';
-    return `<tr>
-      <td style="font-family:monospace;font-weight:700;color:#38bdf8">${c.code}</td>
-      <td style="font-weight:700;color:#34d399">${disc}</td>
-      <td style="text-transform:capitalize">${c.applies_to}</td>
-      <td>${until}</td>
-      <td>${uses}</td>
-      <td>${statusBadge}</td>
-      <td style="display:flex;gap:6px">
-        <button class="action-btn ${c.is_active?'dn':'up'}" onclick="toggleCoupon('${c.id}',${c.is_active})">
-          ${c.is_active?'Pause':'Resume'}
-        </button>
-        <button class="action-btn dn" onclick="deleteCoupon('${c.id}','${c.code}')">Delete</button>
-      </td>
-    </tr>`;
-  }).join('');
-}
-
-async function createCoupon(){
-  const code    = document.getElementById('cp-code').value.trim().toUpperCase();
-  const type    = document.getElementById('cp-type').value;
-  const val     = parseInt(document.getElementById('cp-val').value)||0;
-  const applies = document.getElementById('cp-applies').value;
-  const from    = document.getElementById('cp-from').value;
-  const until   = document.getElementById('cp-until').value;
-  const maxuses = parseInt(document.getElementById('cp-maxuses').value)||0;
-
-  if(!code){ alert('Enter a coupon code'); return; }
-  if(!val || val<=0){ alert('Enter a valid discount value'); return; }
-  if(type==='percentage' && val>100){ alert('Percentage cannot exceed 100%'); return; }
-
-  const {error} = await adminDb.from('coupons').insert({
-    code, discount_type:type, discount_value:val,
-    applies_to:applies,
-    valid_from: from||null,
-    valid_until: until||null,
-    max_uses: maxuses,
-    used_count: 0,
-    is_active: true,
-  });
-
-  if(error){ alert('Error: '+error.message); return; }
-
-  alert(`✓ Coupon "${code}" created successfully!`);
-  document.getElementById('cp-code').value='';
-  document.getElementById('cp-val').value='';
-  await loadAll();
-}
-
-async function toggleCoupon(id, isActive){
-  await adminDb.from('coupons').update({is_active:!isActive}).eq('id',id);
-  const c = allCoupons.find(x=>x.id===id);
-  if(c) c.is_active = !isActive;
-  renderCoupons(allCoupons);
-}
-
-async function deleteCoupon(id, code){
-  if(!confirm(`Delete coupon "${code}"? This cannot be undone.`)) return;
-  await adminDb.from('coupons').delete().eq('id',id);
-  allCoupons = allCoupons.filter(c=>c.id!==id);
-  renderCoupons(allCoupons);
-}
-
-// ── PAYMENTS ─────────────────────────────────────────────────
-function renderPayments(){
-  // Payment history
-  const tbody = document.getElementById('payments-tbody');
-  if(tbody){
-    if(!allPayments.length){
-      tbody.innerHTML='<tr><td colspan="6" style="text-align:center;color:#334155;padding:20px">No payments yet</td></tr>';
-    } else {
-      tbody.innerHTML = allPayments.slice(0,50).map(p=>{
-        const user = allUsers.find(u=>u.id===p.user_id);
-        const name = user?.full_name||user?.mobile||'Unknown';
-        const amt  = p.amount ? '₹'+(p.amount/100) : '—';
-        const dt   = new Date(p.created_at).toLocaleDateString('en-IN',{day:'numeric',month:'short'});
-        const statusBadge = p.status==='success'?'<span class="badge pass">✓ Success</span>':'<span class="badge fail">✗ Failed</span>';
-        return `<tr>
-          <td>${name}</td>
-          <td style="font-weight:700;color:#34d399">${amt}</td>
-          <td style="text-transform:capitalize">${p.plan||'—'}</td>
-          <td style="color:#38bdf8;font-size:11px">${p.coupon_used||'—'}</td>
-          <td>${dt}</td>
-          <td>${statusBadge}</td>
-        </tr>`;
-      }).join('');
-    }
-  }
-
-  // Failed/Expired users
-  const fbody = document.getElementById('failed-tbody');
-  const failedAlert = document.getElementById('failed-alert');
-  const failedAlertText = document.getElementById('failed-alert-text');
-
-  const now = new Date();
-  const expired = allUsers.filter(u => u.plan==='pro' && u.plan_expires_at && new Date(u.plan_expires_at) < now);
-  const expiringSoon = allUsers.filter(u => {
-    if(u.plan!=='pro'||!u.plan_expires_at) return false;
-    const exp = new Date(u.plan_expires_at);
-    const days = (exp-now)/(1000*60*60*24);
-    return days>0 && days<=7;
-  });
-
-  if(failedAlert && (expired.length>0||expiringSoon.length>0)){
-    failedAlert.style.display='flex';
-    if(failedAlertText) failedAlertText.innerHTML =
-      `⚠ <strong>${expired.length}</strong> Pro subscriptions expired · <strong>${expiringSoon.length}</strong> expiring within 7 days`;
-  }
-
-  if(fbody){
-    const atRisk = [...expired, ...expiringSoon];
-    if(!atRisk.length){
-      fbody.innerHTML='<tr><td colspan="5" style="text-align:center;color:#334155;padding:20px">No expired or at-risk subscriptions</td></tr>';
-    } else {
-      fbody.innerHTML = atRisk.map(u=>{
-        const exp = u.plan_expires_at ? new Date(u.plan_expires_at).toLocaleDateString('en-IN',{day:'numeric',month:'short'}) : '—';
-        const isExpired = u.plan_expires_at && new Date(u.plan_expires_at) < now;
-        const wa = `https://wa.me/91${u.mobile}?text=${encodeURIComponent(`Hi ${u.full_name||''}, your StructLearn Pro subscription has ${isExpired?'expired':'is expiring soon'}. Renew at https://structlearnpro.vercel.app`)}`;
-        return `<tr>
-          <td style="font-weight:600">${u.full_name||'—'}</td>
-          <td style="font-family:monospace;font-size:11px">${u.mobile||'—'}</td>
-          <td><span class="badge ${isExpired?'fail':''}">Monthly</span></td>
-          <td style="color:${isExpired?'#f87171':'#f59e0b'}">${exp}</td>
-          <td>
-            <a href="${wa}" target="_blank" style="padding:3px 9px;border-radius:5px;font-size:10px;font-weight:700;border:1px solid #34d399;color:#34d399;text-decoration:none">
-              💬 WhatsApp
-            </a>
-          </td>
-        </tr>`;
-      }).join('');
-    }
-  }
-}
-
-async function sendBulkReminder(){
-  if(!confirm('Send SMS reminder to all expired/expiring users?')) return;
-  alert('Bulk SMS feature will be added when DLT template is approved. For now use the WhatsApp buttons.');
-}
-
-// ── REFUND TABLE ──────────────────────────────────────────────
-function loadRefundTable(users){
-  const proUsers = users.filter(u=>u.plan==='pro'&&u.razorpay_payment_id);
-  renderRefundTable(proUsers);
-  document.getElementById('refund-search').addEventListener('input', function(){
-    const s = this.value.toLowerCase();
-    renderRefundTable(s ? proUsers.filter(u=>
-      (u.full_name||'').toLowerCase().includes(s)||
-      (u.mobile||'').includes(s)
-    ) : proUsers);
-  });
-}
-
-function renderRefundTable(users){
-  const tbody = document.getElementById('refund-tbody');
-  if(!tbody) return;
-  if(!users.length){
-    tbody.innerHTML='<tr><td colspan="6" style="text-align:center;color:#334155;padding:16px">No Pro users with payment records found</td></tr>';
-    return;
-  }
-  tbody.innerHTML = users.map(u=>{
-    const rzpUrl = `https://dashboard.razorpay.com/app/payments/${u.razorpay_payment_id}`;
-    const exp = u.plan_expires_at ? new Date(u.plan_expires_at).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'2-digit'}) : '—';
-    return `<tr>
-      <td style="font-weight:600">${u.full_name||'—'}</td>
-      <td style="font-family:monospace;font-size:11px">${u.mobile||'—'}</td>
-      <td><span class="badge pro">PRO</span></td>
-      <td>
-        <a href="${rzpUrl}" target="_blank"
-          style="font-family:monospace;font-size:10px;color:#38bdf8;text-decoration:none">
-          ${u.razorpay_payment_id||'—'} ↗
-        </a>
-      </td>
-      <td style="font-size:11px;color:#475569">—</td>
-      <td style="display:flex;gap:4px">
-        <a href="${rzpUrl}" target="_blank"
-          style="padding:3px 8px;border-radius:5px;font-size:10px;font-weight:700;border:1px solid #38bdf8;color:#38bdf8;text-decoration:none">
-          Razorpay ↗
-        </a>
-        <button onclick="downgradeUser('${u.id}')" class="action-btn dn">
-          Downgrade
-        </button>
-      </td>
-    </tr>`;
-  }).join('');
-}
-
-function filterRefund(s){
-  const proUsers = allUsers.filter(u=>u.plan==='pro'&&u.razorpay_payment_id);
-  renderRefundTable(s?proUsers.filter(u=>(u.full_name||'').toLowerCase().includes(s.toLowerCase())||(u.mobile||'').includes(s)):proUsers);
-}
-
-async function downgradeUser(id){
-  if(!confirm('Downgrade this user to Free? Do this AFTER processing refund in Razorpay.')) return;
-  await adminDb.from('profiles').update({plan:'free',plan_expires_at:null}).eq('id',id);
-  const u = allUsers.find(x=>x.id===id);
-  if(u){ u.plan='free'; }
-  renderUsers(allUsers);
-  renderDashboard();
-  loadRefundTable(allUsers);
-  alert('✓ User downgraded to Free.');
-}
-
-// ── UPDATE showSec to handle all new tabs ─────────────────────
-const _origShowSec2 = showSec;
-showSec = function(id){
-  document.querySelectorAll('.sec').forEach(s=>s.classList.remove('on'));
-  document.querySelectorAll('.anav-btn').forEach(b=>b.classList.remove('on'));
-  const sec = document.getElementById('sec-'+id);
-  if(sec) sec.classList.add('on');
-  document.querySelectorAll('.anav-btn').forEach(b=>{
-    const match = {
-      dashboard:'Dashboard', users:'Users', projects:'Projects',
-      certificates:'Certificates', coupons:'Coupons',
-      payments:'Payments', settings:'Settings'
-    };
-    if(b.textContent.trim()===match[id]) b.classList.add('on');
-  });
-};
-
 
 // ══════════════════════════════════════════════════════════════
 // ADMIN — STUDENT PROFILES TAB (Phase A+B)
@@ -1122,7 +555,7 @@ function filterProfiles() {
     if(certFilter === 'cert' && d.certs.length === 0) return false;
     if(certFilter === 'consent' && !(d.empProf && d.empProf.consent)) return false;
     if(search) {
-      var name  = (d.user.name || '').toLowerCase();
+      var name  = (d.user.full_name || d.user.mobile || '').toLowerCase();
       var phone = (d.user.mobile || '').toLowerCase();
       if(!name.includes(search) && !phone.includes(search)) return false;
     }
@@ -1159,7 +592,7 @@ function renderProfileCards(profileData) {
       +   '<div style="display:flex;align-items:center;gap:12px">'
       +     '<div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,'+lbl.color+','+lbl.color+'88);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;color:#0a0f1e;flex-shrink:0">'+(idx+1)+'</div>'
       +     '<div>'
-      +       '<div style="font-size:14px;font-weight:700;color:#f1f5f9">'+(u.name||'Unknown')+'</div>'
+      +       '<div style="font-size:14px;font-weight:700;color:#f1f5f9">'+(u.full_name||u.mobile||'Unknown')+'</div>'
       +       '<div style="font-size:11px;color:#475569;margin-top:2px">'+u.mobile+' · Joined '+(u.created_at||'').slice(0,10)+'</div>'
       +       '<div style="display:flex;gap:6px;margin-top:4px;flex-wrap:wrap">'
       +         '<span style="padding:2px 8px;background:'+(u.plan==='pro'?'rgba(184,134,11,0.15)':'rgba(30,58,138,0.3)')+';border:1px solid '+(u.plan==='pro'?'#b8860b':'#1e3a8a')+';border-radius:10px;font-size:9px;color:'+(u.plan==='pro'?'#b8860b':'#38bdf8')+';font-weight:700">'+(u.plan||'free').toUpperCase()+'</span>'
