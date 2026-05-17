@@ -618,6 +618,16 @@ function selPlan(p){
 }
 async function startPay(){
   if(!RZP_KEY){toast('Payment not yet configured. Coming soon!',true);return;}
+  // Load Razorpay script dynamically if not already loaded
+  if(!window.Razorpay){
+    await new Promise((resolve,reject)=>{
+      const s=document.createElement('script');
+      s.src='https://checkout.razorpay.com/v1/checkout.js';
+      s.onload=resolve;
+      s.onerror=reject;
+      document.head.appendChild(s);
+    });
+  }
   const amt=selPlanId==='monthly'?29900:299000;
   const opts={key:RZP_KEY,amount:amt,currency:'INR',name:'StructLearn Pro',
     description:selPlanId==='monthly'?'Monthly Subscription':'Annual Subscription',
