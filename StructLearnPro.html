@@ -169,7 +169,55 @@ td.val{color:var(--txt);font-weight:700}td.ok{color:var(--green);font-weight:700
 <div class="main" id="main"></div>
 </div>
 
-<script>// ── PLATFORM INTEGRATION ──────────────────────────────────────
+<script>// ── DEMO EXPIRY CONTROL ───────────────────────────────────────
+(function(){
+  var EXPIRY = '2025-06-10'; // ← change this date to control access
+  var exp = new Date(EXPIRY);
+  exp.setHours(23,59,59,0);
+  var now = new Date();
+
+  function showExpired(){
+    var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    var dateStr = exp.getDate() + ' ' + months[exp.getMonth()] + ' ' + exp.getFullYear();
+    var html = '<div style="margin:0;padding:0;background:#0a0f1e;display:flex;align-items:center;justify-content:center;min-height:100vh;font-family:Segoe UI,sans-serif;">'
+      + '<div style="background:#0d1526;border:2px solid #dc2626;border-radius:14px;padding:40px;max-width:420px;width:90%;text-align:center;margin:20px auto;">'
+      + '<div style="font-size:48px;margin-bottom:16px;">&#128274;</div>'
+      + '<div style="font-size:20px;font-weight:900;color:#f87171;margin-bottom:10px;">Review Copy Expired</div>'
+      + '<div style="font-size:13px;color:#94a3b8;line-height:1.7;margin-bottom:20px;">'
+      + 'This review copy of <strong style="color:#f1f5f9;">StructLearn Pro</strong> expired on '
+      + '<strong style="color:#f1f5f9;">' + dateStr + '</strong>.<br><br>'
+      + 'Contact the developer for full access.'
+      + '</div>'
+      + '<div style="padding:12px 20px;background:#1e293b;border-radius:8px;font-size:12px;color:#94a3b8;">structlearnpro@gmail.com</div>'
+      + '</div></div>';
+    document.open();
+    document.write(html);
+    document.close();
+  }
+
+  if(now > exp){
+    if(document.readyState === 'loading'){
+      document.addEventListener('DOMContentLoaded', showExpired);
+    } else {
+      showExpired();
+    }
+    return; // stop executing rest of the IIFE
+  }
+
+  // Warn if expiring within 3 days
+  var daysLeft = Math.ceil((exp - now) / (1000*60*60*24));
+  if(daysLeft <= 3){
+    window.addEventListener('load', function(){
+      var n = document.createElement('div');
+      n.style.cssText = 'position:fixed;bottom:16px;right:16px;background:#7c2d12;border:1px solid #f97316;border-radius:8px;padding:10px 16px;font-size:12px;color:#fed7aa;font-family:Segoe UI,sans-serif;z-index:99999;max-width:220px;line-height:1.5;';
+      n.innerHTML = '&#9200; <strong>Expires in ' + daysLeft + ' day' + (daysLeft===1?'':'s') + '</strong><br>Contact developer for full access.';
+      document.body.appendChild(n);
+      setTimeout(function(){if(n.parentNode)n.parentNode.removeChild(n);}, 8000);
+    });
+  }
+})();
+
+// ── PLATFORM INTEGRATION  ──────────────────────────────────────
 let _userPlan='free', _currentProjectId=null, _platformSaveTimer=null;
 
 window.addEventListener('message',(e)=>{
@@ -11814,6 +11862,1300 @@ setInterval(()=>{try{saveToParent('draft');}catch(e){}},30000);
 window.p8orig=p8;
 document.addEventListener('click',e=>{if(e.target.closest('[onclick*="go(8)"]'))setTimeout(drawRefGrid,100);});
 
+
+// ══════════════════════════════════════════════════════
+// QUIZ + CERTIFICATE SYSTEM
+// ══════════════════════════════════════════════════════
+
+/* 
+  RUN THIS IN SUPABASE SQL EDITOR:
+  
+  create table public.certificates (
+    id uuid default gen_random_uuid() primary key,
+    cert_id text unique not null,
+    user_id uuid references auth.users,
+    student_name text,
+    level text,
+    issued_date timestamp default now(),
+    is_valid boolean default true
+  );
+  alter table public.certificates enable row level security;
+  create policy "Anyone can verify certificates"
+    on public.certificates for select using (true);
+  create policy "Users insert own certificates"
+    on public.certificates for insert with check (auth.uid() = user_id);
+*/
+
+
+// Question Bank
+// ── QUESTION BANK ─────────────────────────────────────────────
+// 180 questions across 3 levels
+// Each question: {q, opts:[A,B,C,D], ans: index(0-3), topic}
+
+const QB = {
+
+// ══════════════════════════════════════════════════════════════
+// LEVEL 1 — FOUNDATION (40 questions)
+// ══════════════════════════════════════════════════════════════
+L1: [
+// IS 456 BASICS (8)
+{q:"What does IS 456 govern?",opts:["Steel structures","Plain and reinforced concrete","Foundation design","Seismic design"],ans:1,topic:"IS 456"},
+{q:"What is the full form of RCC?",opts:["Reinforced Cement Concrete","Rigid Cement Construction","Reduced Concrete Cover","Reinforced Cold Construction"],ans:0,topic:"IS 456"},
+{q:"Which grade of concrete is minimum recommended for seismic zones?",opts:["M15","M20","M25","M30"],ans:2,topic:"IS 456"},
+{q:"What does fck represent in IS 456?",opts:["Characteristic compressive strength of concrete","Steel yield strength","Shear strength","Bond strength"],ans:0,topic:"IS 456"},
+{q:"What does fy represent?",opts:["Concrete strength","Yield strength of steel","Factored load","Moment of inertia"],ans:1,topic:"IS 456"},
+{q:"Fe 500D steel — what does D stand for?",opts:["Dense","Ductile","Deformed","Diameter"],ans:1,topic:"IS 456"},
+{q:"What is the load factor for dead load in IS 456 limit state?",opts:["1.0","1.2","1.5","2.0"],ans:2,topic:"IS 456"},
+{q:"Which method does IS 456 use for structural design?",opts:["Working stress method only","Limit state method","Elastic method","Plastic method"],ans:1,topic:"IS 456"},
+
+// LOADS — IS 875 (8)
+{q:"What is the standard live load for residential floors per IS 875?",opts:["1.5 kN/m²","2.0 kN/m²","3.0 kN/m²","4.0 kN/m²"],ans:1,topic:"IS 875"},
+{q:"What is the live load for roofs (accessible) per IS 875?",opts:["0.75 kN/m²","1.5 kN/m²","2.0 kN/m²","3.0 kN/m²"],ans:1,topic:"IS 875"},
+{q:"Which IS code covers dead loads?",opts:["IS 456","IS 875 Part 1","IS 875 Part 2","IS 1893"],ans:1,topic:"IS 875"},
+{q:"Which IS code covers imposed (live) loads?",opts:["IS 456","IS 875 Part 1","IS 875 Part 2","IS 1893"],ans:2,topic:"IS 875"},
+{q:"What is the unit weight of normal concrete?",opts:["20 kN/m³","23 kN/m³","25 kN/m³","28 kN/m³"],ans:2,topic:"IS 875"},
+{q:"What is the unit weight of brick masonry?",opts:["15 kN/m³","19 kN/m³","22 kN/m³","25 kN/m³"],ans:1,topic:"IS 875"},
+{q:"Floor finish load typically falls under which category?",opts:["Live load","Dead load","Wind load","Seismic load"],ans:1,topic:"IS 875"},
+{q:"Partition wall load is treated as which type of load?",opts:["Concentrated dead load","Distributed live load","Equivalent distributed dead load","Wind load"],ans:2,topic:"IS 875"},
+
+// SEISMIC BASICS (8)
+{q:"Which IS code covers earthquake resistant design?",opts:["IS 456","IS 875","IS 1893","IS 13920"],ans:2,topic:"Seismic"},
+{q:"How many seismic zones does India have as per IS 1893?",opts:["3","4","5","6"],ans:1,topic:"Seismic"},
+{q:"Which seismic zone has the highest intensity?",opts:["Zone II","Zone III","Zone IV","Zone V"],ans:3,topic:"Seismic"},
+{q:"What is the Importance Factor for a hospital?",opts:["1.0","1.2","1.5","2.0"],ans:2,topic:"Seismic"},
+{q:"What is the Importance Factor for a residential building?",opts:["1.0","1.2","1.5","2.0"],ans:0,topic:"Seismic"},
+{q:"Base shear depends on which of these?",opts:["Only building height","Only seismic zone","Seismic zone, soil type, building weight and height","Only soil type"],ans:2,topic:"Seismic"},
+{q:"Which soil type gives highest seismic amplification?",opts:["Type I — Hard rock","Type II — Medium","Type III — Soft soil","All same"],ans:2,topic:"Seismic"},
+{q:"IS 13920 covers which aspect of seismic design?",opts:["Base shear calculation","Ductile detailing of RC structures","Wind pressure","Foundation design"],ans:1,topic:"Seismic"},
+
+// MEMBER TERMINOLOGY (8)
+{q:"What does lx represent in slab design?",opts:["Long span","Short span","Effective depth","Slab thickness"],ans:1,topic:"Members"},
+{q:"When is a slab considered two-way?",opts:["When ly/lx > 2","When ly/lx ≤ 2","When ly/lx = 1","Always"],ans:1,topic:"Members"},
+{q:"What is effective depth 'd' of a beam?",opts:["Total depth D","D minus cover","D minus cover minus half bar diameter","D plus cover"],ans:2,topic:"Members"},
+{q:"Tributary area of a column is used to calculate?",opts:["Beam moment","Column axial load","Slab deflection","Foundation depth"],ans:1,topic:"Members"},
+{q:"Which member transfers load from slab to columns?",opts:["Footing","Wall","Beam","Staircase"],ans:2,topic:"Members"},
+{q:"What is a transfer beam?",opts:["Beam carrying slab load only","Beam carrying column load from above","Beam in staircase","Secondary beam"],ans:1,topic:"Members"},
+{q:"Stirrups in beams resist which force primarily?",opts:["Bending moment","Axial compression","Shear force","Torsion"],ans:2,topic:"Members"},
+{q:"Ties in columns resist which tendency?",opts:["Buckling of longitudinal bars","Bending","Deflection","Settlement"],ans:0,topic:"Members"},
+
+// COVER & MATERIALS (8)
+{q:"Minimum cover for footings below ground per IS 456?",opts:["20mm","40mm","60mm","75mm"],ans:3,topic:"Cover"},
+{q:"Minimum cover for columns per IS 456?",opts:["20mm","25mm","40mm","75mm"],ans:2,topic:"Cover"},
+{q:"Minimum cover for slabs (mild exposure)?",opts:["15mm","20mm","25mm","40mm"],ans:1,topic:"Cover"},
+{q:"Why is cover provided to reinforcement?",opts:["To increase beam depth","To protect steel from corrosion and fire","To reduce steel quantity","To increase self weight"],ans:1,topic:"Cover"},
+{q:"M25 concrete — what does 25 represent?",opts:["Cement content in kg","Characteristic strength in N/mm²","Mix ratio","Water cement ratio"],ans:1,topic:"Cover"},
+{q:"Which steel grade is mandatory per IS 13920 for seismic zones?",opts:["Fe 250","Fe 415","Fe 500D","Fe 600"],ans:2,topic:"Cover"},
+{q:"What is the minimum bar diameter for main steel in beams?",opts:["6mm","8mm","10mm","12mm"],ans:3,topic:"Cover"},
+{q:"Nominal cover is measured to which reinforcement?",opts:["Main bars","Stirrups or ties (outermost bar)","Both equally","Depends on member"],ans:1,topic:"Cover"},
+],
+
+// ══════════════════════════════════════════════════════════════
+// LEVEL 2 — PROFICIENCY (60 questions)
+// ══════════════════════════════════════════════════════════════
+L2: [
+// BEAM DESIGN (10)
+{q:"A beam with span 6m has depth governed by deflection. The IS 456 basic span/depth ratio for simply supported beam is?",opts:["16","20","26","30"],ans:2,topic:"Beams"},
+{q:"For a continuous beam with both ends fixed, the midspan moment coefficient α is?",opts:["1/8","1/10","1/12","1/16"],ans:3,topic:"Beams"},
+{q:"Your beam B2 fails in deflection but passes in moment. Best fix?",opts:["Add more steel","Increase beam depth D","Increase concrete grade","Reduce live load"],ans:1,topic:"Beams"},
+{q:"Why does beam depth D stay the same on all floors of a multi-storey building?",opts:["Software limitation","Span is same every floor so deflection requirement is same","Upper floors have more load","Code mandates uniform depth"],ans:1,topic:"Beams"},
+{q:"For an edge beam (one end pinned, one continuous), the moment coefficient at continuous end is?",opts:["1/8","1/10","1/12","1/16"],ans:1,topic:"Beams"},
+{q:"Minimum beam width b as per IS 456 Cl 23.1?",opts:["150mm","200mm","230mm","250mm"],ans:1,topic:"Beams"},
+{q:"Shear reinforcement (stirrups) spacing near support should be?",opts:["Larger than midspan","Same throughout","Closer than midspan","Only at midspan"],ans:2,topic:"Beams"},
+{q:"A beam with wu=20 kN/m and span 5m (simply supported). Mmax = ?",opts:["62.5 kN.m","78.1 kN.m","52.1 kN.m","41.7 kN.m"],ans:0,topic:"Beams"},
+{q:"Mulim for a singly reinforced beam depends on?",opts:["Steel quantity only","Concrete grade and beam dimensions","Steel grade only","Span only"],ans:1,topic:"Beams"},
+{q:"Why are secondary beams used?",opts:["To carry column loads","To reduce main beam span and slab span","For aesthetics","To resist wind loads"],ans:1,topic:"Beams"},
+
+// COLUMN DESIGN (10)
+{q:"IS 13920 minimum column dimension in seismic zones?",opts:["200mm","250mm","300mm","350mm"],ans:2,topic:"Columns"},
+{q:"Why does a corner column carry less load than an interior column?",opts:["Corner columns are taller","Corner columns have smaller tributary area","Interior columns have more steel","Corner columns are stronger"],ans:1,topic:"Columns"},
+{q:"Minimum steel percentage in columns per IS 456?",opts:["0.4%","0.8%","1.0%","2.0%"],ans:1,topic:"Columns"},
+{q:"Maximum steel percentage in columns per IS 456?",opts:["4%","5%","6%","8%"],ans:2,topic:"Columns"},
+{q:"Column load increases from top floor to ground floor because?",opts:["Ground floor columns are longer","Cumulative load from all floors above adds up","Ground has more seismic force","Foundation adds load"],ans:1,topic:"Columns"},
+{q:"Confinement zone in a column per IS 13920 is provided at?",opts:["Midheight only","Top and bottom of column near joints","Throughout column height","Only at base"],ans:1,topic:"Columns"},
+{q:"For a G+3 building, which floor column carries maximum load?",opts:["Roof floor","Third floor","Second floor","Ground floor"],ans:3,topic:"Columns"},
+{q:"Lateral ties in columns are provided to?",opts:["Resist bending","Prevent buckling of longitudinal bars and confine concrete","Carry shear only","Reduce self weight"],ans:1,topic:"Columns"},
+{q:"Short column fails by?",opts:["Buckling","Material crushing","Deflection","Settlement"],ans:1,topic:"Columns"},
+{q:"Effective length of a column with both ends fixed is?",opts:["L","0.5L","0.7L","2L"],ans:1,topic:"Columns"},
+
+// SLAB DESIGN (10)
+{q:"IS 456 Table 26 gives moment coefficients for?",opts:["Beam design","Two-way slab design","Column design","Staircase design"],ans:1,topic:"Slabs"},
+{q:"A slab bay has lx=3m, ly=5m. What type of slab is it?",opts:["Two-way slab","One-way slab","Flat slab","Waffle slab"],ans:1,topic:"Slabs"},
+{q:"Minimum slab thickness for deflection control (simply supported)?",opts:["L/20","L/26","L/35","L/40"],ans:1,topic:"Slabs"},
+{q:"IS 456 Case 1 slab means?",opts:["Simply supported on all sides","All four edges continuous","Two edges continuous","One edge continuous"],ans:1,topic:"Slabs"},
+{q:"Distribution steel in a one-way slab is placed in?",opts:["Direction of main span","Perpendicular to main span","Both directions equally","Along diagonal"],ans:1,topic:"Slabs"},
+{q:"Why is a staircase bay not designed as a flat slab?",opts:["Stairs are stronger","No flat floor slab exists in stair bay — waist slab replaces it","Stairs use steel","Code does not allow it"],ans:1,topic:"Slabs"},
+{q:"Negative moment in a slab occurs at?",opts:["Midspan","Supports (continuous edges)","Corners only","Free edges"],ans:1,topic:"Slabs"},
+{q:"Minimum steel in slabs per IS 456 (Fe500)?",opts:["0.10%","0.12%","0.15%","0.20%"],ans:1,topic:"Slabs"},
+{q:"A void bay in the building plan means?",opts:["Lighter slab","No slab — open to below","Thicker slab","One-way slab"],ans:1,topic:"Slabs"},
+{q:"Effective span of a slab is taken as?",opts:["Centre to centre of supports","Clear span only","Clear span plus effective depth","Clear span plus full support width"],ans:0,topic:"Slabs"},
+
+// FOOTING DESIGN (10)
+{q:"Punching shear in a footing acts on which perimeter?",opts:["Footing edge","Column face","Critical perimeter at d/2 from column face","d from column face"],ans:2,topic:"Footings"},
+{q:"Safe bearing capacity (SBC) is reduced at depth because?",opts:["Soil is weaker at depth","Self weight of soil above footing reduces net bearing capacity","Foundation adds weight","Water table effect"],ans:1,topic:"Footings"},
+{q:"Which check governs footing depth in most practical cases?",opts:["Bending moment","One-way shear","Punching shear","Settlement"],ans:2,topic:"Footings"},
+{q:"An isolated footing is designed for which type of load?",opts:["Only dead load","Factored axial load from column","Service load only","Wind load only"],ans:1,topic:"Footings"},
+{q:"Minimum cover for footings per IS 456?",opts:["40mm","50mm","60mm","75mm"],ans:3,topic:"Footings"},
+{q:"Footing plan size is determined by?",opts:["Column size","Safe bearing capacity of soil","Concrete grade","Steel percentage"],ans:1,topic:"Footings"},
+{q:"Net soil pressure under footing = ?",opts:["Total load / footing area","(Column load + footing self weight) / area","Column load / (area × SBC)","Column load / area"],ans:3,topic:"Footings"},
+{q:"A larger column load requires?",opts:["Smaller footing","Same footing always","Larger footing plan size","Thinner footing"],ans:2,topic:"Footings"},
+{q:"Footing reinforcement is designed for?",opts:["Compression","Bending moment at column face","Shear only","Punching only"],ans:1,topic:"Footings"},
+{q:"Why are footings provided below ground level?",opts:["To hide them","To reach firm soil and avoid frost action","To reduce cost","Code not required above ground"],ans:1,topic:"Footings"},
+
+// SEISMIC UNDERSTANDING (10)
+{q:"Base shear V = Ah × W. What is W?",opts:["Wind load","Seismic weight of building","Wall load","Water load"],ans:1,topic:"Seismic"},
+{q:"Seismic weight of a floor includes?",opts:["Full live load","Dead load plus 25% of live load for most buildings","Dead load only","Full live load plus dead load"],ans:1,topic:"Seismic"},
+{q:"A void bay reduces seismic weight because?",opts:["Void bays are stronger","No slab mass in void bay — excluded from seismic weight","Void bays are lighter concrete","Code reduces by 50%"],ans:1,topic:"Seismic"},
+{q:"Storey shear is maximum at?",opts:["Roof level","Midheight","Ground level","Top floor"],ans:2,topic:"Seismic"},
+{q:"Response Reduction Factor R accounts for?",opts:["Material strength","Ductility and overstrength of the structure","Wind effect","Soil type"],ans:1,topic:"Seismic"},
+{q:"For a ductile RC frame building, R = ?",opts:["3","4","5","6"],ans:2,topic:"Seismic"},
+{q:"Taller buildings have longer time period T. This means?",opts:["Higher base shear always","Lower Sa/g for medium/hard soil — lower base shear","Higher Sa/g always","No effect on base shear"],ans:1,topic:"Seismic"},
+{q:"IS 13920 applies to buildings in which seismic zones?",opts:["All zones","Zone II only","Zone III, IV and V","Zone V only"],ans:2,topic:"Seismic"},
+{q:"Soft storey is dangerous in earthquakes because?",opts:["It is at the bottom","It has much less lateral stiffness than floors above — concentrates damage","It has more columns","It is taller"],ans:1,topic:"Seismic"},
+{q:"Seismic force distribution over building height follows?",opts:["Uniform distribution","Triangular distribution — more at top","Concentrated at base","Random distribution"],ans:1,topic:"Seismic"},
+
+// IS 13920 DETAILING (10)
+{q:"Minimum longitudinal steel in beam per IS 13920?",opts:["0.24fck/fy × bd","0.12% of bd","2 bars minimum 10mm dia","Both A and C"],ans:3,topic:"IS 13920"},
+{q:"Maximum steel ratio at any section in beam per IS 13920?",opts:["2%","2.5%","3%","4%"],ans:1,topic:"IS 13920"},
+{q:"Confinement zone length at beam-column joint per IS 13920?",opts:["d from face","2d from face","L/4 from face or 2d whichever is more","L/6"],ans:2,topic:"IS 13920"},
+{q:"In confinement zone of column, maximum tie spacing?",opts:["100mm","150mm","B/4 or 75mm whichever is less","d/2"],ans:2,topic:"IS 13920"},
+{q:"Why does IS 13920 mandate Fe 500D?",opts:["Higher strength","Ductile properties — can elongate without fracture","Cheaper","Easier to bend"],ans:1,topic:"IS 13920"},
+{q:"Shear capacity of beam must be based on?",opts:["Applied shear only","Moment capacity — to ensure ductile flexural failure before shear failure","Code table value","Tributary area"],ans:1,topic:"IS 13920"},
+{q:"Lap splices in columns per IS 13920 should NOT be placed at?",opts:["Midheight","Quarter height","Top and bottom (confinement zones)","Any location"],ans:2,topic:"IS 13920"},
+{q:"Minimum column dimension per IS 13920 in seismic zones?",opts:["200mm","250mm","300mm","400mm"],ans:2,topic:"IS 13920"},
+{q:"Hook angle for stirrups per IS 13920 in seismic zones?",opts:["90°","90° or 135°","135° mandatory","180°"],ans:2,topic:"IS 13920"},
+{q:"Strong column — weak beam concept means?",opts:["Columns stronger than beams in compression","Column moment capacity > beam moment capacity at joint to ensure ductile failure","Beams should fail first in flexure","Both A and C"],ans:1,topic:"IS 13920"},
+],
+
+// ══════════════════════════════════════════════════════════════
+// LEVEL 3 — COMPETENT (80 questions)
+// ══════════════════════════════════════════════════════════════
+L3: [
+// BEAM CALCULATIONS (10)
+{q:"Beam: span=5m, wu=30 kN/m, both ends continuous. Midspan Mu (α=1/16)?",opts:["46.9 kN.m","93.8 kN.m","37.5 kN.m","56.3 kN.m"],ans:0,topic:"Beam Calc"},
+{q:"Beam: D=450mm, cover=40mm, bar=20mm. Effective depth d=?",opts:["390mm","400mm","410mm","420mm"],ans:1,topic:"Beam Calc"},
+{q:"Mulim = 0.138 × fck × b × d². For M25, b=230, d=400mm. Mulim=?",opts:["127.3 kN.m","101.3 kN.m","85.2 kN.m","143.1 kN.m"],ans:0,topic:"Beam Calc"},
+{q:"Ast_req for Mu=80 kN.m, d=400mm, fy=500, b=230 using IS 456 Annex G approx?",opts:["480 mm²","520 mm²","560 mm²","610 mm²"],ans:1,topic:"Beam Calc"},
+{q:"A beam has wu=25 kN/m, L=6m. Max shear Vu at support (SS beam)?",opts:["75 kN","150 kN","112.5 kN","187.5 kN"],ans:0,topic:"Beam Calc"},
+{q:"Nominal shear stress τv = Vu/(b×d). For Vu=75kN, b=230, d=400. τv=?",opts:["0.65 N/mm²","0.81 N/mm²","0.72 N/mm²","0.54 N/mm²"],ans:1,topic:"Beam Calc"},
+{q:"Deflection check: actual span/depth ratio = 6000/400 = 15. IS 456 permissible = 26. Result?",opts:["Fails — too shallow","Passes — within limit","Borderline","Cannot determine"],ans:1,topic:"Beam Calc"},
+{q:"Beam with 3-D20 bars. Ast provided = ?",opts:["785 mm²","942 mm²","1100 mm²","628 mm²"],ans:1,topic:"Beam Calc"},
+{q:"Stirrup spacing = Asv×0.87fy/(0.4×b). For 2-legged D8, b=230, fy=500. Spacing=?",opts:["150mm","175mm","200mm","225mm"],ans:1,topic:"Beam Calc"},
+{q:"A cantilever beam L=2m, wu=20 kN/m. Mu at fixed end=?",opts:["20 kN.m","40 kN.m","80 kN.m","160 kN.m"],ans:1,topic:"Beam Calc"},
+
+// COLUMN CALCULATIONS (10)
+{q:"Column Pu=800kN, size=300×300, fck=25, fy=500. Min Ast (0.8%)?",opts:["480 mm²","640 mm²","720 mm²","960 mm²"],ans:2,topic:"Col Calc"},
+{q:"Column capacity Pcap=0.4×fck×Ac+0.67×fy×Ast. For 300×300, M25, 4-D16. Pcap≈?",opts:["850 kN","920 kN","980 kN","1050 kN"],ans:1,topic:"Col Calc"},
+{q:"A G+4 building. Ground floor column carries loads from how many floors?",opts:["1","2","4","5"],ans:3,topic:"Col Calc"},
+{q:"Interior column tributary area in 3m×4m grid (4 equal bays around it). Area=?",opts:["6 m²","12 m²","3 m²","24 m²"],ans:1,topic:"Col Calc"},
+{q:"Column steel percentage pt = 100×Ast/(b×D). For 300×300 with 4-D20. pt=?",opts:["1.40%","1.60%","1.80%","2.00%"],ans:0,topic:"Col Calc"},
+{q:"Tie spacing in confinement zone: B/4=75mm or 100mm whichever less. For 300mm column?",opts:["100mm","75mm","50mm","150mm"],ans:1,topic:"Col Calc"},
+{q:"Column: Pu=1200kN, pt=1.2%, fck=25. Required size (approx)?",opts:["300×300","350×350","400×400","450×450"],ans:2,topic:"Col Calc"},
+{q:"Lap length for column bars per IS 456 = 45× bar diameter. For D20 bars?",opts:["600mm","750mm","900mm","1000mm"],ans:2,topic:"Col Calc"},
+{q:"A corner column has tributary area = 1/4 of interior column for same grid. If interior Pu=800kN, corner Pu≈?",opts:["200kN","400kN","600kN","100kN"],ans:0,topic:"Col Calc"},
+{q:"Why does pt% decrease on upper floors for same column size?",opts:["Less concrete on upper floors","Less cumulative load → less Ast required but same size maintained for formwork","More wind on upper floors","Code mandates reduction"],ans:1,topic:"Col Calc"},
+
+// SLAB CALCULATIONS (10)
+{q:"Slab: lx=3m, ly=4m. ly/lx ratio = 1.33. Slab type?",opts:["One-way","Two-way — IS 456 Table 26 applies","Flat slab","Waffle slab"],ans:1,topic:"Slab Calc"},
+{q:"IS 456 Table 26 Case 1 (all edges continuous): αx coefficient for ly/lx=1.0 ≈?",opts:["0.032","0.062","0.056","0.045"],ans:0,topic:"Slab Calc"},
+{q:"Slab Mx = αx × wu × lx². For αx=0.032, wu=12 kN/m², lx=3m. Mx=?",opts:["3.46 kN.m/m","2.88 kN.m/m","4.32 kN.m/m","1.73 kN.m/m"],ans:1,topic:"Slab Calc"},
+{q:"Slab effective depth d=150-20-5=125mm. For Ast=180mm²/m, spacing of D10 bars?",opts:["300mm","350mm","436mm","250mm"],ans:2,topic:"Slab Calc"},
+{q:"Minimum Ast for slab with Fe500: 0.12% of bd. For d=125, b=1000mm. Min Ast=?",opts:["120 mm²","150 mm²","180 mm²","200 mm²"],ans:1,topic:"Slab Calc"},
+{q:"A slab span/depth check: lx/d = 3000/125 = 24. IS 456 limit for two-way = 32. Result?",opts:["Fails","Passes","Exactly at limit","Cannot check without steel"],ans:1,topic:"Slab Calc"},
+{q:"Waist slab DL = (D/1000)×25/cosθ. For D=150mm, θ=20°. DL_waist≈?",opts:["3.75 kN/m²","3.99 kN/m²","4.25 kN/m²","3.50 kN/m²"],ans:1,topic:"Slab Calc"},
+{q:"For one-way slab with span 4m, simply supported. Basic l/d = 20. Min d=?",opts:["150mm","175mm","200mm","225mm"],ans:2,topic:"Slab Calc"},
+{q:"Distribution steel in slab = 0.12% of bD (gross). For D=150, b=1000. Ast_dist=?",opts:["120 mm²","150 mm²","180 mm²","200 mm²"],ans:2,topic:"Slab Calc"},
+{q:"Slab negative moment at continuous edge ≈ how many times the positive midspan moment?",opts:["Same","1.33 times","0.5 times","2 times"],ans:1,topic:"Slab Calc"},
+
+// FOOTING CALCULATIONS (10)
+{q:"Footing: Pu=600kN, SBC=200kN/m². Net bearing pressure. Min footing area=?",opts:["2.0 m²","3.0 m²","4.0 m²","1.5 m²"],ans:1,topic:"Ftg Calc"},
+{q:"Square footing size for area=3m²: side length=?",opts:["1.5m","1.7m","1.8m","2.0m"],ans:1,topic:"Ftg Calc"},
+{q:"Punching shear perimeter bo = 4×(col+d). For col=300, d=350mm. bo=?",opts:["2200mm","2600mm","2800mm","3000mm"],ans:1,topic:"Ftg Calc"},
+{q:"Punching shear stress τvp = Vpu/(bo×d). For Vpu=500kN, bo=2600, d=350. τvp≈?",opts:["0.45 N/mm²","0.55 N/mm²","0.65 N/mm²","0.75 N/mm²"],ans:1,topic:"Ftg Calc"},
+{q:"Permissible punching shear τcp = 0.25√fck. For M25. τcp=?",opts:["1.0 N/mm²","1.25 N/mm²","1.5 N/mm²","0.75 N/mm²"],ans:1,topic:"Ftg Calc"},
+{q:"Footing bending moment at column face: Mu = q×B×(B-c)²/8. For q=200kN/m², B=1.7m, c=0.3m. Mu≈?",opts:["58 kN.m","67 kN.m","82 kN.m","47 kN.m"],ans:0,topic:"Ftg Calc"},
+{q:"Net SBC = Gross SBC - γ×depth. For SBC=200, γ=18, depth=1.5m. Net SBC=?",opts:["173 kN/m²","183 kN/m²","191 kN/m²","165 kN/m²"],ans:0,topic:"Ftg Calc"},
+{q:"Corner column Pu=300kN, SBC=150kN/m². Min footing area=?",opts:["1.0 m²","2.0 m²","2.5 m²","3.0 m²"],ans:1,topic:"Ftg Calc"},
+{q:"Footing depth is INCREASED when punching shear fails. Why?",opts:["More concrete = stronger","Increasing d increases both bo and shear area — reduces τvp","More self weight","Cover requirements"],ans:1,topic:"Ftg Calc"},
+{q:"Lap length for footing bars = 45×dia. For D12 bars?",opts:["480mm","540mm","600mm","450mm"],ans:1,topic:"Ftg Calc"},
+
+// SEISMIC CALCULATIONS (10)
+{q:"Design seismic coefficient Ah = Z/2 × I/R × Sa/g. Zone IV: Z=0.24, I=1.0, R=5, Sa/g=2.5. Ah=?",opts:["0.048","0.060","0.072","0.096"],ans:1,topic:"Seismic Calc"},
+{q:"Base shear V = Ah × W. For Ah=0.06, W=5000kN. V=?",opts:["250kN","300kN","350kN","400kN"],ans:1,topic:"Seismic Calc"},
+{q:"Seismic weight of floor = DL + 0.25×LL. For DL=800kN, LL=200kN. W_floor=?",opts:["850kN","900kN","950kN","1000kN"],ans:0,topic:"Seismic Calc"},
+{q:"Time period T = 0.075×h^0.75 for RC frame. For h=12m (G+3). T≈?",opts:["0.45s","0.52s","0.61s","0.70s"],ans:1,topic:"Seismic Calc"},
+{q:"Lateral force at roof is HIGHER than at ground because?",opts:["Roof is heavier","IS 1893 distributes base shear proportional to Wi×hi — higher floors get more","Wind governs at roof","Code mandates it"],ans:1,topic:"Seismic Calc"},
+{q:"For Zone V hospital: Z=0.36, I=1.5, R=5, Sa/g=2.5. Ah=?",opts:["0.135","0.270","0.108","0.162"],ans:0,topic:"Seismic Calc"},
+{q:"A building has 4 floors each W=1000kN at heights 3,6,9,12m. Base shear=200kN. Force at roof (h=12)?",opts:["40kN","60kN","80kN","100kN"],ans:2,topic:"Seismic Calc"},
+{q:"Reducing R from 5 to 3 (less ductile system) changes Ah by factor?",opts:["0.6","1.67","1.0","0.8"],ans:1,topic:"Seismic Calc"},
+{q:"Soft soil (Type III) vs hard rock (Type I) — Sa/g ratio at T=0.3s approximately?",opts:["Same","Soft soil 2.5x higher","Hard rock 2x higher","Soft soil 1.5x higher"],ans:1,topic:"Seismic Calc"},
+{q:"A 5-storey building removes ground floor walls (open ground floor). This creates?",opts:["Stronger building","Soft storey — dangerous concentration of drift","Better air circulation only","Stiffer building"],ans:1,topic:"Seismic Calc"},
+
+// DESIGN JUDGMENT (10)
+{q:"You have two options: M25+Fe500D or M30+Fe415. For seismic zone IV, which is correct?",opts:["M25+Fe500D — Fe500D mandatory per IS 13920","M30+Fe415 — higher concrete is better","Either works","M30+Fe500D only"],ans:0,topic:"Judgment"},
+{q:"Beam fails in shear but passes in moment. You should?",opts:["Accept — moment governs","Increase stirrup density or beam depth — shear failure is brittle","Reduce live load","Increase steel"],ans:1,topic:"Judgment"},
+{q:"All columns pass but one edge column fails. Best solution?",opts:["Ignore — one failure acceptable","Increase that column size or add wall","Reduce building height","Change seismic zone"],ans:1,topic:"Judgment"},
+{q:"Student designs G+10 building with 300×300 columns. This is?",opts:["Correct — minimum size","Likely wrong — load requirement will exceed capacity for 10 floors","Fine if M40 concrete","Only acceptable in Zone II"],ans:1,topic:"Judgment"},
+{q:"Footing on soft soil (SBC=80kN/m²) vs hard soil (SBC=300kN/m²). Same column load. Footing size?",opts:["Same size","Larger on soft soil","Larger on hard soil","Depth changes not size"],ans:1,topic:"Judgment"},
+{q:"A building has irregular plan with re-entrant corner. Special concern is?",opts:["More steel needed","Stress concentration and torsion at re-entrant corner under seismic load","Foundation problem","Slab thickness"],ans:1,topic:"Judgment"},
+{q:"Punching shear fails at a footing. You cannot increase depth. Alternative?",opts:["Use higher concrete grade only","Increase column size to increase perimeter, or use pedestal","Reduce column load","Change footing to mat"],ans:1,topic:"Judgment"},
+{q:"Design shows beam depth D=600mm for span 4m. This seems?",opts:["Correct","Over-designed — span/depth = 6.7, much deeper than l/d=16-26 suggests","Under-designed","Cannot judge without load"],ans:1,topic:"Judgment"},
+{q:"Client wants to remove a column to create open plan. You should?",opts:["Refuse — columns cannot be removed","Design a transfer beam to carry the load from above","Just remove it — load redistributes","Add more columns nearby"],ans:1,topic:"Judgment"},
+{q:"Same building designed in Zone II vs Zone V. What changes significantly?",opts:["Slab design","Column and beam steel, column size, foundation size","Foundation depth only","Concrete grade only"],ans:1,topic:"Judgment"},
+
+// CODE INTERPRETATION (10)
+{q:"IS 456 Cl 23.2.1 basic l/d ratio for cantilever beam?",opts:["7","10","16","20"],ans:0,topic:"Code"},
+{q:"IS 456 Table 16 cover for 'moderate' exposure beams?",opts:["20mm","30mm","40mm","45mm"],ans:2,topic:"Code"},
+{q:"IS 456 Cl 26.5.1 minimum steel in beams = 0.85/fy × bd. For fy=500, b=230, d=400. Min Ast=?",opts:["115 mm²","145 mm²","157 mm²","196 mm²"],ans:3,topic:"Code"},
+{q:"IS 1893 importance factor for school with >200 occupants?",opts:["1.0","1.2","1.5","2.0"],ans:1,topic:"Code"},
+{q:"IS 13920 Cl 7.1.1 — minimum column width in direction of seismic force?",opts:["200mm","250mm","300mm","350mm"],ans:2,topic:"Code"},
+{q:"IS 456 Cl 31.6.2 — critical section for punching shear is at?",opts:["Column face","d/2 from column face","d from column face","2d from column face"],ans:1,topic:"Code"},
+{q:"IS 875 Part 3 — design wind speed Vz = Vb×k1×k2×k3. k2 depends on?",opts:["Terrain and building height","Risk factor","Topography","Structural damping"],ans:0,topic:"Code"},
+{q:"IS 456 Cl 26.3.3 maximum spacing of main bars in slab?",opts:["3d or 300mm","2d or 300mm","3d or 450mm","d or 300mm"],ans:0,topic:"Code"},
+{q:"IS 456 minimum eccentricity for columns = L/500 + D/30 ≥ 20mm. For L=3m, D=300. emin=?",opts:["16mm","20mm","26mm","30mm"],ans:1,topic:"Code"},
+{q:"IS 13920 beam — at any section, neither tension nor compression steel shall exceed?",opts:["2.0%","2.5%","3.0%","4.0%"],ans:1,topic:"Code"},
+
+// IRREGULAR STRUCTURES (10)
+{q:"A building with staircase bay — adjacent beams get extra load from?",opts:["Nothing — stair is separate","Stair slab reaction transferred to supporting beams","Column only","Foundation"],ans:1,topic:"Irregular"},
+{q:"Cantilever beam at edge — moment at fixed end with UDL w, length L?",opts:["wL²/8","wL²/2","wL²/4","wL²/3"],ans:1,topic:"Irregular"},
+{q:"A bay is marked as 'void'. Effect on adjacent beam tributary load?",opts:["Beam gets full void bay load","Beam gets no slab load from void side","Beam doubles in size","No effect"],ans:1,topic:"Irregular"},
+{q:"Transfer beam carries load from?",opts:["Slab only","A column that is discontinued above — carries column load","Foundation to column","Wall to slab"],ans:1,topic:"Irregular"},
+{q:"Building with one storey much taller than others. Problem under seismic?",opts:["No problem","Soft storey effect — that storey attracts more lateral force and drift","Stiffer building","Foundation problem"],ans:1,topic:"Irregular"},
+{q:"L-shaped building plan under seismic loading experiences?",opts:["Uniform stress","Torsional effects due to asymmetry","Only axial forces","No special effect"],ans:1,topic:"Irregular"},
+{q:"A secondary beam framing into a main beam — main beam gets?",opts:["Nothing extra","Concentrated point load at secondary beam connection","Distributed load only","Reduced load"],ans:1,topic:"Irregular"},
+{q:"Wall support at end of beam (instead of column) gives which end condition?",opts:["Fixed","Continuous","Pinned/simply supported","Cantilever"],ans:2,topic:"Irregular"},
+{q:"Courtyard bay in building plan — effect on seismic weight?",opts:["Increases seismic weight","Reduces seismic weight — no slab mass","No effect","Doubles nearby floor weight"],ans:1,topic:"Irregular"},
+{q:"A G+5 building has ground floor height 6m, upper floors 3m each. Risk?",opts:["None","Soft storey at ground floor — 6m height makes it much more flexible","Only aesthetic issue","Foundation problem"],ans:1,topic:"Irregular"},
+],
+};
+
+// Export for use in other files
+if(typeof module !== 'undefined') module.exports = QB;
+
+
+// Quiz + Certificate Engine
+// ══════════════════════════════════════════════════════════════
+// STRUCTLEARN PRO — QUIZ + CERTIFICATE + BEHAVIOR TRACKER
+// Complete system — inject into StructLearnPro.html
+// ══════════════════════════════════════════════════════════════
+
+// ── BEHAVIOR TRACKER ──────────────────────────────────────────
+const _BT = {
+  // 10 behaviors tracked silently
+  behaviors: {
+    B1: { done:false, desc:'Changed seismic zone' },
+    B2: { done:false, desc:'Changed concrete or steel grade' },
+    B3: { done:false, desc:'Had a member failure' },
+    B4: { done:false, desc:'Fixed a failure by iterating' },
+    B5: { done:false, desc:'Opened beam report' },
+    B6: { done:false, desc:'Opened column report' },
+    B7: { done:false, desc:'Changed span after seeing results' },
+    B8: { done:false, desc:'Added staircase or void bay' },
+    B9: { done:false, desc:'Ran analysis 3+ times' },
+    B10:{ done:false, desc:'Spent 20+ minutes in app' },
+  },
+  analysisCount: 0,
+  startTime: Date.now(),
+  hadFailure: false,
+  prevHadFailure: false,
+  prevSeismicZone: null,
+  prevFck: null,
+  prevFy: null,
+  prevSpans: null,
+
+  // Mark a behavior complete
+  mark(key) {
+    if(!this.behaviors[key].done) {
+      this.behaviors[key].done = true;
+      this.updateProgress();
+    }
+  },
+
+  // Count completed behaviors
+  count() {
+    return Object.values(this.behaviors).filter(b=>b.done).length;
+  },
+
+  // Calculate confidence score
+  confidence() {
+    return Math.round((this.count() / 10) * 100);
+  },
+
+  // Check level unlock
+  level() {
+    const c = this.count();
+    if(c >= 10) return 3;
+    if(c >= 7)  return 2;
+    if(c >= 4)  return 1;
+    return 0;
+  },
+
+  // Update progress UI
+  updateProgress() {
+    const pct = this.confidence();
+    const bar = document.getElementById('_cert_bar_fill');
+    const txt = document.getElementById('_cert_confidence');
+    const lvl = document.getElementById('_cert_level_text');
+    if(bar) bar.style.width = pct + '%';
+    if(txt) txt.textContent = pct + '%';
+    if(lvl) {
+      const lv = this.level();
+      lvl.textContent = lv===0?'Keep exploring...':
+        lv===1?'🥉 Foundation unlocked — take the quiz!':
+        lv===2?'🥈 Proficiency unlocked — take the quiz!':
+        '🥇 Competent unlocked — take the quiz!';
+      lvl.style.color = lv===0?'#475569':lv===1?'#d97706':lv===2?'#94a3b8':'#b8860b';
+    }
+    // Check if new level unlocked
+    if(this.level() > 0) {
+      this.showLevelNotification();
+    }
+  },
+
+  lastNotifiedLevel: 0,
+  showLevelNotification() {
+    const lv = this.level();
+    if(lv > this.lastNotifiedLevel) {
+      this.lastNotifiedLevel = lv;
+      const msgs = ['','🥉 Foundation quiz unlocked!','🥈 Proficiency quiz unlocked!','🥇 Competent quiz unlocked!'];
+      showCertToast(msgs[lv], lv===3?'#b8860b':lv===2?'#94a3b8':'#d97706');
+    }
+  },
+
+  // Start time tracker
+  startTimeTracker() {
+    setInterval(() => {
+      const mins = (Date.now() - this.startTime) / 60000;
+      if(mins >= 20) this.mark('B10');
+    }, 30000); // check every 30 sec
+  },
+
+  // Called after every analysis run
+  onAnalysis(res, currentS) {
+    this.analysisCount++;
+    if(this.analysisCount >= 3) this.mark('B9');
+
+    // Check for failures
+    const hasFailure = (res.allBeams||[]).some(b=>!b.deflOK||!b.shearSafe) ||
+                       (res.allCols||[]).some(c=>!c.safe) ||
+                       (res.allFtgs||[]).some(f=>!f.punch_ok||!f.ow_ok);
+
+    if(hasFailure) {
+      this.mark('B3');
+      this.prevHadFailure = true;
+    } else if(this.prevHadFailure) {
+      // Had failure before, now fixed
+      this.mark('B4');
+      this.prevHadFailure = false;
+    }
+
+    // Check seismic zone change
+    if(this.prevSeismicZone !== null && this.prevSeismicZone !== currentS.seismicZone) {
+      this.mark('B1');
+    }
+    this.prevSeismicZone = currentS.seismicZone;
+
+    // Check material change
+    if((this.prevFck !== null && this.prevFck !== currentS.fck) ||
+       (this.prevFy  !== null && this.prevFy  !== currentS.fy)) {
+      this.mark('B2');
+    }
+    this.prevFck = currentS.fck;
+    this.prevFy  = currentS.fy;
+
+    // Check span change after results
+    const spanKey = (currentS.spansX||[]).join(',') + (currentS.spansY||[]).join(',');
+    if(this.prevSpans !== null && this.prevSpans !== spanKey && this.analysisCount > 1) {
+      this.mark('B7');
+    }
+    this.prevSpans = spanKey;
+  },
+
+  // Called when report tab is opened
+  onTab(tabName) {
+    if(tabName === 'beams') this.mark('B5');
+    if(tabName === 'columns') this.mark('B6');
+  },
+
+  // Called when bay type changed
+  onBayChange(type) {
+    if(type === 'staircase' || type === 'void') this.mark('B8');
+  },
+};
+
+// ── QUIZ STATE ────────────────────────────────────────────────
+const _QZ = {
+  active: false,
+  level: 0,
+  questions: [],
+  current: 0,
+  answers: [],
+  timeLeft: 0,
+  timer: null,
+  tabWarnings: 0,
+  fullscreenWarnings: 0,
+  violations: [],
+
+  timeLimits: { 1:12*60, 2:20*60, 3:35*60 },
+  questionCounts: { 1:15, 2:20, 3:25 },
+  passMark: { 1:10, 2:13, 3:18 },
+
+  // Get random questions for level
+  getQuestions(level) {
+    const pool = QB['L'+level];
+    const count = this.questionCounts[level];
+    const shuffled = [...pool].sort(()=>Math.random()-0.5);
+    return shuffled.slice(0, count).map(q => ({
+      ...q,
+      // Shuffle options too
+      shuffled: (() => {
+        const idxs = [0,1,2,3].sort(()=>Math.random()-0.5);
+        return {
+          opts: idxs.map(i=>q.opts[i]),
+          correctIdx: idxs.indexOf(q.ans)
+        };
+      })()
+    }));
+  },
+
+  logViolation(type) {
+    this.violations.push({ type, time: new Date().toISOString(), q: this.current });
+  }
+};
+
+// ── COOLDOWN MANAGEMENT ───────────────────────────────────────
+function getCooldownKey(level) { return `slp_quiz_cd_${level}`; }
+function getCooldownHours(level, attempt) {
+  if(level===1) return 24;
+  if(level===2) return 48;
+  return 72;
+}
+function getAttempts(level) {
+  return parseInt(localStorage.getItem(`slp_quiz_att_${level}`)||'0');
+}
+function setAttempts(level, n) { localStorage.setItem(`slp_quiz_att_${level}`, n); }
+function getMaxAttempts(level) { return level===1?3:level===2?3:2; }
+function getCooldownEnd(level) {
+  const v = localStorage.getItem(getCooldownKey(level));
+  return v ? parseInt(v) : 0;
+}
+function setCooldown(level) {
+  const att = getAttempts(level);
+  const hrs = getCooldownHours(level, att);
+  const end = Date.now() + hrs*3600*1000;
+  localStorage.setItem(getCooldownKey(level), end);
+}
+function isCoolingDown(level) { return Date.now() < getCooldownEnd(level); }
+
+// ── CERTIFICATE GENERATION ────────────────────────────────────
+function generateCertId(level) {
+  const prefix = level===1?'F':level===2?'P':'C';
+  const year = new Date().getFullYear();
+  const rand = Math.floor(10000 + Math.random()*90000);
+  return `SLP-${prefix}-${year}-${rand.toString().padStart(5,'0')}`;
+}
+
+function saveCertificate(level, certId, userName) {
+  // Save to localStorage (would go to Supabase in full version)
+  const certs = JSON.parse(localStorage.getItem('slp_certs')||'[]');
+  const cert = {
+    id: certId,
+    level,
+    userName,
+    date: new Date().toISOString(),
+    valid: true,
+  };
+  certs.push(cert);
+  localStorage.setItem('slp_certs', JSON.stringify(certs));
+
+  // Save to Supabase if available
+  if(typeof db !== 'undefined' && typeof U !== 'undefined' && U) {
+    db.from('certificates').insert({
+      cert_id: certId,
+      user_id: U.id,
+      student_name: userName,
+      level: level===1?'foundation':level===2?'proficiency':'competent',
+      issued_date: new Date().toISOString(),
+      is_valid: true,
+    }).then(()=>{}).catch(()=>{});
+  }
+  return cert;
+}
+
+function getCertColors(level) {
+  if(level===1) return { primary:'#d97706', secondary:'#92400e', bg:'#fafaf9', accent:'#f59e0b', text:'#1c1917' };
+  if(level===2) return { primary:'#64748b', secondary:'#334155', bg:'#f8fafc', accent:'#94a3b8', text:'#0f172a' };
+  return { primary:'#b8860b', secondary:'#7f1d1d', bg:'#fefdf5', accent:'#d4a843', text:'#1a0a00' };
+}
+
+function getCertTitle(level) {
+  return level===1?'Certificate of Foundation':
+         level===2?'Certificate of Proficiency':
+         'Certificate of Competence';
+}
+
+function getCertSubtitle(level) {
+  return level===1?'IS 456 Structural Design — Foundation Level':
+         level===2?'Reinforced Concrete Structural Design — Proficiency Level':
+         'Reinforced Concrete Structural Design · Indian Standards — Full Competence';
+}
+
+function getCertBody(level) {
+  return level===1?
+    'for completing the foundational level of the StructLearn Pro Structural Design Training Program and demonstrating basic understanding of IS 456:2000 reinforced concrete design principles.':
+    level===2?
+    'for demonstrating proficiency in reinforced concrete structural design, including iterative design optimization, seismic analysis per IS 1893, and member design following IS 456 and IS 13920.':
+    'for successfully demonstrating full competence in the design of Reinforced Concrete Structures following Indian Standards, including seismic analysis, ductile detailing, structural member design, and complete construction documentation.';
+}
+
+function getCertCodes(level) {
+  if(level===1) return ['IS 456:2000','IS 1893:2016','IS 875:2015'];
+  if(level===2) return ['IS 456:2000','IS 1893:2016','IS 875:2015','IS 13920:2016'];
+  return ['IS 456:2000','IS 1893:2016','IS 875:2015','IS 13920:2016','SP 34:1987'];
+}
+
+function getMedalEmoji(level) { return level===1?'🥉':level===2?'🥈':'🥇'; }
+
+function buildCertificateSVG(level, certId, userName, dateStr) {
+  const c = getCertColors(level);
+  const title = getCertTitle(level);
+  const subtitle = getCertSubtitle(level);
+  const body = getCertBody(level);
+  const codes = getCertCodes(level);
+  const medal = getMedalEmoji(level);
+  const verifyURL = `${window.location.origin}/verify.html?id=${certId}`;
+
+  // Build QR code as data URL using qrcode library
+  // We'll use a simple QR placeholder — real QR needs the library
+  const qrPlaceholder = `<text x="815" y="480" font-size="7" fill="${c.primary}" font-family="monospace" text-anchor="middle">${certId}</text>
+    <text x="815" y="492" font-size="6" fill="${c.secondary}" font-family="sans-serif" text-anchor="middle">Scan to verify</text>`;
+
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1123" height="794" viewBox="0 0 1123 794">
+  <!-- Background -->
+  <rect width="1123" height="794" fill="${c.bg}"/>
+  ${level===3?`
+  <radialGradient id="bgGlow" cx="50%" cy="50%" r="60%">
+    <stop offset="0%" stop-color="#f59e0b" stop-opacity="0.06"/>
+    <stop offset="100%" stop-color="${c.bg}" stop-opacity="0"/>
+  </radialGradient>
+  <rect width="1123" height="794" fill="url(#bgGlow)"/>
+  `:''}
+
+  <!-- Top band -->
+  <rect x="0" y="0" width="1123" height="${level===3?10:7}"
+    fill="${c.secondary}"/>
+  ${level===3?`<rect x="0" y="0" width="1123" height="10"
+    fill="url(#topBand)"/>
+  <linearGradient id="topBand" x1="0" y1="0" x2="1" y2="0">
+    <stop offset="0%" stop-color="#7f1d1d"/>
+    <stop offset="25%" stop-color="#b45309"/>
+    <stop offset="50%" stop-color="#f59e0b"/>
+    <stop offset="75%" stop-color="#b45309"/>
+    <stop offset="100%" stop-color="#7f1d1d"/>
+  </linearGradient>`:''}
+
+  <!-- Bottom band -->
+  <rect x="0" y="${794-7}" width="1123" height="7" fill="${c.secondary}"/>
+
+  <!-- Left/Right bars (level 2 only) -->
+  ${level===2?`
+  <rect x="0" y="0" width="8" height="794" fill="url(#sideBand)"/>
+  <rect x="1115" y="0" width="8" height="794" fill="url(#sideBand)"/>
+  <linearGradient id="sideBand" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0%" stop-color="#334155"/>
+    <stop offset="50%" stop-color="#94a3b8"/>
+    <stop offset="100%" stop-color="#334155"/>
+  </linearGradient>`:''}
+
+  <!-- Level 4: corner ornaments -->
+  ${level===3?`
+  <g stroke="${c.primary}" stroke-width="1.5" fill="none">
+    <line x1="10" y1="18" x2="10" y2="70"/>
+    <line x1="18" y1="10" x2="70" y2="10"/>
+    <circle cx="10" cy="10" r="5" fill="${c.primary}"/>
+    <line x1="10" y1="30" x2="30" y2="10" stroke="${c.accent}" stroke-width="0.5"/>
+    <line x1="10" y1="50" x2="50" y2="10" stroke="${c.accent}" stroke-width="0.5"/>
+  </g>
+  <g stroke="${c.primary}" stroke-width="1.5" fill="none" transform="translate(1123,0) scale(-1,1)">
+    <line x1="10" y1="18" x2="10" y2="70"/>
+    <line x1="18" y1="10" x2="70" y2="10"/>
+    <circle cx="10" cy="10" r="5" fill="${c.primary}"/>
+  </g>
+  <g stroke="${c.primary}" stroke-width="1.5" fill="none" transform="translate(0,794) scale(1,-1)">
+    <line x1="10" y1="18" x2="10" y2="70"/>
+    <line x1="18" y1="10" x2="70" y2="10"/>
+    <circle cx="10" cy="10" r="5" fill="${c.primary}"/>
+  </g>
+  <g stroke="${c.primary}" stroke-width="1.5" fill="none" transform="translate(1123,794) scale(-1,-1)">
+    <line x1="10" y1="18" x2="10" y2="70"/>
+    <line x1="18" y1="10" x2="70" y2="10"/>
+    <circle cx="10" cy="10" r="5" fill="${c.primary}"/>
+  </g>`:''}
+
+  <!-- Outer border -->
+  <rect x="12" y="12" width="1099" height="770" fill="none"
+    stroke="${c.primary}" stroke-width="${level===3?3:2}"/>
+  <!-- Inner border -->
+  <rect x="20" y="20" width="1083" height="754" fill="none"
+    stroke="${c.primary}" stroke-width="0.8" stroke-opacity="0.4"/>
+  ${level===3?`<rect x="26" y="26" width="1071" height="742" fill="none" stroke="${c.accent}" stroke-width="0.5" stroke-opacity="0.3"/>`:''}
+
+  <!-- Watermark star -->
+  <g opacity="0.04" transform="translate(562,397)">
+    <polygon points="0,-180 42,−55 171,-55 69,21 107,146 0,70 -107,146 -69,21 -171,-55 -42,-55"
+      fill="${c.primary}"/>
+  </g>
+
+  <!-- Medal badge -->
+  <text x="562" y="70" text-anchor="middle" font-size="22" font-family="sans-serif">${medal}</text>
+  <text x="562" y="90" text-anchor="middle" font-size="9" font-family="sans-serif" font-weight="700"
+    letter-spacing="4" fill="${c.secondary}" text-transform="uppercase">
+    ${level===1?'FOUNDATION CERTIFICATE':level===2?'PROFICIENCY CERTIFICATE':'COMPETENT STRUCTURAL DESIGNER'}
+  </text>
+
+  <!-- Logo -->
+  <text x="562" y="118" text-anchor="middle" font-size="11" font-family="sans-serif"
+    font-weight="700" letter-spacing="3" fill="${c.primary}">🏗 STRUCTLEARN PRO 🏗</text>
+
+  <!-- Divider line -->
+  <line x1="382" y1="130" x2="742" y2="130" stroke="${c.primary}" stroke-width="2"/>
+  <line x1="442" y1="134" x2="682" y2="134" stroke="${c.accent}" stroke-width="0.5"/>
+
+  <!-- "Presents" text -->
+  <text x="562" y="154" text-anchor="middle" font-size="9" font-family="sans-serif"
+    letter-spacing="4" fill="${c.secondary}">STRUCTURAL DESIGN TRAINING PROGRAM</text>
+
+  <!-- Certificate title -->
+  <text x="562" y="198" text-anchor="middle" font-size="36" font-family="Georgia,serif"
+    font-weight="700" fill="${c.text}">${title.split(' of ')[0]} of</text>
+  <text x="562" y="238" text-anchor="middle" font-size="42" font-family="Georgia,serif"
+    font-weight="700" fill="${c.secondary}">${title.split(' of ')[1]}</text>
+
+  <!-- Subtitle -->
+  <text x="562" y="262" text-anchor="middle" font-size="9" font-family="sans-serif"
+    letter-spacing="2" fill="${c.primary}">${subtitle}</text>
+
+  <!-- "Awarded to" -->
+  <text x="562" y="298" text-anchor="middle" font-size="10" font-family="sans-serif"
+    letter-spacing="2" fill="${c.secondary}">THIS CERTIFICATE IS PROUDLY AWARDED TO</text>
+
+  <!-- Student name -->
+  <text x="562" y="348" text-anchor="middle" font-size="52" font-family="Georgia,serif"
+    font-style="italic" font-weight="700" fill="${c.text}">${userName}</text>
+
+  <!-- Name underline -->
+  <line x1="212" y1="362" x2="912" y2="362" stroke="${c.accent}" stroke-width="2"/>
+  <line x1="262" y1="366" x2="862" y2="366" stroke="${c.primary}" stroke-width="0.5"/>
+
+  <!-- Body text (wrapped manually) -->
+  <text x="562" y="398" text-anchor="middle" font-size="12" font-family="Georgia,serif"
+    fill="#3d3020" width="700">${body.slice(0,80)}</text>
+  <text x="562" y="416" text-anchor="middle" font-size="12" font-family="Georgia,serif"
+    fill="#3d3020">${body.slice(80,160)}</text>
+  <text x="562" y="434" text-anchor="middle" font-size="12" font-family="Georgia,serif"
+    fill="#3d3020">${body.slice(160)}</text>
+
+  <!-- IS Code badges -->
+  ${codes.map((code, i) => {
+    const totalW = codes.length * 120 + (codes.length-1)*10;
+    const startX = 562 - totalW/2;
+    const x = startX + i*130;
+    return `<rect x="${x}" y="455" width="118" height="20" rx="10" fill="none" stroke="${c.primary}" stroke-width="1"/>
+    <text x="${x+59}" y="469" text-anchor="middle" font-size="9" font-family="sans-serif"
+      font-weight="700" letter-spacing="1" fill="${c.secondary}">${code}</text>`;
+  }).join('')}
+
+  <!-- Bottom section divider -->
+  <line x1="60" y1="500" x2="1063" y2="500" stroke="${c.primary}" stroke-width="0.5" stroke-opacity="0.3"/>
+
+  <!-- Left: Signature -->
+  <text x="160" y="560" text-anchor="middle" font-size="18" font-family="Georgia,serif"
+    font-style="italic" fill="${c.text}">StructLearn Pro</text>
+  <line x1="80" y1="570" x2="240" y2="570" stroke="${c.primary}" stroke-width="1"/>
+  <text x="160" y="584" text-anchor="middle" font-size="9" font-family="sans-serif"
+    letter-spacing="1" fill="${c.secondary}">AUTHORIZED SIGNATORY</text>
+  <text x="160" y="596" text-anchor="middle" font-size="8" font-family="sans-serif"
+    fill="${c.primary}">StructLearn Pro Platform</text>
+
+  <!-- Center: Seal -->
+  <g transform="translate(502,520)">
+    <circle cx="60" cy="52" r="48" stroke="${c.primary}" stroke-width="2.5" fill="${c.bg}" fill-opacity="0.5"/>
+    <circle cx="60" cy="52" r="42" stroke="${c.primary}" stroke-width="0.5" fill="none"/>
+    <polygon points="60,14 65,34 84,34 69,46 75,66 60,54 45,66 51,46 36,34 55,34"
+      fill="${c.primary}" opacity="0.85"/>
+    <circle cx="60" cy="52" r="9" fill="${c.accent}"/>
+    <path id="sealTop" d="M 18,52 A 42,42 0 0,1 102,52" fill="none"/>
+    <path id="sealBot" d="M 102,52 A 42,42 0 0,1 18,52" fill="none"/>
+    <text font-size="7" fill="${c.secondary}" font-family="sans-serif" font-weight="700" letter-spacing="1.5">
+      <textPath href="#sealTop" startOffset="5%">
+        ${level===1?'FOUNDATION':level===2?'PROFICIENCY':'COMPETENT DESIGNER'} · CERTIFIED
+      </textPath>
+    </text>
+    <text font-size="6" fill="${c.secondary}" font-family="sans-serif" letter-spacing="1">
+      <textPath href="#sealBot" startOffset="12%">STRUCTLEARN PRO · EXCELLENCE</textPath>
+    </text>
+  </g>
+
+  <!-- Right: Certificate ID + Date + QR placeholder -->
+  <rect x="760" y="510" width="80" height="80" fill="${c.primary}" fill-opacity="0.08"
+    stroke="${c.primary}" stroke-width="1"/>
+  <text x="800" y="556" text-anchor="middle" font-size="8" font-family="sans-serif"
+    fill="${c.secondary}">QR VERIFY</text>
+  <text x="800" y="568" text-anchor="middle" font-size="6" font-family="sans-serif"
+    fill="${c.primary}">${certId}</text>
+
+  <text x="870" y="530" font-size="9" font-family="monospace" fill="${c.primary}">${certId}</text>
+  <text x="870" y="545" font-size="8" font-family="sans-serif" fill="${c.secondary}">${dateStr}</text>
+  <text x="870" y="558" font-size="7" font-family="sans-serif" fill="${c.secondary}"
+    letter-spacing="1">CERTIFICATE ID</text>
+  <text x="870" y="574" font-size="7" font-family="sans-serif" fill="${c.primary}">
+    ${verifyURL.slice(0,40)}
+  </text>
+</svg>`;
+  return svg;
+}
+
+// ── TOAST NOTIFICATION ────────────────────────────────────────
+function showCertToast(msg, color='#b8860b') {
+  let t = document.getElementById('_cert_toast');
+  if(!t) {
+    t = document.createElement('div');
+    t.id = '_cert_toast';
+    t.style.cssText = 'position:fixed;top:70px;right:16px;padding:12px 18px;border-radius:10px;font-size:12px;font-weight:700;font-family:sans-serif;z-index:99999;transition:all 0.3s;opacity:0;transform:translateX(100px);max-width:280px;line-height:1.5;background:#0d1526;border:2px solid;';
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  t.style.borderColor = color;
+  t.style.color = color;
+  t.style.opacity = '1';
+  t.style.transform = 'translateX(0)';
+  setTimeout(()=>{ t.style.opacity='0'; t.style.transform='translateX(100px)'; }, 5000);
+}
+
+// ── LEARNING JOURNEY PANEL ────────────────────────────────────
+function buildLearningPanel() {
+  const panel = document.createElement('div');
+  panel.id = '_cert_panel';
+  panel.style.cssText = `
+    position:fixed;bottom:16px;right:16px;
+    width:220px;background:#0d1526;
+    border:1px solid #1e3a8a;border-radius:10px;
+    padding:12px;z-index:9000;font-family:sans-serif;
+    transition:all 0.3s;
+  `;
+
+  const hints = [
+    "💡 Try changing the seismic zone and observe how column sizes change",
+    "💡 What happens when a beam fails? Try fixing it by adjusting inputs",
+    "💡 Add a staircase bay and see how adjacent beams are affected",
+    "💡 Change concrete grade from M25 to M30 — compare the differences",
+    "💡 Try designing a building in Zone V — the highest seismic zone",
+    "💡 Run the analysis, note the results, change a span, run again",
+    "💡 Open the Columns tab — explore the floor-by-floor summary",
+    "💡 Look at the Safety tab — all checks in one place",
+  ];
+  let hintIdx = 0;
+
+  panel.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <div style="font-size:11px;font-weight:700;color:#38bdf8">🎓 Learning Journey</div>
+      <button id="_cert_panel_toggle" onclick="toggleCertPanel()"
+        style="background:none;border:none;color:#475569;cursor:pointer;font-size:14px;padding:0">−</button>
+    </div>
+
+    <div style="margin-bottom:8px">
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+        <span style="font-size:10px;color:#475569">Design Confidence</span>
+        <span id="_cert_confidence" style="font-size:11px;font-weight:700;color:#38bdf8">0%</span>
+      </div>
+      <div style="height:6px;background:#1e293b;border-radius:3px;overflow:hidden">
+        <div id="_cert_bar_fill" style="height:100%;width:0%;background:linear-gradient(90deg,#1d4ed8,#38bdf8);border-radius:3px;transition:width 0.5s"></div>
+      </div>
+    </div>
+
+    <div id="_cert_level_text" style="font-size:10px;color:#475569;margin-bottom:10px">Keep exploring...</div>
+
+    <div id="_cert_hint" style="font-size:10px;color:#64748b;line-height:1.5;padding:8px;background:#060f1f;border-radius:6px;margin-bottom:10px;min-height:52px">
+      ${hints[0]}
+    </div>
+
+    <button onclick="openCertHub()"
+      style="width:100%;padding:7px;background:linear-gradient(135deg,#1d4ed8,#2563eb);border:none;border-radius:6px;color:white;font-size:10px;font-weight:700;cursor:pointer;font-family:inherit">
+      🏆 View Certificates
+    </button>
+  `;
+
+  document.body.appendChild(panel);
+
+  // Rotate hints every 30 seconds
+  setInterval(()=>{
+    hintIdx = (hintIdx+1) % hints.length;
+    const el = document.getElementById('_cert_hint');
+    if(el) { el.style.opacity='0'; setTimeout(()=>{ el.textContent=hints[hintIdx]; el.style.opacity='1'; },300); }
+    el.style.transition='opacity 0.3s';
+  }, 30000);
+
+  _BT.updateProgress();
+}
+
+function toggleCertPanel() {
+  const panel = document.getElementById('_cert_panel');
+  const btn = document.getElementById('_cert_panel_toggle');
+  const content = panel.querySelectorAll('div:not(:first-child), button');
+  const isMin = btn.textContent === '+';
+  content.forEach(el => el.style.display = isMin ? '' : 'none');
+  btn.textContent = isMin ? '−' : '+';
+  panel.style.width = isMin ? '220px' : '120px';
+}
+
+// ── CERTIFICATE HUB ───────────────────────────────────────────
+function openCertHub() {
+  const old = document.getElementById('_cert_hub'); if(old) old.remove();
+  const level = _BT.level();
+  const hub = document.createElement('div');
+  hub.id = '_cert_hub';
+  hub.style.cssText = 'position:fixed;inset:0;background:rgba(0,5,20,0.92);z-index:99990;display:flex;align-items:center;justify-content:center;padding:20px;overflow-y:auto;font-family:sans-serif;';
+
+  const certs = JSON.parse(localStorage.getItem('slp_certs')||'[]');
+  const earnedLevels = certs.map(c=>c.level);
+
+  const certCards = [1,2,3].map(lv => {
+    const earned = earnedLevels.includes(lv);
+    const medal = getMedalEmoji(lv);
+    const title = lv===1?'Foundation':lv===2?'Proficiency':'Competent';
+    const color = lv===1?'#d97706':lv===2?'#94a3b8':'#b8860b';
+    const locked = lv > level;
+    const onCooldown = isCoolingDown(lv);
+    const att = getAttempts(lv);
+    const maxAtt = getMaxAttempts(lv);
+
+    let btn = '';
+    if(earned) {
+      btn = `<button onclick="showCertificate(${lv})"
+        style="width:100%;padding:8px;background:${color};border:none;border-radius:6px;color:white;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:8px">
+        ↓ Download Certificate
+      </button>`;
+    } else if(locked) {
+      btn = `<div style="text-align:center;font-size:10px;color:#334155;margin-top:8px;padding:6px;background:#060f1f;border-radius:5px">
+        🔒 Keep exploring to unlock
+      </div>`;
+    } else if(onCooldown) {
+      const hrs = Math.ceil((getCooldownEnd(lv) - Date.now())/3600000);
+      btn = `<div style="text-align:center;font-size:10px;color:#f97316;margin-top:8px;padding:6px;background:#060f1f;border-radius:5px">
+        ⏰ Cooldown: ${hrs}h remaining (${att}/${maxAtt} attempts used)
+      </div>`;
+    } else {
+      btn = `<button onclick="startQuiz(${lv})"
+        style="width:100%;padding:8px;background:linear-gradient(135deg,#1d4ed8,#2563eb);border:none;border-radius:6px;color:white;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:8px">
+        📝 Take Quiz (${att>0?`attempt ${att+1}/${maxAtt}`:'first attempt'})
+      </button>`;
+    }
+
+    return `
+    <div style="background:#0d1526;border:1.5px solid ${locked?'#1e293b':color};border-radius:10px;padding:16px;flex:1;min-width:200px;opacity:${locked?0.5:1}">
+      <div style="font-size:24px;text-align:center;margin-bottom:6px">${earned?medal:locked?'🔒':medal}</div>
+      <div style="font-size:13px;font-weight:700;color:${color};text-align:center;margin-bottom:4px">${title}</div>
+      <div style="font-size:10px;color:#475569;text-align:center;margin-bottom:10px">
+        ${lv===1?'15 questions · 12 min · Free':lv===2?'20 questions · 20 min · Pro':'25 questions · 35 min · Pro'}
+      </div>
+      <div style="font-size:10px;color:#475569;line-height:1.7">
+        ${lv===1?'Pass: 10/15 (67%)':lv===2?'Pass: 13/20 (65%)':'Pass: 18/25 (72%)'}
+      </div>
+      ${btn}
+    </div>`;
+  }).join('');
+
+  hub.innerHTML = `
+  <div style="background:#0d1526;border:2px solid #1e40af;border-radius:14px;width:100%;max-width:700px;padding:28px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+      <div style="font-size:20px;font-weight:900;color:#38bdf8">🏆 My Certificates</div>
+      <button onclick="document.getElementById('_cert_hub').remove()"
+        style="background:none;border:1px solid #334155;border-radius:6px;color:#64748b;cursor:pointer;padding:4px 10px;font-size:14px">✕</button>
+    </div>
+    <div style="font-size:11px;color:#475569;margin-bottom:20px">
+      Design Confidence: <strong style="color:#38bdf8">${_BT.confidence()}%</strong> · ${_BT.count()}/10 behaviors completed
+    </div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap">${certCards}</div>
+  </div>`;
+
+  document.body.appendChild(hub);
+}
+
+// ── SHOW CERTIFICATE ─────────────────────────────────────────
+function showCertificate(level) {
+  const certs = JSON.parse(localStorage.getItem('slp_certs')||'[]');
+  const cert = certs.filter(c=>c.level===level).pop();
+  if(!cert) return;
+
+  const old = document.getElementById('_cert_view'); if(old) old.remove();
+  const view = document.createElement('div');
+  view.id = '_cert_view';
+  view.style.cssText = 'position:fixed;inset:0;background:rgba(0,5,20,0.95);z-index:99991;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;font-family:sans-serif;overflow-y:auto;';
+
+  const dateStr = new Date(cert.date).toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'});
+  const svg = buildCertificateSVG(level, cert.id, cert.userName, dateStr);
+
+  view.innerHTML = `
+  <div style="max-width:900px;width:100%">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <div style="font-size:16px;font-weight:700;color:#38bdf8">${getMedalEmoji(level)} ${getCertTitle(level)}</div>
+      <div style="display:flex;gap:8px">
+        <button onclick="downloadCert(${level})"
+          style="padding:8px 18px;background:#1d4ed8;border:none;border-radius:6px;color:white;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">
+          ↓ Download PDF
+        </button>
+        <button onclick="document.getElementById('_cert_view').remove()"
+          style="padding:8px 14px;background:transparent;border:1px solid #334155;border-radius:6px;color:#64748b;cursor:pointer;font-size:12px;font-family:inherit">✕</button>
+      </div>
+    </div>
+    <div style="background:white;border-radius:8px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.5)">
+      ${svg}
+    </div>
+    <div style="text-align:center;margin-top:12px;font-size:11px;color:#475569">
+      Certificate ID: <strong style="color:#38bdf8;font-family:monospace">${cert.id}</strong> ·
+      Verify at: <strong style="color:#38bdf8">${window.location.origin}/verify.html?id=${cert.id}</strong>
+    </div>
+  </div>`;
+
+  document.body.appendChild(view);
+}
+
+// ── QUIZ ENGINE ───────────────────────────────────────────────
+function startQuiz(level) {
+  if(isCoolingDown(level)) { showCertToast('Quiz on cooldown. Try later.','#f87171'); return; }
+  const att = getAttempts(level);
+  if(att >= getMaxAttempts(level)) { showCertToast('Max attempts reached. Cooldown in effect.','#f87171'); return; }
+
+  // Check if pro required
+  if(level >= 2 && typeof _userPlan !== 'undefined' && _userPlan !== 'pro') {
+    showCertToast('Level 2 & 3 certificates require Pro plan.','#f59e0b');
+    if(typeof showUp === 'function') showUp();
+    return;
+  }
+
+  _QZ.active = true;
+  _QZ.level = level;
+  _QZ.questions = _QZ.getQuestions(level);
+  _QZ.current = 0;
+  _QZ.answers = new Array(_QZ.questions.length).fill(-1);
+  _QZ.timeLeft = _QZ.timeLimits[level];
+  _QZ.tabWarnings = 0;
+  _QZ.violations = [];
+
+  // Close hub
+  const hub = document.getElementById('_cert_hub'); if(hub) hub.remove();
+  const certView = document.getElementById('_cert_view'); if(certView) certView.remove();
+
+  renderQuiz();
+  enterFullscreen();
+  startQuizTimer();
+  startTabDetection();
+}
+
+function renderQuiz() {
+  const old = document.getElementById('_quiz_screen'); if(old) old.remove();
+  const qs = _QZ.questions;
+  const ci = _QZ.current;
+  const q = qs[ci];
+  const level = _QZ.level;
+  const color = level===1?'#d97706':level===2?'#94a3b8':'#b8860b';
+  const pct = Math.round(((ci)/_QZ.questionCounts[level])*100);
+
+  const screen = document.createElement('div');
+  screen.id = '_quiz_screen';
+  screen.style.cssText = `
+    position:fixed;inset:0;background:#040812;z-index:99999;
+    display:flex;flex-direction:column;
+    font-family:'Segoe UI',sans-serif;
+    user-select:none;-webkit-user-select:none;
+  `;
+
+  // Disable right click
+  screen.oncontextmenu = e => e.preventDefault();
+
+  const mins = Math.floor(_QZ.timeLeft/60).toString().padStart(2,'0');
+  const secs = (_QZ.timeLeft%60).toString().padStart(2,'0');
+  const timeColor = _QZ.timeLeft < 60?'#f87171':_QZ.timeLeft < 180?'#f59e0b':color;
+
+  screen.innerHTML = `
+  <!-- Quiz Header -->
+  <div style="background:#0d1526;border-bottom:1px solid #1e293b;padding:10px 20px;display:flex;justify-content:space-between;align-items:center">
+    <div style="display:flex;align-items:center;gap:12px">
+      <div style="font-size:13px;font-weight:700;color:${color}">${getMedalEmoji(level)} Level ${level} Quiz</div>
+      <div style="font-size:11px;color:#475569">Question ${ci+1} of ${qs.length}</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:16px">
+      <div id="_quiz_timer" style="font-size:18px;font-weight:900;color:${timeColor};font-family:monospace">${mins}:${secs}</div>
+      <div style="font-size:10px;color:#475569">${_QZ.tabWarnings > 0 ? `⚠ ${_QZ.tabWarnings} warning(s)`:''}</div>
+    </div>
+  </div>
+
+  <!-- Progress bar -->
+  <div style="height:3px;background:#1e293b">
+    <div style="height:100%;width:${pct}%;background:${color};transition:width 0.3s"></div>
+  </div>
+
+  <!-- Topic -->
+  <div style="padding:8px 24px;background:#060f1f;border-bottom:1px solid #0f1a2e">
+    <span style="font-size:10px;color:#334155;font-weight:700;text-transform:uppercase;letter-spacing:2px">Topic: ${q.topic}</span>
+  </div>
+
+  <!-- Question -->
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;padding:24px 40px;max-width:760px;margin:0 auto;width:100%">
+    <div style="font-size:16px;color:#f1f5f9;line-height:1.7;margin-bottom:28px;font-weight:500">
+      ${q.q}
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:10px">
+      ${q.shuffled.opts.map((opt, i) => {
+        const selected = _QZ.answers[ci] === i;
+        return `<button onclick="selectAnswer(${i})"
+          style="text-align:left;padding:14px 18px;border-radius:8px;cursor:pointer;font-size:13px;font-family:inherit;
+          border:1.5px solid ${selected?color:'#1e3a8a'};
+          background:${selected?`rgba(${level===1?'217,119,6':level===2?'100,116,139':'184,134,11'},0.15)`:'rgba(30,58,138,0.15)'};
+          color:${selected?color:'#94a3b8'};
+          transition:all 0.15s;">
+          <span style="display:inline-block;width:22px;height:22px;border-radius:50%;
+            border:2px solid ${selected?color:'#334155'};margin-right:12px;vertical-align:middle;
+            background:${selected?color:'transparent'};transition:all 0.15s;"></span>
+          ${String.fromCharCode(65+i)}. ${opt}
+        </button>`;
+      }).join('')}
+    </div>
+  </div>
+
+  <!-- Navigation -->
+  <div style="padding:16px 40px;background:#0d1526;border-top:1px solid #1e293b;display:flex;justify-content:space-between;align-items:center">
+    <button onclick="quizNav(-1)" ${ci===0?'disabled':''} style="padding:9px 20px;border-radius:7px;border:1px solid #334155;background:transparent;color:${ci===0?'#1e293b':'#94a3b8'};cursor:${ci===0?'default':'pointer'};font-size:12px;font-family:inherit">← Previous</button>
+
+    <div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:center;max-width:400px">
+      ${qs.map((_,i)=>`<div onclick="jumpToQ(${i})"
+        style="width:22px;height:22px;border-radius:4px;cursor:pointer;font-size:9px;display:flex;align-items:center;justify-content:center;font-weight:700;
+        background:${i===ci?color:_QZ.answers[i]>=0?'rgba(52,211,153,0.2)':'#0f172a'};
+        border:1px solid ${i===ci?color:_QZ.answers[i]>=0?'#34d399':'#1e293b'};
+        color:${i===ci?'white':_QZ.answers[i]>=0?'#34d399':'#334155'}">${i+1}</div>`).join('')}
+    </div>
+
+    ${ci < qs.length-1
+      ? `<button onclick="quizNav(1)" style="padding:9px 20px;border-radius:7px;border:none;background:${color};color:white;cursor:pointer;font-size:12px;font-weight:700;font-family:inherit">Next →</button>`
+      : `<button onclick="submitQuiz()" style="padding:9px 20px;border-radius:7px;border:none;background:#15803d;color:white;cursor:pointer;font-size:12px;font-weight:700;font-family:inherit">Submit Quiz ✓</button>`
+    }
+  </div>`;
+
+  document.body.appendChild(screen);
+}
+
+function selectAnswer(idx) {
+  _QZ.answers[_QZ.current] = idx;
+  renderQuiz();
+}
+function quizNav(dir) { _QZ.current += dir; renderQuiz(); }
+function jumpToQ(idx) { _QZ.current = idx; renderQuiz(); }
+
+function startQuizTimer() {
+  if(_QZ.timer) clearInterval(_QZ.timer);
+  _QZ.timer = setInterval(()=>{
+    _QZ.timeLeft--;
+    const el = document.getElementById('_quiz_timer');
+    if(el) {
+      const m = Math.floor(_QZ.timeLeft/60).toString().padStart(2,'0');
+      const s = (_QZ.timeLeft%60).toString().padStart(2,'0');
+      el.textContent = m+':'+s;
+      el.style.color = _QZ.timeLeft<60?'#f87171':_QZ.timeLeft<180?'#f59e0b':'inherit';
+    }
+    if(_QZ.timeLeft <= 0) {
+      clearInterval(_QZ.timer);
+      showCertToast('⏰ Time is up! Submitting quiz...','#f87171');
+      setTimeout(submitQuiz, 1500);
+    }
+  }, 1000);
+}
+
+function startTabDetection() {
+  document.addEventListener('visibilitychange', handleTabSwitch);
+}
+function handleTabSwitch() {
+  if(!_QZ.active) return;
+  if(document.hidden) {
+    _QZ.tabWarnings++;
+    _QZ.logViolation('tab_switch');
+    if(_QZ.tabWarnings === 1) {
+      showCertToast('⚠️ Warning: You left the quiz tab! 30 seconds deducted.','#f87171');
+      _QZ.timeLeft = Math.max(0, _QZ.timeLeft - 30);
+    } else {
+      showCertToast('❌ Second violation: Quiz auto-submitted!','#f87171');
+      setTimeout(submitQuiz, 1500);
+    }
+    renderQuiz();
+  }
+}
+
+function enterFullscreen() {
+  const el = document.documentElement;
+  if(el.requestFullscreen) el.requestFullscreen().catch(()=>{});
+  document.addEventListener('fullscreenchange', handleFullscreenChange);
+}
+function handleFullscreenChange() {
+  if(!_QZ.active || document.fullscreenElement) return;
+  _QZ.fullscreenWarnings++;
+  _QZ.logViolation('fullscreen_exit');
+  showCertToast('⚠️ Please stay in fullscreen during the quiz!','#f59e0b');
+  if(_QZ.fullscreenWarnings > 2) {
+    showCertToast('❌ Repeated fullscreen exits: Quiz auto-submitted!','#f87171');
+    setTimeout(submitQuiz, 1500);
+  }
+}
+
+function submitQuiz() {
+  if(!_QZ.active) return;
+  clearInterval(_QZ.timer);
+  _QZ.active = false;
+  document.removeEventListener('visibilitychange', handleTabSwitch);
+  document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  if(document.exitFullscreen && document.fullscreenElement) document.exitFullscreen();
+
+  // Score
+  const qs = _QZ.questions;
+  let score = 0;
+  qs.forEach((q, i) => {
+    if(_QZ.answers[i] === q.shuffled.correctIdx) score++;
+  });
+
+  const pass = score >= _QZ.passMark[_QZ.level];
+  const level = _QZ.level;
+
+  // Update attempts
+  const att = getAttempts(level) + 1;
+  setAttempts(level, att);
+  if(!pass) setCooldown(level);
+
+  showQuizResult(score, qs.length, pass, level, att);
+}
+
+function showQuizResult(score, total, pass, level, attempts) {
+  const old = document.getElementById('_quiz_screen'); if(old) old.remove();
+  const color = level===1?'#d97706':level===2?'#94a3b8':'#b8860b';
+  const pct = Math.round((score/total)*100);
+
+  const result = document.createElement('div');
+  result.id = '_quiz_result';
+  result.style.cssText = 'position:fixed;inset:0;background:#040812;z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;font-family:sans-serif;';
+
+  let certSection = '';
+  if(pass) {
+    // Generate certificate
+    const userName = (typeof P !== 'undefined' && P?.full_name) || 'Student';
+    const certId = generateCertId(level);
+    saveCertificate(level, certId, userName);
+    certSection = `
+    <div style="margin-top:16px;padding:14px;background:rgba(${level===1?'217,119,6':level===2?'100,116,139':'184,134,11'},0.1);border:1px solid ${color};border-radius:8px;text-align:center">
+      <div style="font-size:13px;font-weight:700;color:${color};margin-bottom:4px">${getMedalEmoji(level)} Certificate Generated!</div>
+      <div style="font-size:11px;color:#64748b;margin-bottom:10px">ID: <span style="font-family:monospace;color:${color}">${certId}</span></div>
+      <button onclick="showCertificate(${level});document.getElementById('_quiz_result').remove()"
+        style="padding:8px 20px;background:${color};border:none;border-radius:6px;color:white;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">
+        ↓ Download Certificate
+      </button>
+    </div>`;
+  }
+
+  const maxAtt = getMaxAttempts(level);
+  const attLeft = pass ? 0 : maxAtt - attempts;
+  const cooldownHrs = pass ? 0 : getCooldownHours(level, attempts);
+
+  result.innerHTML = `
+  <div style="background:#0d1526;border:2px solid ${pass?'#15803d':'#991b1b'};border-radius:14px;padding:32px;max-width:480px;width:100%;text-align:center">
+    <div style="font-size:48px;margin-bottom:12px">${pass?'🎉':'😔'}</div>
+    <div style="font-size:22px;font-weight:900;color:${pass?'#34d399':'#f87171'};margin-bottom:6px">
+      ${pass?'Quiz Passed!':'Quiz Not Passed'}
+    </div>
+    <div style="font-size:32px;font-weight:900;color:${color};margin-bottom:4px">${score}/${total}</div>
+    <div style="font-size:13px;color:#64748b;margin-bottom:16px">${pct}% · Pass mark: ${Math.round((_QZ.passMark[level]/total)*100)}%</div>
+    ${pass?'':`
+    <div style="font-size:11px;color:#f87171;margin-bottom:12px;padding:10px;background:rgba(248,113,113,0.08);border-radius:6px">
+      ${attLeft > 0
+        ? `You have ${attLeft} attempt(s) remaining before ${cooldownHrs}hr cooldown.`
+        : `Cooldown started: ${cooldownHrs} hours before next attempt. Use this time to study!`}
+    </div>`}
+    ${certSection}
+    ${!pass?`
+    <div style="margin-top:14px;font-size:11px;color:#475569;line-height:1.6">
+      💡 Review the report tabs carefully, especially the WHY? buttons.<br>
+      The questions are based on what the app shows and explains.
+    </div>`:''}
+    <button onclick="document.getElementById('_quiz_result').remove();openCertHub()"
+      style="width:100%;margin-top:16px;padding:10px;border:1px solid #334155;border-radius:7px;background:transparent;color:#94a3b8;cursor:pointer;font-size:12px;font-family:inherit">
+      Back to Certificate Hub
+    </button>
+  </div>`;
+
+  document.body.appendChild(result);
+}
+
+// ── DOWNLOAD CERT AS PNG ─────────────────────────────────────
+function downloadCert(level) {
+  const certs = JSON.parse(localStorage.getItem('slp_certs')||'[]');
+  const cert = certs.filter(c=>c.level===level).pop();
+  if(!cert) return;
+  const dateStr = new Date(cert.date).toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'});
+  const svg = buildCertificateSVG(level, cert.id, cert.userName, dateStr);
+  const blob = new Blob([svg], {type:'image/svg+xml'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `StructLearnPro_${cert.id}.svg`;
+  a.click(); URL.revokeObjectURL(url);
+  showCertToast('Certificate downloaded as SVG! Open in browser to print as PDF.', '#34d399');
+}
+
+// ── INIT ─────────────────────────────────────────────────────
+(function initCertSystem(){
+  // Wait for DOM
+  window.addEventListener('load', () => {
+    setTimeout(() => {
+      buildLearningPanel();
+      _BT.startTimeTracker();
+    }, 2000);
+  });
+})();
+
+
+// Hook into existing functions
+// Intercept go() to track tab views
+const _origGo = go;
+function go(n) {
+  _origGo(n);
+  const tabNames = ['','project','plan','loads','materials','soil','run','full-report','summary','parametric','discussion','cross','joint','improvements','advanced','pm','continuous','seismic-drift','slab-edge','retaining','fire','reference'];
+  if(n === 7) _BT.onTab('overview');
+}
+
+// Hook report tab clicks
+const _origShowSec = typeof showSec === 'function' ? showSec : null;
+if(_origShowSec) {
+  window.showSec = function(tab) {
+    _origShowSec(tab);
+    _BT.onTab(tab);
+  };
+}
+
+// Hook bay type changes
+const _origSetBayType = typeof setBayType === 'function' ? setBayType : null;
+if(_origSetBayType) {
+  window.setBayType = function(row, col, type) {
+    _origSetBayType(row, col, type);
+    _BT.onBayChange(type);
+  };
+}
+
+// Hook runNow to track analysis
+const _origRunNow = typeof runNow === 'function' ? runNow : null;
+if(_origRunNow) {
+  window.runNow = function() {
+    _origRunNow();
+    setTimeout(() => {
+      if(typeof RES !== 'undefined' && RES) {
+        _BT.onAnalysis(RES, S);
+      }
+    }, 1500);
+  };
+}
 </script>
 </body>
 </html>

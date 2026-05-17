@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Verify Certificate — StructLearn Pro</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Segoe UI',sans-serif;background:#0a0f1e;color:#f1f5f9;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;}
+.card{background:#0d1526;border-radius:14px;padding:40px;max-width:480px;width:100%;text-align:center;}
+.icon{font-size:56px;margin-bottom:16px;}
+.status{font-size:22px;font-weight:900;margin-bottom:8px;}
+.status.ok{color:#34d399;}
+.status.fail{color:#f87171;}
+.status.loading{color:#38bdf8;}
+.cert-id{font-family:monospace;font-size:13px;color:#38bdf8;padding:8px 16px;background:#060f1f;border-radius:6px;display:inline-block;margin:10px 0;}
+.detail-row{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #1e293b;font-size:13px;}
+.detail-row:last-child{border-bottom:none;}
+.detail-label{color:#475569;}
+.detail-val{font-weight:700;color:#f1f5f9;}
+.details-box{background:#060f1f;border-radius:8px;padding:16px;margin:20px 0;text-align:left;}
+.home-btn{display:inline-block;margin-top:20px;padding:10px 24px;background:#1d4ed8;border-radius:8px;color:white;text-decoration:none;font-size:13px;font-weight:700;}
+.badge{display:inline-flex;align-items:center;gap:6px;padding:4px 14px;border-radius:20px;font-size:11px;font-weight:700;margin-bottom:16px;}
+.badge.foundation{background:rgba(217,119,6,0.15);border:1px solid #d97706;color:#d97706;}
+.badge.proficiency{background:rgba(100,116,139,0.15);border:1px solid #94a3b8;color:#94a3b8;}
+.badge.competent{background:rgba(184,134,11,0.15);border:1px solid #b8860b;color:#b8860b;}
+</style>
+</head>
+<body>
+<div class="card" id="card">
+  <div class="icon">⏳</div>
+  <div class="status loading" id="status">Verifying certificate...</div>
+  <div style="font-size:12px;color:#475569;margin-top:8px" id="cert-id-display"></div>
+</div>
+
+<script>
+const SUPA_URL = 'https://rpjdveuxxjeoeomkwrfx.supabase.co';
+const SUPA_KEY = 'sb_publishable_L1RWkjtz41gT5sZKhRRnsw_BB3WfJWI';
+const {createClient} = supabase;
+const db = createClient(SUPA_URL, SUPA_KEY);
+
+const params = new URLSearchParams(window.location.search);
+const certId = params.get('id') || '';
+
+document.getElementById('cert-id-display').textContent = certId ? 'Certificate ID: ' + certId : 'No certificate ID provided';
+
+async function verify() {
+  if(!certId) {
+    showInvalid('No certificate ID provided in the URL.');
+    return;
+  }
+
+  // Check Supabase first
+  const {data, error} = await db.from('certificates')
+    .select('*').eq('cert_id', certId).single();
+
+  if(data && data.is_valid) {
+    showValid(data);
+    return;
+  }
+
+  // Fallback: check if format looks valid
+  if(!/^SLP-[FPC]-\d{4}-\d{5}$/.test(certId)) {
+    showInvalid('Invalid certificate ID format.');
+    return;
+  }
+
+  showInvalid('Certificate not found in our records. It may have been issued before our verification system was activated.');
+}
+
+function levelInfo(level) {
+  const map = {
+    foundation: { label:'Foundation', medal:'🥉', color:'foundation', desc:'IS 456 Structural Design — Foundation Level' },
+    proficiency: { label:'Proficiency', medal:'🥈', color:'proficiency', desc:'RC Structural Design — Proficiency Level' },
+    competent:   { label:'Competent Structural Designer', medal:'🥇', color:'competent', desc:'Full Competence — All Indian Standards' },
+  };
+  return map[level] || map['foundation'];
+}
+
+function showValid(cert) {
+  const info = levelInfo(cert.level);
+  const date = new Date(cert.issued_date).toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'});
+  document.getElementById('card').innerHTML = `
+    <div class="icon">✅</div>
+    <div class="status ok">Certificate Verified</div>
+    <div class="badge ${info.color}">${info.medal} ${info.label} Certificate</div>
+    <div class="cert-id">${cert.cert_id}</div>
+    <div class="details-box">
+      <div class="detail-row">
+        <span class="detail-label">Student Name</span>
+        <span class="detail-val">${cert.student_name}</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Certificate Level</span>
+        <span class="detail-val">${info.label}</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Description</span>
+        <span class="detail-val" style="font-size:11px">${info.desc}</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Issued Date</span>
+        <span class="detail-val">${date}</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Issued By</span>
+        <span class="detail-val">StructLearn Pro Platform</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Status</span>
+        <span class="detail-val" style="color:#34d399">✓ Valid & Authentic</span>
+      </div>
+    </div>
+    <div style="font-size:11px;color:#475569;line-height:1.6;margin-bottom:16px">
+      This certificate was issued by StructLearn Pro after the student<br>
+      successfully demonstrated competence in IS 456 structural design<br>
+      and passed the ${info.label} level quiz.
+    </div>
+    <a href="https://structlearnpro.vercel.app" class="home-btn">Visit StructLearn Pro →</a>
+  `;
+}
+
+function showInvalid(reason) {
+  document.getElementById('card').innerHTML = `
+    <div class="icon">❌</div>
+    <div class="status fail">Certificate Invalid</div>
+    <div class="cert-id">${certId||'—'}</div>
+    <div style="font-size:13px;color:#f87171;margin:16px 0;padding:12px;background:rgba(248,113,113,0.08);border-radius:8px;line-height:1.6">
+      ${reason}
+    </div>
+    <div style="font-size:11px;color:#475569;margin-bottom:16px">
+      If you believe this is an error, contact us at<br>
+      <strong style="color:#38bdf8">structlearnpro@gmail.com</strong>
+    </div>
+    <a href="https://structlearnpro.vercel.app" class="home-btn">Visit StructLearn Pro →</a>
+  `;
+}
+
+verify();
+</script>
+</body>
+</html>
