@@ -827,6 +827,15 @@ window.addEventListener('message',async(e)=>{
     }
     toast('Project saved ✓');
   }
+  if(e.data?.type==='TRACK_EVENT'){
+    trackStudentEvent(e.data.eventType, e.data.eventData);
+    return;
+  }
+  if(e.data?.type==='FLUSH_SESSION'){
+    flushStudentSession(e.data);
+    return;
+  }
+
 });
 
 // ── HELPERS ──────────────────────────────────────────────────
@@ -844,6 +853,37 @@ function toast(msg,err=false){const t=document.getElementById('toast');t.textCon
     updTop();goTo('projects');
   } else {showScreen('auth-screen');}
 })();
+
+// ── STUDENT ANALYTICS ────────────────────────────────────────
+let _currentSessionId = null;
+let _sessionData = { pageViews:{}, analysisRuns:0, failureCount:0, fixCount:0, maxFloors:0, maxZone:'II', whyClicks:0, tabsViewed:[] };
+
+async function trackStudentEvent(eventType, eventData) {
+  if(!_userProfile || !_userProfile.id) return;
+  try {
+    await db.from('student_events').insert({
+      user_id: _userProfile.id,
+      event_type: eventType,
+      event_data: eventData || {}
+    });
+  } catch(e) { console.log('Track event error', e); }
+}
+
+async function flushStudentSession(data) {
+  if(!_userProfile || !_userProfile.id) return;
+  try {
+    var today = new Date().toISOString().slice(0,10);
+    // Upsert today session
+    await db.from('student_sessions').upsert({
+      user_id: _userProfile.id,
+      session_date: today,
+      duration_minutes: data.duration || 0,
+      page_views: data.pageViews || {},
+      analysis_runs: data.analysisRuns || 0
+    }, { onConflict: 'user_id,session_date', ignoreDuplicates: false });
+  } catch(e) { console.log('Flush session error', e); }
+}
+
 </script>
 </body>
 </html>
