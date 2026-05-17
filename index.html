@@ -475,7 +475,7 @@ async function verifyOTP(){
 async function doSignup(mob){
   const {data:ex}=await db.from('profiles').select('id').eq('mobile',mob).maybeSingle();
   if(ex){await doLogin(mob);return;}
-  const fe=mob+'@sl.internal';
+  const fe='u'+mob+'@structlearnpro.com';
   const pw='SLP_'+mob+'_'+Math.random().toString(36).slice(2,10);
   // Store pw in profiles so login can use it
   const {data:au,error}=await db.auth.signUp({email:fe,password:pw});
@@ -497,7 +497,7 @@ async function doSignup(mob){
 async function doLogin(mob){
   const {data:prof}=await db.from('profiles').select('*').eq('mobile',mob).maybeSingle();
   if(!prof){setMsg('o-msg','Account not found. Please sign up.','err');return;}
-  const fe=mob+'@sl.internal';
+  const fe='u'+mob+'@structlearnpro.com';
   const pw=localStorage.getItem('slp_'+mob);
   if(!pw){setMsg('o-msg','Please use the device you signed up from, or contact support.','err');return;}
   const {data:sd,error}=await db.auth.signInWithPassword({email:fe,password:pw});
