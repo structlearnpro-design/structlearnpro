@@ -173,7 +173,17 @@ td.val{color:var(--txt);font-weight:700}td.ok{color:var(--green);font-weight:700
 let _userPlan='free', _currentProjectId=null, _platformSaveTimer=null;
 
 window.addEventListener('message',(e)=>{
-  if(e.data?.type==='USER_PLAN'){ _userPlan=e.data.plan||'free'; }
+  if(e.data?.type==='USER_PLAN'){
+    _userPlan=e.data.plan||'free';
+    // Show plan badge in app if toolbar exists
+    try {
+      const badge = document.querySelector('.plan-indicator');
+      if(badge) {
+        badge.textContent = _userPlan==='pro'?'PRO ✓':'FREE';
+        badge.style.color = _userPlan==='pro'?'#38bdf8':'#64748b';
+      }
+    } catch(e2){}
+  }
   if(e.data?.type==='LOAD_PROJECT'){
     const proj=e.data.project;
     _currentProjectId=proj.id;
@@ -199,11 +209,19 @@ function saveToParent(status){
   if(typeof S==='undefined')return;
   try{
     const nm=S.name||S.client||('Project '+new Date().toLocaleDateString('en-IN'));
+    // Auto-detect status from results
+    let autoStatus = status||'draft';
+    if(typeof RES!=='undefined'&&RES&&!status){
+      const beamFail=(RES.allBeams||[]).some(b=>!b.deflOK||!b.shearSafe);
+      const colFail =(RES.allCols||[]).some(c=>!c.safe);
+      const ftgFail =(RES.allFtgs||[]).some(f=>!f.punch_ok||!f.ow_ok);
+      autoStatus = (beamFail||colFail||ftgFail)?'fail':'pass';
+    }
     window.parent.postMessage({
       type:'SAVE_PROJECT',name:nm,
       data:{S:{...S},GRID:GRID?JSON.parse(JSON.stringify(GRID)):null},
       floors:S.numFloors||1,spansX:S.spansX||[],spansY:S.spansY||[],
-      status:status||'draft',projectId:_currentProjectId,
+      status:autoStatus,projectId:_currentProjectId,
     },'*');
   }catch(err){console.error('Save error:',err);}
 }
@@ -2779,10 +2797,10 @@ function p7(){
   <button class="btn gr" onclick="if(requirePro('PDF Report')) showPDFDialog()">↓ Download Report PDF</button>
   <button class="btn" onclick="saveProject()" style="background:linear-gradient(135deg,#065f46,#047857);border:1px solid #059669" title="Save to browser memory">💾 Save</button>
   <button class="btn" onclick="loadProject()" style="background:linear-gradient(135deg,#1e3a5f,#047857);border:1px solid #059669" title="Load from browser memory">📂 Load</button>
-  <button class="btn" onclick="exportProject()" style="background:linear-gradient(135deg,#1e3a5f,#1e40af);border:1px solid #2563eb" title="Export as JSON file">📤 Export</button>
+  <button class="btn" onclick="if(requirePro('Export Project')) exportProject()" style="background:linear-gradient(135deg,#1e3a5f,#1e40af);border:1px solid #2563eb" title="Export as JSON file">📤 Export</button>
   <button class="btn se" onclick="importProject()" title="Import from JSON file">📥 Import</button>
-      <button class="btn" onclick="showConstructionPDFDialog()" style="background:linear-gradient(135deg,#1e3a8a,#1d4ed8);border:1px solid #3b82f6;margin-left:8px">📐 Construction Drawing Package</button>
-  <button class="btn" onclick="takeSnapshot()" title="Save current design for comparison" style="background:linear-gradient(135deg,#1e3a8a,#312e81);border:1px solid #6366f1">📸 Snapshot</button>
+      <button class="btn" onclick="if(requirePro('Construction Drawings')) showConstructionPDFDialog()" style="background:linear-gradient(135deg,#1e3a8a,#1d4ed8);border:1px solid #3b82f6;margin-left:8px">📐 Construction Drawing Package</button>
+  <button class="btn" onclick="if(requirePro('Snapshot')) takeSnapshot()" title="Save current design for comparison" style="background:linear-gradient(135deg,#1e3a8a,#312e81);border:1px solid #6366f1">📸 Snapshot</button>
   <button class="btn se" onclick="go(2)"><- Edit Inputs</button>
   <button class="btn se" onclick="RES=null;go(0)">🔄 New</button>
 </div>
@@ -11435,12 +11453,14 @@ function secSnapshot() {
     Take snapshots of your current design at different stages. Compare parameters and results side-by-side to understand the effect of your design decisions.
   </div>
   <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
-    <button class="btn" onclick="takeSnapshot()" style="background:linear-gradient(135deg,#1e40af,#1d4ed8);border:1px solid #3b82f6">
+    <button class="btn" onclick="if(requirePro('Snapshot')) takeSnapshot()" style="background:linear-gradient(135deg,#1e40af,#1d4ed8);border:1px solid #3b82f6">
       📸 Take Snapshot ${RES?'':'(run analysis first)'}
     </button>
     <button class="btn se" onclick="
-      const lbl=prompt('Snapshot label:','Design v'+(_snapshots.length+1));
-      if(lbl)takeSnapshot(lbl);
+      if(requirePro('Snapshot')){
+        const lbl=prompt('Snapshot label:','Design v'+(_snapshots.length+1));
+        if(lbl)takeSnapshot(lbl);
+      }
     " style="font-size:11px">Custom Label</button>
   </div>
   <div id="snapshotPanel">${renderSnapshotPanel()}</div>

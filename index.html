@@ -313,6 +313,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
     <div class="acc-card">
       <div class="acc-ct">Subscription</div>
       <div class="acc-row"><span class="acc-lbl">Plan</span><span class="acc-val" id="a-plan">Free</span></div>
+      <div class="acc-row" id="a-expiry-row" style="display:none"><span class="acc-lbl">Valid Until</span><span class="acc-val" id="a-expiry-val">—</span></div>
       <div class="acc-row"><span class="acc-lbl">Projects</span><span class="acc-val" id="a-proj">0 used</span></div>
       <div style="margin-top:14px">
         <button class="np-btn" id="a-up-btn" onclick="showUp()">⚡ Upgrade to Pro — ₹299/month</button>
@@ -362,6 +363,35 @@ const RZP_KEY   = 'rzp_test_SqMUESMbiO37mb'; // ← paste Razorpay Key ID here w
 const FREE_LIM  = 3;
 const TEST_MODE = true;  // ← set to false when DLT template is approved
 const TEST_OTP  = '123456'; // ← test OTP code
+
+// Dynamic prices — loaded from Supabase settings table
+let PRICES = { monthly: 29900, annual: 299000, monthly_display: 299, annual_display: 2990 };
+
+async function loadPrices(){
+  try {
+    const {data} = await db.from('settings').select('*');
+    if(data) {
+      data.forEach(row => {
+        if(row.key==='price_monthly')         PRICES.monthly         = parseInt(row.value)||29900;
+        if(row.key==='price_annual')           PRICES.annual          = parseInt(row.value)||299000;
+        if(row.key==='price_monthly_display')  PRICES.monthly_display = parseInt(row.value)||299;
+        if(row.key==='price_annual_display')   PRICES.annual_display  = parseInt(row.value)||2990;
+      });
+      // Update displayed prices in upgrade modal
+      updatePriceDisplay();
+    }
+  } catch(e){}
+}
+
+function updatePriceDisplay(){
+  const pm = document.querySelector('.plan-price');
+  const pa = document.querySelectorAll('.plan-price')[1];
+  if(pm) pm.textContent = '₹'+PRICES.monthly_display;
+  if(pa) pa.textContent = '₹'+Math.round(PRICES.annual_display/12);
+  // Update upgrade button text
+  const upBtn = document.getElementById('acc-up-btn');
+  if(upBtn) upBtn.textContent = '⚡ Upgrade to Pro — ₹'+PRICES.monthly_display+'/month';
+}
 
 const {createClient} = supabase;
 const db = createClient(SUPA_URL, SUPA_KEY);
@@ -610,6 +640,20 @@ function renderAcc(){
   document.getElementById('a-email').textContent=P.email||'—';
   document.getElementById('a-pur').textContent=pmap[P.purpose]||'—';
   document.getElementById('a-plan').textContent=plan==='free'?'Free':'Pro ✓';
+  // Show expiry date
+  const expiryRow = document.getElementById('a-expiry-row');
+  const expiryVal = document.getElementById('a-expiry-val');
+  if(P?.plan_expires_at && plan==='pro'){
+    const expDate = new Date(P.plan_expires_at);
+    const daysLeft = Math.ceil((expDate-new Date())/(1000*60*60*24));
+    const isLifetime = expDate.getFullYear()>=2099;
+    if(expiryRow) expiryRow.style.display='flex';
+    if(expiryVal) expiryVal.textContent = isLifetime?'Lifetime':
+      expDate.toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'})+
+      (daysLeft>0?` (${daysLeft} days left)`:'(Expired)');
+  } else {
+    if(expiryRow) expiryRow.style.display='none';
+  }
   document.getElementById('a-proj').textContent=projects.length+(plan==='free'?' / 3 used':' projects');
   document.getElementById('a-up-btn').style.display=plan==='free'?'':'none';
 }
@@ -622,6 +666,73 @@ function selPlan(p){
   document.getElementById('po-m').classList.toggle('on',p==='monthly');
   document.getElementById('po-a').classList.toggle('on',p==='annual');
 }
+// ── COUPON SYSTEM ────────────────────────────────────────────
+let appliedCoupon = null;
+
+async function applyCoupon(){
+  const inputCode = document.getElementById('coupon-input').value.trim().toUpperCase();
+  const msg = document.getElementById('coupon-msg');
+  if(!inputCode){ msg.textContent='Enter a coupon code'; msg.style.color='#f87171'; return; }
+
+  msg.textContent = 'Checking...'; msg.style.color = '#64748b';
+
+  const now = new Date().toISOString();
+  const {data:coupons} = await db.from('coupons')
+    .select('*').eq('code', inputCode).eq('is_active', true)
+    .or(`valid_until.is.null,valid_until.gte.${now}`);
+
+  if(!coupons||!coupons.length){
+    msg.textContent = '✗ Invalid or expired coupon code'; msg.style.color='#f87171';
+    appliedCoupon = null; updatePayButton(); return;
+  }
+
+  const coupon = coupons[0];
+
+  // Check max uses
+  if(coupon.max_uses > 0 && coupon.used_count >= coupon.max_uses){
+    msg.textContent = '✗ This coupon has reached its usage limit'; msg.style.color='#f87171';
+    appliedCoupon = null; updatePayButton(); return;
+  }
+
+  // Check applies_to
+  if(coupon.applies_to!=='both' && coupon.applies_to!==selPlanId){
+    msg.textContent = `✗ This coupon only applies to ${coupon.applies_to} plan`; msg.style.color='#f87171';
+    appliedCoupon = null; updatePayButton(); return;
+  }
+
+  appliedCoupon = coupon;
+  const disc = coupon.discount_type==='percentage'
+    ? coupon.discount_value+'% off'
+    : '₹'+coupon.discount_value+' off';
+  msg.textContent = '✓ Coupon applied! '+disc; msg.style.color='#34d399';
+  updatePayButton();
+}
+
+function getDiscountedAmount(baseAmount){
+  if(!appliedCoupon) return baseAmount;
+  if(appliedCoupon.discount_type==='percentage'){
+    return Math.round(baseAmount * (1 - appliedCoupon.discount_value/100));
+  } else {
+    return Math.max(100, baseAmount - appliedCoupon.discount_value*100);
+  }
+}
+
+function updatePayButton(){
+  const baseAmt = selPlanId==='monthly'?PRICES.monthly:PRICES.annual;
+  const finalAmt = getDiscountedAmount(baseAmt);
+  const btn = document.getElementById('pay-now-btn');
+  if(!btn) return;
+  if(appliedCoupon && finalAmt < baseAmt){
+    const saved = baseAmt - finalAmt;
+    btn.textContent = `Pay ₹${finalAmt/100} (Save ₹${saved/100}) →`;
+    btn.style.background = 'linear-gradient(135deg,#065f46,#059669)';
+  } else {
+    btn.textContent = 'Pay with UPI / Card / Net Banking →';
+    btn.style.background = 'linear-gradient(135deg,#1d4ed8,#2563eb)';
+  }
+}
+
+// ── PAYMENT ───────────────────────────────────────────────────
 async function startPay(){
   if(!RZP_KEY){toast('Payment not yet configured. Coming soon!',true);return;}
   // Load Razorpay script dynamically if not already loaded
@@ -634,13 +745,34 @@ async function startPay(){
       document.head.appendChild(s);
     });
   }
-  const amt=selPlanId==='monthly'?29900:299000;
+  const baseAmt = selPlanId==='monthly'?PRICES.monthly:PRICES.annual;
+  const amt = getDiscountedAmount(baseAmt);
+  const desc = selPlanId==='monthly'?'Monthly Subscription':'Annual Subscription';
   const opts={key:RZP_KEY,amount:amt,currency:'INR',name:'StructLearn Pro',
     description:selPlanId==='monthly'?'Monthly Subscription':'Annual Subscription',
     prefill:{contact:P?.mobile?'91'+P.mobile:''},theme:{color:'#1d4ed8'},
     handler:async(r)=>{
       const exp=new Date();exp.setMonth(exp.getMonth()+(selPlanId==='monthly'?1:12));
-      await db.from('profiles').update({plan:'pro',plan_expires_at:exp.toISOString(),razorpay_payment_id:r.razorpay_payment_id}).eq('id',U.id);
+      await db.from('profiles').update({
+        plan:'pro',
+        plan_expires_at:exp.toISOString(),
+        razorpay_payment_id:r.razorpay_payment_id
+      }).eq('id',U.id);
+      // Record payment history
+      await db.from('payment_history').insert({
+        user_id:U.id,
+        razorpay_payment_id:r.razorpay_payment_id,
+        amount:amt,
+        plan:selPlanId,
+        status:'success',
+        coupon_used:appliedCoupon?appliedCoupon.code:null,
+      });
+      // Update coupon usage count
+      if(appliedCoupon){
+        await db.from('coupons').update({used_count:appliedCoupon.used_count+1}).eq('id',appliedCoupon.id);
+        await db.from('coupon_uses').insert({coupon_id:appliedCoupon.id,user_id:U.id,discount_amount:baseAmt-amt,plan:selPlanId});
+        appliedCoupon=null;
+      }
       // Refresh profile from DB to confirm update
       const {data:updProf}=await db.from('profiles').select('*').eq('id',U.id).single();
       if(updProf){P=updProf;plan=updProf.plan||'pro';}
@@ -649,7 +781,23 @@ async function startPay(){
       toast('🎉 Welcome to Pro! All features unlocked.');
       tellIframe();
     }};
-  const rzp=new window.Razorpay(opts);rzp.open();
+  opts.modal = {
+    ondismiss: function(){
+      toast('Payment cancelled. Click Upgrade to try again.', true);
+    }
+  };
+  const rzp=new window.Razorpay(opts);
+  rzp.on('payment.failed', function(response){
+    toast('Payment failed: '+response.error.description+'. Please try again.', true);
+    // Record failed payment
+    db.from('payment_history').insert({
+      user_id:U.id,
+      amount:amt,
+      plan:selPlanId,
+      status:'failed',
+    }).then(()=>{}).catch(()=>{});
+  });
+  rzp.open();
 }
 
 // ── RESEND ───────────────────────────────────────────────────
@@ -687,6 +835,7 @@ function toast(msg,err=false){const t=document.getElementById('toast');t.textCon
 
 // ── INIT ─────────────────────────────────────────────────────
 (async()=>{
+  loadPrices();
   const {data:{session}}=await db.auth.getSession();
   if(session&&session.user){
     U=session.user;
