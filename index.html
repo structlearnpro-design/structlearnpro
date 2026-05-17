@@ -360,6 +360,8 @@ const SGH_SID   = 'PLNZOT';
 const SGH_TPL   = ''; // ← paste DLT Template ID here when approved
 const RZP_KEY   = 'rzp_test_SqMUESMbiO37mb'; // ← paste Razorpay Key ID here when sister sets up
 const FREE_LIM  = 3;
+const TEST_MODE = true;  // ← set to false when DLT template is approved
+const TEST_OTP  = '123456'; // ← test OTP code
 
 const {createClient} = supabase;
 const db = createClient(SUPA_URL, SUPA_KEY);
@@ -418,6 +420,16 @@ async function sendOTP(type){
 
   btn.disabled=false;
   document.getElementById('otp-ph').textContent='+91 '+mob;
+  if(TEST_MODE){
+    var notice=document.getElementById('test-notice');
+    if(!notice){
+      notice=document.createElement('div');
+      notice.id='test-notice';
+      notice.style.cssText='margin-top:12px;padding:8px 14px;background:rgba(245,158,11,0.1);border:1px solid #f59e0b;border-radius:6px;font-size:11px;color:#fbbf24;';
+      notice.innerHTML='&#9888; Test Mode: use OTP <strong>123456</strong>';
+      document.getElementById('o-msg').after(notice);
+    }
+  }
   [0,1,2,3,4,5].forEach(i=>{document.getElementById('o'+i).value='';});
   document.getElementById('o-msg').textContent='';
   showScreen('otp-screen');
@@ -442,6 +454,13 @@ async function verifyOTP(){
   if(!toks||!toks.length){setMsg('o-msg','OTP expired. Request a new one.','err');document.getElementById('v-btn').disabled=false;return;}
   const tok=toks[0];
   if(tok.attempts>=3){setMsg('o-msg','Too many attempts. Request new OTP.','err');document.getElementById('v-btn').disabled=false;return;}
+  // TEST MODE: accept fixed OTP
+  if(TEST_MODE && otp===TEST_OTP){
+    await db.from('otp_tokens').update({used:true}).eq('id',tok.id);
+    pending.type==='signup'?await doSignup(mob):await doLogin(mob);
+    document.getElementById('v-btn').disabled=false;
+    return;
+  }
   if(tok.otp!==otp){
     await db.from('otp_tokens').update({attempts:tok.attempts+1}).eq('id',tok.id);
     setMsg('o-msg','Wrong OTP. '+(2-tok.attempts)+' attempt(s) left.','err');
