@@ -481,11 +481,17 @@ async function doSignup(mob){
   const {data:au,error}=await db.auth.signUp({email:fe,password:pw,options:{emailRedirectTo:null,data:{mobile:mob}}});
   if(error){setMsg('o-msg',error.message,'err');return;}
   // Store the password hash reference in profiles for future login
-  await db.from('profiles').update({
-    full_name:pending.name,mobile:mob,email:pending.email,
-    purpose:pending.purpose
-  }).eq('id',au.user.id);
-  // Store pw in local storage for future logins (until we have a better flow)
+  // Wait for trigger to create profile row
+  await new Promise(r=>setTimeout(r,1500));
+  // Upsert profile with all details
+  await db.from('profiles').upsert({
+    id:au.user.id,
+    full_name:pending.name,
+    mobile:mob,
+    email:pending.email,
+    purpose:pending.purpose,
+    plan:'free'
+  },{onConflict:'id'});
   localStorage.setItem('slp_'+mob, pw);
   U=au.user;
   const {data:prof}=await db.from('profiles').select('*').eq('id',U.id).single();
@@ -635,7 +641,11 @@ async function startPay(){
     handler:async(r)=>{
       const exp=new Date();exp.setMonth(exp.getMonth()+(selPlanId==='monthly'?1:12));
       await db.from('profiles').update({plan:'pro',plan_expires_at:exp.toISOString(),razorpay_payment_id:r.razorpay_payment_id}).eq('id',U.id);
-      plan='pro';P.plan='pro';updTop();hideUp();
+      // Refresh profile from DB to confirm update
+      const {data:updProf}=await db.from('profiles').select('*').eq('id',U.id).single();
+      if(updProf){P=updProf;plan=updProf.plan||'pro';}
+      else{plan='pro';P.plan='pro';}
+      updTop();hideUp();
       toast('🎉 Welcome to Pro! All features unlocked.');
       tellIframe();
     }};
