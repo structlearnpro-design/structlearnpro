@@ -169,55 +169,7 @@ td.val{color:var(--txt);font-weight:700}td.ok{color:var(--green);font-weight:700
 <div class="main" id="main"></div>
 </div>
 
-<script>// ── DEMO EXPIRY CONTROL ───────────────────────────────────────
-(function(){
-  var EXPIRY = '2025-06-10'; // ← change this date to control access
-  var exp = new Date(EXPIRY);
-  exp.setHours(23,59,59,0);
-  var now = new Date();
-
-  function showExpired(){
-    var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-    var dateStr = exp.getDate() + ' ' + months[exp.getMonth()] + ' ' + exp.getFullYear();
-    var html = '<div style="margin:0;padding:0;background:#0a0f1e;display:flex;align-items:center;justify-content:center;min-height:100vh;font-family:Segoe UI,sans-serif;">'
-      + '<div style="background:#0d1526;border:2px solid #dc2626;border-radius:14px;padding:40px;max-width:420px;width:90%;text-align:center;margin:20px auto;">'
-      + '<div style="font-size:48px;margin-bottom:16px;">&#128274;</div>'
-      + '<div style="font-size:20px;font-weight:900;color:#f87171;margin-bottom:10px;">Review Copy Expired</div>'
-      + '<div style="font-size:13px;color:#94a3b8;line-height:1.7;margin-bottom:20px;">'
-      + 'This review copy of <strong style="color:#f1f5f9;">StructLearn Pro</strong> expired on '
-      + '<strong style="color:#f1f5f9;">' + dateStr + '</strong>.<br><br>'
-      + 'Contact the developer for full access.'
-      + '</div>'
-      + '<div style="padding:12px 20px;background:#1e293b;border-radius:8px;font-size:12px;color:#94a3b8;">structlearnpro@gmail.com</div>'
-      + '</div></div>';
-    document.open();
-    document.write(html);
-    document.close();
-  }
-
-  if(now > exp){
-    if(document.readyState === 'loading'){
-      document.addEventListener('DOMContentLoaded', showExpired);
-    } else {
-      showExpired();
-    }
-    return; // stop executing rest of the IIFE
-  }
-
-  // Warn if expiring within 3 days
-  var daysLeft = Math.ceil((exp - now) / (1000*60*60*24));
-  if(daysLeft <= 3){
-    window.addEventListener('load', function(){
-      var n = document.createElement('div');
-      n.style.cssText = 'position:fixed;bottom:16px;right:16px;background:#7c2d12;border:1px solid #f97316;border-radius:8px;padding:10px 16px;font-size:12px;color:#fed7aa;font-family:Segoe UI,sans-serif;z-index:99999;max-width:220px;line-height:1.5;';
-      n.innerHTML = '&#9200; <strong>Expires in ' + daysLeft + ' day' + (daysLeft===1?'':'s') + '</strong><br>Contact developer for full access.';
-      document.body.appendChild(n);
-      setTimeout(function(){if(n.parentNode)n.parentNode.removeChild(n);}, 8000);
-    });
-  }
-})();
-
-// ── PLATFORM INTEGRATION  ──────────────────────────────────────
+<script>// ── PLATFORM INTEGRATION  ──────────────────────────────────────
 let _userPlan='free', _currentProjectId=null, _platformSaveTimer=null;
 
 window.addEventListener('message',(e)=>{
@@ -13117,45 +13069,48 @@ function downloadCert(level) {
 })();
 
 
-// Hook into existing functions
-// Intercept go() to track tab views
-const _origGo = go;
-function go(n) {
-  _origGo(n);
-  const tabNames = ['','project','plan','loads','materials','soil','run','full-report','summary','parametric','discussion','cross','joint','improvements','advanced','pm','continuous','seismic-drift','slab-edge','retaining','fire','reference'];
-  if(n === 7) _BT.onTab('overview');
-}
+// Hook into existing functions — deferred to after all code loads
+window.addEventListener('load', function() {
+  // Hook go() to track tab views
+  if(typeof go === 'function') {
+    const _origGo = go;
+    window.go = function(n) {
+      _origGo(n);
+      if(n === 7) _BT.onTab('overview');
+    };
+  }
 
-// Hook report tab clicks
-const _origShowSec = typeof showSec === 'function' ? showSec : null;
-if(_origShowSec) {
-  window.showSec = function(tab) {
-    _origShowSec(tab);
-    _BT.onTab(tab);
-  };
-}
+  // Hook showSec to track report tabs
+  if(typeof showSec === 'function') {
+    const _origShowSec = showSec;
+    window.showSec = function(tab) {
+      _origShowSec(tab);
+      _BT.onTab(tab);
+    };
+  }
 
-// Hook bay type changes
-const _origSetBayType = typeof setBayType === 'function' ? setBayType : null;
-if(_origSetBayType) {
-  window.setBayType = function(row, col, type) {
-    _origSetBayType(row, col, type);
-    _BT.onBayChange(type);
-  };
-}
+  // Hook setBayType to track bay changes
+  if(typeof setBayType === 'function') {
+    const _origSetBayType = setBayType;
+    window.setBayType = function(row, col, type) {
+      _origSetBayType(row, col, type);
+      _BT.onBayChange(type);
+    };
+  }
 
-// Hook runNow to track analysis
-const _origRunNow = typeof runNow === 'function' ? runNow : null;
-if(_origRunNow) {
-  window.runNow = function() {
-    _origRunNow();
-    setTimeout(() => {
-      if(typeof RES !== 'undefined' && RES) {
-        _BT.onAnalysis(RES, S);
-      }
-    }, 1500);
-  };
-}
+  // Hook runNow to track analysis
+  if(typeof runNow === 'function') {
+    const _origRunNow = runNow;
+    window.runNow = function() {
+      _origRunNow();
+      setTimeout(() => {
+        if(typeof RES !== 'undefined' && RES) {
+          _BT.onAnalysis(RES, S);
+        }
+      }, 1500);
+    };
+  }
+});
 </script>
 </body>
 </html>
