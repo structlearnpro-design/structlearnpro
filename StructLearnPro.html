@@ -169,7 +169,48 @@ td.val{color:var(--txt);font-weight:700}td.ok{color:var(--green);font-weight:700
 <div class="main" id="main"></div>
 </div>
 
-<script>
+<script>// ── PLATFORM INTEGRATION ──────────────────────────────────────
+let _userPlan='free', _currentProjectId=null, _platformSaveTimer=null;
+
+window.addEventListener('message',(e)=>{
+  if(e.data?.type==='USER_PLAN'){ _userPlan=e.data.plan||'free'; }
+  if(e.data?.type==='LOAD_PROJECT'){
+    const proj=e.data.project;
+    _currentProjectId=proj.id;
+    if(proj.data&&Object.keys(proj.data).length>0){
+      try{
+        if(proj.data.S)Object.assign(S,proj.data.S);
+        if(proj.data.GRID){GRID=proj.data.GRID;}
+        if(typeof renderAll==='function')renderAll();
+        if(typeof go==='function')go(1);
+      }catch(err){console.error('Load error:',err);}
+    }
+  }
+  if(e.data?.type==='PROJECT_ID'){_currentProjectId=e.data.id;}
+});
+
+function requirePro(feat){
+  if(_userPlan==='pro')return true;
+  window.parent.postMessage({type:'REQUEST_UPGRADE',feature:feat},'*');
+  return false;
+}
+
+function saveToParent(status){
+  if(typeof S==='undefined')return;
+  try{
+    const nm=S.name||S.client||('Project '+new Date().toLocaleDateString('en-IN'));
+    window.parent.postMessage({
+      type:'SAVE_PROJECT',name:nm,
+      data:{S:{...S},GRID:GRID?JSON.parse(JSON.stringify(GRID)):null},
+      floors:S.numFloors||1,spansX:S.spansX||[],spansY:S.spansY||[],
+      status:status||'draft',projectId:_currentProjectId,
+    },'*');
+  }catch(err){console.error('Save error:',err);}
+}
+
+// Auto-save started after app initialises (see go() function)
+
+
 // == 01_state.js ==
 
 // ================================================================
@@ -2714,7 +2755,7 @@ function p6(){return`
        ['Concrete','M'+S.fck],['Steel','Fe'+S.fy],['SBC',S.soilBearing+' kN/m^2'],
     ].map(([k,v])=>`<strong style="color:var(--txt)">${k}:</strong> ${v}`).join(' &nbsp;.&nbsp; ')}
   </div>
-  <button class="btn gr" id="rb" style="width:100%;padding:13px;font-size:14px" onclick="runNow()">🚀 Run Full Analysis</button>
+  <button class="btn gr" id="rb" style="width:100%;padding:13px;font-size:14px" onclick="runNow();setTimeout(()=>saveToParent('draft'),2000)">🚀 Run Full Analysis</button>
   <div id="ld" style="display:none;margin-top:12px">
     <div class="lbar"><div class="lfill"></div></div>
     <div style="font-size:11px;color:var(--teal);line-height:2.2;text-align:center;padding:8px">
@@ -2735,7 +2776,7 @@ function p7(){
   if(!RES)return`<div class="card">Run analysis first.</div>`;
   return`
 <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;padding:10px;background:var(--bg1);border-radius:8px;border:1px solid var(--b1)">
-  <button class="btn gr" onclick="showPDFDialog()">↓ Download Report PDF</button>
+  <button class="btn gr" onclick="if(requirePro('PDF Report')) showPDFDialog()">↓ Download Report PDF</button>
   <button class="btn" onclick="saveProject()" style="background:linear-gradient(135deg,#065f46,#047857);border:1px solid #059669" title="Save to browser memory">💾 Save</button>
   <button class="btn" onclick="loadProject()" style="background:linear-gradient(135deg,#1e3a5f,#047857);border:1px solid #059669" title="Load from browser memory">📂 Load</button>
   <button class="btn" onclick="exportProject()" style="background:linear-gradient(135deg,#1e3a5f,#1e40af);border:1px solid #2563eb" title="Export as JSON file">📤 Export</button>
@@ -11767,6 +11808,7 @@ function p20(){return RES?secDiscussion():'<div class="card"><div class="ct">Ana
 const pages=[p0,p1,p2,p3,p4,p5,p6,p7,p8,p9,p10,p11,p12,p13,p14,p15,p16,p17,p18,p19,p20];
 go(0);
 setTimeout(()=>renderGridPrev&&renderGridPrev(),200);
+setInterval(()=>{try{saveToParent('draft');}catch(e){}},30000);
 
 // Auto-draw ref grid on page 8
 window.p8orig=p8;

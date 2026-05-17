@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>StructLearn Pro — IS 456 Structural Design Platform</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{
+  --bg:#0a0f1e;--bg2:#0d1526;--bg3:#0f172a;
+  --b1:#1e3a8a;--b2:#1e293b;
+  --blue:#38bdf8;--green:#34d399;--red:#f87171;
+  --purple:#a78bfa;--yellow:#fbbf24;--orange:#f97316;
+  --txt:#f1f5f9;--txt2:#94a3b8;--txt3:#475569;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--txt);min-height:100vh;}
+.screen{display:none;min-height:100vh;}
+.screen.active{display:flex;}
+
+/* AUTH */
+#auth-screen{align-items:center;justify-content:center;padding:20px;
+  background:linear-gradient(135deg,#0a0f1e 0%,#0d1f3c 50%,#091628 100%);}
+.auth-box{background:var(--bg2);border:1.5px solid var(--b1);border-radius:14px;
+  padding:32px;width:100%;max-width:420px;}
+.auth-logo{font-size:26px;font-weight:900;color:var(--blue);margin-bottom:2px;}
+.auth-tag{font-size:10px;color:var(--txt3);margin-bottom:24px;font-family:monospace;}
+.tabs{display:flex;border:1px solid var(--b1);border-radius:8px;overflow:hidden;margin-bottom:20px;}
+.tab-btn{flex:1;padding:10px;background:transparent;border:none;color:var(--txt3);
+  cursor:pointer;font-size:13px;font-weight:700;font-family:inherit;}
+.tab-btn.on{background:var(--b1);color:var(--blue);}
+.field{margin-bottom:14px;}
+.field label{display:block;font-size:11px;color:var(--txt3);margin-bottom:5px;font-weight:600;}
+.field input,.field select{width:100%;padding:10px 14px;background:var(--bg3);
+  border:1px solid var(--b1);border-radius:8px;color:var(--txt);font-size:13px;font-family:inherit;outline:none;}
+.field input:focus{border-color:var(--blue);}
+.ph-row{display:flex;gap:8px;}
+.ph-pre{padding:10px 12px;background:var(--bg3);border:1px solid var(--b1);
+  border-radius:8px;color:var(--txt2);font-size:13px;}
+.pur-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px;}
+.pur-btn{padding:8px;border:1px solid var(--b1);border-radius:8px;background:transparent;
+  color:var(--txt3);cursor:pointer;font-size:11px;font-weight:600;font-family:inherit;text-align:center;}
+.pur-btn.on{border-color:var(--blue);background:rgba(56,189,248,0.1);color:var(--blue);}
+.abtn{width:100%;padding:12px;background:linear-gradient(135deg,#1d4ed8,#2563eb);
+  border:none;border-radius:8px;color:white;font-size:14px;font-weight:700;
+  cursor:pointer;font-family:inherit;margin-top:4px;}
+.abtn:disabled{opacity:0.5;cursor:not-allowed;}
+.amsg{font-size:12px;margin-top:10px;text-align:center;min-height:16px;}
+.amsg.err{color:var(--red);}
+.amsg.ok{color:var(--green);}
+
+/* OTP */
+#otp-screen{align-items:center;justify-content:center;padding:20px;
+  background:linear-gradient(135deg,#0a0f1e,#0d1f3c);}
+.otp-box{background:var(--bg2);border:1.5px solid var(--b1);border-radius:14px;
+  padding:32px;width:100%;max-width:380px;text-align:center;}
+.otp-title{font-size:20px;font-weight:800;color:var(--blue);margin-bottom:6px;}
+.otp-sub{font-size:12px;color:var(--txt3);margin-bottom:24px;line-height:1.6;}
+.otp-row{display:flex;gap:10px;justify-content:center;margin-bottom:20px;}
+.otp-d{width:46px;height:54px;text-align:center;font-size:22px;font-weight:700;
+  background:var(--bg3);border:2px solid var(--b1);border-radius:8px;
+  color:var(--txt);font-family:monospace;outline:none;}
+.otp-d:focus{border-color:var(--blue);}
+
+/* TOP BAR */
+#top-bar{background:var(--bg2);border-bottom:1px solid var(--b2);
+  padding:8px 16px;display:flex;align-items:center;justify-content:space-between;
+  flex-wrap:wrap;gap:8px;position:sticky;top:0;z-index:100;}
+.tlogo{font-size:15px;font-weight:900;color:var(--blue);}
+.tnav{display:flex;gap:4px;}
+.tnav-btn{padding:5px 12px;border-radius:6px;font-size:11px;font-weight:600;
+  cursor:pointer;font-family:inherit;background:transparent;border:1px solid transparent;color:var(--txt3);}
+.tnav-btn.on{border-color:var(--b1);color:var(--blue);background:rgba(56,189,248,0.06);}
+.tact{display:flex;align-items:center;gap:8px;}
+.chip{padding:3px 10px;border-radius:20px;font-size:10px;font-weight:700;}
+.chip.free{background:rgba(100,116,139,0.2);color:var(--txt3);border:1px solid #334155;}
+.chip.pro{background:rgba(56,189,248,0.15);color:var(--blue);border:1px solid var(--blue);}
+.tbtn{padding:5px 12px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;}
+.tbtn.up{background:#1d4ed8;border:none;color:white;}
+.tbtn.out{background:transparent;border:1px solid #334155;color:var(--txt3);}
+
+/* DASH */
+#dash-screen{flex-direction:column;}
+.dash-body{flex:1;padding:20px;max-width:1100px;width:100%;margin:0 auto;}
+.ph{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px;}
+.ph-title{font-size:18px;font-weight:800;}
+.np-btn{padding:8px 18px;background:linear-gradient(135deg,#1d4ed8,#2563eb);
+  border:none;border-radius:8px;color:white;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;}
+.filters{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;}
+.fi{padding:7px 12px;background:var(--bg3);border:1px solid var(--b2);
+  border-radius:8px;color:var(--txt);font-size:12px;font-family:inherit;outline:none;}
+.fi:focus{border-color:var(--blue);}
+.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;}
+.pcard{background:var(--bg2);border:1px solid var(--b2);border-radius:10px;padding:16px;cursor:pointer;transition:border-color 0.15s;}
+.pcard:hover{border-color:var(--blue);}
+.pcard-name{font-size:14px;font-weight:700;margin-bottom:6px;}
+.pcard-meta{font-size:11px;color:var(--txt3);line-height:1.8;}
+.pcard-status{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;
+  border-radius:10px;font-size:10px;font-weight:700;margin-top:8px;}
+.st-pass{background:rgba(52,211,153,0.1);color:var(--green);border:1px solid rgba(52,211,153,0.3);}
+.st-fail{background:rgba(248,113,113,0.1);color:var(--red);border:1px solid rgba(248,113,113,0.3);}
+.st-draft{background:rgba(100,116,139,0.1);color:var(--txt3);border:1px solid #334155;}
+.pcard-acts{display:flex;gap:6px;margin-top:10px;}
+.cbtn{padding:4px 10px;border-radius:5px;font-size:10px;font-weight:700;cursor:pointer;font-family:inherit;border:1px solid;}
+.cbtn.op{border-color:var(--blue);color:var(--blue);background:transparent;}
+.cbtn.dl{border-color:#334155;color:var(--txt3);background:transparent;}
+.empty{text-align:center;padding:60px 20px;color:var(--txt3);grid-column:1/-1;}
+.lbar{background:var(--bg3);border:1px solid var(--b2);border-radius:8px;
+  padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;gap:12px;font-size:12px;}
+.lp{flex:1;height:6px;background:#1e293b;border-radius:3px;overflow:hidden;}
+.lf{height:100%;border-radius:3px;background:var(--blue);}
+.lf.warn{background:var(--yellow);}
+.lf.full{background:var(--red);}
+
+/* APP FRAME */
+#app-screen{flex-direction:column;}
+#app-iframe{width:100%;flex:1;border:none;height:calc(100vh - 44px);}
+
+/* ACCOUNT */
+#acc-screen{flex-direction:column;}
+.acc-body{flex:1;padding:24px;max-width:600px;width:100%;margin:0 auto;}
+.acc-card{background:var(--bg2);border:1px solid var(--b2);border-radius:10px;padding:20px;margin-bottom:16px;}
+.acc-ct{font-size:11px;font-weight:700;color:var(--txt3);margin-bottom:14px;text-transform:uppercase;letter-spacing:.5px;}
+.acc-row{display:flex;justify-content:space-between;align-items:center;
+  padding:8px 0;border-bottom:1px solid var(--b2);font-size:13px;}
+.acc-row:last-child{border-bottom:none;}
+.acc-lbl{color:var(--txt3);}
+.acc-val{color:var(--txt);font-weight:600;}
+.dbtn{padding:8px 16px;border:1px solid var(--red);border-radius:6px;
+  background:transparent;color:var(--red);font-size:12px;cursor:pointer;font-family:inherit;font-weight:700;}
+
+/* UPGRADE MODAL */
+#up-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);
+  z-index:9999;align-items:center;justify-content:center;padding:20px;}
+#up-modal.show{display:flex;}
+.up-card{background:var(--bg2);border:2px solid var(--b1);border-radius:14px;padding:28px;max-width:480px;width:100%;}
+.up-title{font-size:20px;font-weight:900;color:var(--blue);margin-bottom:6px;}
+.up-sub{font-size:12px;color:var(--txt3);margin-bottom:20px;}
+.plan-opts{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px;}
+.plan-opt{border:1.5px solid var(--b1);border-radius:10px;padding:16px;cursor:pointer;}
+.plan-opt.on{border-color:var(--blue);background:rgba(56,189,248,0.06);}
+.plan-price{font-size:26px;font-weight:900;color:var(--blue);}
+.plan-per{font-size:10px;color:var(--txt3);}
+.plan-nm{font-size:12px;font-weight:700;margin-bottom:8px;}
+.plan-feats{font-size:11px;color:var(--txt3);line-height:1.8;margin-top:10px;}
+.paybtn{width:100%;padding:13px;background:linear-gradient(135deg,#1d4ed8,#2563eb);
+  border:none;border-radius:8px;color:white;font-size:14px;font-weight:800;
+  cursor:pointer;font-family:inherit;margin-bottom:8px;}
+.cancbtn{width:100%;padding:8px;border:1px solid #334155;border-radius:8px;
+  background:transparent;color:var(--txt3);font-size:12px;cursor:pointer;font-family:inherit;}
+.snote{text-align:center;font-size:10px;color:var(--txt3);margin-top:8px;}
+
+/* TOAST */
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(100px);
+  background:var(--bg2);border:1px solid var(--green);color:var(--green);
+  padding:10px 20px;border-radius:8px;font-size:12px;font-weight:700;
+  transition:transform 0.3s;z-index:99999;pointer-events:none;}
+#toast.show{transform:translateX(-50%) translateY(0);}
+#toast.err{border-color:var(--red);color:var(--red);}
+</style>
+</head>
+<body>
+
+<!-- AUTH -->
+<div id="auth-screen" class="screen">
+  <div class="auth-box">
+    <div class="auth-logo">StructLearn Pro</div>
+    <div class="auth-tag">IS 456 · IS 1893 · IS 875 · IS 13920</div>
+    <div class="tabs">
+      <button class="tab-btn on" onclick="switchTab('login')">Sign In</button>
+      <button class="tab-btn" onclick="switchTab('signup')">Create Account</button>
+    </div>
+
+    <div id="login-form">
+      <div class="field">
+        <label>Mobile Number</label>
+        <div class="ph-row">
+          <span class="ph-pre">+91</span>
+          <input type="tel" id="l-mob" placeholder="98765 43210" maxlength="10"
+            onkeydown="if(event.key==='Enter')sendOTP('login')">
+        </div>
+      </div>
+      <button class="abtn" onclick="sendOTP('login')" id="l-btn">Send OTP →</button>
+      <div id="l-msg" class="amsg"></div>
+    </div>
+
+    <div id="signup-form" style="display:none">
+      <div class="field">
+        <label>Full Name</label>
+        <input type="text" id="s-name" placeholder="Rahul Sharma">
+      </div>
+      <div class="field">
+        <label>Mobile Number</label>
+        <div class="ph-row">
+          <span class="ph-pre">+91</span>
+          <input type="tel" id="s-mob" placeholder="98765 43210" maxlength="10">
+        </div>
+      </div>
+      <div class="field">
+        <label>Email (for receipts)</label>
+        <input type="email" id="s-email" placeholder="rahul@gmail.com">
+      </div>
+      <div class="field">
+        <label>I am a</label>
+        <div class="pur-grid">
+          <button class="pur-btn on" onclick="selPur(this,'student')">🎓 Student</button>
+          <button class="pur-btn" onclick="selPur(this,'professional')">💼 Professional</button>
+          <button class="pur-btn" onclick="selPur(this,'professor')">📚 Professor</button>
+          <button class="pur-btn" onclick="selPur(this,'business')">🏢 Business</button>
+        </div>
+      </div>
+      <button class="abtn" onclick="sendOTP('signup')" id="s-btn">Send OTP →</button>
+      <div id="s-msg" class="amsg"></div>
+    </div>
+  </div>
+</div>
+
+<!-- OTP -->
+<div id="otp-screen" class="screen">
+  <div class="otp-box">
+    <div class="otp-title">Enter OTP</div>
+    <div class="otp-sub">6-digit code sent to<br><strong id="otp-ph">+91 XXXXXXXXXX</strong></div>
+    <div class="otp-row">
+      <input class="otp-d" maxlength="1" id="o0" oninput="oi(0)" onkeydown="ok(event,0)">
+      <input class="otp-d" maxlength="1" id="o1" oninput="oi(1)" onkeydown="ok(event,1)">
+      <input class="otp-d" maxlength="1" id="o2" oninput="oi(2)" onkeydown="ok(event,2)">
+      <input class="otp-d" maxlength="1" id="o3" oninput="oi(3)" onkeydown="ok(event,3)">
+      <input class="otp-d" maxlength="1" id="o4" oninput="oi(4)" onkeydown="ok(event,4)">
+      <input class="otp-d" maxlength="1" id="o5" oninput="oi(5)" onkeydown="ok(event,5)">
+    </div>
+    <button class="abtn" onclick="verifyOTP()" id="v-btn">Verify →</button>
+    <div id="o-msg" class="amsg"></div>
+    <div style="margin-top:14px;font-size:12px;color:var(--txt3)">
+      <button id="rs-btn" onclick="resendOTP()" disabled
+        style="background:none;border:none;color:var(--blue);cursor:pointer;font-size:12px;font-family:inherit">
+        Resend in <span id="rs-t">30</span>s
+      </button>
+    </div>
+    <div onclick="showScreen('auth-screen')"
+      style="font-size:12px;color:var(--txt3);cursor:pointer;margin-top:10px">← Change number</div>
+  </div>
+</div>
+
+<!-- TOP BAR -->
+<div id="top-bar" style="display:none">
+  <div style="display:flex;align-items:center;gap:12px">
+    <div class="tlogo">StructLearn Pro</div>
+    <div class="tnav">
+      <button class="tnav-btn on" id="n-proj" onclick="goTo('projects')">My Projects</button>
+      <button class="tnav-btn" id="n-app"  onclick="goTo('app')">Design Tool</button>
+      <button class="tnav-btn" id="n-acc"  onclick="goTo('account')">Account</button>
+    </div>
+  </div>
+  <div class="tact">
+    <span id="t-name" style="font-size:11px;color:var(--txt3)"></span>
+    <span id="t-plan" class="chip free">FREE</span>
+    <button class="tbtn up" id="t-up" onclick="showUp()">⚡ Upgrade</button>
+    <button class="tbtn out" onclick="doLogout()">Sign Out</button>
+  </div>
+</div>
+
+<!-- DASH -->
+<div id="dash-screen" class="screen" style="flex-direction:column">
+  <div class="dash-body">
+    <div class="lbar" id="lbar" style="display:none">
+      <span style="color:var(--txt3);font-size:11px;white-space:nowrap">Projects used:</span>
+      <div class="lp"><div class="lf" id="lf" style="width:0%"></div></div>
+      <span id="lt" style="color:var(--txt2);font-weight:700;white-space:nowrap">0/3</span>
+      <button onclick="showUp()" style="padding:4px 10px;background:#1d4ed8;border:none;
+        border-radius:5px;color:white;font-size:10px;font-weight:700;cursor:pointer;white-space:nowrap">
+        Upgrade
+      </button>
+    </div>
+    <div class="ph">
+      <div class="ph-title">My Projects</div>
+      <button class="np-btn" onclick="newProject()">+ New Project</button>
+    </div>
+    <div class="filters">
+      <input class="fi" style="flex:1;min-width:180px" type="text" id="f-search"
+        placeholder="🔍 Search projects..." oninput="filterP()">
+      <select class="fi" id="f-status" onchange="filterP()">
+        <option value="all">All Status</option>
+        <option value="pass">All Pass</option>
+        <option value="fail">Has Failures</option>
+        <option value="draft">Not Run Yet</option>
+      </select>
+      <select class="fi" id="f-sort" onchange="filterP()">
+        <option value="newest">Newest First</option>
+        <option value="oldest">Oldest First</option>
+        <option value="name">Name A–Z</option>
+      </select>
+    </div>
+    <div class="pgrid" id="pgrid"></div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app-screen" class="screen" style="flex-direction:column">
+  <iframe id="app-iframe" src="StructLearnPro.html"></iframe>
+</div>
+
+<!-- ACCOUNT -->
+<div id="acc-screen" class="screen" style="flex-direction:column">
+  <div class="acc-body">
+    <div style="font-size:18px;font-weight:800;margin-bottom:16px">My Account</div>
+    <div class="acc-card">
+      <div class="acc-ct">Profile</div>
+      <div class="acc-row"><span class="acc-lbl">Full Name</span><span class="acc-val" id="a-name">—</span></div>
+      <div class="acc-row"><span class="acc-lbl">Mobile</span><span class="acc-val" id="a-mob">—</span></div>
+      <div class="acc-row"><span class="acc-lbl">Email</span><span class="acc-val" id="a-email">—</span></div>
+      <div class="acc-row"><span class="acc-lbl">I am a</span><span class="acc-val" id="a-pur">—</span></div>
+    </div>
+    <div class="acc-card">
+      <div class="acc-ct">Subscription</div>
+      <div class="acc-row"><span class="acc-lbl">Plan</span><span class="acc-val" id="a-plan">Free</span></div>
+      <div class="acc-row"><span class="acc-lbl">Projects</span><span class="acc-val" id="a-proj">0 used</span></div>
+      <div style="margin-top:14px">
+        <button class="np-btn" id="a-up-btn" onclick="showUp()">⚡ Upgrade to Pro — ₹299/month</button>
+      </div>
+    </div>
+    <div class="acc-card">
+      <div class="acc-ct">Danger Zone</div>
+      <button class="dbtn" onclick="doLogout()">Sign Out</button>
+    </div>
+  </div>
+</div>
+
+<!-- UPGRADE MODAL -->
+<div id="up-modal">
+  <div class="up-card">
+    <div class="up-title">⚡ Unlock Full Access</div>
+    <div class="up-sub">Download PDF reports, construction drawings, unlimited projects.</div>
+    <div class="plan-opts">
+      <div class="plan-opt on" id="po-m" onclick="selPlan('monthly')">
+        <div class="plan-nm">Monthly</div>
+        <div class="plan-price">₹299</div>
+        <div class="plan-per">per month · cancel anytime</div>
+        <div class="plan-feats">✓ PDF Report download<br>✓ Construction drawings<br>✓ Unlimited projects<br>✓ All report tabs</div>
+      </div>
+      <div class="plan-opt" id="po-a" onclick="selPlan('annual')">
+        <div class="plan-nm">Annual <span style="background:#f59e0b;color:#000;padding:1px 5px;border-radius:3px;font-size:9px">SAVE ₹600</span></div>
+        <div class="plan-price">₹249</div>
+        <div class="plan-per">per month · ₹2,990/year</div>
+        <div class="plan-feats">✓ Everything in Monthly<br>✓ 2 months free<br>✓ Priority support<br>✓ Advanced tools</div>
+      </div>
+    </div>
+    <button class="paybtn" onclick="startPay()">Pay with UPI / Card / Net Banking →</button>
+    <button class="cancbtn" onclick="hideUp()">Maybe later</button>
+    <div class="snote">🔒 Secure payment by Razorpay · Cancel anytime</div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const SUPA_URL  = 'https://rpjdveuxxjeoeomkwrfx.supabase.co';
+const SUPA_KEY  = 'sb_publishable_L1RWkjtz41gT5sZKhRRnsw_BB3WfJWI';
+const SGH_KEY   = 'pHI9xQGkXEmXXmLmcGgwSQ';
+const SGH_SID   = 'PLNZOT';
+const SGH_TPL   = ''; // ← paste DLT Template ID here when approved
+const RZP_KEY   = ''; // ← paste Razorpay Key ID here when sister sets up
+const FREE_LIM  = 3;
+
+const {createClient} = supabase;
+const db = createClient(SUPA_URL, SUPA_KEY);
+
+let U=null, P=null, plan='free', projects=[], selPlanId='monthly', rsTimer=null;
+let pending={mob:'',type:'',name:'',email:'',purpose:'student', projId:null};
+
+// ── SCREENS ──────────────────────────────────────────────────
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  const loggedIn=['dash-screen','app-screen','acc-screen'].includes(id);
+  document.getElementById('top-bar').style.display=loggedIn?'flex':'none';
+}
+function goTo(tab){
+  document.querySelectorAll('.tnav-btn').forEach(b=>b.classList.remove('on'));
+  if(tab==='projects'){document.getElementById('n-proj').classList.add('on');showScreen('dash-screen');loadProjects();}
+  else if(tab==='app'){document.getElementById('n-app').classList.add('on');showScreen('app-screen');tellIframe();}
+  else if(tab==='account'){document.getElementById('n-acc').classList.add('on');showScreen('acc-screen');renderAcc();}
+}
+
+// ── AUTH ─────────────────────────────────────────────────────
+function switchTab(t){
+  document.getElementById('login-form').style.display=t==='login'?'':'none';
+  document.getElementById('signup-form').style.display=t==='signup'?'':'none';
+  document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('on',(i===0&&t==='login')||(i===1&&t==='signup')));
+}
+function selPur(btn,v){
+  document.querySelectorAll('.pur-btn').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on'); pending.purpose=v;
+}
+
+async function sendOTP(type){
+  const mob=type==='login'
+    ?document.getElementById('l-mob').value.trim()
+    :document.getElementById('s-mob').value.trim();
+  if(!/^\d{10}$/.test(mob)){setMsg(type==='login'?'l-msg':'s-msg','Enter valid 10-digit number','err');return;}
+  if(type==='signup'){
+    const nm=document.getElementById('s-name').value.trim();
+    const em=document.getElementById('s-email').value.trim();
+    if(!nm){setMsg('s-msg','Enter your full name','err');return;}
+    if(!em){setMsg('s-msg','Enter your email','err');return;}
+    pending.name=nm;pending.email=em;
+  }
+  pending.mob=mob;pending.type=type;
+  const btn=document.getElementById(type==='login'?'l-btn':'s-btn');
+  btn.disabled=true;setMsg(type==='login'?'l-msg':'s-msg','Sending OTP...','');
+
+  const otp=Math.floor(100000+Math.random()*900000).toString();
+  const exp=new Date(Date.now()+10*60*1000).toISOString();
+  await db.from('otp_tokens').insert({mobile:mob,otp,expires_at:exp,used:false,attempts:0});
+
+  const msg=`Your StructLearn Pro OTP is ${otp}. Valid for 10 minutes. Do not share with anyone.`;
+  const url=`https://www.smsgatewayhub.com/api/mt/SendSMS?APIKey=${SGH_KEY}&senderid=${SGH_SID}&channel=Trans&DCS=0&flashsms=0&number=91${mob}&text=${encodeURIComponent(msg)}&route=1${SGH_TPL?'&DLTTemplateId='+SGH_TPL:''}`;
+  try{await fetch(url,{method:'GET',mode:'no-cors'});}catch(e){}
+
+  btn.disabled=false;
+  document.getElementById('otp-ph').textContent='+91 '+mob;
+  [0,1,2,3,4,5].forEach(i=>{document.getElementById('o'+i).value='';});
+  document.getElementById('o-msg').textContent='';
+  showScreen('otp-screen');
+  document.getElementById('o0').focus();
+  startRS();
+}
+
+function oi(i){
+  const v=document.getElementById('o'+i).value;
+  if(v&&i<5)document.getElementById('o'+(i+1)).focus();
+  if(i===5&&v)verifyOTP();
+}
+function ok(e,i){if(e.key==='Backspace'&&!document.getElementById('o'+i).value&&i>0)document.getElementById('o'+(i-1)).focus();}
+
+async function verifyOTP(){
+  const otp=[0,1,2,3,4,5].map(i=>document.getElementById('o'+i).value).join('');
+  if(otp.length!==6){setMsg('o-msg','Enter all 6 digits','err');return;}
+  document.getElementById('v-btn').disabled=true;
+  setMsg('o-msg','Verifying...','');
+  const mob=pending.mob;
+  const {data:toks}=await db.from('otp_tokens').select('*').eq('mobile',mob).eq('used',false).gt('expires_at',new Date().toISOString()).order('created_at',{ascending:false}).limit(1);
+  if(!toks||!toks.length){setMsg('o-msg','OTP expired. Request a new one.','err');document.getElementById('v-btn').disabled=false;return;}
+  const tok=toks[0];
+  if(tok.attempts>=3){setMsg('o-msg','Too many attempts. Request new OTP.','err');document.getElementById('v-btn').disabled=false;return;}
+  if(tok.otp!==otp){
+    await db.from('otp_tokens').update({attempts:tok.attempts+1}).eq('id',tok.id);
+    setMsg('o-msg','Wrong OTP. '+(2-tok.attempts)+' attempt(s) left.','err');
+    document.getElementById('v-btn').disabled=false;return;
+  }
+  await db.from('otp_tokens').update({used:true}).eq('id',tok.id);
+  pending.type==='signup'?await doSignup(mob):await doLogin(mob);
+  document.getElementById('v-btn').disabled=false;
+}
+
+async function doSignup(mob){
+  const {data:ex}=await db.from('profiles').select('id').eq('mobile',mob).maybeSingle();
+  if(ex){await doLogin(mob);return;}
+  const fe=mob+'@sl.internal';
+  const pw='SLP_'+mob+'_'+Math.random().toString(36).slice(2,10);
+  // Store pw in profiles so login can use it
+  const {data:au,error}=await db.auth.signUp({email:fe,password:pw});
+  if(error){setMsg('o-msg',error.message,'err');return;}
+  // Store the password hash reference in profiles for future login
+  await db.from('profiles').update({
+    full_name:pending.name,mobile:mob,email:pending.email,
+    purpose:pending.purpose
+  }).eq('id',au.user.id);
+  // Store pw in local storage for future logins (until we have a better flow)
+  localStorage.setItem('slp_'+mob, pw);
+  U=au.user;
+  const {data:prof}=await db.from('profiles').select('*').eq('id',U.id).single();
+  P=prof;plan=P?.plan||'free';
+  updTop();goTo('projects');
+  toast('Welcome to StructLearn Pro! 🎉');
+}
+
+async function doLogin(mob){
+  const {data:prof}=await db.from('profiles').select('*').eq('mobile',mob).maybeSingle();
+  if(!prof){setMsg('o-msg','Account not found. Please sign up.','err');return;}
+  const fe=mob+'@sl.internal';
+  const pw=localStorage.getItem('slp_'+mob);
+  if(!pw){setMsg('o-msg','Please use the device you signed up from, or contact support.','err');return;}
+  const {data:sd,error}=await db.auth.signInWithPassword({email:fe,password:pw});
+  if(error){setMsg('o-msg',error.message,'err');return;}
+  U=sd.user;P=prof;plan=P?.plan||'free';
+  updTop();goTo('projects');
+  toast('Welcome back, '+(P.full_name||mob)+'! 👋');
+}
+
+async function doLogout(){
+  await db.auth.signOut();
+  localStorage.removeItem('slp_session');
+  U=null;P=null;plan='free';projects=[];
+  showScreen('auth-screen');
+}
+
+// ── TOP BAR ──────────────────────────────────────────────────
+function updTop(){
+  document.getElementById('t-name').textContent=P?.full_name||P?.mobile||'';
+  const ch=document.getElementById('t-plan');
+  ch.textContent=plan==='free'?'FREE':'PRO ✓';
+  ch.className='chip '+(plan==='free'?'free':'pro');
+  document.getElementById('t-up').style.display=plan==='free'?'':'none';
+}
+function tellIframe(){
+  setTimeout(()=>{try{document.getElementById('app-iframe').contentWindow.postMessage({type:'USER_PLAN',plan,user:P},'*');}catch(e){}},600);
+}
+
+// ── PROJECTS ─────────────────────────────────────────────────
+async function loadProjects(){
+  if(!U)return;
+  document.getElementById('pgrid').innerHTML='<div style="color:var(--txt3);font-size:13px;padding:20px;grid-column:1/-1">Loading...</div>';
+  const {data:ps}=await db.from('projects').select('*').eq('user_id',U.id).order('updated_at',{ascending:false});
+  projects=ps||[];
+  updLbar();renderP(projects);
+}
+function updLbar(){
+  const bar=document.getElementById('lbar');
+  if(plan!=='free'){bar.style.display='none';return;}
+  bar.style.display='flex';
+  const pct=Math.min((projects.length/FREE_LIM)*100,100);
+  const lf=document.getElementById('lf');
+  lf.style.width=pct+'%';
+  lf.className='lf'+(pct>=100?' full':pct>=67?' warn':'');
+  document.getElementById('lt').textContent=projects.length+'/'+FREE_LIM;
+}
+function renderP(ps){
+  const g=document.getElementById('pgrid');
+  if(!ps.length){g.innerHTML='<div class="empty"><div style="font-size:40px;margin-bottom:10px">📐</div><div style="font-size:15px;font-weight:700;color:var(--txt2);margin-bottom:6px">No projects yet</div><div style="font-size:13px">Click "+ New Project" to start</div></div>';return;}
+  g.innerHTML=ps.map(p=>{
+    const dt=new Date(p.updated_at).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'});
+    const sc=p.status==='pass'?'st-pass':p.status==='fail'?'st-fail':'st-draft';
+    const sl=p.status==='pass'?'✓ All Pass':p.status==='fail'?'⚠ Has Failures':'Draft';
+    return`<div class="pcard">
+      <div class="pcard-name">${p.name}</div>
+      <div class="pcard-meta">${p.floors?p.floors+' floors':'—'} · ${p.spans_x&&p.spans_y?p.spans_x+'×'+p.spans_y+' grid':'—'}<br>Last edited: ${dt}</div>
+      <div class="pcard-status ${sc}">${sl}</div>
+      <div class="pcard-acts">
+        <button class="cbtn op" onclick="openP('${p.id}')">Open</button>
+        <button class="cbtn dl" onclick="delP('${p.id}',event)">Delete</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+function filterP(){
+  const s=document.getElementById('f-search').value.toLowerCase();
+  const st=document.getElementById('f-status').value;
+  const so=document.getElementById('f-sort').value;
+  let r=[...projects];
+  if(s)r=r.filter(p=>p.name.toLowerCase().includes(s));
+  if(st!=='all')r=r.filter(p=>p.status===st);
+  if(so==='oldest')r.sort((a,b)=>new Date(a.updated_at)-new Date(b.updated_at));
+  else if(so==='name')r.sort((a,b)=>a.name.localeCompare(b.name));
+  renderP(r);
+}
+async function newProject(){
+  if(plan==='free'&&projects.length>=FREE_LIM){showUp();return;}
+  const nm='Project '+(projects.length+1);
+  const {data:p}=await db.from('projects').insert({user_id:U.id,name:nm,data:{},status:'draft'}).select().single();
+  if(p){projects.unshift(p);openP(p.id);}
+}
+async function openP(id){
+  const p=projects.find(x=>x.id===id);
+  if(!p)return;
+  pending.projId=id;
+  goTo('app');
+  setTimeout(()=>{try{document.getElementById('app-iframe').contentWindow.postMessage({type:'LOAD_PROJECT',project:p},'*');}catch(e){}},700);
+}
+async function delP(id,e){
+  e.stopPropagation();
+  if(!confirm('Delete this project? Cannot be undone.'))return;
+  await db.from('projects').delete().eq('id',id);
+  projects=projects.filter(p=>p.id!==id);
+  updLbar();renderP(projects);
+  toast('Project deleted');
+}
+
+// ── ACCOUNT ──────────────────────────────────────────────────
+function renderAcc(){
+  if(!P)return;
+  const pmap={student:'Student',professional:'Working Professional',professor:'Professor / Educator',business:'Business / Firm'};
+  document.getElementById('a-name').textContent=P.full_name||'—';
+  document.getElementById('a-mob').textContent=P.mobile?'+91 '+P.mobile:'—';
+  document.getElementById('a-email').textContent=P.email||'—';
+  document.getElementById('a-pur').textContent=pmap[P.purpose]||'—';
+  document.getElementById('a-plan').textContent=plan==='free'?'Free':'Pro ✓';
+  document.getElementById('a-proj').textContent=projects.length+(plan==='free'?' / 3 used':' projects');
+  document.getElementById('a-up-btn').style.display=plan==='free'?'':'none';
+}
+
+// ── UPGRADE ──────────────────────────────────────────────────
+function showUp(){document.getElementById('up-modal').classList.add('show');}
+function hideUp(){document.getElementById('up-modal').classList.remove('show');}
+function selPlan(p){
+  selPlanId=p;
+  document.getElementById('po-m').classList.toggle('on',p==='monthly');
+  document.getElementById('po-a').classList.toggle('on',p==='annual');
+}
+async function startPay(){
+  if(!RZP_KEY){toast('Payment not yet configured. Coming soon!',true);return;}
+  const amt=selPlanId==='monthly'?29900:299000;
+  const opts={key:RZP_KEY,amount:amt,currency:'INR',name:'StructLearn Pro',
+    description:selPlanId==='monthly'?'Monthly Subscription':'Annual Subscription',
+    prefill:{contact:P?.mobile?'91'+P.mobile:''},theme:{color:'#1d4ed8'},
+    handler:async(r)=>{
+      const exp=new Date();exp.setMonth(exp.getMonth()+(selPlanId==='monthly'?1:12));
+      await db.from('profiles').update({plan:'pro',plan_expires_at:exp.toISOString(),razorpay_payment_id:r.razorpay_payment_id}).eq('id',U.id);
+      plan='pro';P.plan='pro';updTop();hideUp();
+      toast('🎉 Welcome to Pro! All features unlocked.');
+      tellIframe();
+    }};
+  const rzp=new window.Razorpay(opts);rzp.open();
+}
+
+// ── RESEND ───────────────────────────────────────────────────
+function startRS(){
+  let s=30;const btn=document.getElementById('rs-btn'),t=document.getElementById('rs-t');
+  btn.disabled=true;t.textContent=s;
+  if(rsTimer)clearInterval(rsTimer);
+  rsTimer=setInterval(()=>{s--;t.textContent=s;if(s<=0){clearInterval(rsTimer);btn.disabled=false;btn.textContent='Resend OTP';}},1000);
+}
+async function resendOTP(){await sendOTP(pending.type);}
+
+// ── IFRAME MESSAGES ──────────────────────────────────────────
+window.addEventListener('message',async(e)=>{
+  if(e.data?.type==='REQUEST_UPGRADE'){showUp();return;}
+  if(e.data?.type==='SAVE_PROJECT'){
+    const {name,data,floors,spansX,spansY,status}=e.data;
+    if(!U)return;
+    const pid=pending.projId;
+    if(pid){
+      await db.from('projects').update({name,data,floors,spans_x:spansX?.length,spans_y:spansY?.length,status,updated_at:new Date().toISOString()}).eq('id',pid);
+      const i=projects.findIndex(p=>p.id===pid);
+      if(i>=0)projects[i]={...projects[i],name,floors,spans_x:spansX?.length,spans_y:spansY?.length,status};
+    } else {
+      if(plan==='free'&&projects.length>=FREE_LIM)return;
+      const {data:np}=await db.from('projects').insert({user_id:U.id,name,data,floors,spans_x:spansX?.length,spans_y:spansY?.length,status}).select().single();
+      if(np){projects.unshift(np);pending.projId=np.id;e.source.postMessage({type:'PROJECT_ID',id:np.id},'*');}
+    }
+    toast('Project saved ✓');
+  }
+});
+
+// ── HELPERS ──────────────────────────────────────────────────
+function setMsg(id,txt,type){const el=document.getElementById(id);el.textContent=txt;el.className='amsg '+type;}
+function toast(msg,err=false){const t=document.getElementById('toast');t.textContent=msg;t.className=err?'err show':'show';setTimeout(()=>t.className=err?'err':'',3000);}
+
+// ── INIT ─────────────────────────────────────────────────────
+(async()=>{
+  const {data:{session}}=await db.auth.getSession();
+  if(session&&session.user){
+    U=session.user;
+    const {data:prof}=await db.from('profiles').select('*').eq('id',U.id).single();
+    P=prof;plan=P?.plan||'free';
+    updTop();goTo('projects');
+  } else {showScreen('auth-screen');}
+})();
+</script>
+</body>
+</html>
