@@ -13131,6 +13131,911 @@ window.addEventListener('load', function() {
     };
   }
 });
+
+// ══════════════════════════════════════════════════════════════
+// EDUCATION SYSTEM — Student Guide + Learning Modules + Guided Design
+// ══════════════════════════════════════════════════════════════
+
+const GUIDE_CHAPTERS = [
+{id:'ch1',icon:'🏗',title:'How Buildings Stand',subtitle:'Load path — the most important concept in structural engineering',color:'#38bdf8',
+sections:[
+{heading:'What holds a building up?',content:'Every building is a system of connected members — slabs, beams, columns and footings — each passing load to the next. This chain is called the <strong>load path</strong>. Understanding it is the foundation of structural engineering.<br><br>Think of it like this: a book sitting on a table pushes down on the table top, which pushes down on the legs, which push into the floor. A building works exactly the same way — just with people, furniture and concrete instead of books and wood.'},
+{heading:'The load path in a building',content:'<strong>Step 1 — Slab:</strong> People and furniture sit on the floor slab. The slab carries this load and bends slightly, transferring it to the beams at its edges.<br><br><strong>Step 2 — Beams:</strong> Beams collect load from the slabs on either side and carry it to the columns at their ends. Beams bend under load — this bending is what we design for.<br><br><strong>Step 3 — Columns:</strong> Columns carry load from all the beams connected to them, plus all the floors above. A ground floor column in a 4-storey building carries the combined weight of 4 floors.<br><br><strong>Step 4 — Footings:</strong> Footings spread the column load over a large area of soil. The bigger the load, the bigger the footing needed.',diagram:'load_path'},
+{heading:'Why this matters for your design',content:'In StructLearn Pro, when you draw the building plan and run analysis, the software follows this exact load path. It calculates how much load each member carries and sizes it accordingly. If you remove a column, the beam above must carry that extra load — this is why removing columns requires a <strong>transfer beam</strong>.<br><br>Every number in your report traces back to this load path. Once you understand it, the results make sense.',is_code:'IS 456:2000 Cl 22 — Methods of analysis'}
+]},
+{id:'ch2',icon:'📐',title:'The Building Grid',subtitle:'Columns, bays and spans — setting up your plan',color:'#f97316',
+sections:[
+{heading:'What is the structural grid?',content:'The structural grid is a regular pattern of columns. In StructLearn Pro, you see this as rows (A, B, C...) and columns (1, 2, 3...). The rectangular areas between four columns are called <strong>bays</strong>.<br><br>The distance between two column lines is the <strong>span</strong>. A span of 3.5m means the beam connecting two columns is 3.5m long. This single number — span — controls almost every other design decision.'},
+{heading:'How span affects everything',content:'<strong>Longer span = deeper beam.</strong> A beam spanning 6m needs roughly twice the depth of a beam spanning 3m. This is because deflection increases with the cube of the span.<br><br><strong>Typical spans for residential buildings:</strong><br>• 3.0 to 4.0m — ideal, economical<br>• 4.0 to 5.5m — acceptable, beams get deeper<br>• Above 5.5m — expensive, needs careful design',is_code:'IS 456 Cl 23.2 — Control of deflection'},
+{heading:'Corner, edge and interior columns',content:'Not all columns carry equal load. The amount of slab area a column supports — its <strong>tributary area</strong> — determines its load.<br><br><strong>Corner column:</strong> Supports one quarter of one bay. Carries least load.<br><strong>Edge column:</strong> Supports one quarter of two bays. Carries moderate load.<br><strong>Interior column:</strong> Supports one quarter of four bays. Carries most load.<br><br>This is why interior columns are always larger than corner columns in tall buildings.',diagram:'tributary'}
+]},
+{id:'ch3',icon:'🔲',title:'Slab Design',subtitle:'Two-way, one-way, cases and reinforcement',color:'#38bdf8',
+sections:[
+{heading:'Two-way vs one-way slab',content:'A slab carries load in the direction of its shorter span. When ly/lx ≤ 2, the slab bends in both directions — this is a <strong>two-way slab</strong>. When ly/lx > 2, it bends mainly in one direction — a <strong>one-way slab</strong>.<br><br><strong>Example:</strong> Bay of 3m × 4m → ly/lx = 1.33 ≤ 2 → Two-way slab.<br>Bay of 3m × 7m → ly/lx = 2.33 > 2 → One-way slab.',is_code:'IS 456 Cl 24.1 — Determination of bending moments'},
+{heading:'IS 456 Table 26 Cases',content:'For two-way slabs, the bending moment depends on which edges are continuous and which are discontinuous.<br><br><strong>Case 1:</strong> All four edges continuous — interior panel. Lowest moments.<br><strong>Case 4:</strong> Two adjacent edges discontinuous — corner panel. Highest moments.<br><br>StructLearn Pro automatically detects the case from your beam end conditions.',is_code:'IS 456 Table 26 — Bending moment coefficients'},
+{heading:'Understanding bar spacing',content:'When the report says <strong>D10@185mm c/c</strong>, it means:<br>• <strong>D10</strong> — 10mm diameter deformed bar<br>• <strong>@185mm</strong> — one bar every 185mm<br>• <strong>c/c</strong> — centre to centre<br><br>Closer spacing = more steel = stronger slab but more cost. Maximum spacing: 3d or 300mm, whichever is less.',is_code:'IS 456 Cl 26.3.3 — Maximum distance between bars'}
+]},
+{id:'ch4',icon:'🔶',title:'Beam Design',subtitle:'Depth, moment, shear and deflection explained',color:'#f97316',
+sections:[
+{heading:'Why beam depth is governed by deflection',content:'This surprises most students. You might expect the beam to be sized for bending moment — but <strong>deflection controls depth</strong> for most beams.<br><br>IS 456 limits the span/depth ratio. For a continuous beam this ratio is 26 (depth ≥ span/26). For simply supported it is 20.<br><br><strong>Example:</strong> Beam spanning 5m continuous → minimum depth = 5000/26 = 192mm. If you used less, the beam would sag visibly and crack the finishes below.',is_code:'IS 456 Cl 23.2 — Control of deflection'},
+{heading:'Bending moment — what it physically means',content:'When a beam carries load, it bends. The top gets compressed, the bottom gets stretched. Concrete is strong in compression but weak in tension — so we put <strong>steel bars at the bottom</strong> to carry the tension.<br><br>For a uniformly distributed load w on span L:<br>• Simply supported: Mu = wL²/8<br>• Both ends continuous midspan: Mu = wL²/16<br><br>Continuity halves the midspan moment — this is why continuous beams need less steel.',is_code:'IS 456 Table 12 — Bending moment coefficients'},
+{heading:'Shear and stirrups',content:'Shear failure is dangerous — it happens suddenly without warning. At beam ends, the beam wants to slide vertically. <strong>Stirrups</strong> (closed links) prevent this.<br><br>Near supports: stirrups closely spaced.<br>At midspan: stirrups can be further apart.<br><br>IS 13920 requires closely spaced stirrups at beam ends in seismic zones — the <strong>confinement zone</strong>.',is_code:'IS 456 Cl 40 — Shear | IS 13920 Cl 6.3'}
+]},
+{id:'ch5',icon:'🏛',title:'Column Design',subtitle:'Axial load, minimum size and seismic detailing',color:'#a78bfa',
+sections:[
+{heading:'How columns carry load',content:'Columns are primarily <strong>compression members</strong>. A ground floor column in a G+3 building carries load from all 4 floors above. This cumulative load is why ground floor columns are always the most critical.<br><br>The design ensures concrete and steel together can carry the total factored load: Pu ≤ 0.4×fck×Ac + 0.67×fy×Asc',is_code:'IS 456 Cl 39 — Limit state of compression'},
+{heading:'Why all columns are minimum 300mm',content:'IS 13920:2016 Clause 7.1 mandates a <strong>minimum column dimension of 300mm</strong> in seismic zones III, IV and V.<br><br>The reason is ductility. A 200mm column cannot provide adequate confinement zone for the stirrups required by IS 13920. Columns must deform without collapsing during an earthquake.',is_code:'IS 13920 Cl 7.1.1 — Dimensional requirements'},
+{heading:'Confinement zone',content:'At the top and bottom of each column, IS 13920 requires closely spaced ties — the <strong>confinement zone</strong>. Tie spacing here: B/4 or 75mm, whichever is less.<br><br>Why so close at the ends? The highest bending and shear during an earthquake occurs at column ends. Close ties prevent concrete splitting and bar buckling.',is_code:'IS 13920 Cl 7.4 — Transverse reinforcement'}
+]},
+{id:'ch6',icon:'🏗',title:'Footing Design',subtitle:'Soil pressure, punching shear and bending',color:'#fbbf24',
+sections:[
+{heading:'Why footings spread the load',content:'Soil can only carry limited pressure — the <strong>Safe Bearing Capacity (SBC)</strong>. A 600kN column on a 300×300mm base gives 6,667 kN/m² — far exceeding any soil capacity.<br><br><strong>Required footing area = Column load / Net SBC</strong><br>For 600kN and SBC=200 kN/m²: Area = 3.0m² → 1.73m × 1.73m footing.',is_code:'IS 6403 — Bearing capacity of shallow foundations'},
+{heading:'Punching shear — the critical check',content:'The column tries to punch through the footing slab. The concrete resists along a perimeter at d/2 from the column face.<br><br><strong>bo = 4 × (column size + d)</strong><br><strong>Stress = Vu / (bo × d)</strong><br><strong>Permissible = 0.25√fck</strong><br><br>If punching fails: increase footing depth d. This rapidly reduces the stress.',is_code:'IS 456 Cl 31.6.2 — Punching shear'},
+{heading:'Net SBC — why it reduces with depth',content:'<strong>Net SBC = Gross SBC − γ × depth</strong><br>For SBC=200, γ=18, depth=1.5m: Net SBC = 200 − 27 = <strong>173 kN/m²</strong><br><br>Always use net SBC for sizing the footing. Using gross SBC overestimates capacity and gives an unsafe design.'}
+]},
+{id:'ch7',icon:'🌍',title:'Seismic Design',subtitle:'Zones, base shear, IS 1893 and ductile detailing',color:'#f87171',
+sections:[
+{heading:'Why seismic design exists',content:'Earthquakes create horizontal forces. A building designed only for gravity loads can collapse in an earthquake because it has no horizontal resistance.<br><br>IS 1893 force depends on:<br>• Seismic zone (II to V)<br>• Soil type (soft soil amplifies more)<br>• Building weight<br>• Building height (taller = longer time period)',is_code:'IS 1893:2016 Part 1 — Earthquake resistant design'},
+{heading:'Base shear',content:'Total horizontal force at building base = <strong>V = Ah × W</strong><br><br>Ah = (Z/2) × (I/R) × (Sa/g)<br>W = Dead load + 25% of live load<br><br>This force is distributed over height — more to upper floors. The ground floor column carries the full accumulated base shear.',is_code:'IS 1893 Cl 7.6 — Design seismic base shear'},
+{heading:'IS 13920 — ductile detailing',content:'The building must deform under seismic force without collapsing — <strong>ductility</strong>.<br><br>IS 13920 rules:<br>• Minimum column 300mm<br>• Confinement zones at beam/column ends<br>• 135° hooks on stirrups<br>• Fe500D steel<br>• Strong column — weak beam principle<br><br><strong>Strong column — weak beam:</strong> Beams yield first, absorbing energy. Columns stay intact.',is_code:'IS 13920:2016 — Ductile detailing of RC structures'}
+]},
+{id:'ch8',icon:'📊',title:'Reading Your Report',subtitle:'How to use StructLearn Pro results professionally',color:'#34d399',
+sections:[
+{heading:'First thing to check — the Safety tab',content:'When results load, go to the <strong>Safety tab first</strong>. This gives a single pass/fail verdict for every member.<br><br><strong>Common failures:</strong><br>• Beam deflection fail → increase slab thickness or reduce span<br>• Beam shear fail → increase beam width b<br>• Column fail → increase column size or concrete grade<br>• Punching shear fail → increase footing depth'},
+{heading:'How to fix a failing member',content:'<strong>Step 1:</strong> Identify failing member (red in Safety tab)<br><strong>Step 2:</strong> Go to that member\'s tab<br><strong>Step 3:</strong> Read which check failed<br><strong>Step 4:</strong> Click WHY? button for the fix<br><strong>Step 5:</strong> Change inputs<br><strong>Step 6:</strong> Run analysis again<br><strong>Step 7:</strong> Confirm failure resolved<br><br>This iterative process is exactly what professional structural engineers do.'},
+{heading:'What the report does NOT cover',content:'StructLearn Pro checks strength and deflection. It does NOT check:<br>• Foundation settlement over time<br>• Wind on cladding and facades<br>• Durability in aggressive environments<br>• Fire resistance<br>• Dynamic effects from machinery<br><br>For any real construction, all of these need a licensed structural engineer. This software is for learning and preliminary design only.',is_code:'IS 456 Cl 8 — Durability | IS 456 Cl 16 — Fire resistance'}
+]}
+];
+
+
+const LEARNING_MODULES = [
+{
+  id:'M1', level:'foundation', color:'#d97706', icon:'🥉',
+  title:'Foundation Module',
+  subtitle:'Learn the basics of RC structural design',
+  free: true,
+  lessons:[
+    {
+      id:'L1_1', title:'How Buildings Stand — The Load Path',
+      duration:'5 min read',
+      theory:`<h3>Every load has a journey</h3>
+<p>When you stand in a room, your weight travels through the floor, into the beams below, then into the columns, and finally into the ground through the footings. This journey is called the <strong>load path</strong>.</p>
+<p>As a structural engineer, your job is to make sure every member on this journey is strong enough to carry the load safely.</p>
+<h3>The four members</h3>
+<p><strong>Slab</strong> — The floor you stand on. Spans between beams. Carries people, furniture and its own weight.</p>
+<p><strong>Beam</strong> — A horizontal member that collects load from slabs and carries it to columns. Beams bend under load.</p>
+<p><strong>Column</strong> — A vertical member. Carries load from all floors above. Columns are compressed — they get shorter under load.</p>
+<p><strong>Footing</strong> — Spreads the column load over a large area of soil so the soil does not fail under pressure.</p>
+<h3>The key insight</h3>
+<p>Nothing is isolated. Every member affects every other. If you make a bay larger, the beam spanning it must be deeper. If you add a floor, every column below must be larger. This interconnection is what makes structural engineering both challenging and fascinating.</p>`,
+      practice:`Open the Design Tool. Look at the building plan canvas. You will see the column grid — dots connected by lines. Each dot is a column, each line is a beam, and each rectangular area is a bay where the slab sits. Spend 2 minutes just looking at the layout and identifying these four members.`,
+      task:'view_report',
+      quiz:[
+        {q:'What is the "load path" in a building?',opts:['The route construction workers take','The chain of members through which loads travel from slab to ground','The direction wind blows','The path of electrical wiring'],ans:1},
+        {q:'Which member carries load directly from the soil pressure?',opts:['Slab','Beam','Column','Footing'],ans:3},
+        {q:'What happens to a beam when it carries load?',opts:['It gets shorter','It gets longer','It bends','It rotates'],ans:2},
+      ]
+    },
+    {
+      id:'L1_2', title:'Setting Up Your Building — Project Info and Plan',
+      duration:'8 min + practice',
+      theory:`<h3>Before you design, you must define</h3>
+<p>A structural design is meaningless without context. The same 4-storey building in Seismic Zone II needs completely different design than in Zone V. You must tell the software exactly what you are designing.</p>
+<h3>Key inputs that change everything</h3>
+<p><strong>Number of floors:</strong> Each additional floor adds load to every column below. A G+4 building's ground floor column carries 5 times more than the top floor column.</p>
+<p><strong>Floor height:</strong> Taller floors mean taller columns, which means more wall load on beams, and a longer time period for seismic calculations.</p>
+<p><strong>Seismic zone:</strong> This single choice can change your column steel by 50%. Zone V buildings need much more robust detailing than Zone II.</p>
+<p><strong>Span lengths:</strong> This is your most powerful design choice. Shorter spans mean smaller beams, thinner slabs, smaller columns and smaller footings. Span is the master variable.</p>
+<h3>The rule of thumb for spans</h3>
+<p>For a typical residential building, spans between 3.0m and 4.0m give the most economical design. Below 3.0m, you have too many columns. Above 4.5m, beams become very deep and costly.</p>`,
+      practice:`Go to Project Info (Step 1) and set up a G+2 residential building in your city. Then go to Plan and Spans (Step 2). Set a 2×2 grid with spans of 3.5m × 3.0m. This represents a modest 2-bedroom apartment floor plate.`,
+      task:'setup_plan',
+      quiz:[
+        {q:'A G+3 building has how many floors total?',opts:['3','4','5','6'],ans:1},
+        {q:'Which span range is most economical for residential buildings?',opts:['1-2m','3-4m','5-6m','7-8m'],ans:1},
+        {q:'Which single input most affects beam depth?',opts:['Number of floors','Seismic zone','Span length','Concrete grade'],ans:2},
+      ]
+    },
+    {
+      id:'L1_3', title:'Loads — What Are We Designing For?',
+      duration:'6 min read',
+      theory:`<h3>Types of loads</h3>
+<p><strong>Dead load (DL)</strong> — Permanent loads that never change. Self weight of concrete (25 kN/m³), floor finish, brick walls. These are always present.</p>
+<p><strong>Live load (LL)</strong> — Variable loads from people and furniture. For residential floors: 2.0 kN/m² (IS 875 Part 2). This means 200 kg per square metre — imagine a crowded room.</p>
+<p><strong>Seismic load</strong> — Horizontal force from earthquakes. Calculated from IS 1893 based on building weight and zone.</p>
+<h3>The load factor — why we multiply by 1.5</h3>
+<p>We never design for the exact calculated load. We multiply by a <strong>load factor of 1.5</strong> to account for uncertainty. Real loads might be higher than calculated. Materials might be slightly weaker than specified. The factor gives us a safety margin.</p>
+<p>Factored load wu = 1.5 × (DL + LL)</p>
+<p>This is the load we actually design for — the <strong>design load</strong>.</p>
+<h3>Wall load — often forgotten</h3>
+<p>Brick walls sitting on beams create a significant line load. A 230mm thick wall, 2.8m tall (floor height minus slab) has a load of approximately: 0.23 × 2.8 × 19 = 12.2 kN/m. This is often the dominant load on perimeter beams.</p>`,
+      practice:`Go to Loads (Step 3). Enter LL = 2.0 kN/m² for floors, 1.5 kN/m² for roof. Floor finish = 1.0 kN/m². Leave wall load as auto-calculated. Look at the wall load value — it should be around 10-14 kN/m.`,
+      task:'enter_loads',
+      quiz:[
+        {q:'What is the standard live load for residential floors per IS 875?',opts:['1.0 kN/m²','1.5 kN/m²','2.0 kN/m²','3.0 kN/m²'],ans:2},
+        {q:'Why do we multiply loads by 1.5?',opts:['To make the design more expensive','To account for uncertainty and provide a safety margin','Because IS 456 requires it always','To reduce the beam size'],ans:1},
+        {q:'Wall load is a type of which load?',opts:['Live load','Dead load','Seismic load','Wind load'],ans:1},
+      ]
+    },
+    {
+      id:'L1_4', title:'Run Your First Analysis and Read the Results',
+      duration:'10 min practice',
+      theory:`<h3>What happens when you run analysis?</h3>
+<p>The software follows the load path you learned about. Starting from the slab, it calculates how much load each member carries and sizes each member to carry it safely.</p>
+<p>The order is: Slab → Staircase → Beams → Columns → Footings → Seismic</p>
+<h3>Reading the Overview tab</h3>
+<p>The Overview gives you a quick summary of your building. Key things to note:<br>
+• Total seismic weight (how heavy your building is)<br>
+• Critical members — which beam, column or footing has the highest utilisation<br>
+• Overall status — does everything pass?</p>
+<h3>The most important number — utilisation ratio</h3>
+<p>A utilisation ratio of 0.85 means the member is using 85% of its capacity. Between 0.6 and 0.9 is ideal — the member is working hard but has a safe margin. Below 0.5 it is over-designed (wasteful). Above 1.0 it has failed.</p>`,
+      practice:`Go to Step 6 and click Run Analysis. Wait for the results to load. Then click through each report tab — Overview, Slab, Beams, Columns, Footings. Do not worry about understanding everything yet. Just look at the colours — green means pass, red means fail. Note which members pass and which fail.`,
+      task:'run_analysis',
+      quiz:[
+        {q:'What utilisation ratio indicates an over-designed member?',opts:['0.2','0.75','0.95','1.1'],ans:0},
+        {q:'Which tab should you check first after analysis?',opts:['Beams','Slab','Safety','Footings'],ans:2},
+        {q:'A utilisation ratio above 1.0 means?',opts:['Member is very strong','Member has failed — unsafe','Member is efficient','Member needs more data'],ans:1},
+      ]
+    }
+  ]
+},
+{
+  id:'M2', level:'proficiency', color:'#64748b', icon:'🥈',
+  title:'Proficiency Module',
+  subtitle:'Understand why — not just what',
+  free: false,
+  lessons:[
+    {
+      id:'L2_1', title:'Multi-Floor Buildings — Cumulative Loads',
+      duration:'7 min read',
+      theory:`<h3>Load accumulates floor by floor</h3>
+<p>In a single-storey building, the ground floor column carries only the loads from that one floor. In a G+3 building, the ground floor column carries loads from all 4 floors — plus wall loads from all 4 storeys, plus its own weight.</p>
+<p>This is why the column schedule in your report shows different steel percentages on each floor. The ground floor has the most load and needs the most steel. The roof floor has the least load and may need only the minimum steel.</p>
+<h3>The C-5 floor-by-floor summary</h3>
+<p>In the Columns tab, click any column and scroll to section C-5. This shows the cumulative load at every floor level. Watch how Ps (service load) decreases as you go up. The ground floor column carries everything — the roof column carries only its one floor.</p>
+<h3>Why column size stays the same</h3>
+<p>In practice, changing column size at every floor creates construction problems — workers must change formwork on every floor. Engineers often keep the same size throughout and reduce the steel as load decreases. Some buildings use 2-floor groupings — same size for every 2 floors.</p>`,
+      practice:`Design a G+3 building and compare the steel percentage of the ground floor interior column vs the roof floor interior column. How much does it reduce? Now compare the footing sizes of a corner column vs interior column. The difference should be significant.`,
+      task:'compare_floors',
+      quiz:[
+        {q:'Why does a ground floor column carry more load than a top floor column?',opts:['Ground floor is stronger','It carries cumulative load from all floors above','Ground floor concrete is denser','The soil adds load'],ans:1},
+        {q:'Why do engineers keep the same column size on all floors?',opts:['It is always required by code','To simplify construction formwork','It is cheaper concrete','Upper floors need more steel'],ans:1},
+        {q:'In the C-5 summary, load is highest at which floor?',opts:['Roof','Top floor','Mid height','Ground floor'],ans:3},
+      ]
+    },
+    {
+      id:'L2_2', title:'Seismic Zones — What Actually Changes',
+      duration:'8 min read',
+      theory:`<h3>The zone factor Z</h3>
+<p>India is divided into 4 seismic zones (II to V). Zone V covers areas of highest seismic risk — Himalayan region, parts of Northeast India, Andaman & Nicobar. Zone II is the lowest risk.<br>
+Zone II: Z=0.10 | Zone III: Z=0.16 | Zone IV: Z=0.24 | Zone V: Z=0.36</p>
+<h3>How zone affects your design</h3>
+<p>The base shear V = Ah × W, where Ah includes Z/2. Going from Zone II to Zone V triples the seismic coefficient. This means:<br>
+• Larger columns (more steel for combined axial + seismic moment)<br>
+• More stirrups in beams and columns<br>
+• IS 13920 ductile detailing becomes mandatory<br>
+• Minimum column size becomes 300mm</p>
+<h3>The experiment to try</h3>
+<p>Design the same building in Zone II. Note the base shear, column steel and beam stirrup spacing. Now change to Zone V and rerun. Compare the results. This single experiment teaches you more than reading 10 textbook pages.</p>`,
+      practice:`Take your G+2 design from Module 1. Run it in Zone II. Note the base shear, typical column steel percentage, and stirrup spacing. Then change to Zone V and rerun. Write down what changed and by how much.`,
+      task:'compare_zones',
+      quiz:[
+        {q:'Which seismic zone has the highest risk in India?',opts:['Zone II','Zone III','Zone IV','Zone V'],ans:3},
+        {q:'Zone factor Z for Zone IV is?',opts:['0.10','0.16','0.24','0.36'],ans:2},
+        {q:'IS 13920 ductile detailing is mandatory in which zones?',opts:['All zones','Zone II only','Zone III IV and V','Zone V only'],ans:2},
+      ]
+    },
+    {
+      id:'L2_3', title:'Design Iteration — Fixing Failures',
+      duration:'10 min practice',
+      theory:`<h3>All first designs have failures</h3>
+<p>Every experienced structural engineer knows: the first run always has something that fails. Design is an iterative process — you run, check, fix, rerun. The skill is knowing which change fixes which failure.</p>
+<h3>The most common failures and their fixes</h3>
+<p><strong>Beam deflection fail:</strong> The beam is too shallow. Fix: increase slab thickness D, or reduce span by adding a secondary beam at midspan.</p>
+<p><strong>Beam shear fail:</strong> The beam is overloaded for its width. Fix: increase beam width b. Shear capacity is proportional to b × d.</p>
+<p><strong>Column fail:</strong> Load exceeds capacity. Fix: increase column size, or increase concrete grade (fck). The latter adds less concrete but costs more.</p>
+<p><strong>Footing punching fail:</strong> Footing too thin. Fix: increase footing depth. This rapidly improves punching — both the perimeter bo and the depth d increase.</p>
+<h3>The economy of design</h3>
+<p>More steel and bigger sections always work — but the best design is the one that uses the minimum material while safely carrying all loads. Over-designed members waste money and material.</p>`,
+      practice:`Deliberately create a failing design: reduce your beam span to just 2m (very short — slabs can span this without beams). Or increase live load to 20 kN/m² (industrial floor). Run analysis, see the failures. Then fix them one by one and rerun after each fix.`,
+      task:'fix_failure',
+      quiz:[
+        {q:'Your beam fails in deflection. What is the most direct fix?',opts:['Add more steel','Increase beam depth D','Change concrete grade','Increase span'],ans:1},
+        {q:'Your footing punching check fails. What should you increase?',opts:['Footing plan size','Footing depth','Column size only','Steel in footing'],ans:1},
+        {q:'Why is over-designing wasteful?',opts:['It always fails later','It uses unnecessary material and cost','It violates IS 456','It increases seismic load'],ans:1},
+      ]
+    },
+    {
+      id:'L2_4', title:'Irregular Buildings — Voids Cantilevers and Stairs',
+      duration:'8 min read',
+      theory:`<h3>Real buildings are never perfectly regular</h3>
+<p>Textbooks show neat rectangular buildings. Real buildings have courtyards, open-to-sky areas, staircase openings, balconies and removed columns. Each irregularity has structural consequences.</p>
+<h3>Void and courtyard bays</h3>
+<p>When a bay has no slab (void or courtyard), the adjacent beams get no slab load from that side. Their tributary load is halved on one side. But the columns still need to support whatever is above — the next floor may have a slab in that bay.</p>
+<p>In seismic weight calculation: void bays are excluded. This reduces the base shear — counterintuitively, removing a floor slab reduces the seismic force on that floor.</p>
+<h3>Cantilever beams — the balcony</h3>
+<p>A cantilever beam is fixed at one end and free at the other. The bending moment is maximum at the fixed end (not midspan as in simply supported beams): Mu = wL²/2 for UDL. This is why long balconies need very deep beams at the connection to the main structure.</p>
+<h3>Staircase bays</h3>
+<p>The staircase bay has no flat floor slab. Instead, an inclined waist slab carries the steps. The waist slab is designed separately, and its reaction load is added to the adjacent beams. When you mark a bay as staircase in StructLearn Pro, the software handles all of this automatically.</p>`,
+      practice:`Add a void bay to your design (mark one bay as Void in the Bay Type mode). Rerun analysis. Compare the column loads adjacent to the void — they should be lower than before. Then add a cantilever to one edge column and rerun. See how the cantilever beam design differs from a regular beam.`,
+      task:'irregular_design',
+      quiz:[
+        {q:'A void bay in the building plan — how does it affect seismic weight?',opts:['Increases it','Reduces it — no slab mass','No effect','Doubles adjacent floor weight'],ans:1},
+        {q:'For a cantilever beam with UDL, maximum moment occurs at?',opts:['Free end','Midspan','Fixed end','Quarter point'],ans:2},
+        {q:'When a bay is marked as staircase, the flat slab is?',opts:['Thicker than normal','Same as normal slab','Not designed — waist slab replaces it','Designed as one-way'],ans:2},
+      ]
+    }
+  ]
+},
+{
+  id:'M3', level:'competent', color:'#b8860b', icon:'🥇',
+  title:'Competent Module',
+  subtitle:'Professional-level design judgment',
+  free: false,
+  lessons:[
+    {
+      id:'L3_1', title:'IS 13920 — Ductile Detailing in Practice',
+      duration:'9 min read',
+      theory:`<h3>Why ductility saves lives</h3>
+<p>A brittle material breaks suddenly without warning. A ductile material deforms significantly before breaking — giving people time to evacuate. Reinforced concrete can be made ductile through proper detailing.</p>
+<p>During the 2001 Bhuj earthquake, many RC buildings collapsed because their columns had inadequate confinement. Buildings with IS 13920 detailing performed dramatically better.</p>
+<h3>The five key IS 13920 rules for beams</h3>
+<p>1. Minimum 2 bars top and bottom throughout<br>
+2. Maximum steel ratio at any section: 2.5%<br>
+3. Confinement zone at each end: 2d from face or span/4, whichever is more<br>
+4. In confinement zone, stirrup spacing: d/4 or 8× smallest bar diameter<br>
+5. 135° hooks on stirrups — not 90° as in non-seismic design</p>
+<h3>The five key IS 13920 rules for columns</h3>
+<p>1. Minimum dimension: 300mm<br>
+2. Minimum steel: 0.8% of Ag<br>
+3. Confinement zone at each end: Lo = max(larger column dim, span/6, 450mm)<br>
+4. In confinement zone, tie spacing: B/4 or 75mm, whichever is less<br>
+5. No lap splices in confinement zone</p>`,
+      practice:`Look at your column report section C-4 (Confinement). Note the tie spacing inside vs outside the confinement zone. The difference should be significant. Also check the beam report section B-5 (Shear) — note how stirrup spacing changes near the support vs at midspan.`,
+      task:'check_confinement',
+      quiz:[
+        {q:'IS 13920 maximum stirrup spacing in column confinement zone?',opts:['100mm','B/4 or 75mm whichever less','150mm','d/2'],ans:1},
+        {q:'Hook angle for stirrups in seismic zones per IS 13920?',opts:['90°','90° or 135°','135° mandatory','180°'],ans:2},
+        {q:'Confinement zone length at column end: minimum of?',opts:['Only 450mm','Larger dim or span/6 or 450mm — whichever is most','150mm only','d from face'],ans:1},
+      ]
+    },
+    {
+      id:'L3_2', title:'Foundation Design — Soil and Structure Interaction',
+      duration:'8 min read',
+      theory:`<h3>The soil is a structural material</h3>
+<p>Most engineers think of soil as just the thing footings sit on. But soil is actually the last structural member in the load path — it has its own capacity that must not be exceeded.</p>
+<h3>What SBC means physically</h3>
+<p>Safe Bearing Capacity (SBC) is the pressure the soil can safely carry without excessive settlement or shear failure. It varies enormously:<br>
+• Soft clay, filled ground: 50-100 kN/m²<br>
+• Medium dense sand: 100-200 kN/m²<br>
+• Dense gravel: 200-400 kN/m²<br>
+• Hard rock: 3000-10000 kN/m²</p>
+<p>The SBC should come from a soil investigation report (bore log + laboratory tests). If you do not have one, use conservative values.</p>
+<h3>Settlement — the other failure mode</h3>
+<p>Even if soil stress is within SBC, excessive settlement can damage the building. Differential settlement — where one column settles more than another — causes cracking and distress. Soft soil buildings almost always need a differential settlement check, which is beyond the scope of StructLearn Pro.</p>`,
+      practice:`Change the SBC in your design from 200 kN/m² to 100 kN/m² (soft soil) and rerun. How do the footing sizes change? Now try 300 kN/m² (hard soil). Note how footing size is inversely proportional to SBC.`,
+      task:'vary_sbc',
+      quiz:[
+        {q:'SBC of soft clay is approximately?',opts:['500-800 kN/m²','200-400 kN/m²','50-100 kN/m²','1000+ kN/m²'],ans:2},
+        {q:'If SBC doubles, footing area?',opts:['Doubles','Halves','Stays the same','Increases by 4'],ans:1},
+        {q:'Differential settlement causes?',opts:['Higher seismic force','Cracking due to unequal column settlement','Deeper footings','Larger beams'],ans:1},
+      ]
+    },
+    {
+      id:'L3_3', title:'Complete Professional Design — Putting It All Together',
+      duration:'15 min practice',
+      theory:`<h3>A professional design checklist</h3>
+<p>Before calling a design complete, a professional structural engineer checks:<br><br>
+<strong>1. All members pass</strong> — No red in Safety tab.<br>
+<strong>2. No member is grossly over-designed</strong> — Utilisation above 0.5 for all members.<br>
+<strong>3. Seismic detailing complete</strong> — IS 13920 requirements met if in Zone III+.<br>
+<strong>4. Footing depth adequate</strong> — Below frost line (not relevant in India) and firm soil.<br>
+<strong>5. Column sizes practical</strong> — Same size throughout or logical grouping.<br>
+<strong>6. Slab thickness consistent</strong> — Not varying wildly bay to bay.<br>
+<strong>7. Report reviewed</strong> — Every section checked, not just Safety tab.</p>
+<h3>The judgment calls</h3>
+<p>The software gives you the minimum required. Practical design adds judgment:<br>
+• Round beam depths to nearest 25mm (easier formwork: 300, 325, 350 not 317mm)<br>
+• Use the same beam size for similar spans (simplifies construction)<br>
+• Keep column sizes consistent per 2 floors minimum<br>
+• Specify standard bar diameters (8, 10, 12, 16, 20, 25, 32mm) — not odd sizes</p>`,
+      practice:`Design a complete G+3 residential building with: 3×3 grid, spans 3.5m × 3.0m, Zone IV, M25 concrete, Fe500D steel, SBC 150 kN/m². Include a staircase bay. Achieve a design where all members pass and no member is below 50% utilisation. Download the full PDF report.`,
+      task:'complete_design',
+      quiz:[
+        {q:'What is the minimum acceptable utilisation ratio for an efficient design?',opts:['0.1','0.3','0.5','0.9'],ans:2},
+        {q:'Why do engineers round beam depth to nearest 25mm?',opts:['Code requirement','Easier formwork and construction','Stronger concrete','Less steel needed'],ans:1},
+        {q:'Standard bar diameters in India include (select all common ones)?',opts:['7mm, 11mm, 13mm','8mm, 10mm, 12mm, 16mm, 20mm','9mm, 14mm, 18mm','Only 20mm and 25mm'],ans:1},
+      ]
+    }
+  ]
+}
+];
+
+
+// ── MODULE PROGRESS TRACKING ──────────────────────────────────
+const _EDU = {
+  getProgress() {
+    try { return JSON.parse(localStorage.getItem('slp_edu_progress')||'{}'); } catch(e){ return {}; }
+  },
+  saveProgress(data) {
+    localStorage.setItem('slp_edu_progress', JSON.stringify({...this.getProgress(),...data}));
+  },
+  isLessonComplete(lessonId) { return !!this.getProgress()[lessonId+'_done']; },
+  isQuizPassed(lessonId)    { return !!this.getProgress()[lessonId+'_quiz']; },
+  completeLesson(lessonId)  { this.saveProgress({[lessonId+'_done']:true}); },
+  passQuiz(lessonId)        { this.saveProgress({[lessonId+'_quiz']:true}); },
+  getModuleProgress(moduleId) {
+    const mod = LEARNING_MODULES.find(m=>m.id===moduleId);
+    if(!mod) return 0;
+    const done = mod.lessons.filter(l=>this.isLessonComplete(l.id)&&this.isQuizPassed(l.id)).length;
+    return Math.round((done/mod.lessons.length)*100);
+  }
+};
+
+// ── STUDENT GUIDE UI ──────────────────────────────────────────
+function openStudentGuide(chapterId) {
+  const old = document.getElementById('_guide_screen'); if(old) old.remove();
+  const activeChapter = chapterId
+    ? GUIDE_CHAPTERS.find(c=>c.id===chapterId)||GUIDE_CHAPTERS[0]
+    : GUIDE_CHAPTERS[0];
+
+  const screen = document.createElement('div');
+  screen.id = '_guide_screen';
+  screen.style.cssText = 'position:fixed;inset:0;background:#0a0f1e;z-index:9990;display:flex;font-family:Segoe UI,sans-serif;overflow:hidden;';
+
+  const sidebar = GUIDE_CHAPTERS.map(ch => `
+    <div onclick="switchGuideChapter('${ch.id}')"
+      style="padding:10px 16px;cursor:pointer;border-radius:6px;margin:2px 0;
+      background:${ch.id===activeChapter.id?'rgba(56,189,248,0.1)':'transparent'};
+      border-left:3px solid ${ch.id===activeChapter.id?ch.color:'transparent'};
+      display:flex;align-items:center;gap:8px;font-size:12px;
+      color:${ch.id===activeChapter.id?ch.color:'#475569'}">
+      <span>${ch.icon}</span>
+      <span>${ch.title}</span>
+    </div>`).join('');
+
+  const content = activeChapter.sections.map(sec => `
+    <div style="margin-bottom:28px">
+      <h3 style="font-size:16px;font-weight:700;color:#f1f5f9;margin-bottom:12px;
+        padding-bottom:8px;border-bottom:1px solid #1e293b">${sec.heading}</h3>
+      <div style="font-size:13px;color:#94a3b8;line-height:1.9">${sec.content}</div>
+      ${sec.is_code?`<div style="margin-top:10px;padding:6px 12px;background:#060f1f;border-left:3px solid ${activeChapter.color};border-radius:0 5px 5px 0;font-size:11px;color:${activeChapter.color};font-family:monospace">${sec.is_code}</div>`:''}
+    </div>`).join('');
+
+  screen.innerHTML = `
+  <div style="width:220px;background:#0d1526;border-right:1px solid #1e293b;padding:16px;overflow-y:auto;flex-shrink:0">
+    <div style="font-size:14px;font-weight:800;color:#38bdf8;margin-bottom:4px">📚 Student Guide</div>
+    <div style="font-size:10px;color:#334155;margin-bottom:16px">IS 456 Reference</div>
+    ${sidebar}
+  </div>
+  <div style="flex:1;overflow-y:auto;padding:32px 40px;max-width:800px">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px">
+      <div>
+        <div style="font-size:24px;font-weight:900;color:${activeChapter.color}">${activeChapter.icon} ${activeChapter.title}</div>
+        <div style="font-size:12px;color:#475569;margin-top:4px">${activeChapter.subtitle}</div>
+      </div>
+      <button onclick="document.getElementById('_guide_screen').remove()"
+        style="padding:6px 14px;background:transparent;border:1px solid #334155;border-radius:6px;color:#64748b;cursor:pointer;font-size:12px;font-family:inherit">✕ Close</button>
+    </div>
+    ${content}
+  </div>`;
+
+  document.body.appendChild(screen);
+}
+
+function switchGuideChapter(id) {
+  document.getElementById('_guide_screen').remove();
+  openStudentGuide(id);
+}
+
+// ── LEARNING MODULE UI ────────────────────────────────────────
+function openLearningModules(activeModId, activeLessonId) {
+  const old = document.getElementById('_module_screen'); if(old) old.remove();
+  const activeMod = activeModId
+    ? LEARNING_MODULES.find(m=>m.id===activeModId)||LEARNING_MODULES[0]
+    : LEARNING_MODULES[0];
+  const activeLesson = activeLessonId
+    ? activeMod.lessons.find(l=>l.id===activeLessonId)||activeMod.lessons[0]
+    : null;
+
+  if(activeLesson) {
+    openLesson(activeMod, activeLesson);
+    return;
+  }
+
+  const screen = document.createElement('div');
+  screen.id = '_module_screen';
+  screen.style.cssText = 'position:fixed;inset:0;background:#0a0f1e;z-index:9990;overflow-y:auto;font-family:Segoe UI,sans-serif;';
+
+  const modCards = LEARNING_MODULES.map(mod => {
+    const pct = _EDU.getModuleProgress(mod.id);
+    const isPro = !mod.free;
+    const locked = isPro && typeof _userPlan!=='undefined' && _userPlan!=='pro';
+
+    // Build lesson chips
+    const lessonChips = mod.lessons.map(l => {
+      const done = _EDU.isQuizPassed(l.id);
+      return '<div style="padding:3px 8px;border-radius:4px;font-size:10px;'
+        + 'background:'+(done?'rgba(52,211,153,0.1)':'#060f1f')+';'
+        + 'border:1px solid '+(done?'#34d399':'#1e293b')+';'
+        + 'color:'+(done?'#34d399':'#334155')+'">'
+        + (done?'✓ ':'')+l.title.split('—')[0].trim()+'</div>';
+    }).join('');
+
+    const planBadge = locked
+      ? '<span style="padding:3px 10px;background:rgba(245,158,11,0.1);border:1px solid #f59e0b;border-radius:10px;font-size:10px;color:#f59e0b;font-weight:700">PRO</span>'
+      : '<span style="padding:3px 10px;background:rgba(52,211,153,0.1);border:1px solid #34d399;border-radius:10px;font-size:10px;color:#34d399;font-weight:700">FREE</span>';
+
+    return '<div style="background:#0d1526;border:1.5px solid '+(locked?'#1e293b':mod.color+'44')+';border-radius:12px;padding:20px;'
+      + 'cursor:'+(locked?'not-allowed':'pointer')+';opacity:'+(locked?0.6:1)+'"'
+      + ' data-modid="'+mod.id+'" data-locked="'+(locked?'1':'0')+'"'
+      + ' onclick="handleModuleClick(this)">'
+      + '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">'
+      +   '<div>'
+      +     '<div style="font-size:22px">'+mod.icon+'</div>'
+      +     '<div style="font-size:16px;font-weight:800;color:'+mod.color+';margin-top:4px">'+mod.title+'</div>'
+      +     '<div style="font-size:11px;color:#475569;margin-top:2px">'+mod.subtitle+'</div>'
+      +   '</div>'
+      +   '<div style="text-align:right">'+planBadge+'</div>'
+      + '</div>'
+      + '<div style="margin-bottom:10px">'
+      +   '<div style="display:flex;justify-content:space-between;margin-bottom:4px">'
+      +     '<span style="font-size:10px;color:#475569">'+mod.lessons.length+' lessons</span>'
+      +     '<span style="font-size:10px;color:'+mod.color+';font-weight:700">'+pct+'% complete</span>'
+      +   '</div>'
+      +   '<div style="height:4px;background:#1e293b;border-radius:2px;overflow:hidden">'
+      +     '<div style="height:100%;width:'+pct+'%;background:'+mod.color+';border-radius:2px"></div>'
+      +   '</div>'
+      + '</div>'
+      + '<div style="display:flex;flex-wrap:wrap;gap:6px">'+lessonChips+'</div>'
+      + '</div>';
+  }).join('');
+
+  screen.innerHTML = `
+  <div style="max-width:900px;margin:0 auto;padding:32px 20px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px">
+      <div>
+        <div style="font-size:26px;font-weight:900;color:#38bdf8">📖 Learning Modules</div>
+        <div style="font-size:12px;color:#475569;margin-top:4px">Complete lessons, earn certificates</div>
+      </div>
+      <button onclick="document.getElementById('_module_screen').remove()"
+        style="padding:8px 16px;background:transparent;border:1px solid #334155;border-radius:6px;color:#64748b;cursor:pointer;font-size:12px;font-family:inherit">✕ Close</button>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px">
+      ${modCards}
+    </div>
+  </div>`;
+
+  document.body.appendChild(screen);
+}
+
+function openLesson(mod, lesson) {
+  const old = document.getElementById('_lesson_screen'); if(old) old.remove();
+  const lessonIdx = mod.lessons.indexOf(lesson);
+  const isDone = _EDU.isLessonComplete(lesson.id);
+  const isQuizDone = _EDU.isQuizPassed(lesson.id);
+
+  const screen = document.createElement('div');
+  screen.id = '_lesson_screen';
+  screen.style.cssText = 'position:fixed;inset:0;background:#0a0f1e;z-index:9991;overflow-y:auto;font-family:Segoe UI,sans-serif;';
+
+  const lessonNav = mod.lessons.map((l,i) => `
+    <div onclick="openLesson(LEARNING_MODULES.find(m=>m.id==='${mod.id}'),mod_${mod.id}_lessons[${i}])"
+      style="padding:8px 12px;border-radius:6px;cursor:pointer;font-size:11px;
+      background:${l.id===lesson.id?'rgba(56,189,248,0.1)':'transparent'};
+      color:${l.id===lesson.id?'#38bdf8':_EDU.isQuizPassed(l.id)?'#34d399':'#475569'};
+      border-left:2px solid ${l.id===lesson.id?'#38bdf8':_EDU.isQuizPassed(l.id)?'#34d399':'transparent'}">
+      ${_EDU.isQuizPassed(l.id)?'✓ ':''}${i+1}. ${l.title.split('—')[0].trim()}
+    </div>`).join('');
+
+  screen.innerHTML = `
+  <div style="display:flex;height:100%">
+    <!-- Sidebar -->
+    <div style="width:220px;background:#0d1526;border-right:1px solid #1e293b;padding:16px;overflow-y:auto;flex-shrink:0;position:sticky;top:0;height:100vh">
+      <div style="font-size:11px;color:${mod.color};font-weight:700;margin-bottom:4px">${mod.icon} ${mod.title}</div>
+      <div style="font-size:10px;color:#334155;margin-bottom:12px">${mod.lessons.length} lessons</div>
+      ${lessonNav}
+      <div style="margin-top:16px;padding-top:16px;border-top:1px solid #1e293b">
+        <button onclick="document.getElementById('_lesson_screen').remove();openLearningModules()"
+          style="width:100%;padding:7px;background:transparent;border:1px solid #334155;border-radius:6px;color:#64748b;font-size:11px;cursor:pointer;font-family:inherit">
+          ← All Modules
+        </button>
+      </div>
+    </div>
+
+    <!-- Content -->
+    <div style="flex:1;overflow-y:auto;padding:32px 40px;max-width:760px">
+      <div style="font-size:11px;color:#475569;margin-bottom:6px">Lesson ${lessonIdx+1} of ${mod.lessons.length} · ${lesson.duration}</div>
+      <div style="font-size:22px;font-weight:800;color:#f1f5f9;margin-bottom:20px">${lesson.title}</div>
+
+      <!-- Theory -->
+      <div style="background:#0d1526;border:1px solid #1e293b;border-radius:10px;padding:24px;margin-bottom:20px">
+        <div style="font-size:11px;font-weight:700;color:#38bdf8;letter-spacing:2px;margin-bottom:14px">THEORY</div>
+        <div style="font-size:13px;color:#94a3b8;line-height:1.9">${lesson.theory}</div>
+      </div>
+
+      <!-- Practice -->
+      <div style="background:rgba(249,115,22,0.05);border:1px solid rgba(249,115,22,0.3);border-radius:10px;padding:20px;margin-bottom:20px">
+        <div style="font-size:11px;font-weight:700;color:#f97316;letter-spacing:2px;margin-bottom:10px">PRACTICE TASK</div>
+        <div style="font-size:13px;color:#94a3b8;line-height:1.8">${lesson.practice}</div>
+        <button onclick="markLessonDone('${lesson.id}');document.getElementById('_lesson_screen').remove();"
+          style="margin-top:14px;padding:8px 18px;background:rgba(249,115,22,0.15);border:1px solid #f97316;border-radius:6px;color:#f97316;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">
+          Open Design Tool & Practice →
+        </button>
+      </div>
+
+      <!-- Quiz -->
+      ${!isDone?'<div style="background:#060f1f;border:1px solid #1e293b;border-radius:10px;padding:20px;text-align:center"><div style="font-size:13px;color:#334155">Complete the practice task first, then take the quiz</div></div>'
+      :isQuizDone?'<div style="background:rgba(52,211,153,0.08);border:1px solid #34d399;border-radius:10px;padding:16px;text-align:center"><div style="color:#34d399;font-weight:700">✓ Quiz passed — lesson complete!</div></div>'
+      :`<div style="background:#0d1526;border:1px solid #1e293b;border-radius:10px;padding:20px">
+        <div style="font-size:11px;font-weight:700;color:#38bdf8;letter-spacing:2px;margin-bottom:16px">KNOWLEDGE CHECK</div>
+        ${lesson.quiz.map((q,qi)=>`
+          <div style="margin-bottom:16px">
+            <div style="font-size:13px;color:#f1f5f9;margin-bottom:8px;font-weight:600">Q${qi+1}. ${q.q}</div>
+            ${q.opts.map((opt,oi)=>`
+              <label style="display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:6px;cursor:pointer;font-size:12px;color:#64748b;margin-bottom:4px">
+                <input type="radio" name="q_${lesson.id}_${qi}" value="${oi}" style="accent-color:#38bdf8">
+                ${opt}
+              </label>`).join('')}
+          </div>`).join('')}
+        <button onclick="checkLessonQuiz('${lesson.id}',${JSON.stringify(lesson.quiz)},LEARNING_MODULES.find(m=>m.id==='${mod.id}'),${lessonIdx})"
+          style="width:100%;padding:10px;background:#1d4ed8;border:none;border-radius:7px;color:white;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:8px">
+          Submit Quiz →
+        </button>
+      </div>`}
+    </div>
+  </div>`;
+
+  // Store lesson refs for nav
+  window['mod_'+mod.id+'_lessons'] = mod.lessons;
+  document.body.appendChild(screen);
+}
+
+function markLessonDone(lessonId) {
+  _EDU.completeLesson(lessonId);
+}
+
+function checkLessonQuiz(lessonId, quiz, mod, lessonIdx) {
+  let correct = 0;
+  quiz.forEach((q, qi) => {
+    const sel = document.querySelector(`input[name="q_${lessonId}_${qi}"]:checked`);
+    if(sel && parseInt(sel.value) === q.ans) correct++;
+  });
+  const pass = correct >= Math.ceil(quiz.length * 0.67);
+  if(pass) {
+    _EDU.passQuiz(lessonId);
+    _BT.updateProgress();
+    showCertToast('✓ Quiz passed! ' + correct + '/' + quiz.length + ' correct', '#34d399');
+    // Reopen lesson to show completion
+    const lesson = mod.lessons[lessonIdx];
+    setTimeout(() => {
+      document.getElementById('_lesson_screen').remove();
+      openLesson(mod, lesson);
+    }, 1000);
+  } else {
+    showCertToast('✗ ' + correct + '/' + quiz.length + ' — need ' + Math.ceil(quiz.length*0.67) + ' to pass. Try again.', '#f87171');
+  }
+}
+
+// ── GUIDED DESIGN OVERLAY ─────────────────────────────────────
+const GUIDED_STEPS = [
+  {
+    id:'GS1', title:'Welcome to Guided Design',
+    target:null, position:'center',
+    content:`<div style="text-align:center">
+      <div style="font-size:40px;margin-bottom:12px">🏗</div>
+      <div style="font-size:18px;font-weight:800;color:#38bdf8;margin-bottom:10px">Let's design your first building together</div>
+      <div style="font-size:13px;color:#94a3b8;line-height:1.8;max-width:400px;margin:0 auto">
+        I will guide you through designing a real G+2 residential building step by step.
+        Every time I ask you to enter a value, I will explain <strong>why</strong> — not just what.
+        <br><br>
+        This takes about <strong>20 minutes</strong> and teaches you the complete structural design process.
+      </div>
+    </div>`,
+    action:'next', actionLabel:'Start Guided Design →', page:1
+  },
+  {
+    id:'GS2', title:'Step 1 — Project Information',
+    target:'#pg-1', position:'center',
+    content:`<div>
+      <div style="font-size:15px;font-weight:700;color:#38bdf8;margin-bottom:10px">📋 Fill in the project details</div>
+      <div style="font-size:12px;color:#94a3b8;line-height:1.9">
+        We are designing a <strong style="color:#f1f5f9">G+2 residential house</strong> in a typical Indian city.<br><br>
+        <strong style="color:#f97316">Number of floors: 3</strong> (Ground + 2 upper floors)<br>
+        Why 3? G+2 means 3 slabs — ground floor, first floor and roof.<br><br>
+        <strong style="color:#f97316">Floor height: 3.0m</strong><br>
+        Why 3.0m? Standard residential floor-to-floor height. Below 2.7m feels cramped.<br><br>
+        <strong style="color:#f97316">Seismic Zone: IV</strong><br>
+        Why Zone IV? Covers Delhi, Dehradun, Jammu, and many other cities. Common for North India.<br><br>
+        <strong style="color:#f97316">Soil Type: II (Medium soil)</strong><br>
+        Most urban sites in India have medium dense soil.
+      </div>
+    </div>`,
+    action:'next', actionLabel:'Done → Set the Building Plan', page:1
+  },
+  {
+    id:'GS3', title:'Step 2 — Draw the Building Plan',
+    target:'#pg-2', position:'center',
+    content:`<div>
+      <div style="font-size:15px;font-weight:700;color:#38bdf8;margin-bottom:10px">🏗 Setting up the structural grid</div>
+      <div style="font-size:12px;color:#94a3b8;line-height:1.9">
+        Our house has a <strong style="color:#f1f5f9">2×2 grid of bays</strong> — 3 column lines in each direction.<br><br>
+        <strong style="color:#f97316">X Spans: 3.5m, 3.0m</strong><br>
+        Why? 3.5m for the main room, 3.0m for a smaller room or corridor. Together = 6.5m building width.<br><br>
+        <strong style="color:#f97316">Y Spans: 4.0m, 3.0m</strong><br>
+        Why? 4.0m for the living room depth, 3.0m for bedrooms. Together = 7.0m building depth.<br><br>
+        Set these values in the X Spans and Y Spans boxes below the canvas.<br><br>
+        <strong style="color:#f59e0b">💡 Notice:</strong> As you change spans, the canvas updates live. The beams get longer as spans increase.
+      </div>
+    </div>`,
+    action:'next', actionLabel:'Done → Set the Loads', page:2
+  },
+  {
+    id:'GS4', title:'Step 3 — Loads on Your Building',
+    target:'#pg-3', position:'center',
+    content:`<div>
+      <div style="font-size:15px;font-weight:700;color:#38bdf8;margin-bottom:10px">⚖ What loads will the building carry?</div>
+      <div style="font-size:12px;color:#94a3b8;line-height:1.9">
+        <strong style="color:#f97316">Live Load: 2.0 kN/m²</strong><br>
+        This is the IS 875 value for residential floors — people and furniture. 2.0 kN/m² means approximately 200 kg per square metre. Imagine a crowded room.<br><br>
+        <strong style="color:#f97316">Roof Live Load: 1.5 kN/m²</strong><br>
+        Roofs have less activity but need maintenance access and water tank loads.<br><br>
+        <strong style="color:#f97316">Floor Finish: 1.0 kN/m²</strong><br>
+        Tiles, screed, plaster — they add weight. 1.0 kN/m² is typical for ceramic tiles + screed.<br><br>
+        <strong style="color:#f59e0b">💡 The wall load is auto-calculated.</strong> Look at it — around 10-14 kN/m. This is the weight of a 230mm brick wall per metre length. It is often the largest load on perimeter beams.
+      </div>
+    </div>`,
+    action:'next', actionLabel:'Done → Choose Materials', page:3
+  },
+  {
+    id:'GS5', title:'Step 4 — Materials',
+    target:'#pg-4', position:'center',
+    content:`<div>
+      <div style="font-size:15px;font-weight:700;color:#38bdf8;margin-bottom:10px">🧱 Concrete and Steel grades</div>
+      <div style="font-size:12px;color:#94a3b8;line-height:1.9">
+        <strong style="color:#f97316">Concrete Grade: M25</strong><br>
+        M25 means characteristic strength = 25 N/mm². It is the minimum recommended for seismic zones. M20 is cheaper but not allowed in Zone III+.<br><br>
+        <strong style="color:#f97316">Steel Grade: Fe500D</strong><br>
+        The "D" stands for ductile — this steel can elongate significantly before breaking. IS 13920 mandates Fe500D in Zone III, IV and V. Never use Fe415 in seismic zones.<br><br>
+        <strong style="color:#f97316">Cover — leave as default</strong><br>
+        Cover protects steel from corrosion. Slab: 20mm, Beam/Column: 40mm, Footing: 75mm. These are IS 456 minimums for normal exposure.
+      </div>
+    </div>`,
+    action:'next', actionLabel:'Done → Soil and Foundation', page:4
+  },
+  {
+    id:'GS6', title:'Step 5 — Soil and Foundation',
+    target:'#pg-5', position:'center',
+    content:`<div>
+      <div style="font-size:15px;font-weight:700;color:#38bdf8;margin-bottom:10px">🌍 Soil properties</div>
+      <div style="font-size:12px;color:#94a3b8;line-height:1.9">
+        <strong style="color:#f97316">Safe Bearing Capacity: 150 kN/m²</strong><br>
+        This is typical for medium dense soil in most Indian cities. Your actual SBC should come from a soil investigation report. Using 150 is conservative and safe for preliminary design.<br><br>
+        <strong style="color:#f97316">Foundation Depth: 1.5m</strong><br>
+        We go 1.5m below ground level to reach firm soil and avoid the disturbed topsoil layer. Also provides protection against erosion and burrowing.<br><br>
+        <strong style="color:#f59e0b">💡 What net SBC is used?</strong><br>
+        Net SBC = 150 − 18×1.5 = 123 kN/m². The 18 kN/m³ is soil unit weight. The soil above the footing has already been carrying this pressure — so we subtract it from the available capacity.
+      </div>
+    </div>`,
+    action:'next', actionLabel:'Done → Run Analysis!', page:5
+  },
+  {
+    id:'GS7', title:'Step 6 — Run Analysis',
+    target:'#pg-6', position:'center',
+    content:`<div>
+      <div style="font-size:15px;font-weight:700;color:#38bdf8;margin-bottom:10px">⚡ Time to see what the structure needs</div>
+      <div style="font-size:12px;color:#94a3b8;line-height:1.9">
+        Click <strong style="color:#f1f5f9">Run Analysis & Design</strong>.<br><br>
+        The software will now design every member in your building — 9 slabs, 12 beams per floor (36 total for G+2), 9 columns per floor (27 total), 9 footings, and the seismic + wind analysis.<br><br>
+        This takes a few seconds. While it runs:<br>
+        • Slab moments are calculated from IS 456 Table 26<br>
+        • Beam depths are set by deflection control<br>
+        • Column loads accumulate from roof to ground<br>
+        • Footing sizes are set by soil bearing capacity<br><br>
+        <strong style="color:#f59e0b">After it runs, I will guide you through reading the results.</strong>
+      </div>
+    </div>`,
+    action:'run', actionLabel:'Run Analysis Now →', page:6
+  },
+  {
+    id:'GS8', title:'Reading Results — Safety Tab First',
+    target:null, position:'center',
+    content:`<div>
+      <div style="font-size:15px;font-weight:700;color:#38bdf8;margin-bottom:10px">📊 Your results are ready</div>
+      <div style="font-size:12px;color:#94a3b8;line-height:1.9">
+        <strong>Always check the Safety tab first.</strong><br><br>
+        This tab shows pass/fail for every member. Green = safe. Red = needs fixing.<br><br>
+        For your G+2 house with these typical parameters, most members should pass. If anything fails, do not worry — that is normal in real design. We will fix it.<br><br>
+        <strong style="color:#f97316">Now explore:</strong><br>
+        1. Click the <strong>Slab tab</strong> — click on any bay to see its design<br>
+        2. Click the <strong>Beams tab</strong> — see how beam depth was determined<br>
+        3. Click the <strong>Columns tab</strong> — notice all are 300mm minimum<br>
+        4. Click the <strong>Footings tab</strong> — corner footings are smaller than interior<br><br>
+        <strong style="color:#f59e0b">💡 Pro tip:</strong> Click the WHY? button next to any formula to understand it.
+      </div>
+    </div>`,
+    action:'next', actionLabel:'Continue → The Learning Experiment', page:7
+  },
+  {
+    id:'GS9', title:'The Experiment — Learning From Failure',
+    target:null, position:'center',
+    content:`<div>
+      <div style="font-size:15px;font-weight:700;color:#f59e0b;margin-bottom:10px">🧪 Now we break something — intentionally</div>
+      <div style="font-size:12px;color:#94a3b8;line-height:1.9">
+        This is how engineers truly learn — by seeing what happens when things go wrong.<br><br>
+        Go back to inputs (← Edit Inputs button) and try this:<br><br>
+        <strong style="color:#f97316">Change one X span from 3.5m to 7.0m</strong> (double it).<br><br>
+        Then run analysis again. Watch what happens:<br>
+        • Beam depth will increase significantly (deflection governs)<br>
+        • Beam shear might fail (larger span = larger load per unit)<br>
+        • Slab might become one-way instead of two-way<br>
+        • Overall design becomes more expensive<br><br>
+        <strong style="color:#f1f5f9">This demonstrates why span length is the single most important design variable.</strong><br><br>
+        After exploring, change the span back to 3.5m and rerun.
+      </div>
+    </div>`,
+    action:'edit', actionLabel:'← Go Back to Edit Inputs', page:7
+  },
+  {
+    id:'GS10', title:'Guided Design Complete!',
+    target:null, position:'center',
+    content:`<div style="text-align:center">
+      <div style="font-size:48px;margin-bottom:16px">🎉</div>
+      <div style="font-size:18px;font-weight:800;color:#34d399;margin-bottom:12px">You just designed your first building!</div>
+      <div style="font-size:13px;color:#94a3b8;line-height:1.8;max-width:420px;margin:0 auto">
+        You have gone through the complete structural design workflow — from project info to a fully designed G+2 building with slabs, beams, columns, footings and seismic analysis.<br><br>
+        <strong style="color:#f1f5f9">Your Design Confidence score has increased significantly.</strong><br><br>
+        Next steps:<br>
+        📚 Read the Student Guide for deeper understanding<br>
+        📖 Continue with Learning Module 1 for structured lessons<br>
+        🏆 Complete behaviors to unlock your certificate quiz
+      </div>
+    </div>`,
+    action:'close', actionLabel:'Start Exploring on My Own →', page:7
+  }
+];
+
+let _guideStep = 0;
+let _guideActive = false;
+
+function startGuidedDesign() {
+  _guideStep = 0;
+  _guideActive = true;
+  showGuideStep();
+}
+
+function showGuideStep() {
+  const old = document.getElementById('_guide_overlay'); if(old) old.remove();
+  if(_guideStep >= GUIDED_STEPS.length) { _guideActive = false; return; }
+  const step = GUIDED_STEPS[_guideStep];
+
+  const overlay = document.createElement('div');
+  overlay.id = '_guide_overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,5,20,0.7);z-index:9995;display:flex;align-items:center;justify-content:center;padding:20px;font-family:Segoe UI,sans-serif;';
+
+  const total = GUIDED_STEPS.length;
+  const pct = Math.round((_guideStep/total)*100);
+
+  overlay.innerHTML = `
+  <div style="background:#0d1526;border:2px solid #1e40af;border-radius:14px;padding:28px;max-width:520px;width:100%">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <div style="font-size:11px;color:#38bdf8;font-weight:700">GUIDED DESIGN · Step ${_guideStep+1}/${total}</div>
+      <button onclick="exitGuide()" style="background:none;border:1px solid #334155;border-radius:5px;color:#475569;cursor:pointer;padding:3px 10px;font-size:12px;font-family:inherit">Exit Guide</button>
+    </div>
+    <div style="height:3px;background:#1e293b;border-radius:2px;margin-bottom:20px;overflow:hidden">
+      <div style="height:100%;width:${pct}%;background:#38bdf8;border-radius:2px;transition:width 0.3s"></div>
+    </div>
+    ${step.content}
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:20px">
+      ${_guideStep>0?`<button onclick="prevGuideStep()" style="padding:8px 16px;background:transparent;border:1px solid #334155;border-radius:7px;color:#64748b;cursor:pointer;font-size:12px;font-family:inherit">← Back</button>`:'<div></div>'}
+      <button onclick="nextGuideStep('${step.action}',${step.page})"
+        style="padding:10px 22px;background:linear-gradient(135deg,#1d4ed8,#2563eb);border:none;border-radius:7px;color:white;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">
+        ${step.actionLabel}
+      </button>
+    </div>
+  </div>`;
+
+  document.body.appendChild(overlay);
+}
+
+function nextGuideStep(action, page) {
+  const overlay = document.getElementById('_guide_overlay');
+  if(overlay) overlay.remove();
+
+  if(action === 'run') {
+    if(typeof go === 'function') go(6);
+    setTimeout(() => {
+      if(typeof runNow === 'function') runNow();
+      setTimeout(() => { _guideStep++; showGuideStep(); }, 2000);
+    }, 300);
+    return;
+  }
+  if(action === 'edit') {
+    if(typeof go === 'function') go(1);
+    return;
+  }
+  if(action === 'close') {
+    exitGuide();
+    _BT.mark('B9');
+    showCertToast('Guided Design complete! 🎉 Check your certificate progress.', '#34d399');
+    return;
+  }
+  if(page && typeof go === 'function') go(page);
+  _guideStep++;
+  setTimeout(showGuideStep, 300);
+}
+
+function prevGuideStep() {
+  if(_guideStep > 0) { _guideStep--; showGuideStep(); }
+}
+
+function exitGuide() {
+  _guideActive = false;
+  const overlay = document.getElementById('_guide_overlay');
+  if(overlay) overlay.remove();
+}
+
+// ── ADD EDUCATION BUTTONS TO LEARNING PANEL ──────────────────
+const _origBuildPanel = buildLearningPanel;
+buildLearningPanel = function() {
+  _origBuildPanel();
+  // Add edu buttons to the panel
+  setTimeout(() => {
+    const panel = document.getElementById('_cert_panel');
+    if(!panel) return;
+    const existingBtn = panel.querySelector('button');
+    if(!existingBtn) return;
+
+    const eduBtns = document.createElement('div');
+    eduBtns.style.cssText = 'display:flex;flex-direction:column;gap:5px;margin-top:6px;';
+    eduBtns.innerHTML = `
+      <button onclick="startGuidedDesign()"
+        style="width:100%;padding:6px;background:rgba(249,115,22,0.1);border:1px solid #f97316;border-radius:5px;color:#f97316;font-size:10px;font-weight:700;cursor:pointer;font-family:inherit">
+        🎯 Start Guided Design
+      </button>
+      <button onclick="openLearningModules()"
+        style="width:100%;padding:6px;background:rgba(167,139,250,0.1);border:1px solid #a78bfa;border-radius:5px;color:#a78bfa;font-size:10px;font-weight:700;cursor:pointer;font-family:inherit">
+        📖 Learning Modules
+      </button>
+      <button onclick="openStudentGuide()"
+        style="width:100%;padding:6px;background:rgba(56,189,248,0.1);border:1px solid #38bdf8;border-radius:5px;color:#38bdf8;font-size:10px;font-weight:700;cursor:pointer;font-family:inherit">
+        📚 Student Guide
+      </button>`;
+    panel.insertBefore(eduBtns, existingBtn);
+  }, 2500);
+};
+
+// Show guided design prompt on first visit
+(function checkFirstVisit(){
+  window.addEventListener('load', () => {
+    setTimeout(() => {
+      if(!localStorage.getItem('slp_visited')) {
+        localStorage.setItem('slp_visited', '1');
+        // Show welcome prompt after 3 seconds
+        setTimeout(() => {
+          if(!_guideActive) {
+            const prompt = document.createElement('div');
+            prompt.style.cssText = 'position:fixed;bottom:220px;right:16px;background:#0d1526;border:2px solid #1d4ed8;border-radius:10px;padding:14px;max-width:200px;font-family:sans-serif;z-index:9001;';
+            prompt.innerHTML = `
+              <div style="font-size:12px;font-weight:700;color:#38bdf8;margin-bottom:6px">New to StructLearn Pro?</div>
+              <div style="font-size:10px;color:#64748b;margin-bottom:10px;line-height:1.5">Start with the guided design — I will teach you step by step.</div>
+              <button onclick="startGuidedDesign();this.closest('div[style]').remove()"
+                style="width:100%;padding:7px;background:#1d4ed8;border:none;border-radius:5px;color:white;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">
+                Start Guided Design →
+              </button>
+              <button onclick="this.closest('div[style]').remove()"
+                style="width:100%;padding:5px;background:transparent;border:none;color:#334155;font-size:10px;cursor:pointer;font-family:inherit;margin-top:4px">
+                I know what I'm doing
+              </button>`;
+            document.body.appendChild(prompt);
+          }
+        }, 3000);
+      }
+    }, 1000);
+  });
+})();
+
 </script>
 </body>
 </html>
