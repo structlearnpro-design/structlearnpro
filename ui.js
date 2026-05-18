@@ -392,8 +392,6 @@ function secWind(){
     ${fm('Net pressure = (0.8+0.5)xpz = 1.3x'+r2(wind.pz),r2(wind.Fw)+' kN/m^2','worst case')}
     ${vd(true,'Seismic Vb = '+r2(RES.seis.Vb)+' kN vs Wind ~ '+r2(wind.Fw*S.buildingW*S.numFloors*S.floorHt/2)+' kN -> '+(RES.seis.Vb>wind.Fw*S.buildingW*S.numFloors*S.floorHt/2?'SEISMIC GOVERNS':'WIND GOVERNS'))}
   `,'or')}
-
-  ${slabStepByStep(slab)}
 </div>`;}
 
 
