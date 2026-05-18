@@ -281,17 +281,7 @@ async function adminLogout(){
 }
 
 // \u2500\u2500 LOAD DATA \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
-async function loadAll(){
-  const [ur,pr]=await Promise.all([
-    adminDb.from('profiles').select('*').order('created_at',{ascending:false}),
-    adminDb.from('projects').select('*').order('created_at',{ascending:false})
-  ]);
-  allUsers=ur.data||[];
-  allProjs=pr.data||[];
-  renderDashboard();
-  renderUsers(allUsers);
-  renderProjects(allProjs);
-}
+// loadAll defined below
 
 // \u2500\u2500 DASHBOARD \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 function renderDashboard(){
@@ -1430,4 +1420,4 @@ async function loadAll(){
       </div>
     </div>
 
-    tml>
+    <div id="sec-profiles" class="sec"></div>
