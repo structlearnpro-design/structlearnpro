@@ -626,6 +626,8 @@ async function doLogin(mob){
   const _tok = Date.now().toString(36)+Math.random().toString(36).slice(2);
   localStorage.setItem('slp_tok_'+mob, _tok);
   await db.from('profiles').update({session_token:_tok, last_login:new Date().toISOString()}).eq('id',U.id);
+  // Load saved progress from Supabase and restore into app
+  await loadAndRestoreProgress();
   updTop();goTo('projects');
   toast('Welcome back, '+(P.full_name||mob)+'! 👋');
 }
@@ -918,6 +920,10 @@ window.addEventListener('message',async(e)=>{
     trackStudentEvent(e.data.eventType, e.data.eventData);
     return;
   }
+  if(e.data?.type==='SAVE_PROGRESS'){
+    saveProgressToSupabase(e.data.progress);
+    return;
+  }
   if(e.data?.type==='FLUSH_SESSION'){
     flushStudentSession(e.data);
     return;
@@ -1038,6 +1044,71 @@ function showToast(msg, type) {
   document.body.appendChild(t);
   setTimeout(function(){ t.remove(); }, 6000);
 }
+
+// ── STUDENT PROGRESS (cross-device sync) ─────────────────────
+async function saveProgressToSupabase(progress) {
+  if(!U || !U.id || !progress) return;
+  try {
+    await db.from('student_progress').upsert({
+      user_id: U.id,
+      lessons_passed: progress.lessons || {},
+      behaviors_done: progress.behaviors || {},
+      quiz_attempts:  progress.quizAttempts || {},
+      confidence:     progress.confidence || 0,
+      updated_at:     new Date().toISOString()
+    }, { onConflict: 'user_id' });
+  } catch(e) { console.log('Save progress error', e); }
+}
+
+async function loadAndRestoreProgress() {
+  if(!U || !U.id) return;
+  try {
+    const {data} = await db.from('student_progress')
+      .select('*').eq('user_id', U.id).maybeSingle();
+    if(!data) return; // first time — no saved progress
+
+    // Store in sessionStorage so iframe can access after load
+    sessionStorage.setItem('slp_restore_progress', JSON.stringify({
+      lessons:      data.lessons_passed  || {},
+      behaviors:    data.behaviors_done  || {},
+      quizAttempts: data.quiz_attempts   || {},
+      confidence:   data.confidence      || 0
+    }));
+
+    // Send to iframe if already loaded
+    sendProgressToIframe();
+  } catch(e) { console.log('Load progress error', e); }
+}
+
+function sendProgressToIframe() {
+  const raw = sessionStorage.getItem('slp_restore_progress');
+  if(!raw) return;
+  try {
+    const iframe = document.getElementById('app-iframe');
+    if(!iframe || !iframe.contentWindow) return;
+    iframe.contentWindow.postMessage({
+      type: 'RESTORE_PROGRESS',
+      progress: JSON.parse(raw)
+    }, '*');
+  } catch(e) {}
+}
+
+// Send progress when iframe loads
+document.addEventListener('DOMContentLoaded', function() {
+  const iframe = document.getElementById('app-iframe');
+  if(iframe) {
+    iframe.addEventListener('load', function() {
+      // Small delay to let iframe JS initialise
+      setTimeout(sendProgressToIframe, 800);
+      // Also send user plan
+      setTimeout(function(){
+        try{
+          iframe.contentWindow.postMessage({type:'USER_PLAN',plan,user:P},'*');
+        }catch(e){}
+      }, 900);
+    });
+  }
+});
 
 </script>
 </body>
