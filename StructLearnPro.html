@@ -12234,6 +12234,20 @@ const _BT = {
   count() {
     return Object.values(this.behaviors).filter(b=>b.done).length;
   },
+  export() {
+    var out = {};
+    Object.keys(this.behaviors).forEach(function(k){
+      if(_BT.behaviors[k].done) out[k] = true;
+    });
+    return out;
+  },
+  importFrom(data) {
+    if(!data) return;
+    var self = this;
+    Object.keys(data).forEach(function(k){
+      if(self.behaviors[k]) self.behaviors[k].done = true;
+    });
+  },
 
   // Calculate confidence score
   confidence() {
@@ -13267,7 +13281,7 @@ window.addEventListener('load', function() {
   // Hook runNow to track analysis
   if(typeof runNow === 'function') {
     const _origRunNow = runNow;
-    window.runNow = function() {
+    runNow = function() {
       _origRunNow();
       setTimeout(() => {
         if(typeof RES !== 'undefined' && RES) {
@@ -13624,7 +13638,7 @@ const _EDU = {
         type: 'SAVE_PROGRESS',
         progress: {
           lessons:      progress,
-          behaviors:    _BT ? _BT.export() : {},
+          behaviors:    (_BT && typeof _BT.export==='function') ? _BT.export() : {},
           quizAttempts: quizAttempts,
           confidence:   _BT ? _BT.confidence() : 0
         }
@@ -15420,177 +15434,179 @@ _TRACK.init();
 // ── RESTORE PROGRESS FROM SUPABASE (cross-device) ────────────
 window.addEventListener('message', function(e) {
   if(!e.data || e.data.type !== 'RESTORE_PROGRESS') return;
-  const prog = e.data.progress;
+  var prog = e.data.progress;
   if(!prog) return;
-
-  // Restore lesson/quiz progress into localStorage
   if(prog.lessons && Object.keys(prog.lessons).length > 0) {
-    const existing = _EDU.getProgress();
-    const merged = Object.assign({}, prog.lessons, existing);
+    var existing = _EDU.getProgress();
+    var merged = Object.assign({}, prog.lessons, existing);
     localStorage.setItem('slp_edu_progress', JSON.stringify(merged));
   }
-
-  // Restore behavior tracker
   if(prog.behaviors) {
     _BT.importFrom(prog.behaviors);
-    // Update confidence display
-    const confEl = document.getElementById('_cert_bar_fill');
+    var confEl = document.getElementById('_cert_bar_fill');
     if(confEl) confEl.style.width = _BT.confidence() + '%';
-    const confPct = document.getElementById('_cert_conf_pct');
-    if(confPct) confPct.textContent = _BT.confidence() + '%';
   }
-
-  // Restore cert quiz attempts
   if(prog.quizAttempts) {
-    Object.entries(prog.quizAttempts).forEach(function([lv, data]) {
+    Object.keys(prog.quizAttempts).forEach(function(lv) {
+      var data = prog.quizAttempts[lv];
       if(data.attempts > 0) {
-        const stored = parseInt(localStorage.getItem('slp_quiz_att_'+lv)||'0');
-        if(data.attempts > stored) {
-          localStorage.setItem('slp_quiz_att_'+lv, data.attempts);
-        }
+        var stored = parseInt(localStorage.getItem('slp_quiz_att_'+lv)||'0');
+        if(data.attempts > stored) localStorage.setItem('slp_quiz_att_'+lv, data.attempts);
       }
-      if(data.cooldownEnd && data.cooldownEnd > Date.now()) {
-        const stored = parseInt(localStorage.getItem('slp_quiz_cd_'+lv)||'0');
-        if(data.cooldownEnd > stored) {
-          localStorage.setItem('slp_quiz_cd_'+lv, data.cooldownEnd);
-        }
+      if(data.cooldownEnd && parseInt(data.cooldownEnd) > Date.now()) {
+        var stored2 = parseInt(localStorage.getItem('slp_quiz_cd_'+lv)||'0');
+        if(parseInt(data.cooldownEnd) > stored2) localStorage.setItem('slp_quiz_cd_'+lv, data.cooldownEnd);
       }
     });
   }
-
-  console.log('Progress restored from cloud ✓');
 });
 
-
-
-// ══════════════════════════════════════════════════════════════
-// GAME CHALLENGE SYSTEM
-// ══════════════════════════════════════════════════════════════
-
-const _CHALLENGES = {
-  shown: new Set(),
+// ── GAME CHALLENGE SYSTEM ─────────────────────────────────────
+var _CHALLENGES = {
   lastShown: 0,
-  MIN_GAP: 8 * 60 * 1000, // min 8 mins between challenges
+  MIN_GAP: 8 * 60 * 1000,
+  shown: [],
 
   CHALLENGES: [
     {
-      id: 'extra_floor',
-      trigger: 'analysis_pass',
-      title: 'SURVIVAL CHALLENGE',
-      emoji: '🏗',
+      id: 'extra_floor', trigger: 'analysis_pass',
+      title: 'SURVIVAL CHALLENGE', emoji: '🏗',
       hook: 'Your building just passed.',
       challenge: 'Can it survive one more floor?',
-      stakes: 'Add a floor. Something might break.\nMost students are wrong about which member fails first.',
-      btnText: 'ADD THE FLOOR ↑',
+      stakes: 'Add a floor. Something might break. Most students are wrong about which member fails first.',
+      btnText: 'ADD THE FLOOR',
       btnColor: 'linear-gradient(135deg,#dc2626,#b91c1c)',
       action: function() {
-        const el = document.getElementById('floors');
-        if(el) {
-          const cur = parseInt(el.value)||2;
-          el.value = cur + 1;
-          el.dispatchEvent(new Event('change'));
-        }
+        var el = document.getElementById('floors');
+        if(el){ el.value = parseInt(el.value||2)+1; el.dispatchEvent(new Event('change')); }
         go(6); setTimeout(runNow, 300);
       }
     },
     {
-      id: 'zone_iv',
-      trigger: 'analysis_pass',
-      minZone: null,
+      id: 'zone_iv', trigger: 'analysis_pass',
       skipZones: ['IV','V'],
-      title: 'EARTHQUAKE CHALLENGE',
-      emoji: '⚡',
-      hook: 'Your building is safe... in this zone.',
+      title: 'EARTHQUAKE CHALLENGE', emoji: '⚡',
+      hook: 'Your building is safe in this zone.',
       challenge: 'But what if the site moves to Delhi?',
-      stakes: 'Zone IV. 4× the earthquake force.\nDoes your design survive — or does it crumble?',
+      stakes: 'Zone IV. 4x the earthquake force. Does your design survive?',
       btnText: 'MOVE TO DELHI — ZONE IV',
       btnColor: 'linear-gradient(135deg,#d97706,#b45309)',
       action: function() {
-        const el = document.getElementById('seismicZone');
-        if(el) { el.value='IV'; el.dispatchEvent(new Event('change')); }
+        var el = document.getElementById('seismicZone');
+        if(el){ el.value='IV'; el.dispatchEvent(new Event('change')); }
         go(6); setTimeout(runNow, 300);
       }
     },
     {
-      id: 'thin_slab',
-      trigger: 'analysis_pass',
-      title: 'COST-CUTTING CHALLENGE',
-      emoji: '💰',
-      hook: 'Your client wants to cut costs.',
-      challenge: 'Thin the slabs. Save concrete. Does IS 456 still let you get away with it?',
-      stakes: 'Reduce slab thickness by 20mm.\nDeflection might catch you out.',
-      btnText: 'THIN THE SLABS',
-      btnColor: 'linear-gradient(135deg,#7c3aed,#6d28d9)',
-      action: function() {
-        const el = document.getElementById('slabThk') || document.getElementById('slab_thk');
-        if(el) {
-          const cur = parseInt(el.value)||120;
-          el.value = Math.max(80, cur - 20);
-          el.dispatchEvent(new Event('change'));
-        }
-        go(6); setTimeout(runNow, 300);
-      }
-    },
-    {
-      id: 'weak_soil',
-      trigger: 'analysis_pass',
-      title: 'SOFT SOIL CHALLENGE',
-      emoji: '🌊',
+      id: 'weak_soil', trigger: 'analysis_pass',
+      title: 'SOFT SOIL CHALLENGE', emoji: '🌊',
       hook: 'Good soil. Safe footings.',
-      challenge: 'Now imagine coastal black cotton soil.\nSBC drops from 150 to 80 kN/m².',
-      stakes: 'Same building. Same loads.\nHow big do the footings get?',
+      challenge: 'Now try black cotton coastal soil. SBC = 80.',
+      stakes: 'Same building. Same loads. How big do the footings get?',
       btnText: 'SWITCH TO WEAK SOIL',
       btnColor: 'linear-gradient(135deg,#0d9488,#0f766e)',
       action: function() {
-        const el = document.getElementById('sbc') || document.getElementById('bearingCap');
-        if(el) { el.value=80; el.dispatchEvent(new Event('change')); }
+        var el = document.getElementById('sbc') || document.getElementById('bearingCap');
+        if(el){ el.value=80; el.dispatchEvent(new Event('change')); }
         go(6); setTimeout(runNow, 300);
       }
     },
     {
-      id: 'zone_v',
-      trigger: 'zone_changed',
-      triggerZone: 'IV',
-      title: 'EXTREME ZONE CHALLENGE',
-      emoji: '🔴',
-      hook: "Zone IV handled. You think you're done?",\n      challenge: 'Zone V — max seismic risk in India. Guwahati. Shillong. Your building there.',\n      stakes: '6× the seismic force of Zone II.\nColumns. Beams. Footings. Everything fights back.',\n      btnText: 'PUSH TO ZONE V — MAX RISK',\n      btnColor: 'linear-gradient(135deg,#dc2626,#7f1d1d)',\n      action: function() {\n        const el = document.getElementById('seismicZone');\n        if(el) { el.value='V'; el.dispatchEvent(new Event('change')); }\n        go(6); setTimeout(runNow, 300);\n      }\n    },\n    {\n      id: 'fix_and_check',\n      trigger: 'failure_fixed',\n      title: 'CHAIN REACTION CHECK',\n      emoji: '🔧',\n      hook: 'You fixed the failure. Nice.',\n      challenge: 'But fixing one member often loads another. Did the column below just get heavier?',\n      stakes: 'Check if your fix created a new problem.\nThis is what real structural engineering feels like.',\n      btnText: 'CHECK COLUMNS NOW',\n      btnColor: 'linear-gradient(135deg,#059669,#047857)',\n      action: function() {\n        go(7);\n        setTimeout(function(){\n          const colTab = document.querySelector('.tab[data-sec="columns"]');\n          if(colTab) colTab.click();\n        }, 300);\n      }\n    }\n  ],\n\n  canShow: function() {\n    if(Date.now() - this.lastShown < this.MIN_GAP) return false;\n    const key = 'slp_ch_shown';\n    const shown = JSON.parse(localStorage.getItem(key)||'[]');\n    const available = this.CHALLENGES.filter(function(c){\n      return !shown.includes(c.id);\n    });\n    return available.length > 0;\n  },\n\n  getChallenge: function(trigger, context) {\n    const key = 'slp_ch_shown';\n    const shown = JSON.parse(localStorage.getItem(key)||'[]');\n    const candidates = this.CHALLENGES.filter(function(c) {\n      if(shown.includes(c.id)) return false;\n      if(c.trigger !== trigger) return false;\n      if(c.skipZones && context && context.zone && c.skipZones.includes(context.zone)) return false;\n      if(c.triggerZone && context && context.zone !== c.triggerZone) return false;\n      return true;\n    });\n    if(!candidates.length) return null;\n    return candidates[Math.floor(Math.random()*candidates.length)];\n  },\n\n  markShown: function(id) {\n    const key = 'slp_ch_shown';\n    const shown = JSON.parse(localStorage.getItem(key)||'[]');\n    if(!shown.includes(id)) shown.push(id);\n    localStorage.setItem(key, JSON.stringify(shown));\n    this.lastShown = Date.now();\n  },\n\n  show: function(challenge) {
+      id: 'fix_and_check', trigger: 'failure_fixed',
+      title: 'CHAIN REACTION CHECK', emoji: '🔧',
+      hook: 'You fixed the failure.',
+      challenge: 'Did fixing it create a new problem?',
+      stakes: 'Heavier fix = more load on columns below. Check if they noticed.',
+      btnText: 'CHECK COLUMNS NOW',
+      btnColor: 'linear-gradient(135deg,#059669,#047857)',
+      action: function() { go(7); }
+    }
+  ],
+
+  canShow: function() {
+    if(Date.now() - this.lastShown < this.MIN_GAP) return false;
+    var self = this;
+    return this.CHALLENGES.some(function(c){ return self.shown.indexOf(c.id) < 0; });
+  },
+
+  getChallenge: function(triggerName, context) {
+    var self = this;
+    var candidates = this.CHALLENGES.filter(function(c) {
+      if(self.shown.indexOf(c.id) >= 0) return false;
+      if(c.trigger !== triggerName) return false;
+      if(c.skipZones && context && c.skipZones.indexOf(context.zone) >= 0) return false;
+      return true;
+    });
+    if(!candidates.length) return null;
+    return candidates[Math.floor(Math.random()*candidates.length)];
+  },
+
+  show: function(challenge) {
     if(!challenge) return;
     var old = document.getElementById('_challenge_popup');
     if(old) old.remove();
-    this.markShown(challenge.id);
+    this.shown.push(challenge.id);
+    this.lastShown = Date.now();
 
     var popup = document.createElement('div');
     popup.id = '_challenge_popup';
     popup.style.cssText = 'position:fixed;inset:0;z-index:99995;display:flex;align-items:center;justify-content:center;padding:20px;font-family:sans-serif;';
 
     var backdrop = document.createElement('div');
-    backdrop.style.cssText = 'position:absolute;inset:0;background:rgba(0,0,0,0.7);backdrop-filter:blur(3px);';
+    backdrop.style.cssText = 'position:absolute;inset:0;background:rgba(0,0,0,0.75);backdrop-filter:blur(3px);';
     backdrop.onclick = function(){ popup.remove(); };
     popup.appendChild(backdrop);
 
     var card = document.createElement('div');
-    card.style.cssText = 'position:relative;z-index:2;background:linear-gradient(135deg,#111827,#1a2236);border:2px solid #374e6e;border-radius:20px;padding:36px;max-width:460px;width:100%;box-shadow:0 24px 80px rgba(0,0,0,0.7);animation:challengeIn 0.4s cubic-bezier(0.22,1,0.36,1) both;';
-
-    card.innerHTML = '<style>@keyframes challengeIn{from{opacity:0;transform:scale(0.85) translateY(30px)}to{opacity:1;transform:scale(1) translateY(0)}}</style>'
-      + '<div style="display:flex;align-items:center;gap:10px;margin-bottom:20px">'
-      + '<div style="padding:5px 14px;background:rgba(220,38,38,0.15);border:1px solid rgba(220,38,38,0.4);border-radius:100px;font-size:10px;font-weight:900;color:#f87171;letter-spacing:2px">🎮 ' + challenge.title + '</div>'
-      + '</div>'
-      + '<div style="font-size:64px;text-align:center;margin-bottom:16px;line-height:1">' + challenge.emoji + '</div>'
-      + '<div style="font-size:14px;color:#94a3b8;text-align:center;margin-bottom:8px">' + challenge.hook + '</div>'
-      + '<div style="font-size:22px;font-weight:900;color:#f1f5f9;text-align:center;line-height:1.3;margin-bottom:16px">' + challenge.challenge + '</div>'
-      + '<div style="font-size:12px;color:#94a3b8;text-align:center;line-height:1.9;padding:12px 16px;background:rgba(255,255,255,0.03);border-radius:10px;margin-bottom:24px;border:1px solid rgba(255,255,255,0.06)">' + challenge.stakes.replace(/\n/g,'<br>') + '</div>'
-      + '<button id="_ch_action_btn" style="width:100%;padding:16px;background:' + challenge.btnColor + ';border:none;border-radius:12px;color:white;font-size:14px;font-weight:900;cursor:pointer;font-family:sans-serif;letter-spacing:0.5px;margin-bottom:10px;box-shadow:0 4px 20px rgba(0,0,0,0.4);transition:transform 0.15s;">' + challenge.btnText + '</button>'
-      + '<div style="text-align:center"><button onclick="document.getElementById('_challenge_popup').remove()" style="background:none;border:none;color:#475569;font-size:11px;cursor:pointer;font-family:sans-serif;padding:6px 16px">skip for now</button></div>';
+    card.style.cssText = 'position:relative;z-index:2;background:linear-gradient(135deg,#111827,#1a2236);border:2px solid #374e6e;border-radius:20px;padding:36px;max-width:440px;width:100%;box-shadow:0 24px 80px rgba(0,0,0,0.7);';
+    card.innerHTML = ''
+      + '<style>@keyframes chIn{from{opacity:0;transform:scale(0.85) translateY(30px)}to{opacity:1;transform:scale(1) translateY(0)}}</style>'
+      + '<div style="animation:chIn 0.4s cubic-bezier(0.22,1,0.36,1) both">'
+      + '<div style="display:inline-block;padding:4px 14px;background:rgba(220,38,38,0.15);border:1px solid rgba(220,38,38,0.4);border-radius:100px;font-size:10px;font-weight:900;color:#f87171;letter-spacing:2px;margin-bottom:20px">🎮 ' + challenge.title + '</div>'
+      + '<div style="font-size:56px;text-align:center;margin-bottom:14px">' + challenge.emoji + '</div>'
+      + '<div style="font-size:13px;color:#94a3b8;text-align:center;margin-bottom:8px">' + challenge.hook + '</div>'
+      + '<div style="font-size:20px;font-weight:900;color:#f1f5f9;text-align:center;line-height:1.3;margin-bottom:16px">' + challenge.challenge + '</div>'
+      + '<div style="font-size:12px;color:#94a3b8;text-align:center;padding:12px;background:rgba(255,255,255,0.04);border-radius:10px;margin-bottom:22px">' + challenge.stakes + '</div>'
+      + '<button id="_ch_btn" style="width:100%;padding:15px;background:' + challenge.btnColor + ';border:none;border-radius:12px;color:white;font-size:14px;font-weight:900;cursor:pointer;font-family:sans-serif;margin-bottom:10px;">' + challenge.btnText + '</button>'
+      + '<div style="text-align:center"><button onclick="closeChallengePopup()" style="background:none;border:none;color:#475569;font-size:11px;cursor:pointer;">skip</button></div>'
+      + '</div>';
 
     popup.appendChild(card);
     document.body.appendChild(popup);
 
-    var btn = document.getElementById('_ch_action_btn');
-    btn.addEventListener('click', function() {
+    document.getElementById('_ch_btn').addEventListener('click', function() {
       popup.remove();
-      try { challenge.action(); } catch(e) { console.log('Challenge error',e); }
+      try { challenge.action(); } catch(e) {}
     });
-    btn.addEventListener('mouseenter', function(){ this.style.transform='translateY(-2px) scale(1.02)'; });
-    btn.addEventListener('mouseleave', function(){ this.style.transform=''; });
   },
 
+  trigger: function(triggerName, context) {
+    if(!this.canShow()) return;
+    var ch = this.getChallenge(triggerName, context);
+    if(ch) { var self = this; setTimeout(function(){ self.show(ch); }, 1800); }
+  }
+};
+
+function closeChallengePopup(){var el=document.getElementById("_challenge_popup");if(el)el.remove();}
+
+// Hook runNow for challenges
+(function(){
+  var _origRun = runNow;
+  runNow = function() {
+    _origRun();
+    setTimeout(function(){
+      try {
+        if(typeof RES === 'undefined' || !RES) return;
+        var allPass = (RES.allBeams||[]).every(function(b){return !b.fail;}) &&
+                      (RES.allCols||[]).every(function(c){return !c.fail;}) &&
+                      (RES.allFtgs||[]).every(function(f){return !f.fail;});
+        var zone = (typeof S !== 'undefined' && S) ? (S.zone||'II') : 'II';
+        if(allPass) _CHALLENGES.trigger('analysis_pass', {zone:zone});
+      } catch(e) {}
+    }, 2000);
+  };
+})();
+
+</script>
+</body>
+</html>
