@@ -803,7 +803,13 @@ function renderProfileRows(data) {
     var lbl = getSISLabel(sis.total);
     var totalMins = d.ses.reduce(function(acc,s){ return acc+(s.duration_minutes||0); }, 0);
     var timeStr   = totalMins < 60 ? totalMins+'m' : (totalMins/60).toFixed(1)+'h';
-    var certBadges = d.certs.map(function(c){ return c.level===1?'🥉':c.level===2?'🥈':'🥇'; }).join(' ');
+    var certBadges = d.certs.map(function(c){
+      var lv = c.level;
+      if(lv==='foundation'||lv===1) return '🥉';
+      if(lv==='proficiency'||lv===2) return '🥈';
+      if(lv==='competent'  ||lv===3) return '🥇';
+      return '🏅';
+    }).join(' ');
     var lastActive = d.ses[0] ? d.ses[0].session_date : (u.created_at||'—').slice(0,10);
     var name = u.full_name || u.mobile || 'Unknown';
 
@@ -902,7 +908,7 @@ function viewFullProfile(d) {
 
   // Event log
   var eventLog = d.evs.slice(0,15).map(function(e){
-    var icons = {'analysis_run':'⚙','failure_fixed':'🔧','lesson_quiz_passed':'📝',
+    var icons = {'analysis_run':'⚙','failure_fixed':'🔧','lesson_quiz_passed':'📝','cert_quiz_attempt':'📝','cert_quiz_fail':'❌',
       'cert_earned':'🏆','guide_chapter_read':'📚','why_clicked':'💡','report_tab_viewed':'📊','zone_changed':'🌍'};
     var icon = icons[e.event_type] || '•';
     return '<div style="display:flex;gap:10px;padding:6px 0;border-bottom:1px solid #f1f5f9;align-items:center">'
@@ -931,7 +937,11 @@ function viewFullProfile(d) {
 
   // Cert badges
   var certList = d.certs.map(function(c){
-    return (c.level===1?'🥉 Foundation':c.level===2?'🥈 Proficiency':'🥇 Competent');
+    var lv = c.level;
+    if(lv==='foundation'||lv===1) return '🥉 Foundation';
+    if(lv==='proficiency'||lv===2) return '🥈 Proficiency';
+    if(lv==='competent'  ||lv===3) return '🥇 Competent';
+    return '🏅 '+String(lv);
   }).join(' · ') || 'None yet';
 
   // Heatmap
@@ -1006,10 +1016,9 @@ function viewFullProfile(d) {
     + '<div style="display:flex;gap:10px;margin-top:20px">'
     +   '<button data-uid="'+u.id+'" data-mob="'+u.mobile+'" onclick="adminUpgradeFromProfile(this.dataset.uid,this.dataset.mob)" '
     +     'style="padding:9px 18px;background:rgba(184,134,11,0.12);border:1px solid #b8860b;border-radius:7px;color:#b8860b;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">⬆ Upgrade to Pro</button>'
-    +   (d.empProf && d.empProf.consent
-      ?   '<button data-uid="'+u.id+'" onclick="generateReferralCard(this.dataset.uid)" '
-        +   'style="padding:9px 18px;background:rgba(52,211,153,0.1);border:1px solid #34d399;border-radius:7px;color:#34d399;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">📋 Referral Card</button>'
-      : '')
+    +   '<button data-uid="'+u.id+'" onclick="generateReferralCard(this.dataset.uid)" '
+    +     'style="padding:9px 18px;background:rgba(52,211,153,0.1);border:1px solid rgba(52,211,153,'+(d.empProf&&d.empProf.consent?'0.6':'0.2')+');border-radius:7px;color:'+(d.empProf&&d.empProf.consent?'#34d399':'#64748b')+';font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">'
+    +     (d.empProf&&d.empProf.consent?'📋 Referral Card':'📋 No Consent Yet')+'</button>'
     + '</div>'
     + '</div>';
 

@@ -257,8 +257,12 @@ let _userPlan='free', _currentProjectId=null, _platformSaveTimer=null;
 window.addEventListener('message',(e)=>{
   if(e.data?.type==='USER_PLAN'){
     _userPlan=e.data.plan||'free';
+    // Store user object so cert saves, tracking etc can use user_id
+    if(e.data.user) {
+      window.U = e.data.user;
+      window.P = e.data.user;
+    }
     updateSidebarForPlan(_userPlan);
-    // Show plan badge in app if toolbar exists
     try {
       const badge = document.querySelector('.plan-indicator');
       if(badge) {
