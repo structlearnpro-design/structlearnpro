@@ -708,7 +708,17 @@ async function renderProfiles() {
     adminDb.from('employer_profiles').select('*'),
   ]);
 
+  // Debug: log what we got
+  console.log('[ADMIN] student_events:', evR.data?.length, 'error:', evR.error?.message);
+  console.log('[ADMIN] student_sessions:', sesR.data?.length, 'error:', sesR.error?.message);
+
   var events      = evR.data  || [];
+  if(evR.error) {
+    el.innerHTML += '<div style="color:red;padding:10px;font-size:12px">Events error: '+evR.error.message+'</div>';
+  }
+  if(sesR.error) {
+    el.innerHTML += '<div style="color:red;padding:10px;font-size:12px">Sessions error: '+sesR.error.message+'</div>';
+  }
   var sessions    = sesR.data || [];
   var empProfiles = empR.data || [];
 
