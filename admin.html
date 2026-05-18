@@ -512,90 +512,155 @@ function getSISLabel(score) {
 async function renderProfiles() {
   var el = document.getElementById('sec-profiles');
   if(!el) return;
-  el.innerHTML = '<div style="padding:20px;color:#475569">Loading student profiles...</div>';
+  el.innerHTML = '<div style="padding:20px;color:#475569;font-family:inherit">Loading student profiles...</div>';
 
-  // Load all data
-  var [evR, sesR, scR, empR] = await Promise.all([
-    adminDb.from('student_events').select('*').order('created_at', {ascending:false}),
-    adminDb.from('student_sessions').select('*').order('session_date', {ascending:false}),
-    adminDb.from('student_scores').select('*'),
-    adminDb.from('employer_profiles').select('*')
+  var [evR, sesR, empR] = await Promise.all([
+    adminDb.from('student_events').select('*').order('created_at',{ascending:false}),
+    adminDb.from('student_sessions').select('*').order('session_date',{ascending:false}),
+    adminDb.from('employer_profiles').select('*'),
   ]);
 
-  var events   = evR.data  || [];
-  var sessions = sesR.data || [];
-  var scores   = scR.data  || [];
+  var events      = evR.data  || [];
+  var sessions    = sesR.data || [];
   var empProfiles = empR.data || [];
 
-  // Group by user
   var userEvents   = {};
   var userSessions = {};
-  var userScores   = {};
+  events.forEach(function(e){ if(!userEvents[e.user_id]) userEvents[e.user_id]=[]; userEvents[e.user_id].push(e); });
+  sessions.forEach(function(s){ if(!userSessions[s.user_id]) userSessions[s.user_id]=[]; userSessions[s.user_id].push(s); });
 
-  events.forEach(function(e)   { if(!userEvents[e.user_id]) userEvents[e.user_id]=[]; userEvents[e.user_id].push(e); });
-  sessions.forEach(function(s) { if(!userSessions[s.user_id]) userSessions[s.user_id]=[]; userSessions[s.user_id].push(s); });
-  scores.forEach(function(s)   { userScores[s.user_id] = s; });
-
-  // Compute SIS for each user
   var profileData = allUsers.map(function(user) {
-    var uid     = user.id;
-    var evs     = userEvents[uid] || [];
-    var ses     = userSessions[uid] || [];
-    var projs   = allProjs.filter(function(p){ return p.user_id===uid; });
-    var certs   = allCerts.filter(function(c){ return c.user_id===uid; });
-    var empProf = empProfiles.find(function(e){ return e.user_id===uid; });
-    var sis     = computeSIS(user, evs, ses, projs, certs);
-    return { user, evs, ses, projs, certs, sis, empProf };
-  }).sort(function(a,b){ return b.sis.total - a.sis.total; }); // Sort by SIS descending
+    var evs   = userEvents[user.id]   || [];
+    var ses   = userSessions[user.id] || [];
+    var projs = allProjs.filter(function(p){ return p.user_id===user.id; });
+    var certs = allCerts.filter(function(c){ return c.user_id===user.id; });
+    var emp   = empProfiles.find(function(e){ return e.user_id===user.id; });
+    var sis   = computeSIS(user, evs, ses, projs, certs);
+    return { user:user, evs:evs, ses:ses, projs:projs, certs:certs, sis:sis, empProf:emp };
+  }).sort(function(a,b){ return b.sis.total - a.sis.total; });
 
-  // ── HEADER + FILTERS ───────────────────────────────────────
-  var html = '<div style="padding:20px">'
-    + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">'
+  el._profileData = profileData;
+
+  el.innerHTML = '<div style="padding:20px">'
+    // Header
+    + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">'
     +   '<div>'
-    +     '<h2 style="font-size:20px;font-weight:800;color:#f1f5f9;margin:0">👤 Student Profiles</h2>'
-    +     '<div style="font-size:12px;color:#475569;margin-top:3px">Structural Intelligence Score (SIS) — ranked by performance</div>'
+    +     '<div style="font-size:18px;font-weight:800;color:#f1f5f9">👤 Student Profiles</div>'
+    +     '<div style="font-size:11px;color:#475569;margin-top:2px">Click any row to view full profile · Sorted by SIS score</div>'
     +   '</div>'
-    +   '<div style="display:flex;gap:8px">'
-    +     '<select id="prof-filter-plan" onchange="filterProfiles()" style="padding:6px 10px;background:#0d1526;border:1px solid #1e293b;border-radius:6px;color:#94a3b8;font-size:12px">'
-    +       '<option value="">All Plans</option><option value="pro">Pro</option><option value="free">Free</option>'
-    +     '</select>'
-    +     '<select id="prof-filter-level" onchange="filterProfiles()" style="padding:6px 10px;background:#0d1526;border:1px solid #1e293b;border-radius:6px;color:#94a3b8;font-size:12px">'
-    +       '<option value="">All Levels</option>'
-    +       '<option value="80">Expert (80+)</option>'
-    +       '<option value="60">Advanced (60+)</option>'
-    +       '<option value="40">Proficient (40+)</option>'
-    +     '</select>'
-    +     '<select id="prof-filter-cert" onchange="filterProfiles()" style="padding:6px 10px;background:#0d1526;border:1px solid #1e293b;border-radius:6px;color:#94a3b8;font-size:12px">'
-    +       '<option value="">Any Cert</option><option value="cert">Has Certificate</option><option value="consent">Referral Consent</option>'
-    +     '</select>'
-    +     '<input id="prof-search" oninput="filterProfiles()" placeholder="Search name/phone..." style="padding:6px 10px;background:#0d1526;border:1px solid #1e293b;border-radius:6px;color:#94a3b8;font-size:12px;width:180px">'
-    +   '</div>'
+    +   '<div style="font-size:12px;color:#334155">'+ profileData.length +' students</div>'
+    + '</div>'
+    // Filter row
+    + '<div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">'
+    +   '<input id="prof-search" oninput="filterProfileList()" placeholder="🔍  Name or phone..." '
+    +     'style="padding:8px 12px;background:#0d1526;border:1px solid #1e293b;border-radius:6px;color:#94a3b8;font-size:12px;width:200px;font-family:inherit">'
+    +   '<select id="prof-filter-plan" onchange="filterProfileList()" '
+    +     'style="padding:8px 10px;background:#0d1526;border:1px solid #1e293b;border-radius:6px;color:#94a3b8;font-size:12px;font-family:inherit">'
+    +     '<option value="">All Plans</option><option value="pro">Pro Only</option><option value="free">Free Only</option>'
+    +   '</select>'
+    +   '<select id="prof-filter-level" onchange="filterProfileList()" '
+    +     'style="padding:8px 10px;background:#0d1526;border:1px solid #1e293b;border-radius:6px;color:#94a3b8;font-size:12px;font-family:inherit">'
+    +     '<option value="">All SIS Levels</option>'
+    +     '<option value="80">Expert 80+</option>'
+    +     '<option value="60">Advanced 60+</option>'
+    +     '<option value="40">Proficient 40+</option>'
+    +     '<option value="1">Has any score</option>'
+    +   '</select>'
+    +   '<select id="prof-filter-cert" onchange="filterProfileList()" '
+    +     'style="padding:8px 10px;background:#0d1526;border:1px solid #1e293b;border-radius:6px;color:#94a3b8;font-size:12px;font-family:inherit">'
+    +     '<option value="">Any Status</option>'
+    +     '<option value="cert">Has Certificate</option>'
+    +     '<option value="consent">Referral Consent</option>'
+    +   '</select>'
+    + '</div>'
+    // Table
+    + '<div style="background:#0d1526;border:1px solid #1e293b;border-radius:10px;overflow:hidden">'
+    +   '<table style="width:100%;border-collapse:collapse">'
+    +   '<thead><tr style="background:#060f1f;border-bottom:1px solid #1e293b">'
+    +     '<th style="padding:10px 14px;text-align:left;font-size:9px;font-weight:700;color:#334155;letter-spacing:1px">#</th>'
+    +     '<th style="padding:10px 14px;text-align:left;font-size:9px;font-weight:700;color:#334155;letter-spacing:1px">STUDENT</th>'
+    +     '<th style="padding:10px 14px;text-align:left;font-size:9px;font-weight:700;color:#334155;letter-spacing:1px">PLAN</th>'
+    +     '<th style="padding:10px 14px;text-align:center;font-size:9px;font-weight:700;color:#334155;letter-spacing:1px">SIS</th>'
+    +     '<th style="padding:10px 14px;text-align:center;font-size:9px;font-weight:700;color:#334155;letter-spacing:1px">LEVEL</th>'
+    +     '<th style="padding:10px 14px;text-align:center;font-size:9px;font-weight:700;color:#334155;letter-spacing:1px">ANALYSES</th>'
+    +     '<th style="padding:10px 14px;text-align:center;font-size:9px;font-weight:700;color:#334155;letter-spacing:1px">TIME</th>'
+    +     '<th style="padding:10px 14px;text-align:center;font-size:9px;font-weight:700;color:#334155;letter-spacing:1px">CERTS</th>'
+    +     '<th style="padding:10px 14px;text-align:center;font-size:9px;font-weight:700;color:#334155;letter-spacing:1px">LAST ACTIVE</th>'
+    +   '</tr></thead>'
+    +   '<tbody id="prof-table-body"></tbody>'
+    +   '</table>'
+    + '</div>'
     + '</div>';
 
-  // ── PROFILE CARDS ───────────────────────────────────────────
-  html += '<div id="prof-cards-container">';
-  html += renderProfileCards(profileData);
-  html += '</div></div>';
-
-  el.innerHTML = html;
-
-  // Store for filtering
-  el._profileData = profileData;
+  renderProfileRows(profileData);
 }
 
-function filterProfiles() {
+function renderProfileRows(data) {
+  var tbody = document.getElementById('prof-table-body');
+  if(!tbody) return;
+
+  if(!data.length) {
+    tbody.innerHTML = '<tr><td colspan="9" style="padding:30px;text-align:center;color:#334155;font-size:12px">No students match the filter</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = data.map(function(d, idx) {
+    var u   = d.user;
+    var sis = d.sis;
+    var lbl = getSISLabel(sis.total);
+    var totalMins = d.ses.reduce(function(acc,s){ return acc+(s.duration_minutes||0); }, 0);
+    var timeStr   = totalMins < 60 ? totalMins+'m' : (totalMins/60).toFixed(1)+'h';
+    var certBadges = d.certs.map(function(c){ return c.level===1?'🥉':c.level===2?'🥈':'🥇'; }).join(' ');
+    var lastActive = d.ses[0] ? d.ses[0].session_date : (u.created_at||'—').slice(0,10);
+    var name = u.full_name || u.mobile || 'Unknown';
+
+    return '<tr data-uid="'+u.id+'" onclick="profRowClick(this)" class="prof-row" '
+      + 'style="border-bottom:1px solid #0f172a;cursor:pointer;transition:background 0.15s">'
+      + '<td style="padding:11px 14px;font-size:11px;color:#334155">'+(idx+1)+'</td>'
+      + '<td style="padding:11px 14px">'
+      +   '<div style="font-size:13px;font-weight:600;color:#f1f5f9">'+name+'</div>'
+      +   '<div style="font-size:10px;color:#475569;margin-top:1px">'+u.mobile+'</div>'
+      + '</td>'
+      + '<td style="padding:11px 14px">'
+      +   '<span style="padding:2px 8px;border-radius:8px;font-size:10px;font-weight:700;'
+      +   'background:'+(u.plan==='pro'?'rgba(184,134,11,0.15)':'rgba(30,58,138,0.2)')+';'
+      +   'border:1px solid '+(u.plan==='pro'?'#b8860b':'#1e3a8a')+';'
+      +   'color:'+(u.plan==='pro'?'#b8860b':'#38bdf8')+'">'+((u.plan||'free').toUpperCase())+'</span>'
+      + '</td>'
+      + '<td style="padding:11px 14px;text-align:center">'
+      +   '<div style="font-size:18px;font-weight:900;color:'+lbl.color+'">'+sis.total+'</div>'
+      +   '<div style="height:3px;background:#1e293b;border-radius:2px;margin-top:3px;overflow:hidden">'
+      +     '<div style="height:100%;width:'+sis.total+'%;background:'+lbl.color+';border-radius:2px"></div>'
+      +   '</div>'
+      + '</td>'
+      + '<td style="padding:11px 14px;text-align:center;font-size:10px;font-weight:700;color:'+lbl.color+'">'+lbl.label+'</td>'
+      + '<td style="padding:11px 14px;text-align:center;font-size:12px;color:#64748b">'+sis.analysisRuns+'</td>'
+      + '<td style="padding:11px 14px;text-align:center;font-size:12px;color:#64748b">'+timeStr+'</td>'
+      + '<td style="padding:11px 14px;text-align:center;font-size:14px">'+(certBadges||'—')+'</td>'
+      + '<td style="padding:11px 14px;text-align:center;font-size:11px;color:#475569">'+lastActive+'</td>'
+      + '</tr>';
+  }).join('');
+
+  // Hover effect
+  document.querySelectorAll('.prof-row').forEach(function(row) {
+    row.addEventListener('mouseenter', function(){ this.style.background='#0d2040'; });
+    row.addEventListener('mouseleave', function(){ this.style.background=''; });
+  });
+}
+
+function filterProfileList() {
   var el = document.getElementById('sec-profiles');
   if(!el || !el._profileData) return;
-  var planFilter  = document.getElementById('prof-filter-plan').value;
-  var levelFilter = parseInt(document.getElementById('prof-filter-level').value) || 0;
-  var certFilter  = document.getElementById('prof-filter-cert').value;
-  var search      = (document.getElementById('prof-search').value || '').toLowerCase();
+  var plan   = document.getElementById('prof-filter-plan').value;
+  var level  = parseInt(document.getElementById('prof-filter-level').value) || 0;
+  var cert   = document.getElementById('prof-filter-cert').value;
+  var search = (document.getElementById('prof-search').value || '').toLowerCase();
 
   var filtered = el._profileData.filter(function(d) {
-    if(planFilter && d.user.plan !== planFilter) return false;
-    if(levelFilter && d.sis.total < levelFilter) return false;
-    if(certFilter === 'cert' && d.certs.length === 0) return false;
-    if(certFilter === 'consent' && !(d.empProf && d.empProf.consent)) return false;
+    if(plan   && d.user.plan !== plan)          return false;
+    if(level  && d.sis.total < level)           return false;
+    if(cert === 'cert'    && !d.certs.length)   return false;
+    if(cert === 'consent' && !(d.empProf && d.empProf.consent)) return false;
     if(search) {
       var name  = (d.user.full_name || d.user.mobile || '').toLowerCase();
       var phone = (d.user.mobile || '').toLowerCase();
@@ -603,238 +668,232 @@ function filterProfiles() {
     }
     return true;
   });
-
-  document.getElementById('prof-cards-container').innerHTML = renderProfileCards(filtered);
+  renderProfileRows(filtered);
 }
 
-function renderProfileCards(profileData) {
-  if(!profileData.length) return '<div style="padding:40px;text-align:center;color:#334155">No students match the filter</div>';
-
-  return profileData.map(function(d, idx) {
-    var u   = d.user;
-    var sis = d.sis;
-    var lbl = getSISLabel(sis.total);
-    var totalMins = d.ses.reduce(function(acc,s){ return acc+(s.duration_minutes||0); }, 0);
-    var totalHours = (totalMins/60).toFixed(1);
-    var lastSes = d.ses[0] ? d.ses[0].session_date : 'Never';
-    var certBadges = d.certs.map(function(c) {
-      var medal = c.level===1?'🥉':c.level===2?'🥈':'🥇';
-      return '<span style="font-size:14px" title="'+c.cert_id+'">'+medal+'</span>';
-    }).join('');
-    var fixRate = d.sis.analysisRuns > 0
-      ? Math.round((d.sis.failureFixed / Math.max(d.sis.analysisRuns,1)) * 100) + '%'
-      : 'N/A';
-    var consentBadge = (d.empProf && d.empProf.consent)
-      ? '<span style="padding:2px 8px;background:rgba(52,211,153,0.15);border:1px solid #34d399;border-radius:10px;font-size:9px;color:#34d399;font-weight:700">REFERRAL OK</span>'
-      : '';
-
-    return '<div class="prof-card" style="background:#0d1526;border:1px solid #1e293b;border-radius:10px;padding:16px;margin-bottom:12px">'
-      // Header row
-      + '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px">'
-      +   '<div style="display:flex;align-items:center;gap:12px">'
-      +     '<div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,'+lbl.color+','+lbl.color+'88);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;color:#0a0f1e;flex-shrink:0">'+(idx+1)+'</div>'
-      +     '<div>'
-      +       '<div style="font-size:14px;font-weight:700;color:#f1f5f9">'+(u.full_name||u.mobile||'Unknown')+'</div>'
-      +       '<div style="font-size:11px;color:#475569;margin-top:2px">'+u.mobile+' · Joined '+(u.created_at||'').slice(0,10)+'</div>'
-      +       '<div style="display:flex;gap:6px;margin-top:4px;flex-wrap:wrap">'
-      +         '<span style="padding:2px 8px;background:'+(u.plan==='pro'?'rgba(184,134,11,0.15)':'rgba(30,58,138,0.3)')+';border:1px solid '+(u.plan==='pro'?'#b8860b':'#1e3a8a')+';border-radius:10px;font-size:9px;color:'+(u.plan==='pro'?'#b8860b':'#38bdf8')+';font-weight:700">'+(u.plan||'free').toUpperCase()+'</span>'
-      +         consentBadge
-      +         certBadges
-      +       '</div>'
-      +     '</div>'
-      +   '</div>'
-      // SIS Score
-      +   '<div style="text-align:right">'
-      +     '<div style="font-size:28px;font-weight:900;color:'+lbl.color+'">'+sis.total+'</div>'
-      +     '<div style="font-size:10px;color:'+lbl.color+';font-weight:700">'+lbl.label+'</div>'
-      +     '<div style="font-size:9px;color:#334155;margin-top:2px">SIS Score / 100</div>'
-      +   '</div>'
-      + '</div>'
-      // SIS breakdown bar
-      + '<div style="margin-bottom:14px">'
-      +   '<div style="height:6px;background:#060f1f;border-radius:3px;overflow:hidden;display:flex;gap:2px">'
-      +     '<div style="width:'+sis.complexity+'%;background:#f97316;border-radius:2px" title="Complexity: '+sis.complexity+'/40"></div>'
-      +     '<div style="width:'+sis.depth+'%;background:#38bdf8;border-radius:2px" title="Depth: '+sis.depth+'/30"></div>'
-      +     '<div style="width:'+sis.persistence+'%;background:#34d399;border-radius:2px" title="Persistence: '+sis.persistence+'/20"></div>'
-      +     '<div style="width:'+sis.learning+'%;background:#b8860b;border-radius:2px" title="Learning: '+sis.learning+'/10"></div>'
-      +   '</div>'
-      +   '<div style="display:flex;gap:12px;margin-top:4px">'
-      +     '<span style="font-size:9px;color:#f97316">● Complexity '+sis.complexity+'/40</span>'
-      +     '<span style="font-size:9px;color:#38bdf8">● Depth '+sis.depth+'/30</span>'
-      +     '<span style="font-size:9px;color:#34d399">● Persistence '+sis.persistence+'/20</span>'
-      +     '<span style="font-size:9px;color:#b8860b">● Learning '+sis.learning+'/10</span>'
-      +   '</div>'
-      + '</div>'
-      // Stats grid
-      + '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px">'
-      +   statBox('⏱', totalHours+'h', 'Total Time')
-      +   statBox('📅', sis.uniqueDays, 'Days Active')
-      +   statBox('⚙', sis.analysisRuns, 'Analyses Run')
-      +   statBox('🔧', fixRate, 'Fix Rate')
-      +   statBox('🏗', sis.maxFloors+'F', 'Max Floors')
-      +   statBox('🌍', 'Zone '+sis.highestZone, 'Max Zone')
-      +   statBox('📐', sis.hasIrregular?'Yes':'No', 'Irregular')
-      +   statBox('📚', sis.lessonsPassed, 'Lessons Done')
-      + '</div>'
-      // Projects
-      + (d.projs.length > 0
-        ? '<div style="margin-bottom:12px">'
-        +   '<div style="font-size:10px;font-weight:700;color:#334155;letter-spacing:1px;margin-bottom:6px">RECENT PROJECTS</div>'
-        +   d.projs.slice(0,3).map(function(p) {
-              var pd = p.project_data || {};
-              var floors = (pd.S||{}).numFloors || '?';
-              var zone   = (pd.S||{}).zone || '?';
-              var saved  = (p.created_at||'').slice(0,10);
-              return '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;background:#060f1f;border-radius:5px;margin-bottom:4px">'
-                + '<div>'
-                +   '<span style="font-size:11px;font-weight:600;color:#94a3b8">'+(p.name||'Untitled')+'</span>'
-                +   '<span style="font-size:10px;color:#334155;margin-left:8px">G+'+(floors-1)+' · Zone '+zone+'</span>'
-                + '</div>'
-                + '<div style="display:flex;gap:8px;align-items:center">'
-                +   '<span style="font-size:10px;color:#334155">'+saved+'</span>'
-                +   '<button onclick="viewStudentProject(\''+p.id+'\')" style="padding:3px 8px;background:rgba(56,189,248,0.1);border:1px solid #38bdf8;border-radius:4px;color:#38bdf8;font-size:10px;cursor:pointer;font-family:inherit">View Report</button>'
-                + '</div>'
-                + '</div>';
-            }).join('')
-        + (d.projs.length > 3 ? '<div style="font-size:10px;color:#334155;padding:4px">+'+(d.projs.length-3)+' more projects</div>' : '')
-        + '</div>'
-        : '')
-      // Activity heatmap (last 30 days)
-      + buildHeatmap(d.ses)
-      // Action buttons
-      + '<div style="display:flex;gap:8px;margin-top:12px">'
-      +   '<button onclick="viewFullProfile(\''+u.id+'\')" style="padding:6px 14px;background:rgba(56,189,248,0.1);border:1px solid #38bdf8;border-radius:6px;color:#38bdf8;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">👤 Full Profile</button>'
-      +   '<button onclick="adminUpgradeUser(\''+u.id+'\',\''+u.mobile+'\')" style="padding:6px 14px;background:rgba(184,134,11,0.1);border:1px solid #b8860b;border-radius:6px;color:#b8860b;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">⬆ Upgrade</button>'
-      +   (d.empProf && d.empProf.consent
-          ? '<button onclick="generateReferralCard(\''+u.id+'\')" style="padding:6px 14px;background:rgba(52,211,153,0.1);border:1px solid #34d399;border-radius:6px;color:#34d399;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">📋 Referral Card</button>'
-          : '')
-      + '</div>'
-      + '</div>';
-  }).join('');
+function profRowClick(el) {
+  var uid = el.dataset.uid;
+  var profileData = document.getElementById('sec-profiles')._profileData;
+  var d = profileData ? profileData.find(function(x){ return x.user.id===uid; }) : null;
+  if(d) viewFullProfile(d);
 }
 
-function statBox(icon, value, label) {
-  return '<div style="background:#060f1f;border-radius:6px;padding:8px;text-align:center">'
-    + '<div style="font-size:14px">'+icon+'</div>'
-    + '<div style="font-size:14px;font-weight:800;color:#f1f5f9;margin-top:2px">'+value+'</div>'
-    + '<div style="font-size:9px;color:#334155;margin-top:1px">'+label+'</div>'
-    + '</div>';
+function getSISLabel(score) {
+  if(score >= 80) return {label:'Expert',   color:'#b8860b'};
+  if(score >= 60) return {label:'Advanced', color:'#6366f1'};
+  if(score >= 40) return {label:'Proficient',color:'#38bdf8'};
+  if(score >= 20) return {label:'Developing',color:'#34d399'};
+  return {label:'Beginner', color:'#475569'};
 }
 
-function buildHeatmap(sessions) {
-  if(!sessions || sessions.length === 0) return '';
-  // Build 30-day heatmap
-  var days = 30;
-  var today = new Date();
-  var dateMap = {};
-  sessions.forEach(function(s) {
-    var mins = s.duration_minutes || 0;
-    dateMap[s.session_date] = (dateMap[s.session_date]||0) + mins;
-  });
-
-  var cells = '';
-  for(var i = days-1; i >= 0; i--) {
-    var d = new Date(today);
-    d.setDate(d.getDate() - i);
-    var key = d.toISOString().slice(0,10);
-    var mins = dateMap[key] || 0;
-    var intensity = mins === 0 ? '#060f1f' : mins < 10 ? '#1e3a8a' : mins < 30 ? '#2563eb' : mins < 60 ? '#38bdf8' : '#34d399';
-    cells += '<div title="'+key+': '+mins+'min" style="width:12px;height:12px;border-radius:2px;background:'+intensity+'"></div>';
-  }
-
-  return '<div style="margin-bottom:10px">'
-    + '<div style="font-size:10px;font-weight:700;color:#334155;letter-spacing:1px;margin-bottom:6px">ACTIVITY — LAST 30 DAYS</div>'
-    + '<div style="display:flex;flex-wrap:wrap;gap:3px">'+cells+'</div>'
-    + '<div style="display:flex;gap:10px;margin-top:5px">'
-    +   '<span style="font-size:9px;color:#334155">■ <span style="color:#1e3a8a">1-10m</span> ■ <span style="color:#2563eb">10-30m</span> ■ <span style="color:#38bdf8">30-60m</span> ■ <span style="color:#34d399">60m+</span></span>'
-    + '</div>'
-    + '</div>';
+function closeTopModal(el) {
+  var m = el.closest('[style*="position:fixed"]') || el.closest('[style*="position: fixed"]');
+  if(m) m.remove();
 }
 
-// ── FULL PROFILE MODAL ────────────────────────────────────────
-function viewFullProfile(userId) {
-  var el = document.getElementById('sec-profiles');
-  if(!el || !el._profileData) return;
-  var d = el._profileData.find(function(x){ return x.user.id===userId; });
-  if(!d) return;
+function closeProfModal() {
+  var m = document.getElementById('_prof_modal'); if(m) m.remove();
+}
 
+function viewFullProfile(d) {
+  var old = document.getElementById('_prof_modal'); if(old) old.remove();
   var u   = d.user;
   var sis = d.sis;
   var lbl = getSISLabel(sis.total);
+  var totalMins = d.ses.reduce(function(acc,s){ return acc+(s.duration_minutes||0); }, 0);
 
   var modal = document.createElement('div');
+  modal.id = '_prof_modal';
   modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,5,20,0.92);z-index:9999;overflow-y:auto;padding:20px;font-family:Segoe UI,sans-serif;';
 
-  var allEventsForUser = d.evs;
-  var eventLog = allEventsForUser.slice(0,20).map(function(e) {
-    var icon = {
-      'analysis_run':'⚙','failure_fixed':'🔧','lesson_quiz_passed':'📝',
-      'cert_earned':'🏆','guide_chapter_read':'📚','why_clicked':'💡',
-      'report_tab_viewed':'📊','zone_changed':'🌍'
-    }[e.event_type] || '•';
-    return '<div style="display:flex;gap:10px;padding:6px 0;border-bottom:1px solid #0f172a">'
-      + '<span style="font-size:14px;flex-shrink:0">'+icon+'</span>'
-      + '<div style="flex:1"><span style="font-size:11px;color:#94a3b8">'+e.event_type.replace(/_/g,' ')+'</span></div>'
-      + '<span style="font-size:10px;color:#334155">'+(e.created_at||'').slice(0,16).replace('T',' ')+'</span>'
-      + '</div>';
+  // Event log
+  var eventLog = d.evs.slice(0,15).map(function(e){
+    var icons = {'analysis_run':'⚙','failure_fixed':'🔧','lesson_quiz_passed':'📝',
+      'cert_earned':'🏆','guide_chapter_read':'📚','why_clicked':'💡','report_tab_viewed':'📊','zone_changed':'🌍'};
+    var icon = icons[e.event_type] || '•';
+    return '<div style="display:flex;gap:10px;padding:6px 0;border-bottom:1px solid #0f172a;align-items:center">'
+      +'<span style="font-size:14px;flex-shrink:0">'+icon+'</span>'
+      +'<span style="font-size:11px;color:#94a3b8;flex:1">'+e.event_type.replace(/_/g,' ')+'</span>'
+      +'<span style="font-size:10px;color:#334155">'+(e.created_at||'').slice(0,16).replace('T',' ')+'</span>'
+      +'</div>';
   }).join('');
 
-  modal.innerHTML = '<div style="max-width:800px;margin:0 auto;background:#0d1526;border-radius:12px;padding:28px">'
+  // Projects
+  var projectRows = d.projs.slice(0,5).map(function(p){
+    var pd = p.project_data || {};
+    var floors = ((pd.S||{}).numFloors||'?');
+    var zone   = ((pd.S||{}).zone||'?');
+    return '<div style="display:flex;justify-content:space-between;align-items:center;'
+      +'padding:7px 10px;background:#060f1f;border-radius:5px;margin-bottom:4px">'
+      +'<div>'
+      +'<div style="font-size:11px;font-weight:600;color:#94a3b8">'+(p.name||'Untitled')+'</div>'
+      +'<div style="font-size:10px;color:#334155">G+'+(floors-1)+' · Zone '+zone+' · '+(p.created_at||'').slice(0,10)+'</div>'
+      +'</div>'
+      +'<button data-pid="'+p.id+'" onclick="viewStudentProject(this.dataset.pid)" '
+      +'style="padding:3px 10px;background:rgba(56,189,248,0.1);border:1px solid #38bdf8;'
+      +'border-radius:4px;color:#38bdf8;font-size:10px;cursor:pointer;font-family:inherit">View</button>'
+      +'</div>';
+  }).join('');
+
+  // Cert badges
+  var certList = d.certs.map(function(c){
+    return (c.level===1?'🥉 Foundation':c.level===2?'🥈 Proficiency':'🥇 Competent');
+  }).join(' · ') || 'None yet';
+
+  // Heatmap
+  var heatmap = buildHeatmap(d.ses);
+
+  modal.innerHTML = '<div style="max-width:820px;margin:0 auto;background:#0d1526;border-radius:12px;padding:28px">'
+    // Header
     + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">'
-    +   '<h2 style="font-size:20px;font-weight:800;color:#f1f5f9;margin:0">👤 '+u.name+'</h2>'
-    +   '<button onclick="this.closest(\'[style*=fixed]\').remove()" style="padding:6px 14px;background:transparent;border:1px solid #334155;border-radius:6px;color:#64748b;cursor:pointer;font-family:inherit">✕ Close</button>'
-    + '</div>'
-    // Profile info
-    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px">'
-    +   '<div style="background:#060f1f;border-radius:8px;padding:16px">'
-    +     '<div style="font-size:10px;font-weight:700;color:#334155;letter-spacing:1px;margin-bottom:10px">STUDENT INFO</div>'
-    +     infoRow('Phone', u.mobile)
-    +     infoRow('Plan', (u.plan||'free').toUpperCase())
-    +     infoRow('Joined', (u.created_at||'').slice(0,10))
-    +     infoRow('Last Active', d.ses[0] ? d.ses[0].session_date : 'Never')
-    +     infoRow('Total Sessions', d.ses.length)
-    +     infoRow('Total Time', (d.ses.reduce(function(a,s){ return a+(s.duration_minutes||0);},0)/60).toFixed(1)+'h')
+    +   '<div>'
+    +     '<div style="font-size:20px;font-weight:800;color:#f1f5f9">'+(u.full_name||u.mobile)+'</div>'
+    +     '<div style="font-size:11px;color:#475569;margin-top:3px">'+u.mobile+' · Joined '+(u.created_at||'').slice(0,10)+'</div>'
     +   '</div>'
-    +   '<div style="background:#060f1f;border-radius:8px;padding:16px">'
-    +     '<div style="font-size:10px;font-weight:700;color:#334155;letter-spacing:1px;margin-bottom:10px">SIS BREAKDOWN</div>'
-    +     '<div style="font-size:32px;font-weight:900;color:'+lbl.color+';text-align:center;margin-bottom:4px">'+sis.total+'/100</div>'
-    +     '<div style="font-size:12px;color:'+lbl.color+';text-align:center;margin-bottom:12px">'+lbl.label+'</div>'
-    +     infoRow('Complexity', sis.complexity+'/40')
-    +     infoRow('Depth', sis.depth+'/30')
-    +     infoRow('Persistence', sis.persistence+'/20')
-    +     infoRow('Learning', sis.learning+'/10')
+    +   '<button onclick="closeProfModal()" '
+    +     'style="padding:6px 14px;background:transparent;border:1px solid #334155;border-radius:6px;color:#64748b;cursor:pointer;font-family:inherit">✕ Close</button>'
+    + '</div>'
+
+    // Stats grid
+    + '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px">'
+    + profStat('SIS Score', sis.total+'/100', lbl.color)
+    + profStat('Level', lbl.label, lbl.color)
+    + profStat('Total Time', (totalMins/60).toFixed(1)+'h', '#38bdf8')
+    + profStat('Days Active', sis.uniqueDays, '#38bdf8')
+    + profStat('Analyses', sis.analysisRuns, '#f97316')
+    + profStat('Max Floors', sis.maxFloors+'F', '#a78bfa')
+    + profStat('Max Zone', 'Zone '+sis.highestZone, '#f87171')
+    + profStat('Fix Rate', sis.analysisRuns>0?Math.round((sis.failureFixed/Math.max(sis.analysisRuns,1))*100)+'%':'—', '#34d399')
+    + '</div>'
+
+    // SIS breakdown bar
+    + '<div style="background:#060f1f;border-radius:8px;padding:14px;margin-bottom:16px">'
+    +   '<div style="font-size:10px;font-weight:700;color:#334155;letter-spacing:1px;margin-bottom:8px">SIS BREAKDOWN</div>'
+    +   '<div style="height:8px;background:#1e293b;border-radius:4px;overflow:hidden;display:flex;gap:2px;margin-bottom:6px">'
+    +     '<div style="width:'+sis.complexity+'%;background:#f97316;border-radius:2px" title="Complexity '+sis.complexity+'/40"></div>'
+    +     '<div style="width:'+sis.depth+'%;background:#38bdf8;border-radius:2px" title="Depth '+sis.depth+'/30"></div>'
+    +     '<div style="width:'+sis.persistence+'%;background:#34d399;border-radius:2px" title="Persistence '+sis.persistence+'/20"></div>'
+    +     '<div style="width:'+sis.learning+'%;background:#b8860b;border-radius:2px" title="Learning '+sis.learning+'/10"></div>'
+    +   '</div>'
+    +   '<div style="display:flex;gap:16px;font-size:10px">'
+    +   '<span style="color:#f97316">● Complexity '+sis.complexity+'/40</span>'
+    +   '<span style="color:#38bdf8">● Depth '+sis.depth+'/30</span>'
+    +   '<span style="color:#34d399">● Persistence '+sis.persistence+'/20</span>'
+    +   '<span style="color:#b8860b">● Learning '+sis.learning+'/10</span>'
     +   '</div>'
     + '</div>'
-    // Activity heatmap full
-    + buildHeatmap(d.ses)
-    // Event log
-    + '<div style="background:#060f1f;border-radius:8px;padding:16px;margin-top:16px">'
-    +   '<div style="font-size:10px;font-weight:700;color:#334155;letter-spacing:1px;margin-bottom:10px">RECENT ACTIVITY LOG</div>'
-    +   (allEventsForUser.length ? eventLog : '<div style="color:#334155;font-size:12px">No events recorded yet</div>')
+
+    // Heatmap
+    + (heatmap || '')
+
+    // Two columns — projects + events
+    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px">'
+
+    // Projects
+    +   '<div style="background:#060f1f;border-radius:8px;padding:14px">'
+    +     '<div style="font-size:10px;font-weight:700;color:#334155;letter-spacing:1px;margin-bottom:10px">'
+    +       'PROJECTS ('+d.projs.length+' total)'
+    +     '</div>'
+    +     (d.projs.length ? projectRows : '<div style="font-size:11px;color:#334155">No projects saved yet</div>')
+    +   '</div>'
+
+    // Certificates + Events
+    +   '<div style="background:#060f1f;border-radius:8px;padding:14px">'
+    +     '<div style="font-size:10px;font-weight:700;color:#334155;letter-spacing:1px;margin-bottom:8px">CERTIFICATES</div>'
+    +     '<div style="font-size:12px;color:#94a3b8;margin-bottom:14px">'+certList+'</div>'
+    +     '<div style="font-size:10px;font-weight:700;color:#334155;letter-spacing:1px;margin-bottom:8px">RECENT ACTIVITY</div>'
+    +     (d.evs.length ? eventLog : '<div style="font-size:11px;color:#334155">No events recorded yet</div>')
+    +   '</div>'
     + '</div>'
-    // Referral section
-    + '<div style="background:#060f1f;border-radius:8px;padding:16px;margin-top:16px">'
-    +   '<div style="font-size:10px;font-weight:700;color:#334155;letter-spacing:1px;margin-bottom:10px">EMPLOYER REFERRAL</div>'
+
+    // Action buttons
+    + '<div style="display:flex;gap:10px;margin-top:20px">'
+    +   '<button data-uid="'+u.id+'" data-mob="'+u.mobile+'" onclick="adminUpgradeFromProfile(this.dataset.uid,this.dataset.mob)" '
+    +     'style="padding:9px 18px;background:rgba(184,134,11,0.12);border:1px solid #b8860b;border-radius:7px;color:#b8860b;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">⬆ Upgrade to Pro</button>'
     +   (d.empProf && d.empProf.consent
-        ? '<div style="color:#34d399;font-size:12px;margin-bottom:10px">✓ Student consented to employer referrals</div>'
-        +   infoRow('City', d.empProf.city||'Not set')
-        +   infoRow('Degree', d.empProf.degree||'Not set')
-        +   infoRow('College', d.empProf.college||'Not set')
-        +   '<button onclick="generateReferralCard(\''+u.id+'\')" style="margin-top:10px;padding:8px 16px;background:rgba(52,211,153,0.15);border:1px solid #34d399;border-radius:6px;color:#34d399;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">📋 Generate Referral Card</button>'
-        : '<div style="color:#475569;font-size:12px">Student has not consented to employer referrals</div>'
-      )
+      ?   '<button data-uid="'+u.id+'" onclick="generateReferralCard(this.dataset.uid)" '
+        +   'style="padding:9px 18px;background:rgba(52,211,153,0.1);border:1px solid #34d399;border-radius:7px;color:#34d399;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">📋 Referral Card</button>'
+      : '')
     + '</div>'
     + '</div>';
 
   document.body.appendChild(modal);
 }
 
-function infoRow(label, value) {
-  return '<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #0f172a">'
-    + '<span style="font-size:11px;color:#475569">'+label+'</span>'
-    + '<span style="font-size:11px;color:#94a3b8;font-weight:600">'+value+'</span>'
+function profStat(label, value, color) {
+  return '<div style="background:#060f1f;border-radius:7px;padding:10px;text-align:center">'
+    + '<div style="font-size:16px;font-weight:800;color:'+(color||'#f1f5f9')+'">'+value+'</div>'
+    + '<div style="font-size:9px;color:#334155;margin-top:2px">'+label+'</div>'
     + '</div>';
 }
+
+function adminUpgradeFromProfile(uid, mobile) {
+  document.getElementById('_prof_modal').remove();
+  showSec('settings');
+  var el = document.getElementById('mu-mobile');
+  if(el) { el.value = mobile; el.focus(); }
+}
+
+function viewStudentProject(pid) {
+  var proj = allProjs.find(function(p){ return p.id===pid; });
+  if(!proj) return;
+  var pd = proj.project_data || {};
+  var modal = document.createElement('div');
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,5,20,0.92);z-index:99999;overflow-y:auto;padding:20px;font-family:Segoe UI,sans-serif;';
+  var entries = pd.S ? Object.entries(pd.S).filter(function(kv){ return typeof kv[1] !== 'object' && kv[1] !== null; }) : [];
+  modal.innerHTML = '<div style="max-width:600px;margin:0 auto;background:#0d1526;border-radius:12px;padding:24px">'
+    + '<div style="display:flex;justify-content:space-between;margin-bottom:16px">'
+    +   '<div style="font-size:16px;font-weight:700;color:#f1f5f9">'+(proj.name||'Untitled Project')+'</div>'
+    +   '<button onclick="closeTopModal(this)" style="padding:5px 12px;background:transparent;border:1px solid #334155;border-radius:6px;color:#64748b;cursor:pointer;font-family:inherit">✕</button>'
+    + '</div>'
+    + '<div style="background:#060f1f;border-radius:8px;padding:14px">'
+    +   '<div style="font-size:10px;font-weight:700;color:#38bdf8;letter-spacing:1px;margin-bottom:10px">PROJECT INPUTS</div>'
+    +   (entries.length
+      ? entries.map(function(kv){
+          return '<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #0f172a;font-size:11px">'
+            +'<span style="color:#475569">'+kv[0]+'</span>'
+            +'<span style="color:#94a3b8;font-weight:600">'+kv[1]+'</span></div>';
+        }).join('')
+      : '<div style="font-size:11px;color:#334155">No input data saved</div>')
+    + '</div>'
+    + '<div style="font-size:10px;color:#334155;margin-top:12px">Full structural report view not available in admin</div>'
+    + '</div>';
+  document.body.appendChild(modal);
+}
+
+function generateReferralCard(uid) {
+  var el = document.getElementById('sec-profiles');
+  var d = (el && el._profileData) ? el._profileData.find(function(x){ return x.user.id===uid; }) : null;
+  if(!d) { alert('Open Student Profiles tab first then try again.'); return; }
+  if(!d) { alert('Profile data not loaded. Open Student Profiles tab first.'); return; }
+  var u = d.user; var sis = d.sis; var lbl = getSISLabel(sis.total); var ep = d.empProf||{};
+  var certList = d.certs.map(function(c){ return c.level===1?'🥉 Foundation':c.level===2?'🥈 Proficiency':'🥇 Competent'; }).join(', ')||'None';
+  var card = document.createElement('div');
+  card.style.cssText = 'position:fixed;inset:0;background:rgba(0,5,20,0.92);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;font-family:Segoe UI,sans-serif;';
+  card.innerHTML = '<div style="background:#0d1526;border:2px solid #1e3a8a;border-radius:14px;padding:32px;max-width:460px;width:100%">'
+    +'<div style="text-align:center;margin-bottom:20px">'
+    +'<div style="font-size:10px;font-weight:700;color:#38bdf8;letter-spacing:2px;margin-bottom:8px">STRUCTLEARN PRO — CERTIFIED CANDIDATE</div>'
+    +'<div style="font-size:22px;font-weight:900;color:#f1f5f9;margin-bottom:4px">'+(u.full_name||u.mobile)+'</div>'
+    +'<div style="font-size:12px;color:#475569">'+(ep.city||'India')+(ep.degree?' · '+ep.degree:'')+'</div>'
+    +'</div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">'
+    +'<div style="text-align:center;background:#060f1f;border-radius:8px;padding:12px">'
+    +'<div style="font-size:26px;font-weight:900;color:'+lbl.color+'">'+sis.total+'</div>'
+    +'<div style="font-size:10px;color:'+lbl.color+';font-weight:700">'+lbl.label+'</div>'
+    +'<div style="font-size:9px;color:#334155">SIS Score / 100</div></div>'
+    +'<div style="background:#060f1f;border-radius:8px;padding:12px">'
+    +'<div style="font-size:10px;font-weight:700;color:#334155;margin-bottom:6px">CERTIFICATES</div>'
+    +'<div style="font-size:11px;color:#94a3b8">'+certList+'</div>'
+    +'<div style="font-size:10px;color:#334155;margin-top:4px">'+sis.analysisRuns+' analyses · '+sis.uniqueDays+' days</div></div>'
+    +'</div>'
+    +'<div style="text-align:center;font-size:10px;color:#334155;margin-bottom:16px">Verified by StructLearn Pro · structlearnpro.vercel.app</div>'
+    +'<div style="display:flex;gap:8px">'
+    +'<button onclick="window.print()" style="flex:1;padding:10px;background:rgba(56,189,248,0.12);border:1px solid #38bdf8;border-radius:7px;color:#38bdf8;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">🖨 Print / PDF</button>'
+    +'<button onclick="closeTopModal(this)" style="flex:1;padding:10px;background:transparent;border:1px solid #334155;border-radius:7px;color:#64748b;font-size:12px;cursor:pointer;font-family:inherit">Close</button>'
+    +'</div></div>';
+  document.body.appendChild(card);
+}
+
 
 // ── REFERRAL CARD ─────────────────────────────────────────────
 function generateReferralCard(userId) {
