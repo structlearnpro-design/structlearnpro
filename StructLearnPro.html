@@ -12247,6 +12247,10 @@ const _BT = {
     Object.keys(data).forEach(function(k){
       if(self.behaviors[k]) self.behaviors[k].done = true;
     });
+    // Update UI after restoring
+    setTimeout(function(){ 
+      try { self.updateProgress(); } catch(e) {}
+    }, 100);
   },
 
   // Calculate confidence score
@@ -15443,8 +15447,27 @@ window.addEventListener('message', function(e) {
   }
   if(prog.behaviors) {
     _BT.importFrom(prog.behaviors);
-    var confEl = document.getElementById('_cert_bar_fill');
-    if(confEl) confEl.style.width = _BT.confidence() + '%';
+    // Update all confidence UI — retry if panel not built yet
+    function applyConfidenceUI() {
+      var bar = document.getElementById('_cert_bar_fill');
+      var txt = document.getElementById('_cert_confidence');
+      var lvl = document.getElementById('_cert_level_text');
+      var pct = _BT.confidence();
+      if(bar) bar.style.width = pct + '%';
+      if(txt) txt.textContent = pct + '%';
+      if(lvl) {
+        var lv = _BT.level();
+        lvl.textContent = lv===0?'Keep exploring...':
+          lv===1?'🥉 Foundation unlocked — take the quiz!':
+          lv===2?'🥈 Proficiency unlocked — take the quiz!':
+          '🥇 Competent unlocked — take the quiz!';
+        lvl.style.color = lv===0?'#64748b':lv===1?'#d97706':lv===2?'#94a3b8':'#b8860b';
+      }
+    }
+    applyConfidenceUI();
+    // Panel might not be built yet — retry after it loads
+    setTimeout(applyConfidenceUI, 2500);
+    setTimeout(applyConfidenceUI, 5000);
   }
   if(prog.quizAttempts) {
     Object.keys(prog.quizAttempts).forEach(function(lv) {

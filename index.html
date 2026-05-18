@@ -342,37 +342,116 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
 </div>
 
 <!-- DASH -->
-<div id="dash-screen" class="screen" style="flex-direction:column">
+<div id="dash-screen" class="screen" style="flex-direction:column;overflow-y:auto">
   <div class="dash-body">
-    <div class="lbar" id="lbar" style="display:none">
-      <span style="color:#8891b0;font-size:11px;white-space:nowrap">Projects used:</span>
-      <div class="lp"><div class="lf" id="lf" style="width:0%"></div></div>
-      <span id="lt" style="color:#4a5270;font-weight:700;white-space:nowrap">0/3</span>
-      <button onclick="showUp()" style="padding:4px 10px;background:#1d4ed8;border:none;
-        border-radius:5px;color:white;font-size:10px;font-weight:700;cursor:pointer;white-space:nowrap">
-        Upgrade
-      </button>
+
+    <!-- WELCOME HERO (shown to new users / always) -->
+    <div id="hero-section" style="margin-bottom:28px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:16px;margin-bottom:20px">
+        <div>
+          <div id="hero-greeting" style="font-size:22px;font-weight:900;color:var(--txt);margin-bottom:4px">Welcome to StructLearn Pro 👋</div>
+          <div style="font-size:13px;color:var(--txt3);line-height:1.6">Design RC buildings to IS 456. Learn structural engineering by doing.</div>
+        </div>
+        <button class="np-btn" onclick="newProject()" style="white-space:nowrap;flex-shrink:0">+ New Project</button>
+      </div>
+
+      <!-- STAT STRIP -->
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-bottom:20px">
+        <div style="background:var(--bg2);border:1px solid var(--b1);border-radius:10px;padding:14px;text-align:center">
+          <div style="font-size:24px;font-weight:900;color:var(--blue)" id="stat-projects">0</div>
+          <div style="font-size:10px;color:var(--txt3);margin-top:3px;text-transform:uppercase;letter-spacing:.5px">Projects</div>
+        </div>
+        <div style="background:var(--bg2);border:1px solid var(--b1);border-radius:10px;padding:14px;text-align:center">
+          <div style="font-size:24px;font-weight:900;color:var(--green)" id="stat-passed">0</div>
+          <div style="font-size:10px;color:var(--txt3);margin-top:3px;text-transform:uppercase;letter-spacing:.5px">All Pass</div>
+        </div>
+        <div style="background:var(--bg2);border:1px solid var(--b1);border-radius:10px;padding:14px;text-align:center">
+          <div style="font-size:24px;font-weight:900;color:var(--yellow)" id="stat-lessons">0</div>
+          <div style="font-size:10px;color:var(--txt3);margin-top:3px;text-transform:uppercase;letter-spacing:.5px">Lessons Done</div>
+        </div>
+        <div style="background:var(--bg2);border:1px solid var(--b1);border-radius:10px;padding:14px;text-align:center">
+          <div style="font-size:24px;font-weight:900;color:var(--purple)" id="stat-certs">0</div>
+          <div style="font-size:10px;color:var(--txt3);margin-top:3px;text-transform:uppercase;letter-spacing:.5px">Certificates</div>
+        </div>
+      </div>
+
+      <!-- LEARNING JOURNEY PANEL -->
+      <div style="background:var(--bg2);border:1px solid var(--b1);border-radius:12px;padding:18px;margin-bottom:20px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+          <div style="font-size:13px;font-weight:800;color:var(--txt)">📚 Learning Journey</div>
+          <button onclick="goTo('app')" style="padding:5px 14px;background:var(--blue2);border:none;border-radius:6px;color:white;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">Open Design Tool →</button>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px" id="journey-modules"></div>
+      </div>
+
+      <!-- WHAT YOU CAN DO (shown only when no projects) -->
+      <div id="features-section" style="display:none;background:var(--bg2);border:1px solid var(--b1);border-radius:12px;padding:18px;margin-bottom:20px">
+        <div style="font-size:13px;font-weight:800;color:var(--txt);margin-bottom:14px">🚀 What you can do here</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px">
+          <div style="display:flex;gap:12px;align-items:flex-start">
+            <div style="font-size:24px;flex-shrink:0">🏗</div>
+            <div>
+              <div style="font-size:12px;font-weight:700;color:var(--txt);margin-bottom:3px">Design RC Buildings</div>
+              <div style="font-size:11px;color:var(--txt3);line-height:1.6">G+10 buildings, beams, columns, footings — all to IS 456.</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:12px;align-items:flex-start">
+            <div style="font-size:24px;flex-shrink:0">⚡</div>
+            <div>
+              <div style="font-size:12px;font-weight:700;color:var(--txt);margin-bottom:3px">Seismic Analysis</div>
+              <div style="font-size:11px;color:var(--txt3);line-height:1.6">IS 1893 seismic zones II to V. See what changes in Delhi vs Mumbai.</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:12px;align-items:flex-start">
+            <div style="font-size:24px;flex-shrink:0">📊</div>
+            <div>
+              <div style="font-size:12px;font-weight:700;color:var(--txt);margin-bottom:3px">Full Structural Reports</div>
+              <div style="font-size:11px;color:var(--txt3);line-height:1.6">Beam schedules, column interaction, footing design — all calculated.</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:12px;align-items:flex-start">
+            <div style="font-size:24px;flex-shrink:0">🏆</div>
+            <div>
+              <div style="font-size:12px;font-weight:700;color:var(--txt);margin-bottom:3px">Earn Certificates</div>
+              <div style="font-size:11px;color:var(--txt3);line-height:1.6">IS 456 Foundation, Proficiency and Competent. Share on LinkedIn.</div>
+            </div>
+          </div>
+        </div>
+        <button onclick="goTo('app')" style="margin-top:16px;width:100%;padding:12px;background:linear-gradient(135deg,#2563eb,#3b82f6);border:none;border-radius:8px;color:white;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">
+          Start Your First Design →
+        </button>
+      </div>
+
+      <!-- PROJECT LIMIT BAR (free users) -->
+      <div class="lbar" id="lbar" style="display:none">
+        <span style="color:var(--txt3);font-size:11px;white-space:nowrap">Projects used:</span>
+        <div class="lp"><div class="lf" id="lf" style="width:0%"></div></div>
+        <span id="lt" style="color:var(--txt2);font-weight:700;white-space:nowrap">0/3</span>
+        <button onclick="showUp()" style="padding:4px 12px;background:#1d4ed8;border:none;border-radius:5px;color:white;font-size:10px;font-weight:700;cursor:pointer;white-space:nowrap">Upgrade</button>
+      </div>
     </div>
-    <div class="ph">
-      <div class="ph-title">My Projects</div>
-      <button class="np-btn" onclick="newProject()">+ New Project</button>
-    </div>
-    <div class="filters">
-      <input class="fi" style="flex:1;min-width:180px" type="text" id="f-search"
-        placeholder="🔍 Search projects..." oninput="filterP()">
-      <select class="fi" id="f-status" onchange="filterP()">
-        <option value="all">All Status</option>
-        <option value="pass">All Pass</option>
-        <option value="fail">Has Failures</option>
-        <option value="draft">Not Run Yet</option>
-      </select>
-      <select class="fi" id="f-sort" onchange="filterP()">
-        <option value="newest">Newest First</option>
-        <option value="oldest">Oldest First</option>
-        <option value="name">Name A–Z</option>
-      </select>
+
+    <!-- PROJECTS SECTION -->
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+      <div style="font-size:15px;font-weight:800;color:var(--txt)">My Projects</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <input class="fi" style="width:180px" type="text" id="f-search"
+          placeholder="🔍 Search..." oninput="filterP()">
+        <select class="fi" id="f-status" onchange="filterP()">
+          <option value="all">All Status</option>
+          <option value="pass">All Pass</option>
+          <option value="fail">Has Failures</option>
+          <option value="draft">Not Run Yet</option>
+        </select>
+        <select class="fi" id="f-sort" onchange="filterP()">
+          <option value="newest">Newest First</option>
+          <option value="oldest">Oldest First</option>
+          <option value="name">Name A–Z</option>
+        </select>
+      </div>
     </div>
     <div class="pgrid" id="pgrid"></div>
+
   </div>
 </div>
 
@@ -642,13 +721,31 @@ async function doLogout(){
 // ── TOP BAR ──────────────────────────────────────────────────
 function updTop(){
   document.getElementById('t-name').textContent=P?.full_name||P?.mobile||'';
+  // Update greeting on dashboard
+  setTimeout(function(){
+    const gr = document.getElementById('hero-greeting');
+    if(gr && P){
+      const name = P.full_name ? P.full_name.split(' ')[0] : '';
+      const hour = new Date().getHours();
+      const tod = hour<12?'Good morning':hour<17?'Good afternoon':'Good evening';
+      gr.textContent = tod + (name?' '+name:'') + ' 👋';
+    }
+  }, 100);
   const ch=document.getElementById('t-plan');
   ch.textContent=plan==='free'?'FREE':'PRO ✓';
   ch.className='chip '+(plan==='free'?'free':'pro');
   document.getElementById('t-up').style.display=plan==='free'?'':'none';
 }
 function tellIframe(){
-  setTimeout(()=>{try{document.getElementById('app-iframe').contentWindow.postMessage({type:'USER_PLAN',plan,user:P},'*');}catch(e){}},600);
+  setTimeout(()=>{
+    try{
+      const fr=document.getElementById('app-iframe');
+      if(!fr||!fr.contentWindow)return;
+      fr.contentWindow.postMessage({type:'USER_PLAN',plan,user:P},'*');
+    }catch(e){}
+  },600);
+  // Also restore progress — user may have just logged in
+  setTimeout(sendProgressToIframe, 1000);
 }
 
 // ── PROJECTS ─────────────────────────────────────────────────
@@ -658,6 +755,8 @@ async function loadProjects(){
   const {data:ps}=await db.from('projects').select('*').eq('user_id',U.id).order('updated_at',{ascending:false});
   projects=ps||[];
   updLbar();renderP(projects);
+  updDashStats();
+  renderJourneyModules();
 }
 function updLbar(){
   const bar=document.getElementById('lbar');
@@ -687,6 +786,79 @@ function renderP(ps){
     </div>`;
   }).join('');
 }
+function updDashStats(){
+  // Update greeting
+  const greeting = document.getElementById('hero-greeting');
+  if(greeting && P){
+    const name = P.full_name ? P.full_name.split(' ')[0] : 'there';
+    const hour = new Date().getHours();
+    const tod = hour<12?'Good morning':hour<17?'Good afternoon':'Good evening';
+    greeting.textContent = (hour<12?'Good morning':hour<17?'Good afternoon':'Good evening')+', '+name+' 👋';
+  }
+  // Project stats
+  const el_p = document.getElementById('stat-projects');
+  if(el_p) el_p.textContent = projects.length;
+  const el_pass = document.getElementById('stat-passed');
+  if(el_pass) el_pass.textContent = projects.filter(p=>p.status==='pass').length;
+  // Show features section for new users
+  const featSec = document.getElementById('features-section');
+  if(featSec) featSec.style.display = projects.length===0 ? 'block' : 'none';
+  // Get lesson/cert stats from iframe via stored progress
+  const raw = sessionStorage.getItem('slp_restore_progress');
+  if(raw){
+    try{
+      const prog = JSON.parse(raw);
+      const lessons = prog.lessons || {};
+      const lessonCount = Object.keys(lessons).filter(k=>k.endsWith('_quiz')).length;
+      const el_l = document.getElementById('stat-lessons');
+      if(el_l) el_l.textContent = lessonCount;
+    }catch(e){}
+  }
+  // Certs from Supabase
+  db.from('certificates').select('id').eq('user_id',U.id).then(({data})=>{
+    const el_c = document.getElementById('stat-certs');
+    if(el_c) el_c.textContent = (data||[]).length;
+  });
+}
+
+function renderJourneyModules(){
+  const el = document.getElementById('journey-modules');
+  if(!el) return;
+  // Module definitions
+  const modules = [
+    {id:'M1', name:'Module 1 — Foundation', subtitle:'Loads, Materials, Footings', lessons:4, color:'#60a5fa', emoji:'🧱'},
+    {id:'M2', name:'Module 2 — Structural Design', subtitle:'Beams, Columns, IS 456', lessons:4, color:'#4ade80', emoji:'📐', pro:true},
+    {id:'M3', name:'Module 3 — Advanced Topics', subtitle:'Seismic, Slabs, Reports', lessons:3, color:'#c084fc', emoji:'⚡', pro:true},
+  ];
+  // Get progress from sessionStorage
+  var lessonsDone = {};
+  const raw = sessionStorage.getItem('slp_restore_progress');
+  if(raw){ try{ lessonsDone = JSON.parse(raw).lessons || {}; }catch(e){} }
+
+  el.innerHTML = modules.map(function(mod){
+    const isPro = mod.pro && plan !== 'pro';
+    // Count passed quizzes for this module (rough estimate by module index)
+    const pct = 0; // Will be updated when iframe loads
+    const statusColor = isPro ? '#374e6e' : mod.color;
+    const statusText = isPro ? '🔒 Pro' : 'Free';
+    return '<div style="background:var(--bg3);border:1px solid var(--b2);border-radius:10px;padding:14px;cursor:'+(isPro?'default':'pointer')+'" '
+      + (isPro ? '' : 'onclick="goJourneyApp()"') + '>'
+      + '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">'
+      + '<div style="font-size:18px">'+mod.emoji+'</div>'
+      + '<span style="font-size:9px;font-weight:700;padding:2px 8px;border-radius:8px;background:rgba('+
+        (isPro?'55,78,110':'96,165,250')+',0.15);color:'+(isPro?'#94a3b8':mod.color)+'">'+statusText+'</span>'
+      + '</div>'
+      + '<div style="font-size:12px;font-weight:700;color:var(--txt);margin-bottom:2px">'+mod.name+'</div>'
+      + '<div style="font-size:10px;color:var(--txt3);margin-bottom:10px">'+mod.subtitle+'</div>'
+      + '<div style="height:4px;background:var(--b1);border-radius:2px;overflow:hidden">'
+      + '<div style="height:100%;width:'+pct+'%;background:'+mod.color+';border-radius:2px;transition:width 0.5s"></div>'
+      + '</div>'
+      + '<div style="font-size:10px;color:var(--txt3);margin-top:5px">'+pct+'% complete · '+mod.lessons+' lessons</div>'
+      + '</div>';
+  }).join('');
+}
+
+function goJourneyApp(){goTo('app');}
 function filterP(){
   const s=document.getElementById('f-search').value.toLowerCase();
   const st=document.getElementById('f-status').value;
@@ -1083,7 +1255,7 @@ async function loadAndRestoreProgress() {
 function sendProgressToIframe() {
   const raw = sessionStorage.getItem('slp_restore_progress');
   if(!raw) return;
-  if(!U) return; // only send if user is logged in
+  if(!U) return;
   try {
     const iframe = document.getElementById('app-iframe');
     if(!iframe || !iframe.contentWindow) return;
@@ -1091,6 +1263,7 @@ function sendProgressToIframe() {
       type: 'RESTORE_PROGRESS',
       progress: JSON.parse(raw)
     }, '*');
+    console.log('Progress sent to iframe ✓');
   } catch(e) {}
 }
 
