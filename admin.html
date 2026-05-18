@@ -875,7 +875,22 @@ function profRowClick(el) {
   var uid = el.dataset.uid;
   var profileData = document.getElementById('sec-profiles')._profileData;
   var d = profileData ? profileData.find(function(x){ return x.user.id===uid; }) : null;
-  if(d) viewFullProfile(d);
+  if(d) {
+    // Re-fetch latest events and sessions for this student before showing modal
+    Promise.all([
+      adminDb.from('student_events').select('*').eq('user_id', uid).order('created_at',{ascending:false}),
+      adminDb.from('student_sessions').select('*').eq('user_id', uid).order('session_date',{ascending:false})
+    ]).then(function(results) {
+      var freshEvs = results[0].data || [];
+      var freshSes = results[1].data || [];
+      if(freshEvs.length > 0 || freshSes.length > 0) {
+        d.evs = freshEvs;
+        d.ses = freshSes;
+        d.sis = computeSIS(d.user, freshEvs, freshSes, d.projs, d.certs);
+      }
+      viewFullProfile(d);
+    }).catch(function(){ viewFullProfile(d); });
+  }
 }
 
 function getSISLabel(score) {
@@ -920,7 +935,7 @@ function viewFullProfile(d) {
 
   // Projects
   var projectRows = d.projs.slice(0,5).map(function(p){
-    var pd = p.project_data || {};
+    var pd = p.data || p.project_data || {};
     var floors = ((pd.S||{}).numFloors||'?');
     var zone   = ((pd.S||{}).zone||'?');
     return '<div style="display:flex;justify-content:space-between;align-items:center;'
