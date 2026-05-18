@@ -421,7 +421,7 @@ const db = createClient(SUPA_URL, SUPA_KEY);
 // Admin client uses service role key to bypass RLS
 const adminDb = createClient(SUPA_URL, SERVICE_KEY);
 
-let allUsers=[], allProjs=[];
+let allUsers=[], allProjs=[], allCerts=[], allPayments=[], allCoupons=[], currentSettings={};
 
 // \u2500\u2500 LOGIN \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 async function adminLogin(){
@@ -1125,7 +1125,7 @@ function viewStudentProject(projectId) {
 }
 
 
-let allPayments=[], allCoupons=[], currentSettings={};
+// variables declared above
 
 
 
@@ -1417,7 +1417,11 @@ async function loadAll(){
     renderCoupons(allCoupons);
     loadSettings();
     loadRefundTable();
-  } catch(e){ console.error('loadAll error',e); }
+  } catch(e){
+    console.error('loadAll error', e);
+    document.getElementById('sec-dashboard').innerHTML += 
+      '<div style="color:#f87171;padding:20px;font-size:13px">⚠ Data load error: '+e.message+'<br>Check browser console for details.</div>';
+  }
 }
 
 // ── BUILD HEATMAP ────────────────────────────────────────
