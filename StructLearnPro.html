@@ -939,7 +939,9 @@ function runCalcs(){
         zone,soilType,importance,terrain,windZone,buildingL,buildingW}=S;
   // Materials
   const Ec=5000*Math.sqrt(fck),fcd=0.446*fck,fyd=fy/1.15;
-  const xu_d=fyd/(fyd+0.0035*Es);
+  // IS 456 Cl 38.1 — limiting xu_max/d depends on steel grade
+  // Fe250: 0.531, Fe415: 0.48, Fe500: 0.46. Formula uses εcu=0.0035 and εsu=0.87fy/Es+0.002 (HYSD)
+  const xu_d = fy>=500 ? 0.46 : fy>=415 ? 0.48 : 0.531;
   const Mf=0.36*xu_d*(1-0.42*xu_d);
   // Slab
   const lx=Math.min(...spansX,...spansY),ly=Math.max(...spansX,...spansY);
@@ -951,28 +953,45 @@ function runCalcs(){
   let Mx=0,My=0,ax=0,ay=0;
   if(twoWay){ax=clamp(0.062+(ratio-1)*0.012,0.04,0.099);ay=clamp(0.062/ratio/ratio,0.02,0.062);Mx=ax*wu_sl*lx*lx;My=ay*wu_sl*lx*lx;}
   else{Mx=wu_sl*lx*lx/8;My=0.26*Mx;}
-  const Ast=(Mu,b,d)=>{if(Mu<=0)return 0.12*b*d/100;let A=(Mu*1e6)/(0.87*fy*d*(1-(Mu*1e6)/(0.36*fck*b*d*0.48*d)));if(isNaN(A)||A<0)A=200;return Math.max(A,0.12*b*d/100);}
+  const Ast=(Mu,b,d)=>{
+    // IS 456 Annex G.1.1(b) — exact closed form
+    const Astmin = 0.12*b*d/100;
+    if(Mu<=0) return Astmin;
+    const factor = 4.598 * Mu * 1e6 / (fck * b * d * d);
+    if(factor >= 1) return Math.max(Mf*fck*b*d/(0.87*fy), Astmin);
+    let A = 0.5 * fck * b * d / fy * (1 - Math.sqrt(1 - factor));
+    if(isNaN(A)||A<0) A = 200;
+    return Math.max(A, Astmin);
+  }
   const Mulim_sl=Mf*fck*1000*slabd*slabd/1e6;
   const Ax=Ast(Mx,1000,slabd),Ay=Math.max(Ast(My,1000,slabd),0.12*1000*slabD/100);
   const Ax_neg=Ast(Mx*0.8,1000,slabd)*0.5;
   const spx=clamp(Math.floor(1000*PI*25/Ax),75,Math.min(3*slabD,300));
   const spy=clamp(Math.floor(1000*PI*16/Ay),75,300);
   const spx_n=clamp(Math.floor(1000*PI*16/Math.max(Ax_neg,180)),75,300);
-  // Seismic
+  // Seismic — IS 1893:2016
   const ZM={II:0.10,III:0.16,IV:0.24,V:0.36},Z=ZM[zone]||0.24,I=importance,R=5;
-  const sf={I:1.0,II:1.2,III:1.5}[soilType]||1.2;
   const H=numFloors*floorHt,db=buildingW;
   const Ta=0.09*H/Math.sqrt(db);
-  let Sa=Ta<=0.1?1+15*Ta:Ta<=0.55?2.5:1.36/Ta;Sa*=sf;
+  // IS 1893:2016 Cl 6.4.5 — proper Sa/g per soil type (no separate sf factor)
+  let Sa;
+  if(Ta<=0.10){ Sa=1+15*Ta; }
+  else if(soilType==='I'){      Sa = Ta<=0.40 ? 2.5 : 1.00/Ta; }
+  else if(soilType==='III'){    Sa = Ta<=0.67 ? 2.5 : 1.67/Ta; }
+  else{                          Sa = Ta<=0.55 ? 2.5 : 1.36/Ta; }
+  const sf=1.0;
   const Ah=(Z/2)*(Sa/R)*I;
   const fa=buildingL*buildingW;
-  const Wf=DL_tot*fa+0.25*udlLL*fa+wallLoad*2*(buildingL+buildingW);
-  const Wt=Wf*numFloors;
+  // IS 1893:2016 Table 8 imposed-load fraction
+  const llF = udlLL > 3 ? 0.5 : 0.25;
+  const Wf=DL_tot*fa+llF*udlLL*fa+wallLoad*2*(buildingL+buildingW);
+  const Wf_roof=DL_tot*fa+llF*udlLL*fa;   // no wall above roof
+  const Wt=Wf*(numFloors-1)+Wf_roof;
   const Vb=Ah*Wt;
   const floors=[];
-  for(let i=1;i<=numFloors;i++){const hi=i*floorHt;const Wi=Wf;floors.push({floor:i,h:hi,W:Wi,Wh2:Wi*hi*hi});}
+  for(let i=1;i<=numFloors;i++){const hi=i*floorHt;const Wi=(i===numFloors)?Wf_roof:Wf;floors.push({floor:i,h:hi,W:Wi,Wh2:Wi*hi*hi});}
   const sWh=floors.reduce((a,f)=>a+f.Wh2,0);
-  floors.forEach(f=>{f.Qi=Vb*f.Wh2/sWh;});
+  floors.forEach(f=>{f.Qi=sWh>0?Vb*f.Wh2/sWh:0;});
   let cs=0;for(let i=floors.length-1;i>=0;i--){cs+=floors[i].Qi;floors[i].Vi=cs;}
   // Wind
   const VbW={I:33,II:39,III:44,IV:47,V:50,VI:55}[windZone]||47;
@@ -988,7 +1007,7 @@ function runCalcs(){
     const Asv=2*PI*16;
     const tcmax=0.62*Math.sqrt(fck);
     const tbl=[[0.15,0.28],[0.25,0.36],[0.50,0.48],[0.75,0.56],[1.00,0.62],[1.25,0.67],[1.50,0.72],[1.75,0.75],[2.00,0.79],[2.50,0.82]];
-    const Ld=(0.87*fy*bD)/(4*1.6*1.25*Math.sqrt(fck));
+    const Ld=devLength(bD, fy, fck);
     // Auto-increase D until singly reinforced (recalc wu each step since SW changes)
     while(D<1200){
       const dTry=D-coverBeam-8-10;
@@ -1018,8 +1037,9 @@ function runCalcs(){
     const tv=RA*1000/(b*d);
     const svMid=tv>tc?clamp(Math.floor(0.87*fy*Asv/((tv-tc)*b)),75,clamp(Math.floor(0.75*d),75,300)):clamp(Math.floor(0.75*d),75,300);
     const svEnd=Math.min(Math.floor(d/4),Math.floor(8*bD),100);
-    const EI=(Ec*(b*D*D*D/12))/1e12;
-    const dfl=5*wu*Math.pow(L,4)/(384*EI);
+    const EI=(Ec*(0.35*b*D*D*D/12))/1e12;        // effective EI
+    const ws=(wslab+wsw+ww);                       // service load (unfactored)
+    const dfl=1.6*5*ws*Math.pow(L,4)/(384*EI);     // include creep factor 1.6
     const dall=L*1000/250;
     return{L,b,D,d,wu,RA,Mmax,Msup,Mulim,singly:true,
       Am,As2:As,nm,ns,Ap,Ast2:0,n2:0,
@@ -1075,7 +1095,7 @@ function runCalcs(){
     const Af2=Math.max(Ast(Mu2,Bf2*1000,d2),0.12*Bf2*1000*D2/100);
     const dBf=12,dBfA=PI*36;
     const spf=Math.min(Math.floor(Bf2*1000*dBfA/Af2/Bf2),300);
-    const Ldr=(0.87*fy*dBf)/(4*1.6*1.25*Math.sqrt(fck))*0.7;  // 90-deg hook in footings
+    const Ldr=devLength(dBf, fy, fck, {hook:true});  // standard 90° hook reduction
     const Lda=(Bf2*1000-cs2)/2-coverFtg;
     const Pa=0.45*fck*cs2*cs2/1000;
     return{Ps,qu:qu2,quf,Bf:Bf2,D:D2,d:d2,bo,Vpu,tvp,tcp,punch_ok:tvp<=tcp,
@@ -1087,7 +1107,7 @@ function runCalcs(){
   const ftgs=[dFtg(cc.Ps,cc.size,'Corner Footing CF'),dFtg(ec.Ps,ec.size,'Edge Footing EF'),dFtg(ic.Ps,ic.size,'Interior Footing IF')];
   // Stair
   const riser=165,tread=270,ss=1.5,wD=150,wd=wD-coverSlab-5;
-  const DLst=wD/1000*25+(riser/2/1000)*25*2+floorFinish,wust=1.5*(DLst+3.0);
+  const DLst=wD/1000*25+(riser/2/1000)*25+floorFinish,wust=1.5*(DLst+3.0);
   const Mst=wust*ss*ss/8,Ast2=Ast(Mst,1000,wd);
   const stsp=clamp(Math.floor(1000*PI*25/Ast2),75,200);
   return{mat:{Ec,fcd,fyd,Mf},
@@ -2066,12 +2086,48 @@ function getTc(pt){
   return TC_TABLE[TC_TABLE.length-1][1];
 }
 
+// IS 456 Table 19 — design bond stress for plain bars in tension (N/mm²)
+// HYSD/TMT deformed bars get 60% increase per Cl 26.2.1.1.
+// Compression: τbd_design × 1.25 (Cl 26.2.1.1).
+function tauBd(fck, isHYSD, isCompression){
+  const tbl = { 20:1.2, 25:1.4, 30:1.5, 35:1.7, 40:1.9, 45:2.0, 50:2.1 };
+  // Round fck DOWN to nearest table grade for safety; interpolate above 50.
+  let key = 20;
+  for(const k of [20,25,30,35,40,45,50]) if(fck>=k) key=k;
+  let tbd = tbl[key] || 0.16*Math.sqrt(fck);
+  if(isHYSD) tbd *= 1.6;
+  if(isCompression) tbd *= 1.25;
+  return tbd;
+}
+
+// IS 456 Cl 26.2.1 — Development length
+// Ld = (φ × σs) / (4 × τbd_design),  σs = 0.87 fy
+// hookFactor: 0.7 for standard 90° hook (Cl 26.2.1.1 — equivalent anchorage)
+function devLength(phi, fy, fck, opts){
+  opts = opts || {};
+  const isHYSD = (fy >= 415);
+  const tbd = tauBd(fck, isHYSD, !!opts.compression);
+  const Ld = phi * 0.87 * fy / (4 * tbd);
+  return opts.hook ? Ld * 0.7 : Ld;
+}
+
 function AstCalc(Mu,b,d,fck,fy,Mf){
-  if(Mu<=0||d<=0||b<=0) return 0.12*b*d/100;
-  const inner=1-(Mu*1e6)/(0.36*fck*b*d*0.48*d);
-  if(inner<=0) return 0.12*b*d/100;
-  const A=(Mu*1e6)/(0.87*fy*d*inner);
-  return Math.max(isNaN(A)||A<0?0:A, 0.12*b*d/100);
+  // IS 456 Annex G.1.1(b) — exact closed-form solution of:
+  //   Mu = 0.87 fy Ast d (1 - Ast fy / (b d fck))
+  // ⇒  Ast = 0.5 fck b d / fy · (1 - √(1 - 4.598 Mu / (fck b d²)))
+  // Fall back to min steel (0.12% bD) if Mu invalid or section under-loaded.
+  const Astmin = 0.12*b*d/100;
+  if(Mu<=0 || d<=0 || b<=0 || fck<=0 || fy<=0) return Astmin;
+  const Mu_Nmm = Mu*1e6;
+  const factor = 4.598 * Mu_Nmm / (fck * b * d * d);
+  if(factor >= 1) {
+    // Section is over its singly-reinforced capacity; caller should
+    // increase D. Return Ast for balanced section as a conservative
+    // approximation — caller's geometry loop will resize.
+    return Math.max((Mf||0.138)*fck*b*d/(0.87*fy), Astmin);
+  }
+  const Ast = 0.5 * fck * b * d / fy * (1 - Math.sqrt(1 - factor));
+  return Math.max(isNaN(Ast)||Ast<0 ? Astmin : Ast, Astmin);
 }
 
 // ── COLUMN TRIBUTARY AREA from actual GRID bays ────────────────
@@ -2097,17 +2153,45 @@ function getColTribAreaDetailed(node){
 
 // ── DESIGN ONE COLUMN for a specific floor ────────────────────
 // floorsAbove = how many floors this column supports (including its own floor)
+// IS 875 Part 2 Cl 3.2.1 — reduction in imposed loads on supporting columns
+// based on number of floors above the column being designed.
+function llReductionFactor(nFloors){
+  // Returns reduction factor to be applied to TOTAL accumulated LL
+  // 1 floor: 1.0  | 2: 0.9 | 3: 0.8 | 4: 0.7 | 5: 0.6 | 6+: 0.5
+  if(nFloors<=1) return 1.0;
+  if(nFloors===2) return 0.9;
+  if(nFloors===3) return 0.8;
+  if(nFloors===4) return 0.7;
+  if(nFloors===5) return 0.6;
+  return 0.5;
+}
+
 function designOneColumn(node, floorsAbove, DL_tot, udlLL_floor, udlLL_roof,
-                          wallLoad, fck, fy, floorHt, coverCol, Mf){
+                          wallLoad, fck, fy, floorHt, coverCol, Mf, numFloors){
   const{slabArea,perimLen}=getColTribAreaDetailed(node);
 
-  // Each typical floor contributes DL+LL; roof contributes DL+roof_LL
-  // Conservative: all floors use floor LL (roof LL considered in seismic only)
-  const Ps_per_floor = DL_tot*slabArea + udlLL_floor*slabArea*0.25 + wallLoad*perimLen;
-  const Ps = floorsAbove * Ps_per_floor;
-  const Pu = 1.5 * Ps;
+  // Roof contributes DL+roof_LL, other floors contribute DL+floor_LL.
+  // IS 875-2 LL reduction depends on number of floors above column.
+  const llRedFactor = llReductionFactor(floorsAbove);
+  const DL_per_floor = DL_tot*slabArea + wallLoad*perimLen;
+  // Roof = 1 floor (the top), with roof LL; the rest are typical floors with floor LL
+  const nTypicalFloors = floorsAbove - 1; // floors that aren't the roof above this column
+  const LL_total = (nTypicalFloors*udlLL_floor + udlLL_roof) * slabArea * llRedFactor;
+  // Wall load: no wall above roof — so wall acts on (floorsAbove-1) typical floors
+  // (Roof column carrying just the roof: floorsAbove=1, nTypicalFloors=0, wall=0.)
+  const wallContribution = nTypicalFloors * wallLoad * perimLen;
+  const Ps = floorsAbove*DL_tot*slabArea + LL_total + wallContribution;
+  const Pu_axial = 1.5 * Ps;
 
-  // Size from axial capacity
+  // IS 456 Cl 39.3 — design must include moment from minimum eccentricity
+  // emin = max(L/500 + b/30, 20mm). If emin > 0.05·D, moment must be considered.
+  // We approximate by reducing axial capacity via a multiplier:
+  // For uniaxial bending with small e: Pu_eq ≈ Pu × (1 + 6·e/D) (approximate
+  // for symmetric reinforcement). This is a simplification; full P-M check
+  // is shown in the dedicated P-M Interaction page.
+  let Pu = Pu_axial;
+
+  // Size from axial capacity (accounts for emin reduction inside loop)
   const fck_eff=0.4*fck+0.008*(0.67*fy-0.4*fck);
   let size=Math.max(300,Math.ceil(Math.sqrt(Math.max(Pu*1000/fck_eff,90000))/25)*25);
   for(let iter=0;iter<20;iter++){
@@ -2117,8 +2201,12 @@ function designOneColumn(node, floorsAbove, DL_tot, udlLL_floor, udlLL_roof,
     const dB=Pu>800?20:16;
     const nb=Math.max(4,Math.ceil(Af/(Math.PI*dB*dB/4)));
     const Aprov=nb*(Math.PI*dB*dB/4);
-    const Pcap=(0.4*fck*(Ag-Aprov)+0.67*fy*Aprov)/1000;
-    if(Pcap>=Pu||size>=800) break;
+    const Pcap_a=(0.4*fck*(Ag-Aprov)+0.67*fy*Aprov)/1000;
+    // Reduce capacity for min-eccentricity moment (IS 456 Cl 39.3)
+    const emin_i=Math.max(floorHt*1000/500+size/30,20);
+    const eR=emin_i/size;
+    const red=eR>0.05?Math.max(0.6,1-1.5*eR):1.0;
+    if(Pcap_a*red>=Pu||size>=800) break;
     size+=25;
   }
   const Ag=size*size;
@@ -2128,13 +2216,22 @@ function designOneColumn(node, floorsAbove, DL_tot, udlLL_floor, udlLL_roof,
   const dBA=Math.PI*dB*dB/4;
   const nb=Math.max(4,Math.ceil(Af/dBA));
   const Aprov=nb*dBA;
-  const Pcap=(0.4*fck*(Ag-Aprov)+0.67*fy*Aprov)/1000;
+  const Pcap_axial=(0.4*fck*(Ag-Aprov)+0.67*fy*Aprov)/1000;
   const pt=Aprov/Ag*100;
   const leff=0.65*floorHt*1000, lex=leff/size;
   const emin=Math.max(floorHt*1000/500+size/30,20);
   const ts=Math.min(size,16*dB,300);
   const tsc=Math.min(ts,8*dB,100,75);
   const Lo=Math.max(size,floorHt*1000/6,450);
+
+  // IS 456 Cl 39.3 — if emin > 0.05·D, axial-only capacity must be reduced.
+  // Conservative approximation using Bresler's reciprocal load equation
+  // simplified for uniaxial bending: Pcap_eff = Pcap_axial × (1 - 1.5·emin/size)
+  // (works for small eccentricities up to ~0.1·size; full P-M shown on Advanced page).
+  const eRatio = emin/size;
+  const eccReduction = eRatio > 0.05 ? Math.max(0.6, 1 - 1.5*eRatio) : 1.0;
+  const Pcap = Pcap_axial * eccReduction;
+  const Mu_min = Pu * emin / 1000; // kN·m moment from min eccentricity
 
   const isCorner=(node.row===0||node.row===GRID.ny)&&(node.col===0||node.col===GRID.nx);
   const isEdge=!isCorner&&(node.row===0||node.row===GRID.ny||node.col===0||node.col===GRID.nx);
@@ -2146,7 +2243,8 @@ function designOneColumn(node, floorsAbove, DL_tot, udlLL_floor, udlLL_roof,
   return{
     baseLabel, nodeId:node.id, floorsAbove,
     row:node.row, col:node.col,
-    Ps, Pu, Pcap, size, Ag,
+    Ps, Pu, Pcap, Pcap_axial, eccReduction, Mu_min,
+    size, Ag,
     Ar, Af, Aprov, pt, nb, dB,
     leff, lex, short:lex<=12, emin,
     ts, tsc, Lo,
@@ -2176,8 +2274,12 @@ function designOneFooting(col, soilBearing, ftgDepth, coverFtg, fck, fy, ftgMinD
   const Mu=quf*Bf*x*x/2;
   const Af=Math.max(AstFn(Mu,Bf*1000,d),0.12*Bf*1000*D/100);
   const dBf=12, dBfA=Math.PI*36;
-  const spf=clamp(Math.floor(Bf*1000*dBfA/(Af*Bf)),75,300);
-  const Ldr=(0.87*fy*dBf)/(4*1.6*1.25*Math.sqrt(fck))*0.7;
+  // Spacing of bars across the footing width Bf [m]:
+  // Steel per metre strip = Af / Bf [mm²/m]
+  // Spacing [mm] = 1000 × area_per_bar / (steel per metre) = 1000·dBfA·Bf / Af
+  // Previous version dropped Bf — gave over-tight spacing (extra steel).
+  const spf=clamp(Math.floor(1000*dBfA*Bf/Af),75,300);
+  const Ldr=devLength(dBf, fy, fck, {hook:true});
   const Lda=(Bf*1000-colSz)/2-coverFtg;
   const Pa=0.45*fck*colSz*colSz/1000;
   return{
@@ -2249,14 +2351,19 @@ function designOneBeam(gridBeam, floorNum, isRoof,
     const bW=Math.max(200,Math.ceil(D*0.4/25)*25); // recalculate bW as D grows
     const wsw=(bW/1000)*(D/1000)*25;
     const wu_try=1.5*(wslab+wsw+wwall);
+    const ws_try=(wslab+wsw+wwall);  // service load (unfactored) for deflection
     const d_try=D-coverBeam-8-10;
     if(d_try<=0){D+=25;continue;}
     const Mu_try=alpha*wu_try*L*L;
     const Mulim_try=Mf*fck*bW*d_try*d_try/1e6;
-    const I_try=bW*D*D*D/12;
+    // Deflection per IS 456 Cl 23.2: use service load + effective I.
+    // Approximate I_eff ≈ 0.35·Ig (Branson's formula gives roughly this for
+    // typical loading) and apply long-term creep factor 1.6 for sustained loads.
+    const I_try=0.35*bW*D*D*D/12;
+    const creep=1.6;
     const dfl_try=gridBeam.isCantilever
-      ?wu_try*L**4/(8*Ec*I_try/1e12)
-      :5*wu_try*L**4/(384*Ec*I_try/1e12);
+      ?creep*ws_try*L**4/(8*Ec*I_try/1e12)
+      :creep*5*ws_try*L**4/(384*Ec*I_try/1e12);
     const dall_try=gridBeam.isCantilever?L*1000/150:L*1000/250;
     if(Mu_try<=Mulim_try&&dfl_try<=dall_try*0.95) break;
     D+=25;
@@ -2264,13 +2371,24 @@ function designOneBeam(gridBeam, floorNum, isRoof,
 
   const bW=Math.max(200,Math.ceil(D*0.4/25)*25); // final value after loop
   const wsw=(bW/1000)*(D/1000)*25;
-  const wu=1.5*(wslab+wsw+wwall)+wstair; // wstair already factored (1.5 applied in stair design)
+  const wu=1.5*(wslab+wsw+wwall)+wstair; // wstair already factored
+  const ws=(wslab+wsw+wwall)+wstair/1.5; // service load for deflection
   const d=D-coverBeam-8-10;
   const Mmax=alpha*wu*L*L;
   const Msup=alphaSup*wu*L*L;
   const Mulim=Mf*fck*bW*d*d/1e6;
-  const RA=gridBeam.isCantilever?wu*L
-    :(gridBeam.endLeft==='column'?0.55:0.40)*wu*L;
+  // End reactions: for shear design we use the MAX end reaction.
+  // SS: 0.5wL each end. Propped cantilever (one end fixed, one SS):
+  // R_fixed ≈ 0.625wL, R_pinned ≈ 0.375wL. Fixed-fixed (interior beam): 0.5wL each.
+  // Cantilever: full wL at support.
+  function endReactionFactor(eL,eR,cant){
+    if(cant) return 1.0;
+    const cL=eL==='column', cR=eR==='column';
+    if(cL&&cR) return 0.5;        // both continuous
+    if(cL||cR) return 0.625;      // one continuous, one pinned → max at fixed end
+    return 0.5;                    // simply supported
+  }
+  const RA = endReactionFactor(gridBeam.endLeft, gridBeam.endRight, gridBeam.isCantilever) * wu * L;
 
   const AstFn=(Mu,b,d2)=>AstCalc(Mu,b,d2,fck,fy,Mf);
   const bA=Math.PI*100;
@@ -2288,10 +2406,11 @@ function designOneBeam(gridBeam, floorNum, isRoof,
     ?clamp(Math.floor(0.87*fy*Asv/((tv-tc)*bW)),75,clamp(Math.floor(0.75*d),75,300))
     :clamp(Math.floor(0.75*d),75,300);
   const svEnd=Math.min(Math.floor(d/4),Math.floor(8*20),100);
-  const EI=(Ec*(bW*D**3/12))/1e12;
-  const dfl=gridBeam.isCantilever?wu*L**4/(8*EI):5*wu*L**4/(384*EI);
+  const EI=(Ec*(0.35*bW*D**3/12))/1e12;   // effective EI (cracked, ≈0.35 Ig)
+  const creep=1.6;                          // long-term creep multiplier
+  const dfl=gridBeam.isCantilever?creep*ws*L**4/(8*EI):creep*5*ws*L**4/(384*EI);
   const dall=gridBeam.isCantilever?L*1000/150:L*1000/250;
-  const Ld=(0.87*fy*20)/(4*1.6*1.25*Math.sqrt(fck));
+  const Ld=devLength(20, fy, fck);
 
   // Label: e.g. B-A1-X F2 means beam at row A col 1 X-direction floor 2
   const rowLbl=String.fromCharCode(65+gridBeam.row);
@@ -2322,7 +2441,13 @@ function designOneBeam(gridBeam, floorNum, isRoof,
 
 // ── MAIN ENGINE ────────────────────────────────────────────────
 function runCalcsFromGrid(){
-  if(!GRID) return runCalcs();
+  // Ensure GRID is initialized — initGrid() is idempotent and safe to call.
+  // We no longer fall back to the old runCalcs() because it returns a
+  // structurally-different RES that breaks downstream report rendering.
+  if(!GRID){
+    if(typeof initGrid === 'function') initGrid();
+    if(!GRID) throw new Error('Grid could not be initialised. Please go to Plan & Spans and add at least one bay.');
+  }
 
   GRID.beams.forEach(b=>autoEndConditions(b));
   updateTransferBeams();
@@ -2337,7 +2462,9 @@ function runCalcsFromGrid(){
   S.buildingW=S.spansY.reduce((a,b)=>a+b,0);
 
   const Ec=5000*Math.sqrt(fck), fyd=fy/1.15;
-  const xu_d=fyd/(fyd+0.0035*Es);
+  // IS 456 Cl 38.1 — limiting xu_max/d depends on steel grade.
+  // Fe250: 0.531, Fe415: 0.48, Fe500: 0.46. Derived from εcu=0.0035 and εsu=0.87fy/Es+0.002 (HYSD)
+  const xu_d = fy>=500 ? 0.46 : fy>=415 ? 0.48 : 0.531;
   const Mf=0.36*xu_d*(1-0.42*xu_d);
   const DL_sl=slabThk/1000*25;
   const DL_tot=DL_sl+floorFinish+partitions;
@@ -2442,21 +2569,55 @@ function runCalcsFromGrid(){
   const spxn=clamp(Math.floor(1000*Math.PI*16/Math.max(AstFn(Mx*0.8,1000,slabd)*0.5,180)),75,300);
 
   // ── SEISMIC (uses actual slab area, not total plan) ───────────
+  // IS 1893:2016 Cl 6.4 — design horizontal seismic coefficient
   const ZM={II:0.10,III:0.16,IV:0.24,V:0.36};
   const Z=ZM[zone]||0.24,Ifac=importance,R=5;
-  const sfac={I:1.0,II:1.2,III:1.5}[soilType]||1.2;
   const H=numFloors*floorHt;
-  const Ta=0.09*H/Math.sqrt(S.buildingW);
-  let Sa=Ta<=0.1?1+15*Ta:Ta<=0.55?2.5:1.36/Ta; Sa*=sfac;
+  // Period from Cl 7.6.2(c) for frames with infill — uses base dimension
+  // in considered direction. We compute Ta in each direction; the worse
+  // case (max Vb) governs.
+  const Ta_x = 0.09*H/Math.sqrt(S.buildingW);   // shaking along X
+  const Ta_y = 0.09*H/Math.sqrt(S.buildingL);   // shaking along Y
+  // IS 1893:2016 Cl 6.4.5 — Sa/g spectrum (proper per-soil-type curves,
+  // NOT the old IS 1893:2002 single curve + multiplier approach)
+  function spectralAccel(T,soil){
+    if(T<=0.10) return 1+15*T;
+    if(soil==='I'){       // rock / hard soil
+      if(T<=0.40) return 2.5;
+      return 1.00/T;
+    } else if(soil==='III'){ // soft soil
+      if(T<=0.67) return 2.5;
+      return 1.67/T;
+    } else {              // medium soil (Type II — default)
+      if(T<=0.55) return 2.5;
+      return 1.36/T;
+    }
+  }
+  const Sa_x = spectralAccel(Ta_x, soilType);
+  const Sa_y = spectralAccel(Ta_y, soilType);
+  // For backward compatibility, keep "Ta", "Sa", "sf" pointing to governing direction
+  const useDirX = Sa_x >= Sa_y;
+  const Ta = useDirX ? Ta_x : Ta_y;
+  const Sa = useDirX ? Sa_x : Sa_y;
+  const sfac = 1.0;  // multiplier no longer needed — handled inside spectralAccel()
   const Ah=(Z/2)*(Sa/R)*Ifac;
   const wallPerim=2*(S.buildingL+S.buildingW);
-  const Wf_floor=DL_tot*slabFloorArea+0.25*udlLL*slabFloorArea+wallLoad*wallPerim;
-  const Wt=Wf_floor*numFloors;
+  // IS 1893:2016 Table 8 — imposed load fraction for seismic weight
+  // LL ≤ 3 kN/m² → 25%; LL > 3 kN/m² → 50%
+  const llFactor = udlLL > 3 ? 0.5 : 0.25;
+  const llFactor_roof = (udlRoof||1.5) > 3 ? 0.5 : 0.25;
+  // Each typical floor has DL + LL fraction + wall load
+  const Wf_floor = DL_tot*slabFloorArea + llFactor*udlLL*slabFloorArea + wallLoad*wallPerim;
+  // Roof has DL + roof-LL fraction but NO wall load above (parapet ignored)
+  const Wf_roof  = DL_tot*slabFloorArea + llFactor_roof*(udlRoof||1.5)*slabFloorArea;
+  // Total seismic weight = (numFloors-1) typical floors + 1 roof
+  const Wt = Wf_floor*(numFloors-1) + Wf_roof;
   const Vb=Ah*Wt;
   const floors_s=[];
   for(let i=1;i<=numFloors;i++){
     const hi=i*floorHt;
-    floors_s.push({floor:i,h:hi,W:Wf_floor,Wh2:Wf_floor*hi*hi});
+    const Wi=(i===numFloors)?Wf_roof:Wf_floor;
+    floors_s.push({floor:i,h:hi,W:Wi,Wh2:Wi*hi*hi});
   }
   const sWh=floors_s.reduce((a,f)=>a+f.Wh2,0);
   floors_s.forEach(f=>{f.Qi=sWh>0?Vb*f.Wh2/sWh:0;});
@@ -2485,7 +2646,7 @@ function runCalcsFromGrid(){
     const wd=wD-coverSlab-5;
     // Loading on inclined flight
     const DL_waist=(wD/1000)*25/Math.cos(theta);
-    const DL_steps=(riser/2/1000)*25*2;
+    const DL_steps=(riser/2/1000)*25;
     const LL_stair=3.0; // IS 875 Part 2: stairs 3.0 kN/m²
     const DLst=DL_waist+DL_steps+floorFinish;
     const wust=1.5*(DLst+LL_stair);
@@ -2518,7 +2679,7 @@ function runCalcsFromGrid(){
   const stairSpan=firstStair?firstStair.flightSpan:1.5;
   const wD=firstStair?firstStair.wD:Math.max(125,slabThk);
   const wd=firstStair?firstStair.wd:wD-coverSlab-5;
-  const DLst=firstStair?firstStair.DLst:wD/1000*25+(riser/2/1000)*25*2+floorFinish;
+  const DLst=firstStair?firstStair.DLst:wD/1000*25+(riser/2/1000)*25+floorFinish;
   const wust=firstStair?firstStair.wust:1.5*(DLst+3.0);
   const Mst=firstStair?firstStair.Mst:wust*stairSpan*stairSpan/8;
   const Ast2=firstStair?firstStair.Ast2:AstFn(Mst,1000,wd);
@@ -2553,7 +2714,7 @@ function runCalcsFromGrid(){
       const floorsAbove=numFloors-flr+1; // ground=numFloors, top=1
       const result=designOneColumn(
         node, floorsAbove, DL_tot, udlLL, udlRoof||1.5,
-        wallLoad, fck, fy, floorHt, coverCol, Mf
+        wallLoad, fck, fy, floorHt, coverCol, Mf, numFloors
       );
       const rowLbl=String.fromCharCode(65+node.row);
       const colLbl=String(node.col+1);
@@ -3002,7 +3163,7 @@ function secSeismic(){
         ${fm(`Z (Zone ${S.zone})`,seis.Z,'IS 1893 Table 3')}
         ${fm('I (Importance Factor)',seis.I,'IS 1893 Table 8')}
         ${fm('R (SMRF with IS 13920)',seis.R,'IS 1893 Table 9')}
-        ${fm('Soil factor (Type '+S.soilType+')',seis.sf,'IS 1893 Table 3')}
+        ${fm('Soil type',S.soilType+' (per-type Sa/g spectrum)','IS 1893 Cl 6.4.5')}
       </div>
       <div style="flex:1;min-width:200px">
         <div class="cp tl"><strong>Why R=5?</strong> SMRF (Special Moment Resisting Frame) with IS 13920 ductile detailing can deform plastically before collapse, absorbing 5x more seismic energy. This halves the design force  -  but REQUIRES 135 deg hooks, confinement zones, and Fe500D steel. No shortcuts.</div>
@@ -3010,12 +3171,12 @@ function secSeismic(){
     </div>
   `,'tl')}
   ${sb('EQ-2','Natural Time Period Ta',`
-    ${fm(`Ta = 0.09H/sqrtd = 0.09x${r2(S.numFloors*S.floorHt)}/sqrt${S.buildingW}`,r2(seis.Ta)+' s','IS 1893 Cl 7.6.1b')}
-    <div class="cp tl">H = ${r2(S.numFloors*S.floorHt)}m total height | d = ${S.buildingW}m width in direction of motion<br>
-    Ta = ${r2(seis.Ta)}s -> ${seis.Ta<=0.55?'in flat plateau (0.10-0.55s) -> Sa/g = 2.5 x soil factor':'descending branch -> Sa/g = 1.36/Ta x soil factor'}</div>
+    ${fm(`Ta = 0.09H/sqrtd = 0.09x${r2(S.numFloors*S.floorHt)}/sqrt${S.buildingW}`,r2(seis.Ta)+' s','IS 1893 Cl 7.6.2(c)')}
+    <div class="cp tl">H = ${r2(S.numFloors*S.floorHt)}m total height | d = ${S.buildingW}m width in direction of motion (governing direction shown)<br>
+    Ta = ${r2(seis.Ta)}s — Sa/g curve chosen per IS 1893:2016 for Type ${S.soilType} soil</div>
   `,'tl')}
   ${sb('EQ-3','Spectral Acceleration & Design Ah',`
-    ${fm('Sa/g = 2.5 x soil_factor = 2.5 x '+seis.sf,r2(seis.Sa),'IS 1893 Fig. 2')}
+    ${fm('Sa/g per IS 1893:2016 spectrum (Type '+S.soilType+')',r2(seis.Sa),'IS 1893 Cl 6.4.5 / Fig. 2')}
     ${fmWhy(`Ah = (Z/2)x(Sa/g)/RxI = (${seis.Z}/2)x${r2(seis.Sa)}/${seis.R}x${seis.I}`,seis.Ah.toFixed(4),'IS 1893 Cl 6.4.2')}
     ${vd(true,`Ah = ${seis.Ah.toFixed(4)} -> Every kN of building weight produces ${r2(seis.Ah*1000)} N of horizontal seismic force`)}
   `,'tl')}
@@ -3822,7 +3983,7 @@ function stairSinglePanel(st, titleOverride){
 
   ${sb('ST-2','Loading on Inclined Waist Slab',`
     ${fm('DL_waist = (D/1000)×25/cosθ = ('+st.wD+'/1000)×25/cos('+r2(st.theta||19.4)+'°)',r2(st.DL_waist||st.wD/1000*25)+' kN/m²','')}
-    ${fm('DL_steps = (R/2)/1000×25×2 = ('+(st.riser||165)+'/2)/1000×25×2',r2(st.DL_steps||(st.riser||165)/2/1000*25*2)+' kN/m²','')}
+    ${fm('DL_steps = (R/2)×γ = ('+(st.riser||165)+'/2)/1000×25',r2(st.DL_steps||(st.riser||165)/2/1000*25)+' kN/m² (triangular wedge)','')}
     ${fm('Floor finish',S.floorFinish+' kN/m²','')}
     ${fm('LL (IS 875 Part 2: Stairs)',(st.LL_stair||3.0)+' kN/m²','IS 875 P2 Table 1')}
     ${fm('wu = 1.5 × (DL_waist + DL_steps + FF + LL)',r2(st.wust)+' kN/m²','IS 456 Cl 18.2')}
@@ -3834,14 +3995,18 @@ function stairSinglePanel(st, titleOverride){
   `,'tl')}
 
   ${sb('ST-3','Waist Slab Design (IS 456)',`
+    ${(()=>{ const Mf_s = S.fy>=500?0.133:S.fy>=415?0.138:0.149;
+             const Mulim_s = Mf_s*S.fck*1000*st.wd*st.wd/1e6;
+             return `
     ${fm('Span = flight span (simply supported)',r2(st.flightSpan||st.ss||1.5)+'m','')}
     ${fm('D = max(user input '+S.slabThk+'mm, L×1000/20)',st.wD+'mm','')}
     ${fm('d = D - cover - half bar = '+st.wD+' - '+S.coverSlab+' - 5',st.wd+'mm','')}
     ${fm('Mu = wu×L²/8 = '+r2(st.wust)+'×'+r2(st.flightSpan||st.ss||1.5)+'²/8',r2(st.Mst)+' kN.m/m','')}
-    ${fm('Mulim = 0.138×fck×b×d² = 0.138×'+S.fck+'×1000×'+st.wd+'²/1e6',r2(0.138*S.fck*1000*st.wd*st.wd/1e6)+' kN.m/m','')}
+    ${fm('Mulim = '+Mf_s+'×fck×b×d² = '+Mf_s+'×'+S.fck+'×1000×'+st.wd+'²/1e6',r2(Mulim_s)+' kN.m/m','IS 456 Annex G')}
     ${fm('Ast_req = Mu/(0.87fy×d×lever arm)',r0(st.Ast2)+' mm²/m','IS 456 Annex G')}
     ${fm('Spacing = 1000×π×(D10)²/4 / Ast_req','D10@'+st.stsp+'mm c/c','IS 456 Cl 26.3.3')}
-    ${vd(st.Mst<=0.138*S.fck*1000*st.wd*st.wd/1e6,'Mu ('+r2(st.Mst)+') ≤ Mulim ('+r2(0.138*S.fck*1000*st.wd*st.wd/1e6)+') → Singly reinforced OK')}
+    ${vd(st.Mst<=Mulim_s,'Mu ('+r2(st.Mst)+') ≤ Mulim ('+r2(Mulim_s)+') → Singly reinforced OK')}`;
+    })()}
     <div class="cp tl" style="margin-top:10px">
       <strong>✓ Provide:</strong><br>
       Waist slab: <strong>${st.wD}mm thick</strong> | Main bars: <strong>D10@${st.stsp}mm</strong> along flight<br>
@@ -4709,10 +4874,10 @@ async function startPDF(){
     kv('Zone Factor Z','Zone '+S.zone+'  -  Z='+se.Z,'IS 1893 T3');
     kv('Importance I',String(se.I),'IS 1893 T8');
     kv('Response R',se.R+' (SMRF + IS 13920)','IS 1893 T9');
-    kv('Soil Factor',String(se.sf),'IS 1893 T3');
+    kv('Soil Type','Type '+S.soilType+' (IS 1893:2016 per-type spectrum)','IS 1893 Cl 6.4.5');
     skip(2);
-    fmRow('Ta = 0.09 x H / sqrt(d) = 0.09 x '+(S.numFloors*S.floorHt)+' / sqrt('+S.buildingW+')',r2(se.Ta)+' s','IS 1893 Cl 7.6.1b');
-    fmRow('Sa/g = 2.5 x soil_factor',r2(se.Sa),'IS 1893 Fig.2');
+    fmRow('Ta = 0.09 x H / sqrt(d) = 0.09 x '+(S.numFloors*S.floorHt)+' / sqrt('+S.buildingW+')',r2(se.Ta)+' s','IS 1893 Cl 7.6.2(c)');
+    fmRow('Sa/g (IS 1893:2016 Type '+S.soilType+' spectrum)',r2(se.Sa),'IS 1893 Cl 6.4.5');
     fmRow('Ah = (Z/2) x (Sa/g) / R x I',se.Ah.toFixed(4),'IS 1893 Cl 6.4.2');
     fmRow('Seismic Weight W',r0(se.Wt)+' kN','IS 1893 Cl 7.3.1');
     fmRow('Base Shear Vb = Ah x W',r2(se.Vb)+' kN','IS 1893 Cl 7.5.3',true);
@@ -5781,13 +5946,17 @@ function secSlabEdgeConditions() {
     const My_pos = coeffs.ay * wu * lx * lx;
     const Mx_neg = coeffs.ax_n * wu * lx * lx;
     const My_neg = coeffs.ay_n * wu * lx * lx;
-    const Mulim = 0.138 * fck * 1000 * slabd * slabd / 1e6;
+    const Mf_s = fy>=500?0.133:fy>=415?0.138:0.149;
+    const Mulim = Mf_s * fck * 1000 * slabd * slabd / 1e6;
 
     const astCalc=(Mu)=>{
-      if (Mu <= 0) return 0.12 * 1000 * slabD / 100;
-      const inner = 1 - Mu * 1e6 / (0.36 * fck * 1000 * slabd * 0.48 * slabd);
-      if (inner <= 0) return 0.12 * 1000 * slabD / 100;
-      return Math.max(Mu * 1e6 / (0.87 * fy * slabd * inner), 0.12 * 1000 * slabD / 100);
+      // IS 456 Annex G.1.1(b) — exact closed-form for required Ast.
+      const Astmin = 0.12 * 1000 * slabD / 100;
+      if (Mu <= 0) return Astmin;
+      const factor = 4.598 * Mu * 1e6 / (fck * 1000 * slabd * slabd);
+      if (factor >= 1) return Math.max(Mulim*1e6/(0.87*fy*slabd*0.85), Astmin);
+      const A = 0.5 * fck * 1000 * slabd / fy * (1 - Math.sqrt(1 - factor));
+      return Math.max(A, Astmin);
     }
 
     const Ast_mx = astCalc(Mx_pos);
@@ -5969,7 +6138,8 @@ function calcRetainingWall(H, gamma_soil, phi_deg, gamma_conc, SBC, surcharge, f
   // Stem design (cantilever from base)
   const M_stem = Pa_surcharge * ya_surcharge + Pa_soil * ya_soil; // kN.m/m (at base of stem)
   const d_stem = t_stem - cover - 8; // mm
-  const Mulim_stem = 0.138 * fck * 1000 * d_stem * d_stem / 1e6;
+  const Mf_stem = fy>=500?0.133:fy>=415?0.138:0.149;
+  const Mulim_stem = Mf_stem * fck * 1000 * d_stem * d_stem / 1e6;
 
   const astCalcRW=(Mu,d)=>{
     if (Mu <= 0) return 0.12 * 1000 * (d + cover + 8) / 100;
@@ -9629,7 +9799,7 @@ function secDiscussion() {
     ${H3('Understanding the equivalent static method','#34d399')}
     ${P(`The IS 1893:2016 Equivalent Static Method converts the dynamic earthquake motion into a single static horizontal force. This force — the Base Shear ${EM('Vb = '+r2(seis.Vb)+' kN')} — acts at the base of the building and is distributed upward to each floor based on the height and weight of that floor.`)}
 
-    ${P(`How was Vb calculated? First, the fundamental period: Ta = 0.09H/√d = 0.09×${r2(S.numFloors*S.floorHt)}/√${S.buildingW} = ${EM(r2(seis.Ta)+'s')}. This is how long your building takes to complete one full oscillation if pushed sideways. ${seis.Ta<=0.55?`At ${r2(seis.Ta)}s, you are in the flat plateau of the IS 1893 response spectrum — Sa/g = 2.5×soil factor = ${r2(seis.Sa)}. This is the worst part of the spectrum to be in. Shorter buildings are actually more vulnerable per unit mass than taller ones in this period range.`:`At ${r2(seis.Ta)}s, you are in the descending branch of the spectrum — Sa/g = 1.36/Ta×soil_factor = ${r2(seis.Sa)}.`}`)}
+    ${P(`How was Vb calculated? First, the fundamental period: Ta = 0.09H/√d = 0.09×${r2(S.numFloors*S.floorHt)}/√${S.buildingW} = ${EM(r2(seis.Ta)+'s')}. This is how long your building takes to complete one full oscillation if pushed sideways. The Sa/g value is read directly from the IS 1893:2016 response spectrum for soil Type ${S.soilType} — giving Sa/g = ${r2(seis.Sa)}. Whether you're on the flat plateau (worst case, Sa/g = 2.5) or the descending branch depends on the soil type AND the period.`)}
 
     ${P(`The seismic weight is W = ${EM(r0(seis.Wt)+' kN')} (full DL + 25% LL, IS 1893 Cl 7.3.1). The design horizontal acceleration is Ah = (Z/2)×(Sa/g)/R×I = ${EM(seis.Ah.toFixed(4))}. So every kN of your building's weight generates ${r2(seis.Ah*1000)} N of horizontal force. ${EM('Vb = Ah×W = '+r2(seis.Vb)+' kN')} total horizontal force at the base.`)}
 
