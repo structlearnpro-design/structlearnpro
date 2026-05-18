@@ -628,7 +628,7 @@ function computeSIS(user, events, sessions, projects, certs) {
     if((d.complexity||0) >= 5) complexSessions++;
   });
 
-  score.complexity += Math.min((maxFloors - 2) * 3, 15); // max 15
+  score.complexity += Math.min(Math.max(0, maxFloors - 2) * 3, 15); // max 15, floor=0 gives 0
   score.complexity += highestZone * 3;                    // max 18 (Zone V)
   score.complexity += hasIrregular ? 5 : 0;              // 5 for irregular
   score.complexity += Math.min(complexSessions * 1, 2);  // 2 for complex sessions
@@ -667,8 +667,15 @@ function computeSIS(user, events, sessions, projects, certs) {
 
   var total = Math.min(score.complexity + score.depth + score.persistence + score.learning, 100);
 
+  var total = Math.max(0,
+    Math.round(score.complexity) + 
+    Math.round(score.depth) + 
+    Math.round(score.persistence) + 
+    Math.round(score.learning)
+  );
+
   return {
-    total: total,
+    total: Math.min(100, total),
     complexity: Math.round(score.complexity),
     depth: Math.round(score.depth),
     persistence: Math.round(score.persistence),
@@ -700,7 +707,7 @@ async function renderProfiles() {
   el.innerHTML = '<div style="padding:20px;color:#64748b;font-family:inherit">Loading student profiles...</div>';
 
   var [evR, sesR, empR] = await Promise.all([
-    adminDb.from('student_events').select('*').order('created_at',{ascending:false}),
+    adminDb.from('student_events').select('*').order('created_at',{ascending:false}).limit(5000),
     adminDb.from('student_sessions').select('*').order('session_date',{ascending:false}),
     adminDb.from('employer_profiles').select('*'),
   ]);
@@ -770,6 +777,7 @@ async function renderProfiles() {
     +     '<th style="padding:10px 14px;text-align:center;font-size:9px;font-weight:700;color:#94a3b8;letter-spacing:1px">ANALYSES</th>'
     +     '<th style="padding:10px 14px;text-align:center;font-size:9px;font-weight:700;color:#94a3b8;letter-spacing:1px">TIME</th>'
     +     '<th style="padding:10px 14px;text-align:center;font-size:9px;font-weight:700;color:#94a3b8;letter-spacing:1px">CERTS</th>'
+    +     '<th style="padding:10px 14px;text-align:center;font-size:9px;font-weight:700;color:#94a3b8;letter-spacing:1px">LESSONS</th>'
     +     '<th style="padding:10px 14px;text-align:center;font-size:9px;font-weight:700;color:#94a3b8;letter-spacing:1px">LAST ACTIVE</th>'
     +   '</tr></thead>'
     +   '<tbody id="prof-table-body"></tbody>'
@@ -822,6 +830,7 @@ function renderProfileRows(data) {
       + '<td style="padding:11px 14px;text-align:center;font-size:12px;color:#64748b">'+sis.analysisRuns+'</td>'
       + '<td style="padding:11px 14px;text-align:center;font-size:12px;color:#64748b">'+timeStr+'</td>'
       + '<td style="padding:11px 14px;text-align:center;font-size:14px">'+(certBadges||'—')+'</td>'
+      + '<td style="padding:11px 14px;text-align:center;font-size:12px;color:#64748b">'+sis.lessonsPassed+'</td>'
       + '<td style="padding:11px 14px;text-align:center;font-size:11px;color:#64748b">'+lastActive+'</td>'
       + '</tr>';
   }).join('');
@@ -940,7 +949,7 @@ function viewFullProfile(d) {
     + '</div>'
 
     // Stats grid
-    + '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px">'
+    + '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px;margin-bottom:20px">'
     + profStat('SIS Score', sis.total+'/100', lbl.color)
     + profStat('Level', lbl.label, lbl.color)
     + profStat('Total Time', (totalMins/60).toFixed(1)+'h', '#38bdf8')
@@ -949,6 +958,8 @@ function viewFullProfile(d) {
     + profStat('Max Floors', sis.maxFloors+'F', '#a78bfa')
     + profStat('Max Zone', 'Zone '+sis.highestZone, '#f87171')
     + profStat('Fix Rate', sis.analysisRuns>0?Math.round((sis.failureFixed/Math.max(sis.analysisRuns,1))*100)+'%':'—', '#34d399')
+    + profStat('Lessons Done', sis.lessonsPassed, '#7c3aed')
+    + profStat('Cert Attempts', d.evs.filter(function(e){return e.event_type==='cert_quiz_attempt';}).length, '#d97706')
     + '</div>'
 
     // SIS breakdown bar

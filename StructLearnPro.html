@@ -13033,6 +13033,21 @@ function submitQuiz() {
   setAttempts(level, att);
   if(!pass) setCooldown(level);
 
+  // Track quiz attempt
+  try {
+    _TRACK.emit('cert_quiz_attempt', {
+      level: level,
+      score: score,
+      total: qs.length,
+      pass: pass,
+      attempt: att
+    });
+    if(pass) {
+      _TRACK.emit('cert_earned', { level: level });
+    }
+    _TRACK.flushSession();
+  } catch(e) {}
+
   showQuizResult(score, qs.length, pass, level, att);
 }
 
