@@ -600,11 +600,7 @@ function showSec(id){
     loadAll();
   }
 })();
-// ── PROF ROW CLICK ───────────────────────────────────────────
-function profRowClick(el) {
-  var uid = el.dataset.uid;
-  if(uid) viewFullProfile(uid);
-}
+// profRowClick defined below
 
 // ══════════════════════════════════════════════════════════════
 // ADMIN — STUDENT PROFILES TAB (Phase A+B)
@@ -738,9 +734,12 @@ async function renderProfiles() {
     + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">'
     +   '<div>'
     +     '<div style="font-size:18px;font-weight:800;color:#0f172a">👤 Student Profiles</div>'
-    +     '<div style="font-size:11px;color:#64748b;margin-top:2px">Click any row to view full profile · Sorted by SIS score</div>'
+    +     '<div style="font-size:11px;color:#64748b;margin-top:2px">'+events.length+' events · '+sessions.length+' sessions · click row for live data</div>'
     +   '</div>'
-    +   '<div style="font-size:12px;color:#94a3b8">'+ profileData.length +' students</div>'
+    +   '<div style="display:flex;gap:8px;align-items:center">'
+    +     '<span style="font-size:12px;color:#94a3b8">'+ profileData.length +' students</span>'
+    +     '<button onclick="renderProfiles()" style="padding:5px 12px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:6px;color:#2563eb;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">↻ Refresh</button>'
+    +   '</div>'
     + '</div>'
     // Filter row
     + '<div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">'
