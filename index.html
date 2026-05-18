@@ -1083,6 +1083,7 @@ async function loadAndRestoreProgress() {
 function sendProgressToIframe() {
   const raw = sessionStorage.getItem('slp_restore_progress');
   if(!raw) return;
+  if(!U) return; // only send if user is logged in
   try {
     const iframe = document.getElementById('app-iframe');
     if(!iframe || !iframe.contentWindow) return;
@@ -1093,22 +1094,7 @@ function sendProgressToIframe() {
   } catch(e) {}
 }
 
-// Send progress when iframe loads
-document.addEventListener('DOMContentLoaded', function() {
-  const iframe = document.getElementById('app-iframe');
-  if(iframe) {
-    iframe.addEventListener('load', function() {
-      // Small delay to let iframe JS initialise
-      setTimeout(sendProgressToIframe, 800);
-      // Also send user plan
-      setTimeout(function(){
-        try{
-          iframe.contentWindow.postMessage({type:'USER_PLAN',plan,user:P},'*');
-        }catch(e){}
-      }, 900);
-    });
-  }
-});
+// Progress restored via loadAndRestoreProgress() after login
 
 </script>
 </body>
