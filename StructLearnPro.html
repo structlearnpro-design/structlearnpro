@@ -7,125 +7,205 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet"/>
 <style>
-
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --bg:#020817;--bg1:#0a0f1e;--bg2:#0f172a;--bg3:#1e293b;
-  --b1:#1e3a5f;--b2:#334155;
-  --blue:#38bdf8;--blue2:#0ea5e9;--green:#34d399;--orange:#fb923c;
-  --violet:#a78bfa;--yellow:#facc15;--red:#f87171;--teal:#2dd4bf;
-  --txt:#e2e8f0;--txt2:#94a3b8;--txt3:#64748b;
-  --mono:"JetBrains Mono",monospace;--sans:"Syne",sans-serif;
+  --bg:#0b0f1a;
+  --bg1:#111827;
+  --bg2:#1a2236;
+  --bg3:#243047;
+  --b1:#2d4a7a;
+  --b2:#374e6e;
+  --blue:#60a5fa;
+  --blue2:#3b82f6;
+  --green:#4ade80;
+  --orange:#fb923c;
+  --violet:#c084fc;
+  --yellow:#fbbf24;
+  --red:#f87171;
+  --teal:#2dd4bf;
+  --cyan:#67e8f9;
+  --txt:#f1f5f9;
+  --txt2:#cbd5e1;
+  --txt3:#94a3b8;
+  --mono:"JetBrains Mono",monospace;
+  --sans:"Syne",sans-serif;
 }
 body{background:var(--bg);color:var(--txt);font-family:var(--mono);font-size:12px}
-::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:var(--bg1)}
+::-webkit-scrollbar{width:5px}
+::-webkit-scrollbar-track{background:var(--bg)}
 ::-webkit-scrollbar-thumb{background:var(--b1);border-radius:3px}
-.hdr{background:linear-gradient(135deg,#071428,#0f172a);border-bottom:1px solid var(--b1);padding:11px 20px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:200}
+::-webkit-scrollbar-thumb:hover{background:var(--b2)}
+
+/* HEADER */
+.hdr{background:var(--bg1);border-bottom:1px solid var(--b1);padding:11px 20px;
+  display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:200;
+  box-shadow:0 2px 12px rgba(0,0,0,0.4)}
 .hdr-t{font-family:var(--sans);font-size:16px;font-weight:800;color:var(--blue)}
 .hdr-s{font-size:10px;color:var(--txt3)}
-.badge{background:rgba(56,189,248,.1);color:var(--blue);border:1px solid rgba(56,189,248,.2);border-radius:20px;padding:2px 8px;font-size:9px}
-.badge.g{background:rgba(52,211,153,.1);color:var(--green);border-color:rgba(52,211,153,.2)}
-.badge.o{background:rgba(251,146,60,.1);color:var(--orange);border-color:rgba(251,146,60,.2)}
+.badge{background:rgba(96,165,250,.12);color:var(--blue);
+  border:1px solid rgba(96,165,250,.25);border-radius:20px;padding:2px 8px;font-size:9px}
+.badge.g{background:rgba(74,222,128,.1);color:var(--green);border-color:rgba(74,222,128,.25)}
+.badge.o{background:rgba(251,146,60,.1);color:var(--orange);border-color:rgba(251,146,60,.25)}
+
+/* LAYOUT */
 .layout{display:flex;min-height:calc(100vh - 50px)}
-.sidebar{width:180px;background:var(--bg1);border-right:1px solid var(--bg3);padding:12px 0;flex-shrink:0;position:sticky;top:50px;height:calc(100vh - 50px);overflow-y:auto}
-.nav-s{padding:5px 12px 2px;font-size:9px;color:var(--txt3);text-transform:uppercase;letter-spacing:1px;margin-top:6px}
-.nav-i{padding:7px 12px;display:flex;align-items:center;gap:7px;font-size:11px;cursor:pointer;border-left:3px solid transparent;color:var(--txt3);transition:all .15s}
-.nav-i.active{background:rgba(56,189,248,.08);border-left-color:var(--blue);color:var(--blue)}
-.nav-i:hover:not(.active){background:rgba(255,255,255,.03);color:var(--txt2)}
+.sidebar{width:180px;background:var(--bg1);border-right:1px solid var(--b1);
+  padding:12px 0;flex-shrink:0;position:sticky;top:50px;
+  height:calc(100vh - 50px);overflow-y:auto}
+.nav-s{padding:5px 12px 2px;font-size:9px;color:var(--txt3);
+  text-transform:uppercase;letter-spacing:1px;margin-top:6px}
+.nav-i{padding:7px 12px;display:flex;align-items:center;gap:7px;font-size:11px;
+  cursor:pointer;border-left:3px solid transparent;color:var(--txt2);transition:all .15s}
+.nav-i.active{background:rgba(96,165,250,.1);border-left-color:var(--blue);color:var(--blue)}
+.nav-i:hover:not(.active){background:rgba(255,255,255,.05);color:var(--txt)}
 .main{flex:1;padding:20px 24px;overflow-y:auto;max-width:960px}
-/* Cards */
-.card{background:var(--bg2);border:1px solid var(--bg3);border-radius:10px;padding:18px;margin-bottom:14px}
-.card.bl{border-color:var(--b1)}.card.or{border-color:rgba(251,146,60,.3)}.card.gr{border-color:rgba(52,211,153,.3)}.card.vi{border-color:rgba(167,139,250,.3)}.card.ye{border-color:rgba(250,204,21,.3)}
+
+/* CARDS */
+.card{background:var(--bg2);border:1px solid var(--b1);border-radius:10px;
+  padding:18px;margin-bottom:14px}
+.card.bl{border-color:var(--b1)}
+.card.or{border-color:rgba(251,146,60,.35)}
+.card.gr{border-color:rgba(74,222,128,.25)}
+.card.vi{border-color:rgba(192,132,252,.25)}
+.card.ye{border-color:rgba(251,191,36,.25)}
 .ct{font-family:var(--sans);font-size:15px;font-weight:700;color:var(--blue);margin-bottom:3px}
-.ct.or{color:var(--orange)}.ct.gr{color:var(--green)}.ct.vi{color:var(--violet)}.ct.ye{color:var(--yellow)}.ct.tl{color:var(--teal)}
-.cd{font-size:11px;color:var(--txt3);margin-bottom:14px;line-height:1.7}
-/* Step boxes */
-.sb{background:var(--bg1);border:1px solid var(--b2);border-radius:8px;padding:13px;margin:10px 0;position:relative}
-.sb::before{content:attr(data-n);position:absolute;top:-1px;left:12px;background:var(--blue);color:#000;font-size:9px;font-weight:700;padding:1px 8px;border-radius:0 0 6px 6px;font-family:var(--sans)}
-.sb.or::before{background:var(--orange)}.sb.gr::before{background:var(--green)}.sb.vi::before{background:var(--violet)}.sb.ye::before{background:var(--yellow);color:#000}.sb.tl::before{background:var(--teal);color:#000}
-/* Formula */
-.fm{background:#0a1628;border:1px solid var(--b1);border-radius:6px;padding:9px 13px;font-size:12px;color:#93c5fd;margin:5px 0}
-.fm .r{color:var(--yellow);font-weight:700}.fm .ref{color:var(--txt3);font-size:10px;float:right}
-/* KV */
-.kv{display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--txt2);padding:4px 0;border-bottom:1px solid var(--bg3);flex-wrap:wrap;gap:3px}
-.kv:last-child{border-bottom:none}.kv-k{flex:1;min-width:140px}.kv-v{color:var(--txt);font-weight:700;text-align:right}.kv-r{color:var(--txt3);font-size:10px;margin-left:6px}
-/* Verdict */
-.vd{display:flex;align-items:center;gap:9px;padding:9px 13px;border-radius:7px;margin:7px 0;font-size:12px;font-weight:700}
-.vd.ok{background:rgba(52,211,153,.08);border:1px solid rgba(52,211,153,.3);color:var(--green)}
+.ct.or{color:var(--orange)}.ct.gr{color:var(--green)}.ct.vi{color:var(--violet)}
+.ct.ye{color:var(--yellow)}.ct.tl{color:var(--teal)}
+.cd{font-size:11px;color:var(--txt2);margin-bottom:14px;line-height:1.7}
+
+/* STEP BOXES */
+.sb{background:var(--bg3);border:1px solid var(--b2);border-radius:8px;
+  padding:13px;margin:10px 0;position:relative}
+.sb::before{content:attr(data-n);position:absolute;top:-1px;left:12px;
+  background:var(--blue2);color:#fff;font-size:9px;font-weight:700;
+  padding:1px 8px;border-radius:0 0 6px 6px;font-family:var(--sans)}
+.sb.or::before{background:var(--orange)}.sb.gr::before{background:#16a34a}
+.sb.vi::before{background:#7c3aed}.sb.ye::before{background:#d97706;color:#fff}
+.sb.tl::before{background:var(--teal);color:#000}
+
+/* FORMULA BOX */
+.fm{background:rgba(59,130,246,.08);border:1px solid rgba(96,165,250,.3);
+  border-radius:6px;padding:9px 13px;font-size:12px;color:var(--cyan);margin:5px 0}
+.fm .r{color:var(--yellow);font-weight:700}
+.fm .ref{color:var(--txt3);font-size:10px;float:right}
+
+/* KV ROWS */
+.kv{display:flex;justify-content:space-between;align-items:center;font-size:11px;
+  color:var(--txt2);padding:5px 0;border-bottom:1px solid var(--b1);flex-wrap:wrap;gap:3px}
+.kv:last-child{border-bottom:none}
+.kv-k{flex:1;min-width:140px;color:var(--txt2)}
+.kv-v{color:var(--txt);font-weight:700;text-align:right}
+.kv-r{color:var(--txt3);font-size:10px;margin-left:6px}
+
+/* VERDICT */
+.vd{display:flex;align-items:center;gap:9px;padding:9px 13px;border-radius:7px;
+  margin:7px 0;font-size:12px;font-weight:700}
+.vd.ok{background:rgba(74,222,128,.08);border:1px solid rgba(74,222,128,.3);color:var(--green)}
 .vd.ng{background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.3);color:var(--red)}
-.vd.wn{background:rgba(250,204,21,.08);border:1px solid rgba(250,204,21,.3);color:var(--yellow)}
-/* Concept box */
-.cp{background:var(--bg1);border-left:3px solid var(--blue);border-radius:0 7px 7px 0;padding:10px 13px;font-size:11px;color:var(--txt2);line-height:1.8;margin:8px 0}
-.cp.or{border-left-color:var(--orange)}.cp.gr{border-left-color:var(--green)}.cp.vi{border-left-color:var(--violet)}.cp.ye{border-left-color:var(--yellow)}.cp.tl{border-left-color:var(--teal)}.cp.re{border-left-color:var(--red)}
+.vd.wn{background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.3);color:var(--yellow)}
+
+/* CONCEPT BOX */
+.cp{background:var(--bg3);border-left:3px solid var(--blue2);
+  border-radius:0 7px 7px 0;padding:10px 13px;font-size:11px;
+  color:var(--txt2);line-height:1.8;margin:8px 0}
+.cp.or{border-left-color:var(--orange)}.cp.gr{border-left-color:var(--green)}
+.cp.vi{border-left-color:var(--violet)}.cp.ye{border-left-color:var(--yellow)}
+.cp.tl{border-left-color:var(--teal)}.cp.re{border-left-color:var(--red)}
 .cp strong{color:var(--txt)}
-/* Diagram SVG wrapper */
-.dg{background:var(--bg1);border:1px solid var(--bg3);border-radius:8px;padding:10px;margin:10px 0;overflow:hidden}
+
+/* DIAGRAMS */
+.dg{background:var(--bg3);border:1px solid var(--b2);border-radius:8px;
+  padding:10px;margin:10px 0;overflow:hidden}
 .dg svg{display:block;width:100%;height:auto}
 .dg-cap{font-size:10px;color:var(--txt3);text-align:center;margin-top:4px;font-style:italic}
-/* Table */
+
+/* TABLE */
 table{width:100%;border-collapse:collapse;font-size:11px;margin:7px 0}
-th{background:rgba(56,189,248,.1);color:var(--blue);padding:6px 9px;text-align:left;border:1px solid var(--b1);font-size:10px}
-td{padding:5px 9px;border:1px solid var(--bg3);color:var(--txt2);vertical-align:top}
+th{background:rgba(96,165,250,.1);color:var(--blue);padding:6px 9px;
+  text-align:left;border:1px solid var(--b1);font-size:10px;font-weight:700}
+td{padding:5px 9px;border:1px solid var(--b1);color:var(--txt2);vertical-align:top}
 tr:nth-child(even) td{background:rgba(255,255,255,.02)}
-td.val{color:var(--txt);font-weight:700}td.ok{color:var(--green);font-weight:700}td.ng{color:var(--red);font-weight:700}
-/* Buttons */
-.btn{background:linear-gradient(135deg,var(--blue2),#0284c7);color:#fff;border:none;border-radius:7px;padding:9px 18px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--mono);transition:opacity .2s}
-.btn:hover{opacity:.85}.btn.gr{background:linear-gradient(135deg,#059669,#047857)}.btn.or{background:linear-gradient(135deg,#ea580c,#c2410c)}.btn.vi{background:linear-gradient(135deg,#7c3aed,#6d28d9)}.btn.se{background:var(--bg3);color:var(--txt2);border:1px solid var(--b2)}
-/* Form */
-.row{display:flex;gap:13px;flex-wrap:wrap}.col2{flex:1;min-width:190px}
-.fld{margin-bottom:12px}.fld label{display:block;font-size:11px;color:var(--txt2);margin-bottom:4px}
-.fld input,.fld select{width:100%;background:var(--bg1);color:var(--txt);border:1px solid var(--b2);border-radius:6px;padding:7px 10px;font-size:12px;font-family:var(--mono);outline:none;transition:border .2s}
+td.val{color:var(--txt);font-weight:700}
+td.ok{color:var(--green);font-weight:700}
+td.ng{color:var(--red);font-weight:700}
+
+/* BUTTONS */
+.btn{background:linear-gradient(135deg,var(--blue2),#1d4ed8);color:#fff;border:none;
+  border-radius:7px;padding:9px 18px;font-size:12px;font-weight:700;cursor:pointer;
+  font-family:var(--mono);transition:opacity .2s}
+.btn:hover{opacity:.85}
+.btn.gr{background:linear-gradient(135deg,#059669,#047857)}
+.btn.or{background:linear-gradient(135deg,#ea580c,#c2410c)}
+.btn.vi{background:linear-gradient(135deg,#7c3aed,#6d28d9)}
+.btn.se{background:var(--bg3);color:var(--txt2);border:1px solid var(--b2)}
+.btn.se:hover{opacity:1;background:var(--b1)}
+
+/* FORM */
+.row{display:flex;gap:13px;flex-wrap:wrap}
+.col2{flex:1;min-width:190px}
+.fld{margin-bottom:12px}
+.fld label{display:block;font-size:11px;color:var(--txt2);margin-bottom:4px;font-weight:600}
+.fld input,.fld select{width:100%;background:var(--bg3);color:var(--txt);
+  border:1px solid var(--b2);border-radius:6px;padding:7px 10px;
+  font-size:12px;font-family:var(--mono);outline:none;transition:border .2s}
 .fld input:focus,.fld select:focus{border-color:var(--blue)}
-/* Tabs */
+.fld input::placeholder{color:var(--txt3)}
+
+/* TABS */
 .tabs{display:flex;gap:6px;margin-bottom:13px;flex-wrap:wrap}
-.tab{padding:5px 12px;font-size:11px;border-radius:20px;border:1px solid var(--b2);background:transparent;color:var(--txt3);cursor:pointer;font-family:var(--mono)}
-.tab.active{border-color:var(--blue);background:rgba(56,189,248,.1);color:var(--blue)}
+.tab{padding:5px 12px;font-size:11px;border-radius:20px;border:1px solid var(--b2);
+  background:transparent;color:var(--txt3);cursor:pointer;font-family:var(--mono);transition:all .15s}
+.tab:hover{color:var(--txt2);border-color:var(--b1)}
+.tab.active{border-color:var(--blue);background:rgba(96,165,250,.1);color:var(--blue)}
 .tab.or.active{border-color:var(--orange);background:rgba(251,146,60,.1);color:var(--orange)}
-/* Revision */
-.rv{background:rgba(248,113,113,.06);border:1px solid rgba(248,113,113,.25);border-radius:7px;padding:11px 13px;margin:8px 0}
+
+/* REVISION/MISTAKE BOX */
+.rv{background:rgba(248,113,113,.06);border:1px solid rgba(248,113,113,.25);
+  border-radius:7px;padding:11px 13px;margin:8px 0}
 .rv-t{font-size:11px;font-weight:700;color:var(--red);margin-bottom:5px}
-.rv-b{font-size:11px;color:var(--txt2);line-height:1.7}
-/* Loading */
+.rv-b{font-size:11px;color:#fca5a5;line-height:1.7}
+
+/* LOADING */
 .lbar{height:3px;background:var(--bg3);border-radius:3px;margin:10px 0;overflow:hidden}
-.lfill{height:100%;background:linear-gradient(90deg,var(--blue),var(--green),var(--blue));background-size:200%;animation:la 1.4s linear infinite}
+.lfill{height:100%;background:linear-gradient(90deg,var(--blue),var(--green),var(--blue));
+  background-size:200%;animation:la 1.4s linear infinite}
 @keyframes la{0%{background-position:0%}100%{background-position:200%}}
-/* PDF download progress */
-.pdf-prog{background:var(--bg1);border:1px solid var(--b1);border-radius:8px;padding:14px;margin:10px 0;display:none}
+
+/* PDF PROGRESS */
+.pdf-prog{background:var(--bg2);border:1px solid var(--b1);border-radius:8px;
+  padding:14px;margin:10px 0;display:none}
 .pdf-log{font-size:11px;color:var(--teal);line-height:2;max-height:200px;overflow-y:auto}
-/* Section divider */
+
+/* SECTION DIVIDER */
 .sdiv{display:flex;align-items:center;gap:10px;margin:18px 0 12px}
-.sdiv-l{flex:1;height:1px;background:var(--bg3)}.sdiv-t{font-family:var(--sans);font-size:12px;font-weight:700;color:var(--txt3);white-space:nowrap}
+.sdiv-l{flex:1;height:1px;background:var(--b1)}
+.sdiv-t{font-family:var(--sans);font-size:12px;font-weight:700;
+  color:var(--txt3);white-space:nowrap}
+
 @media(max-width:720px){.sidebar{display:none}.main{padding:14px}}
 
-/* ── PRINT STYLES ── */
-@media print {
-  body { background: #fff !important; color: #000 !important; font-size: 11pt; }
-  .sidebar, .nav-i, .tab, .btn, #pdfProg, .pdf-prog { display: none !important; }
-  .main { margin: 0 !important; padding: 0 !important; width: 100% !important; max-width: 100% !important; }
-  .card { border: 1px solid #ccc !important; background: #fff !important; break-inside: avoid; margin-bottom: 12pt; box-shadow: none !important; }
-  .ct { color: #000 !important; background: #eee !important; padding: 4pt 8pt !important; }
-  .vd-pass { background: #e8f5e9 !important; color: #000 !important; border-left: 3pt solid #2e7d32 !important; }
-  .vd-fail { background: #ffebee !important; color: #000 !important; border-left: 3pt solid #c62828 !important; }
-  table { border-collapse: collapse; width: 100%; }
-  td, th { border: 1px solid #ccc !important; padding: 3pt 6pt !important; color: #000 !important; background: #fff !important; }
-  th { background: #eee !important; font-weight: bold; }
-  a { color: #000 !important; text-decoration: none; }
-  svg { max-width: 100%; }
-  h2, h3 { color: #000 !important; }
-  /* Show section title for context */
-  .tabs { display: none !important; }
-  #secBody { display: block !important; }
-  /* Page breaks */
-  .card + .card { page-break-before: auto; }
-  @page { margin: 15mm; size: A4; }
+/* PRINT */
+@media print{
+  body{background:#fff !important;color:#000 !important;font-size:11pt}
+  .sidebar,.nav-i,.tab,.btn,#pdfProg,.pdf-prog{display:none !important}
+  .main{margin:0 !important;padding:0 !important;width:100% !important;max-width:100% !important}
+  .card{border:1px solid #ccc !important;background:#fff !important;
+    break-inside:avoid;margin-bottom:12pt;box-shadow:none !important}
+  .ct{color:#000 !important;background:#eee !important;padding:4pt 8pt !important}
+  table{border-collapse:collapse;width:100%}
+  td,th{border:1px solid #ccc !important;padding:3pt 6pt !important;
+    color:#000 !important;background:#fff !important}
+  th{background:#eee !important;font-weight:bold}
+  a{color:#000 !important;text-decoration:none}
+  svg{max-width:100%}
+  @page{margin:15mm;size:A4}
 }
 
-/* WHY button and clause link styles */
-.clause-link { transition: color 0.2s; }
-.clause-link:hover { color: #38bdf8 !important; }
-.fm button { vertical-align: middle; transition: background 0.2s; }
-.fm button:hover { background: rgba(56,189,248,0.2) !important; }
-
+/* WHY BUTTON */
+.clause-link{transition:color 0.2s}
+.clause-link:hover{color:var(--blue) !important}
+.fm button{vertical-align:middle;transition:background 0.2s}
+.fm button:hover{background:rgba(96,165,250,0.2) !important}
 </style>
 </head>
 <body>
@@ -387,7 +467,7 @@ function showClauseTip(ref, el) {
   box.style.left = Math.max(8, left) + 'px';
   box.innerHTML = '<div style="font-size:11px;font-weight:700;color:#38bdf8;margin-bottom:6px">' + ref + '</div>'
     + '<div>' + tip + '</div>'
-  + '<button onclick="var b=document.getElementById(\'clauseTipBox\');if(b)b.remove()" style="margin-top:10px;padding:3px 10px;background:transparent;border:1px solid #334155;border-radius:5px;color:#64748b;cursor:pointer;font-size:10px">Close</button>';
+  + '<button onclick="var b=document.getElementById(\'clauseTipBox\');if(b)b.remove()" style="margin-top:10px;padding:3px 10px;background:transparent;border:1px solid #64748b;border-radius:5px;color:#64748b;cursor:pointer;font-size:10px">Close</button>';
   document.body.appendChild(box);
   // Auto-close after 8s
   setTimeout(() => { const b=document.getElementById('clauseTipBox'); if(b&&b._ref===ref)b.remove(); }, 8000);
@@ -469,7 +549,7 @@ function vd(ok,msg,util){
   return`<div class="vd ${ok===true?'ok':ok===false?'ng':'wn'}"><span>${ok===true?'OK':ok===false?'X':'!!'}</span>${msg}${bar}</div>`;
 }
 
-function sb(n,title,html,col=''){return`<div class="sb ${col}" data-n="${n}"><div style="padding-top:8px;font-size:11px;font-weight:700;color:var(--blue);margin-bottom:7px">${title}</div>${html}</div>`;}
+function sb(n,title,html,col=''){return`<div class="sb ${col}" data-n="${n}"><div style="padding-top:8px;font-size:11px;font-weight:700;color:var(--cyan);margin-bottom:7px">${title}</div>${html}</div>`;}
 
 function sdiv(t){return`<div class="sdiv"><div class="sdiv-l"></div><div class="sdiv-t">${t}</div><div class="sdiv-l"></div></div>`;}
 
@@ -499,8 +579,8 @@ function svgTribArea(type,spX,spY){
   let g=`<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">`;
   g+=`<rect width="${W}" height="${H}" fill="#0a0f1e"/>`;
   // grid
-  bx.forEach(x=>by.forEach((y,ri)=>ri<2&&(g+=`<line x1="${x}" y1="${y}" x2="${x}" y2="${by[ri+1]}" stroke="#334155" stroke-width="2"/>`)));
-  by.forEach(y=>bx.forEach((x,ci)=>ci<2&&(g+=`<line x1="${x}" y1="${y}" x2="${bx[ci+1]}" y2="${y}" stroke="#334155" stroke-width="2"/>`)));
+  bx.forEach(x=>by.forEach((y,ri)=>ri<2&&(g+=`<line x1="${x}" y1="${y}" x2="${x}" y2="${by[ri+1]}" stroke="#64748b" stroke-width="2"/>`)));
+  by.forEach(y=>bx.forEach((x,ci)=>ci<2&&(g+=`<line x1="${x}" y1="${y}" x2="${bx[ci+1]}" y2="${y}" stroke="#64748b" stroke-width="2"/>`)));
   // shaded trib area
   g+=`<path d="${shade}" fill="rgba(56,189,248,0.18)" stroke="#38bdf8" stroke-width="1.5" stroke-dasharray="4,3"/>`;
   // columns
@@ -546,7 +626,7 @@ function svgBeamLoad(L,wu,RA){
   g+=`<text x="${pl+bw/2}" y="${by-38}" fill="#fb923c" font-size="11" text-anchor="middle" font-family="JetBrains Mono">wu = ${r2(wu)} kN/m</text>`;
   // supports
   [[pl,'A'],[pl+bw,'B']].forEach(([x,lbl])=>{
-    g+=`<polygon points="${x},${by+16} ${x-10},${by+34} ${x+10},${by+34}" fill="#334155" stroke="#64748b" stroke-width="1.5"/>`;
+    g+=`<polygon points="${x},${by+16} ${x-10},${by+34} ${x+10},${by+34}" fill="#64748b" stroke="#64748b" stroke-width="1.5"/>`;
     g+=`<text x="${x}" y="${by+48}" fill="#94a3b8" font-size="11" text-anchor="middle" font-family="JetBrains Mono">${lbl}</text>`;
   });
   // reactions
@@ -575,7 +655,7 @@ function svgSFD(L,wu,RA){
   let g=`<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">`;
   g+=`<rect width="${W}" height="${H}" fill="#0a0f1e"/>`;
   // baseline
-  g+=`<line x1="${pl}" y1="${base}" x2="${pl+bw}" y2="${base}" stroke="#475569" stroke-width="3"/>`;
+  g+=`<line x1="${pl}" y1="${base}" x2="${pl+bw}" y2="${base}" stroke="#64748b" stroke-width="3"/>`;
   // SFD path (linear)
   const sc=(base-20)/RA;
   const pts=[];
@@ -608,7 +688,7 @@ function svgBMD(L,wu,Mmax){
   for(let i=0;i<=60;i++){const x=i/60*L;const M=wu*x*(L-x)/2;pts.push(`${pl+i/60*bw},${base+M*sc}`);}
   g+=`<polygon points="${pl},${base} ${pts.join(' ')} ${pl+bw},${base}" fill="rgba(251,146,60,0.2)"/>`;
   g+=`<polyline points="${pts.join(' ')}" fill="none" stroke="#fb923c" stroke-width="2.5"/>`;
-  g+=`<line x1="${pl}" y1="${base}" x2="${pl+bw}" y2="${base}" stroke="#475569" stroke-width="3"/>`;
+  g+=`<line x1="${pl}" y1="${base}" x2="${pl+bw}" y2="${base}" stroke="#64748b" stroke-width="3"/>`;
   // peak
   g+=`<circle cx="${pl+bw/2}" cy="${base+Mmax*sc}" r="5" fill="#fb923c"/>`;
   g+=`<line x1="${pl+bw/2}" y1="${base}" x2="${pl+bw/2}" y2="${base+Mmax*sc}" stroke="rgba(251,146,60,0.4)" stroke-width="1" stroke-dasharray="3,3"/>`;
@@ -820,7 +900,7 @@ function svgSeismicDist(floors2){
   // floor lines & force arrows
   floors2.slice().reverse().forEach((f,i)=>{
     const fy2=pad+i*bh;
-    g+=`<line x1="${pad}" y1="${fy2}" x2="${W-pad}" y2="${fy2}" stroke="#334155" stroke-width="1.5"/>`;
+    g+=`<line x1="${pad}" y1="${fy2}" x2="${W-pad}" y2="${fy2}" stroke="#64748b" stroke-width="1.5"/>`;
     const fw2=Math.max(8,(f.Qi/maxQ)*(W-pad-80));
     g+=`<rect x="${pad}" y="${fy2+3}" width="${fw2}" height="${bh-6}" fill="rgba(52,211,153,0.25)" stroke="#34d399" stroke-width="1.2" rx="2"/>`;
     g+=`<text x="${pad+fw2+4}" y="${fy2+bh/2+4}" fill="#34d399" font-size="9" font-family="JetBrains Mono">${r2(f.Qi)}kN</text>`;
@@ -1233,7 +1313,7 @@ function nodeCanvas(node){
 // ── BAY FILL STYLES ──────────────────────────────────────────────
 const BAY_STYLES={
   slab:      {fill:'rgba(56,189,248,0.06)',hatch:null,label:null,labelColor:null},
-  void:      {fill:'rgba(10,15,30,0.9)',hatch:'rgba(100,116,139,0.3)',label:'VOID',labelColor:'#475569'},
+  void:      {fill:'rgba(10,15,30,0.9)',hatch:'rgba(100,116,139,0.3)',label:'VOID',labelColor:'#64748b'},
   opening:   {fill:'rgba(248,113,113,0.08)',hatch:'rgba(248,113,113,0.25)',label:'OPENING',labelColor:'#f87171'},
   courtyard: {fill:'rgba(16,185,129,0.08)',hatch:'rgba(16,185,129,0.2)',label:'COURTYARD',labelColor:'#34d399'},
   staircase: {fill:'rgba(245,158,11,0.1)',hatch:'rgba(245,158,11,0.2)',label:'STAIR',labelColor:'#f59e0b'},
@@ -1320,7 +1400,7 @@ function drawGrid(canvas){
       color=c.type==='both_continuous'?'#38bdf8':c.type==='one_continuous'?'#60a5fa':'#94a3b8';
       lw=5;
     }
-    if(isSel){lw+=2;color='#ffffff';}
+    if(isSel){lw+=2;color='#0a0f1e';}
 
     ctx.strokeStyle=color;ctx.lineWidth=lw;ctx.setLineDash(dash);
     ctx.beginPath();ctx.moveTo(p1.x,p1.y);ctx.lineTo(p2.x,p2.y);ctx.stroke();
@@ -1359,7 +1439,7 @@ function drawGrid(canvas){
     if(node.hasColumn){
       const sz=isSel?11:8;
       ctx.fillStyle=isSel?'#1e3a8a':'#1a2540';
-      ctx.strokeStyle=isSel?'#ffffff':'#34d399';
+      ctx.strokeStyle=isSel?'#0a0f1e':'#34d399';
       ctx.lineWidth=isSel?2.5:2;
       ctx.fillRect(pos.x-sz,pos.y-sz,sz*2,sz*2);
       ctx.strokeRect(pos.x-sz,pos.y-sz,sz*2,sz*2);
@@ -1380,7 +1460,7 @@ function drawGrid(canvas){
       }
     }else{
       // Missing/removed column — X marker
-      ctx.strokeStyle=isSel?'#ffffff':'#f87171';ctx.lineWidth=2.5;
+      ctx.strokeStyle=isSel?'#0a0f1e':'#f87171';ctx.lineWidth=2.5;
       ctx.beginPath();ctx.moveTo(pos.x-6,pos.y-6);ctx.lineTo(pos.x+6,pos.y+6);ctx.stroke();
       ctx.beginPath();ctx.moveTo(pos.x+6,pos.y-6);ctx.lineTo(pos.x-6,pos.y+6);ctx.stroke();
     }
@@ -1662,7 +1742,7 @@ function showContextPanel(){
 }
 
 function noSelHTML(){
-  return `<div style="padding:12px;font-size:10px;color:#475569;text-align:center;line-height:1.8">
+  return `<div style="padding:12px;font-size:10px;color:#64748b;text-align:center;line-height:1.8">
     <div style="font-size:20px;margin-bottom:6px">👆</div>
     Click any <strong style="color:#38bdf8">node</strong>,<br>
     <strong style="color:#f59e0b">beam</strong>, or<br>
@@ -1676,7 +1756,7 @@ function nodePanel(node){
   const typeColor=node.hasColumn?'#34d399':node.isWall?'#94a3b8':'#f87171';
   return `<div style="padding:10px;font-size:11px">
     <div style="font-weight:700;color:#38bdf8;margin-bottom:8px">Node ${String.fromCharCode(65+node.row)}-${node.col+1}</div>
-    <div style="font-size:9px;color:#475569;margin-bottom:10px">Row ${node.row}, Col ${node.col}</div>
+    <div style="font-size:9px;color:#64748b;margin-bottom:10px">Row ${node.row}, Col ${node.col}</div>
     <div style="font-size:10px;font-weight:700;color:${typeColor};margin-bottom:10px">● ${typeName}</div>
 
     <div style="font-size:10px;font-weight:700;color:#64748b;margin-bottom:6px">NODE TYPE</div>
@@ -1701,7 +1781,7 @@ function beamPanel(beam){
   const condLabel=beam.endCondOverride||'auto';
   return `<div style="padding:10px;font-size:11px">
     <div style="font-weight:700;color:#38bdf8;margin-bottom:4px">Beam ${beam.dir}-dir (L=${beam.L}m)</div>
-    <div style="font-size:9px;color:#475569;margin-bottom:10px">n1=${beam.n1} → n2=${beam.n2} ${beam.isSecondary?'| SECONDARY':beam.isTransfer?'| TRANSFER':''}</div>
+    <div style="font-size:9px;color:#64748b;margin-bottom:10px">n1=${beam.n1} → n2=${beam.n2} ${beam.isSecondary?'| SECONDARY':beam.isTransfer?'| TRANSFER':''}</div>
 
     <div style="font-size:10px;font-weight:700;color:#64748b;margin-bottom:6px">END CONDITIONS</div>
     <div style="font-size:9px;color:#94a3b8;margin-bottom:6px;padding:5px;background:#0f172a;border-radius:4px">${coeffs.label}</div>
@@ -1716,7 +1796,7 @@ function beamPanel(beam){
 
     ${!beam.isCantilever&&!beam.isSecondary?`
     <div style="margin-top:10px;font-size:10px;font-weight:700;color:#64748b;margin-bottom:4px">CUSTOM LOAD (kN/m)</div>
-    <div style="font-size:9px;color:#475569;margin-bottom:4px">Leave blank to auto-calc from slab</div>
+    <div style="font-size:9px;color:#64748b;margin-bottom:4px">Leave blank to auto-calc from slab</div>
     <input type="number" value="${beam.customWu||''}" placeholder="auto"
       oninput="setBeamCustomWu(${beam.id},this.value)"
       style="width:100%;box-sizing:border-box;background:#0f172a;color:#f1f5f9;border:1px solid #1e3a8a;border-radius:5px;padding:5px 8px;font-size:10px;font-family:monospace"/>
@@ -1736,7 +1816,7 @@ function bayPanel(bay){
   const caseN=bay.type==='slab'?getSlabCase(bay):null;
   return `<div style="padding:10px;font-size:11px">
     <div style="font-weight:700;color:#38bdf8;margin-bottom:4px">Bay ${String.fromCharCode(65+bay.row)}-${bay.col+1}</div>
-    <div style="font-size:9px;color:#475569;margin-bottom:10px">Row ${bay.row}, Col ${bay.col} | lx=${r2(bay.lx)}m, ly=${r2(bay.ly)}m</div>
+    <div style="font-size:9px;color:#64748b;margin-bottom:10px">Row ${bay.row}, Col ${bay.col} | lx=${r2(bay.lx)}m, ly=${r2(bay.ly)}m</div>
 
     <div style="font-size:10px;font-weight:700;color:#64748b;margin-bottom:6px">BAY TYPE</div>
     ${BAY_TYPES.map(t=>{
@@ -1825,14 +1905,14 @@ function updateStructSummary(){
         ${nTransfer?`<div style="color:#f59e0b">⚡ Transfer: ${nTransfer}</div>`:''}
         ${nSec?`<div style="color:#8b5cf6">+ Secondary: ${nSec}</div>`:''}
         ${nCant?`<div style="color:#34d399">↗ Cantilever: ${nCant}</div>`:''}
-        ${nVoid?`<div style="color:#475569">□ Non-slab bays: ${nVoid}</div>`:''}
+        ${nVoid?`<div style="color:#64748b">□ Non-slab bays: ${nVoid}</div>`:''}
       </div>
       <div>
         <div style="font-weight:700;color:#38bdf8;margin-bottom:4px">Beam Conditions</div>
         <div style="color:#38bdf8">Both cont.: ${nBoth}</div>
         <div style="color:#60a5fa">One cont.: ${nOne}</div>
         <div style="color:#94a3b8">Simply supp.: ${nSS}</div>
-        <div style="margin-top:5px;font-size:9px;color:#475569">Slab cases auto from IS 456 T26</div>
+        <div style="margin-top:5px;font-size:9px;color:#64748b">Slab cases auto from IS 456 T26</div>
       </div>
     </div>`;
 }
@@ -1908,11 +1988,11 @@ function p2(){
           <div style="font-size:10px;font-weight:700;color:#38bdf8;margin-bottom:5px">X Spans (m) — Columns 1→${S.spansX.length+1}</div>
           ${S.spansX.map((s,i)=>`
             <div style="display:flex;gap:5px;align-items:center;margin-bottom:4px">
-              <span style="font-size:9px;color:#475569;min-width:22px">X${i+1}</span>
+              <span style="font-size:9px;color:#64748b;min-width:22px">X${i+1}</span>
               <input type="number" value="${s}" min="1.5" max="15" step="0.1"
                 style="flex:1;background:#0f172a;color:#f1f5f9;border:1px solid #1e3a8a;border-radius:5px;padding:4px 6px;font-size:10px;font-family:monospace"
                 oninput="S.spansX[${i}]=parseFloat(this.value)||3;GRID=null;initGrid();redrawGrid();updateStructSummary()"/>
-              <span style="font-size:9px;color:#475569">m</span>
+              <span style="font-size:9px;color:#64748b">m</span>
               ${S.spansX.length>1?`<button onclick="S.spansX.splice(${i},1);GRID=null;initGrid();go(2)"
                 style="padding:2px 7px;background:transparent;border:1px solid #374151;border-radius:4px;color:#f87171;cursor:pointer;font-size:10px">✕</button>`:''}
             </div>`).join('')}
@@ -1923,11 +2003,11 @@ function p2(){
           <div style="font-size:10px;font-weight:700;color:#38bdf8;margin-bottom:5px">Y Spans (m) — Rows A→${String.fromCharCode(65+S.spansY.length)}</div>
           ${S.spansY.map((s,i)=>`
             <div style="display:flex;gap:5px;align-items:center;margin-bottom:4px">
-              <span style="font-size:9px;color:#475569;min-width:22px">Y${i+1}</span>
+              <span style="font-size:9px;color:#64748b;min-width:22px">Y${i+1}</span>
               <input type="number" value="${s}" min="1.5" max="15" step="0.1"
                 style="flex:1;background:#0f172a;color:#f1f5f9;border:1px solid #1e3a8a;border-radius:5px;padding:4px 6px;font-size:10px;font-family:monospace"
                 oninput="S.spansY[${i}]=parseFloat(this.value)||3;GRID=null;initGrid();redrawGrid();updateStructSummary()"/>
-              <span style="font-size:9px;color:#475569">m</span>
+              <span style="font-size:9px;color:#64748b">m</span>
               ${S.spansY.length>1?`<button onclick="S.spansY.splice(${i},1);GRID=null;initGrid();go(2)"
                 style="padding:2px 7px;background:transparent;border:1px solid #374151;border-radius:4px;color:#f87171;cursor:pointer;font-size:10px">✕</button>`:''}
             </div>`).join('')}
@@ -1948,7 +2028,7 @@ function p2(){
 
     <!-- RIGHT: Context property panel -->
     <div style="border-left:1px solid var(--b1);background:#0a0f1e;overflow-y:auto">
-      <div style="padding:8px 10px;border-bottom:1px solid #1e3a8a;font-size:10px;font-weight:700;color:#475569">PROPERTIES</div>
+      <div style="padding:8px 10px;border-bottom:1px solid #1e3a8a;font-size:10px;font-weight:700;color:#64748b">PROPERTIES</div>
       <div id="geContextPanel">${noSelHTML()}</div>
     </div>
 
@@ -3056,15 +3136,15 @@ function secSlab(){
               const ok=p2.ok;
               html+=`<button onclick="window._slabPanelIdx=${idx2};showSec('slab')"
                 style="width:52px;height:44px;border-radius:5px;cursor:pointer;font-size:8px;font-weight:700;
-                border:1.5px solid ${isAct?'#ffffff':(ok?'var(--blue)':'#f87171')};
+                border:1.5px solid ${isAct?'#0a0f1e':(ok?'var(--blue)':'#f87171')};
                 background:${isAct?'rgba(56,189,248,0.2)':(ok?'rgba(56,189,248,0.06)':'rgba(248,113,113,0.08)')};
-                color:${isAct?'#ffffff':(ok?'var(--blue)':'#f87171')}">
+                color:${isAct?'#0a0f1e':(ok?'var(--blue)':'#f87171')}">
                 ${String.fromCharCode(65+r)}${c+1}<br><span style="font-size:7px;font-weight:400">${p2.lx.toFixed(1)}×${p2.ly.toFixed(1)}</span>
               </button>`;
             } else {
               // void/opening
               const bay=GRID.bays.find(b=>b.row===r&&b.col===c);
-              html+=`<div style="width:52px;height:44px;border-radius:5px;background:rgba(100,116,139,0.1);border:1px dashed #1e3a8a;display:flex;align-items:center;justify-content:center;font-size:8px;color:#475569">${bay?bay.type.toUpperCase():'VOID'}</div>`;
+              html+=`<div style="width:52px;height:44px;border-radius:5px;background:rgba(100,116,139,0.1);border:1px dashed #1e3a8a;display:flex;align-items:center;justify-content:center;font-size:8px;color:#64748b">${bay?bay.type.toUpperCase():'VOID'}</div>`;
             }
           }
         }
@@ -3080,7 +3160,7 @@ function secSlab(){
   <!-- All panels summary table -->
   ${floorPanels.length>1?`
   <div style="margin-top:16px">
-    <div style="font-size:11px;font-weight:700;color:var(--blue);margin-bottom:8px">All Panels Summary — ${activeFloor} Floor</div>
+    <div style="font-size:11px;font-weight:700;color:var(--cyan);margin-bottom:8px">All Panels Summary — ${activeFloor} Floor</div>
     <div style="overflow-x:auto">
       <table style="width:100%;border-collapse:collapse;font-size:10px">
         <tr style="background:var(--bg1)">
@@ -3424,13 +3504,13 @@ function secColumns(){
         nodeGrid+=`<div style="width:34px;height:34px;border:1px dashed #1e293b;border-radius:4px;opacity:0.25"></div>`;
       } else if(!colResult){
         // Column node exists in GRID but no design result — show greyed label
-        nodeGrid+=`<div style="width:34px;height:34px;border:1px dashed #475569;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:7px;color:#475569">${String.fromCharCode(65+r)}${c+1}</div>`;
+        nodeGrid+=`<div style="width:34px;height:34px;border:1px dashed #64748b;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:7px;color:#64748b">${String.fromCharCode(65+r)}${c+1}</div>`;
       } else {
         nodeGrid+=`<button onclick="_colNodeIdx=${globalIdx};showSec('columns')"
           style="width:34px;height:34px;border-radius:4px;cursor:pointer;font-size:8px;font-weight:700;
-          border:1.5px solid ${isActive?'#ffffff':(ok?'#a78bfa':'#f87171')};
+          border:1.5px solid ${isActive?'#0a0f1e':(ok?'#a78bfa':'#f87171')};
           background:${isActive?'rgba(167,139,250,0.35)':(ok?'rgba(167,139,250,0.1)':'rgba(248,113,113,0.12)')};
-          color:${isActive?'#ffffff':(ok?'#a78bfa':'#f87171')}">
+          color:${isActive?'#0a0f1e':(ok?'#a78bfa':'#f87171')}">
           ${lbl}
         </button>`;
       }
@@ -3583,13 +3663,13 @@ function secFootings(){
       if(!isCol){
         nodeGrid+=`<div style="width:36px;height:36px;border:1px dashed #1e293b;border-radius:4px;opacity:0.25"></div>`;
       } else if(!ftgResult){
-        nodeGrid+=`<div style="width:36px;height:36px;border:1px dashed #475569;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:7px;color:#475569">${String.fromCharCode(65+r)}${c+1}</div>`;
+        nodeGrid+=`<div style="width:36px;height:36px;border:1px dashed #64748b;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:7px;color:#64748b">${String.fromCharCode(65+r)}${c+1}</div>`;
       } else {
         nodeGrid+=`<button onclick="_ftgIdx=${globalIdx};showSec('footings')"
           style="width:36px;height:36px;border-radius:4px;cursor:pointer;font-size:7px;font-weight:700;
-          border:1.5px solid ${isActive?'#ffffff':(ok?'#fbbf24':'#f87171')};
+          border:1.5px solid ${isActive?'#0a0f1e':(ok?'#fbbf24':'#f87171')};
           background:${isActive?'rgba(251,191,36,0.3)':(ok?'rgba(251,191,36,0.1)':'rgba(248,113,113,0.12)')};
-          color:${isActive?'#ffffff':(ok?'#fbbf24':'#f87171')}">
+          color:${isActive?'#0a0f1e':(ok?'#fbbf24':'#f87171')}">
           ${lbl}
         </button>`;
       }
@@ -4119,7 +4199,7 @@ function showPDFDialog(){
         if(!isCol){
           g+=`<div style="width:36px;height:32px;border:1px dashed #1e293b;border-radius:4px;opacity:.2"></div>`;
         } else if(!cr){
-          g+=`<div style="width:36px;height:32px;border:1px dashed #334155;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:7px;color:#475569">${String.fromCharCode(65+r)}${c+1}</div>`;
+          g+=`<div style="width:36px;height:32px;border:1px dashed #64748b;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:7px;color:#64748b">${String.fromCharCode(65+r)}${c+1}</div>`;
         } else {
           g+=`<label style="display:flex;flex-direction:column;align-items:center;justify-content:center;
             width:36px;height:32px;border-radius:4px;cursor:pointer;font-size:7px;font-weight:700;
@@ -4154,7 +4234,7 @@ function showPDFDialog(){
         if(!isCol){
           g+=`<div style="width:38px;height:34px;border:1px dashed #1e293b;border-radius:4px;opacity:.2"></div>`;
         } else if(!fr){
-          g+=`<div style="width:38px;height:34px;border:1px dashed #334155;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:7px;color:#475569">${String.fromCharCode(65+r)}${c+1}</div>`;
+          g+=`<div style="width:38px;height:34px;border:1px dashed #64748b;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:7px;color:#64748b">${String.fromCharCode(65+r)}${c+1}</div>`;
         } else {
           g+=`<label style="display:flex;flex-direction:column;align-items:center;justify-content:center;
             width:38px;height:34px;border-radius:4px;cursor:pointer;font-size:7px;font-weight:700;
@@ -4175,7 +4255,7 @@ function showPDFDialog(){
   // ── SLAB PLAN GRID ────────────────────────────────────────────
   function slabGrid(){
     const typPanels=panels.filter(p=>p.floor==='Typical');
-    if(!typPanels.length) return`<div style="font-size:9px;color:#475569">No slab panels found.</div>`;
+    if(!typPanels.length) return`<div style="font-size:9px;color:#64748b">No slab panels found.</div>`;
     let g=`<div style="display:inline-grid;gap:3px;grid-template-columns:repeat(${nx},auto)">`;
     for(let r=0;r<ny;r++){
       for(let c=0;c<nx;c++){
@@ -4187,7 +4267,7 @@ function showPDFDialog(){
             🪜<span>STAIR</span></div>`;
         } else if(!p){
           const btype=bay?bay.type.toUpperCase():'VOID';
-          g+=`<div style="width:52px;height:44px;border:1px dashed #1e293b;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:7px;color:#334155;opacity:.5">${btype}</div>`;
+          g+=`<div style="width:52px;height:44px;border:1px dashed #1e293b;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:7px;color:#64748b;opacity:.5">${btype}</div>`;
         } else {
           const idx=typPanels.indexOf(p);
           const ok=p.ok;
@@ -4229,15 +4309,15 @@ function showPDFDialog(){
   dlg.style.cssText='position:fixed;inset:0;background:rgba(0,5,20,0.92);z-index:9999;display:flex;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto';
 
   dlg.innerHTML=`
-  <div style="background:#0d1526;border:2px solid #1e40af;border-radius:14px;width:100%;max-width:780px;padding:24px">
+  <div style="background:#0a0f1e;border:2px solid #1e40af;border-radius:14px;width:100%;max-width:780px;padding:24px">
 
     <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px">
       <div>
         <div style="font-size:20px;font-weight:900;color:#38bdf8">📄 Download Report PDF</div>
-        <div style="font-size:10px;color:#475569;margin-top:2px">Select members to include. Uncheck any to exclude from report.</div>
+        <div style="font-size:10px;color:#64748b;margin-top:2px">Select members to include. Uncheck any to exclude from report.</div>
       </div>
       <button onclick="document.getElementById('pdfDlg').remove()"
-        style="background:none;border:1px solid #334155;border-radius:6px;color:#64748b;cursor:pointer;padding:4px 10px;font-size:14px">✕</button>
+        style="background:none;border:1px solid #64748b;border-radius:6px;color:#64748b;cursor:pointer;padding:4px 10px;font-size:14px">✕</button>
     </div>
 
     <!-- Section toggles -->
@@ -4262,7 +4342,7 @@ function showPDFDialog(){
         </label>
       </div>
       <div style="overflow-x:auto">${slabGrid()}</div>
-      <div style="font-size:8px;color:#334155;margin-top:5px">Blue = pass | Red = fail | Uncheck to exclude from PDF</div>
+      <div style="font-size:8px;color:#64748b;margin-top:5px">Blue = pass | Red = fail | Uncheck to exclude from PDF</div>
     </div>
 
     <!-- BEAMS -->
@@ -4279,7 +4359,7 @@ function showPDFDialog(){
         ${floorTabsHTML(beamFloors,'pdf_bft','#f97316',firstBeamFloor)}
       </div>
       <div id="pdf_beam_member_grid">${beamGrid(firstBeamFloor)}</div>
-      <div style="font-size:8px;color:#334155;margin-top:5px">Orange = pass | Red = fail | Switch floor tabs to select per floor</div>
+      <div style="font-size:8px;color:#64748b;margin-top:5px">Orange = pass | Red = fail | Switch floor tabs to select per floor</div>
     </div>
 
     <!-- COLUMNS -->
@@ -4296,7 +4376,7 @@ function showPDFDialog(){
         ${floorTabsHTML(colFloors,'pdf_cft','#a78bfa',firstColFloor)}
       </div>
       <div id="pdf_col_member_grid" style="overflow-x:auto">${colGrid(firstColFloor)}</div>
-      <div style="font-size:8px;color:#334155;margin-top:5px">Purple = safe | Red = fail | Plan view — click to select/deselect</div>
+      <div style="font-size:8px;color:#64748b;margin-top:5px">Purple = safe | Red = fail | Plan view — click to select/deselect</div>
     </div>
 
     <!-- FOOTINGS -->
@@ -4310,13 +4390,13 @@ function showPDFDialog(){
         </label>
       </div>
       <div style="overflow-x:auto">${ftgGrid()}</div>
-      <div style="font-size:8px;color:#334155;margin-top:5px">Yellow = pass | Red = fail | Plan view matches building layout</div>
+      <div style="font-size:8px;color:#64748b;margin-top:5px">Yellow = pass | Red = fail | Plan view matches building layout</div>
     </div>
 
     <!-- Buttons -->
     <div style="display:flex;gap:10px;justify-content:flex-end;align-items:center">
       <button onclick="document.getElementById('pdfDlg').remove()"
-        style="padding:9px 20px;background:transparent;border:1.5px solid #334155;border-radius:7px;color:#94a3b8;cursor:pointer;font-size:12px">Cancel</button>
+        style="padding:9px 20px;background:transparent;border:1.5px solid #64748b;border-radius:7px;color:#94a3b8;cursor:pointer;font-size:12px">Cancel</button>
       <button onclick="startPDFWithFilters()"
         style="padding:9px 28px;background:linear-gradient(135deg,#1d4ed8,#2563eb);border:none;border-radius:7px;color:#fff;cursor:pointer;font-size:13px;font-weight:800;letter-spacing:.3px">
         ↓ Generate PDF
@@ -4380,7 +4460,7 @@ function pdfFloorTab(prefix, flr, allFloors){
           if(!isCol2){
             g+=`<div style="width:36px;height:32px;border:1px dashed #1e293b;border-radius:4px;opacity:.2"></div>`;
           } else if(!cr){
-            g+=`<div style="width:36px;height:32px;border:1px dashed #334155;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:7px;color:#475569">${String.fromCharCode(65+r)}${c+1}</div>`;
+            g+=`<div style="width:36px;height:32px;border:1px dashed #64748b;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:7px;color:#64748b">${String.fromCharCode(65+r)}${c+1}</div>`;
           } else {
             g+=`<label style="display:flex;flex-direction:column;align-items:center;justify-content:center;
               width:36px;height:32px;border-radius:4px;cursor:pointer;font-size:7px;font-weight:700;
@@ -5037,11 +5117,11 @@ function svgPMDiagram(pmData, Pu_design, Mu_design, label) {
   }
 
   // Axes
-  g += `<line x1="${pad.l}" y1="${pad.t}" x2="${pad.l}" y2="${pad.t + ph}" stroke="#475569" stroke-width="1.5"/>`;
-  g += `<line x1="${pad.l}" y1="${pad.t + ph}" x2="${pad.l + pw}" y2="${pad.t + ph}" stroke="#475569" stroke-width="1.5"/>`;
+  g += `<line x1="${pad.l}" y1="${pad.t}" x2="${pad.l}" y2="${pad.t + ph}" stroke="#64748b" stroke-width="1.5"/>`;
+  g += `<line x1="${pad.l}" y1="${pad.t + ph}" x2="${pad.l + pw}" y2="${pad.t + ph}" stroke="#64748b" stroke-width="1.5"/>`;
   // Zero Pu line
   const y0 = toY(0);
-  g += `<line x1="${pad.l}" y1="${y0}" x2="${pad.l + pw}" y2="${y0}" stroke="#334155" stroke-width="1" stroke-dasharray="4,3"/>`;
+  g += `<line x1="${pad.l}" y1="${y0}" x2="${pad.l + pw}" y2="${y0}" stroke="#64748b" stroke-width="1" stroke-dasharray="4,3"/>`;
 
   // Filled interaction curve
   const fillPath = `${pathD} L${toX(0)},${toY(pathPts[pathPts.length - 1]?.Pu || 0)} L${toX(0)},${toY(pathPts[0]?.Pu || Pu_max)} Z`;
@@ -5301,7 +5381,7 @@ function svgContinuousBeamBMD(results, spans) {
   g += `<rect width="${W}" height="${H}" fill="#0a0f1e"/>`;
 
   // Baseline
-  g += `<line x1="${pad}" y1="${base}" x2="${pad + bw}" y2="${base}" stroke="#475569" stroke-width="2.5"/>`;
+  g += `<line x1="${pad}" y1="${base}" x2="${pad + bw}" y2="${base}" stroke="#64748b" stroke-width="2.5"/>`;
 
   let xCursor = pad;
   results.forEach((r, i) => {
@@ -5768,7 +5848,7 @@ function secSlabEdgeConditions() {
       For a typical floor plan, most INTERIOR panels = Case 1. CORNER panels = Case 4. EDGE panels = Case 2 or 3. Only the rare panel with no continuity = Case 9.
     </div>
     <div style="background:var(--bg1);border:1px solid var(--bg3);border-radius:8px;padding:12px;margin:8px 0">
-      <div style="font-size:11px;font-weight:700;color:var(--blue);margin-bottom:8px">TYPICAL FLOOR PLAN  -  WHICH CASE APPLIES?</div>
+      <div style="font-size:11px;font-weight:700;color:var(--cyan);margin-bottom:8px">TYPICAL FLOOR PLAN  -  WHICH CASE APPLIES?</div>
       ${(() => {
         const nx = S.spansX.length, ny = S.spansY.length;
         let rows = '';
@@ -5947,7 +6027,7 @@ function svgRetainingWall(rw) {
   g += `<rect x="${baseX + wallW}" y="${baseY - wallH}" width="${W - pad - baseX - wallW}" height="${wallH}" fill="rgba(160,120,60,0.1)"/>`;
 
   // Ground line
-  g += `<line x1="${pad}" y1="${baseY - wallH}" x2="${baseX + wallW}" y2="${baseY - wallH}" stroke="#475569" stroke-width="1.5" stroke-dasharray="6,3"/>`;
+  g += `<line x1="${pad}" y1="${baseY - wallH}" x2="${baseX + wallW}" y2="${baseY - wallH}" stroke="#64748b" stroke-width="1.5" stroke-dasharray="6,3"/>`;
   g += `<line x1="${baseX + wallW}" y1="${baseY - wallH}" x2="${W - pad}" y2="${baseY - wallH}" stroke="#6b5a3e" stroke-width="1.5"/>`;
 
   // Stem (trapezoidal)
@@ -6524,15 +6604,15 @@ function secXSections() {
     let s = '';
     if (horiz) {
       const my = y1 + offset;
-      s += `<line x1="${x1}" y1="${y1}" x2="${x1}" y2="${my}" stroke="#475569" stroke-width="0.5" stroke-dasharray="2,2"/>`;
-      s += `<line x1="${x2}" y1="${y2}" x2="${x2}" y2="${my}" stroke="#475569" stroke-width="0.5" stroke-dasharray="2,2"/>`;
-      s += `<line x1="${x1}" y1="${my}" x2="${x2}" y2="${my}" stroke="#475569" stroke-width="0.8" marker-start="url(#arr)" marker-end="url(#arr)"/>`;
+      s += `<line x1="${x1}" y1="${y1}" x2="${x1}" y2="${my}" stroke="#64748b" stroke-width="0.5" stroke-dasharray="2,2"/>`;
+      s += `<line x1="${x2}" y1="${y2}" x2="${x2}" y2="${my}" stroke="#64748b" stroke-width="0.5" stroke-dasharray="2,2"/>`;
+      s += `<line x1="${x1}" y1="${my}" x2="${x2}" y2="${my}" stroke="#64748b" stroke-width="0.8" marker-start="url(#arr)" marker-end="url(#arr)"/>`;
       s += `<text x="${(x1+x2)/2}" y="${my+(offset>0?9:-4)}" fill="#64748b" font-size="8" text-anchor="middle" font-family="monospace">${label}</text>`;
     } else {
       const mx = x1 + offset;
-      s += `<line x1="${x1}" y1="${y1}" x2="${mx}" y2="${y1}" stroke="#475569" stroke-width="0.5" stroke-dasharray="2,2"/>`;
-      s += `<line x1="${x2}" y1="${y2}" x2="${mx}" y2="${y2}" stroke="#475569" stroke-width="0.5" stroke-dasharray="2,2"/>`;
-      s += `<line x1="${mx}" y1="${y1}" x2="${mx}" y2="${y2}" stroke="#475569" stroke-width="0.8" marker-start="url(#arr)" marker-end="url(#arr)"/>`;
+      s += `<line x1="${x1}" y1="${y1}" x2="${mx}" y2="${y1}" stroke="#64748b" stroke-width="0.5" stroke-dasharray="2,2"/>`;
+      s += `<line x1="${x2}" y1="${y2}" x2="${mx}" y2="${y2}" stroke="#64748b" stroke-width="0.5" stroke-dasharray="2,2"/>`;
+      s += `<line x1="${mx}" y1="${y1}" x2="${mx}" y2="${y2}" stroke="#64748b" stroke-width="0.8" marker-start="url(#arr)" marker-end="url(#arr)"/>`;
       s += `<text x="${mx+(offset>0?4:-4)}" y="${(y1+y2)/2+3}" fill="#64748b" font-size="8" text-anchor="${offset>0?'start':'end'}" font-family="monospace">${label}</text>`;
     }
     return s;
@@ -6540,13 +6620,13 @@ function secXSections() {
 
   const arrowDef = `<defs>
     <marker id="arr" markerWidth="5" markerHeight="5" refX="2.5" refY="2.5" orient="auto">
-      <polygon points="0,0 5,2.5 0,5" fill="#475569"/>
+      <polygon points="0,0 5,2.5 0,5" fill="#64748b"/>
     </marker>
     <marker id="arrrev" markerWidth="5" markerHeight="5" refX="2.5" refY="2.5" orient="auto-start-reverse">
-      <polygon points="0,0 5,2.5 0,5" fill="#475569"/>
+      <polygon points="0,0 5,2.5 0,5" fill="#64748b"/>
     </marker>
     <pattern id="hatch" patternUnits="userSpaceOnUse" width="6" height="6" patternTransform="rotate(45)">
-      <line x1="0" y1="0" x2="0" y2="6" stroke="#475569" stroke-width="0.5"/>
+      <line x1="0" y1="0" x2="0" y2="6" stroke="#64748b" stroke-width="0.5"/>
     </pattern>
   </defs>`;
 
@@ -6845,7 +6925,7 @@ function secXSections() {
     // Footings
     for (let i = 0; i <= nBay; i++) {
       const fx = startX + i * spanPx;
-      s += `<rect x="${fx-14}" y="${startY}" width="28" height="10" fill="#334155" stroke="#64748b" stroke-width="1.5"/>`;
+      s += `<rect x="${fx-14}" y="${startY}" width="28" height="10" fill="#64748b" stroke="#64748b" stroke-width="1.5"/>`;
     }
 
     // Columns + beams per storey
@@ -6865,7 +6945,7 @@ function secXSections() {
       }
       // Floor height label
       s += `<text x="${startX-28}" y="${baseY-storyH/2}" fill="#94a3b8" font-size="7" text-anchor="end" font-family="monospace">${S.floorHt}m</text>`;
-      s += `<line x1="${startX-24}" y1="${baseY-storyH}" x2="${startX-24}" y2="${baseY}" stroke="#475569" stroke-width="0.5"/>`;
+      s += `<line x1="${startX-24}" y1="${baseY-storyH}" x2="${startX-24}" y2="${baseY}" stroke="#64748b" stroke-width="0.5"/>`;
     }
 
     s += `<text x="${W/2}" y="12" fill="#38bdf8" font-size="10" font-weight="bold" text-anchor="middle" font-family="monospace">FRAME ELEVATION — ${nBay} Bay x ${nStory} Storey</text>`;
@@ -7075,12 +7155,12 @@ function secJointTypes() {
   function svgJoint(key) {
     const W = 260, H = 120;
     let s = `<svg viewBox="0 0 ${W} ${H}" style="width:100%;max-width:260px">`;
-    s += `<rect width="${W}" height="${H}" fill="#0d1526" rx="6"/>`;
+    s += `<rect width="${W}" height="${H}" fill="#0a0f1e" rx="6"/>`;
 
     const beamY = 52, bh = 16, bx1 = 55, bx2 = W - 55;
 
     // Beam body
-    s += `<rect x="${bx1}" y="${beamY}" width="${bx2-bx1}" height="${bh}" fill="#334155" stroke="#64748b" stroke-width="1.5" rx="1"/>`;
+    s += `<rect x="${bx1}" y="${beamY}" width="${bx2-bx1}" height="${bh}" fill="#64748b" stroke="#64748b" stroke-width="1.5" rx="1"/>`;
 
     // Load arrows
     for (let x = bx1 + 12; x < bx2; x += 20) {
@@ -7100,11 +7180,11 @@ function secJointTypes() {
       });
     };
     const drawWall = (x) => {
-      s += `<rect x="${x-12}" y="${beamY-2}" width="14" height="${bh+4}" fill="#475569" stroke="#94a3b8" stroke-width="1"/>`;
+      s += `<rect x="${x-12}" y="${beamY-2}" width="14" height="${bh+4}" fill="#64748b" stroke="#94a3b8" stroke-width="1"/>`;
       for (let dy = 0; dy <= bh+4; dy += 5) s += `<line x1="${x-12}" y1="${beamY-2+dy}" x2="${x-20}" y2="${beamY+2+dy}" stroke="#64748b" stroke-width="0.8"/>`;
     };
     const drawPin = (x) => {
-      s += `<polygon points="${x},${beamY+bh} ${x-14},${beamY+bh+16} ${x+14},${beamY+bh+16}" fill="#334155" stroke="#94a3b8" stroke-width="1.5"/>`;
+      s += `<polygon points="${x},${beamY+bh} ${x-14},${beamY+bh+16} ${x+14},${beamY+bh+16}" fill="#64748b" stroke="#94a3b8" stroke-width="1.5"/>`;
       s += `<circle cx="${x}" cy="${beamY+bh}" r="3" fill="#94a3b8"/>`;
       s += `<line x1="${x-18}" y1="${beamY+bh+16}" x2="${x+18}" y2="${beamY+bh+16}" stroke="#64748b" stroke-width="1.5"/>`;
       for (let dx = -16; dx <= 16; dx += 6) s += `<line x1="${x+dx}" y1="${beamY+bh+16}" x2="${x+dx-4}" y2="${beamY+bh+22}" stroke="#64748b" stroke-width="0.8"/>`;
@@ -7117,7 +7197,7 @@ function secJointTypes() {
 
     // Deflected shape + BMD
     const bmdY = beamY + bh + 4;
-    s += `<text x="${W/2}" y="${H-4}" fill="#475569" font-size="8" text-anchor="middle" font-family="monospace">BMD shape</text>`;
+    s += `<text x="${W/2}" y="${H-4}" fill="#64748b" font-size="8" text-anchor="middle" font-family="monospace">BMD shape</text>`;
     if (key === 'both_fixed') {
       // Hogging at ends, sagging in middle
       s += `<path d="M${bx1},${bmdY} C${bx1+20},${bmdY+20} ${W/2-20},${bmdY+20} ${W/2},${bmdY+20} S${bx2-20},${bmdY+20} ${bx2},${bmdY}" fill="rgba(52,211,153,0.15)" stroke="#34d399" stroke-width="1.5"/>`;
@@ -7208,7 +7288,7 @@ function secJointTypes() {
     <div class="cd">The joint type (how a beam connects at each end) is the single most important decision in beam design. It determines how much moment the beam carries, how much steel is needed, and how the beam will deflect. Getting this wrong can waste 30–40% of steel or cause deflection failures.</div>
 
     <div style="background:rgba(56,189,248,0.06);border:1px solid rgba(56,189,248,0.2);border-radius:10px;padding:14px;margin-bottom:18px">
-      <div style="font-size:12px;font-weight:700;color:var(--blue);margin-bottom:10px">Moment Comparison — Same beam, same load (w=15 kN/m, L=5m), different joint types:</div>
+      <div style="font-size:12px;font-weight:700;color:var(--cyan);margin-bottom:10px">Moment Comparison — Same beam, same load (w=15 kN/m, L=5m), different joint types:</div>
       ${Object.keys(JOINT_TYPES).map(momentBar).join('')}
       <div style="font-size:10px;color:var(--txt3);margin-top:6px;line-height:1.6">
         A student who wrongly assumes simply supported (when columns exist at both ends) will over-design the beam by 38% — wasting steel and increasing cost. A student who wrongly assumes fixed (when ends are on walls) will UNDER-design the beam — it will crack and deflect badly.
@@ -7240,7 +7320,7 @@ function renderJointSelector(beamId, currentLeft, currentRight) {
     {val:'free',   label:'Free',           icon:'○',  desc:'Nothing — cantilever tip or free end'},
   ];
   return `<div style="background:var(--bg1);border:1px solid rgba(56,189,248,0.2);border-radius:8px;padding:12px;margin:10px 0">
-    <div style="font-size:11px;font-weight:700;color:var(--blue);margin-bottom:4px">Joint Type — Override End Conditions</div>
+    <div style="font-size:11px;font-weight:700;color:var(--cyan);margin-bottom:4px">Joint Type — Override End Conditions</div>
     <div style="font-size:10px;color:var(--txt3);margin-bottom:10px">Change if the auto-detected conditions are wrong. Re-run analysis after changing.</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
       ${['left','right'].map(side => `<div>
@@ -7294,7 +7374,7 @@ function stepBox(id, title, steps) {
           ${st.why  ? `<div style="font-size:11px;margin-bottom:6px;padding:5px 8px;background:rgba(52,211,153,0.07);border-radius:4px;line-height:1.6"><strong style="color:#34d399">Why calculate it?</strong> <span style="color:var(--txt2)">${st.why}</span></div>` : ''}
           ${st.formula ? `
             <div style="margin-bottom:6px;padding:8px 12px;background:rgba(56,189,248,0.07);border:1px solid rgba(56,189,248,0.15);border-radius:6px">
-              <div style="font-size:9px;font-weight:700;color:var(--blue);margin-bottom:4px;letter-spacing:0.5px">FORMULA</div>
+              <div style="font-size:9px;font-weight:700;color:var(--cyan);margin-bottom:4px;letter-spacing:0.5px">FORMULA</div>
               <div style="font-family:var(--mono);font-size:11px;color:var(--blue)">${st.formula}</div>
             </div>` : ''}
           ${st.terms ? `
@@ -7309,7 +7389,7 @@ function stepBox(id, title, steps) {
             </div>` : ''}
           ${st.answer ? `
             <div style="padding:8px 12px;background:rgba(56,189,248,0.12);border-left:3px solid var(--blue);border-radius:0 6px 6px 0">
-              <div style="font-size:9px;font-weight:700;color:var(--blue);margin-bottom:2px;letter-spacing:0.5px">RESULT</div>
+              <div style="font-size:9px;font-weight:700;color:var(--cyan);margin-bottom:2px;letter-spacing:0.5px">RESULT</div>
               <div style="font-family:var(--mono);font-size:13px;font-weight:700;color:var(--txt)">${st.answer}</div>
             </div>` : ''}
         </div>
@@ -8031,7 +8111,7 @@ function fixBtn(fixes, btnLabel, note) {
 function fixInputBtn(key, label, unit, currentVal, recVal, note) {
   const inputId = 'fix_input_' + key + '_' + Math.random().toString(36).slice(2,6);
   return `<div style="margin:8px 0;padding:10px 12px;background:rgba(56,189,248,0.06);border:1px solid rgba(56,189,248,0.2);border-radius:8px">
-    <div style="font-size:10px;font-weight:700;color:var(--blue);margin-bottom:4px">APPLY CUSTOM OR RECOMMENDED VALUE</div>
+    <div style="font-size:10px;font-weight:700;color:var(--cyan);margin-bottom:4px">APPLY CUSTOM OR RECOMMENDED VALUE</div>
     <div style="font-size:11px;color:var(--txt3);margin-bottom:8px">${note}</div>
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
       <div style="font-size:11px;color:var(--txt2)">Current: <strong>${currentVal}${unit}</strong> → </div>
@@ -8144,7 +8224,7 @@ function ftgFixButtons(f) {
     // Fix 1: reduce SBC so footing gets bigger naturally
     const sbcNeed = Math.max(80, S.soilBearing - 30);
     html += `<div style="margin:8px 0;padding:10px 12px;background:rgba(56,189,248,0.06);border:1px solid rgba(56,189,248,0.2);border-radius:8px">
-      <div style="font-size:10px;font-weight:700;color:var(--blue);margin-bottom:4px">DEVELOPMENT LENGTH FAIL — Bar doesn't have enough length to develop full strength</div>
+      <div style="font-size:10px;font-weight:700;color:var(--cyan);margin-bottom:4px">DEVELOPMENT LENGTH FAIL — Bar doesn't have enough length to develop full strength</div>
       <div style="font-size:11px;color:var(--txt2);margin-bottom:6px">
         Available length Lda=${r0(f.Lda)}mm &lt; Required Ldr=${r0(f.Ldr)}mm (with 90° hook).<br>
         This happens when the footing is small (low load) but the column is large.<br>
@@ -8845,11 +8925,11 @@ function fullCompareTable(base, curr) {
   const html = `
     <table style="width:100%;border-collapse:collapse;font-family:monospace">
       <thead><tr>
-        <th style="padding:5px 8px;text-align:left;font-size:9px;color:#475569;border-bottom:1px solid #1e3a8a">Parameter</th>
-        <th style="padding:5px 8px;text-align:right;font-size:9px;color:#475569;border-bottom:1px solid #1e3a8a">Original</th>
-        <th style="padding:5px 8px;text-align:right;font-size:9px;color:#475569;border-bottom:1px solid #1e3a8a">Current</th>
-        <th style="padding:5px 8px;font-size:9px;color:#475569;border-bottom:1px solid #1e3a8a"></th>
-        <th style="padding:5px 8px;text-align:right;font-size:9px;color:#475569;border-bottom:1px solid #1e3a8a">Change</th>
+        <th style="padding:5px 8px;text-align:left;font-size:9px;color:#64748b;border-bottom:1px solid #1e3a8a">Parameter</th>
+        <th style="padding:5px 8px;text-align:right;font-size:9px;color:#64748b;border-bottom:1px solid #1e3a8a">Original</th>
+        <th style="padding:5px 8px;text-align:right;font-size:9px;color:#64748b;border-bottom:1px solid #1e3a8a">Current</th>
+        <th style="padding:5px 8px;font-size:9px;color:#64748b;border-bottom:1px solid #1e3a8a"></th>
+        <th style="padding:5px 8px;text-align:right;font-size:9px;color:#64748b;border-bottom:1px solid #1e3a8a">Change</th>
       </tr></thead>
       <tbody>
         ${section('🟦 SLAB','#38bdf8',[
@@ -8917,16 +8997,16 @@ function sliderForParam(p) {
       <div style="font-size:11px;font-weight:700;color:${p.color};flex:1">${p.label}</div>
       <div style="font-size:13px;font-weight:900;color:${isChanged?p.color:'#64748b'}" id="pdisp_${p.key}">${r2(displayVal)}</div>
       <div style="font-size:9px;color:#64748b">${p.unit}</div>
-      ${isChanged ? `<button onclick="event.stopPropagation();delete window._PSTATE['${p.key}'];refreshParaPanel()" style="padding:1px 6px;background:transparent;border:1px solid #475569;border-radius:4px;color:#64748b;cursor:pointer;font-size:9px">↺</button>` : ''}
+      ${isChanged ? `<button onclick="event.stopPropagation();delete window._PSTATE['${p.key}'];refreshParaPanel()" style="padding:1px 6px;background:transparent;border:1px solid #64748b;border-radius:4px;color:#64748b;cursor:pointer;font-size:9px">↺</button>` : ''}
     </div>
     <div style="display:flex;align-items:center;gap:6px">
-      <span style="font-size:9px;color:#475569;min-width:28px">${p.min}</span>
+      <span style="font-size:9px;color:#64748b;min-width:28px">${p.min}</span>
       <input type="range" min="${p.min}" max="${p.max}" step="${p.step}"
         value="${displayVal}"
         id="pslider_${p.key}"
         oninput="event.stopPropagation();window._PSTATE['${p.key}']=parseFloat(this.value);window._PACTIVE='${p.key}';document.getElementById('pdisp_${p.key}').textContent=parseFloat(this.value).toFixed(${p.step<1?1:0});updateParaLive()"
         style="flex:1;accent-color:${p.color};height:5px;cursor:pointer"/>
-      <span style="font-size:9px;color:#475569;min-width:28px;text-align:right">${p.max}</span>
+      <span style="font-size:9px;color:#64748b;min-width:28px;text-align:right">${p.max}</span>
     </div>
     ${isActive ? `<div style="font-size:9px;color:#64748b;margin-top:5px;line-height:1.5">${p.why}</div>` : ''}
   </div>`;
@@ -8948,7 +9028,7 @@ function secParametric() {
   const changedSummary = changedCount > 0
     ? PARAMS.filter(p=>window._PSTATE[p.key]!==undefined)
         .map(p=>`<span style="padding:2px 8px;border-radius:10px;background:${p.color}22;border:1px solid ${p.color}55;color:${p.color};font-size:9px;font-weight:700">${p.label}: ${r2(window._PSTATE[p.key])} ${p.unit}</span>`).join(' ')
-    : '<span style="color:#475569;font-size:10px">No changes yet — move any slider below</span>';
+    : '<span style="color:#64748b;font-size:10px">No changes yet — move any slider below</span>';
 
   // Diagram mode (stored in window)
   if (!window._PMODE) window._PMODE = 'member';
@@ -8961,7 +9041,7 @@ function secParametric() {
 
     <!-- Status bar -->
     <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:10px 12px;background:#0f172a;border:1px solid #1e3a8a;border-radius:8px;margin-bottom:14px">
-      <div style="font-size:10px;font-weight:700;color:#475569;white-space:nowrap">ACTIVE CHANGES:</div>
+      <div style="font-size:10px;font-weight:700;color:#64748b;white-space:nowrap">ACTIVE CHANGES:</div>
       <div style="flex:1;display:flex;flex-wrap:wrap;gap:5px">${changedSummary}</div>
       <div style="display:flex;gap:8px;align-items:center">
         ${statusBadge(curr.beam.ok, 'Beam')}
@@ -9020,7 +9100,7 @@ function secParametric() {
     <div style="border:1px solid #1e3a8a;border-radius:8px;overflow:hidden">
       <div style="padding:8px 12px;background:#0f172a;font-size:11px;font-weight:700;color:#38bdf8;display:flex;align-items:center;gap:8px">
         📊 Full Impact Comparison
-        <span style="font-size:9px;color:#475569;font-weight:400">Only changed rows shown · Green=improved · Red=worse</span>
+        <span style="font-size:9px;color:#64748b;font-weight:400">Only changed rows shown · Green=improved · Red=worse</span>
       </div>
       <div id="compareTableDiv" style="overflow-x:auto;max-height:400px;overflow-y:auto">
         ${fullCompareTable(base, curr)}
@@ -9141,7 +9221,7 @@ function secDiscussion() {
 
     // Ground / support marks
     [[ox,oy+bh],[ox+L,oy+bh]].forEach(([sx,sy])=>{
-      s += `<polygon points="${sx},${sy} ${sx-12},${sy+16} ${sx+12},${sy+16}" fill="#334155" stroke="#94a3b8" stroke-width="1.2"/>`;
+      s += `<polygon points="${sx},${sy} ${sx-12},${sy+16} ${sx+12},${sy+16}" fill="#64748b" stroke="#94a3b8" stroke-width="1.2"/>`;
       s += `<line x1="${sx-16}" y1="${sy+16}" x2="${sx+16}" y2="${sy+16}" stroke="#64748b" stroke-width="1.5"/>`;
     });
 
@@ -9170,7 +9250,7 @@ function secDiscussion() {
 
     // Label
     s += `<text x="${W/2}" y="13" fill="${color}" font-size="9" font-weight="bold" text-anchor="middle" font-family="monospace">${(b.label||'Beam').slice(0,18)} — ${ok?'DEFLECTION OK':'DEFLECTION FAIL'}</text>`;
-    s += `<text x="${W-4}" y="${H-4}" fill="#475569" font-size="8" text-anchor="end" font-family="monospace">${r0(b.dfl/b.dall*100)}% of limit used</text>`;
+    s += `<text x="${W-4}" y="${H-4}" fill="#64748b" font-size="8" text-anchor="end" font-family="monospace">${r0(b.dfl/b.dall*100)}% of limit used</text>`;
     s += '</svg>';
     return s;
   }
@@ -9179,7 +9259,7 @@ function secDiscussion() {
     const L = W-50, ox=25, oy=H/2;
     let s = `<svg viewBox="0 0 ${W} ${H}" style="width:100%;max-width:${W}px">`;
     s += `<rect width="${W}" height="${H}" fill="#0a0f1e" rx="6"/>`;
-    s += `<line x1="${ox}" y1="${oy}" x2="${ox+L}" y2="${oy}" stroke="#475569" stroke-width="1"/>`;
+    s += `<line x1="${ox}" y1="${oy}" x2="${ox+L}" y2="${oy}" stroke="#64748b" stroke-width="1"/>`;
     const V = b.RA; const scale = Math.min((H/2-14)/V, 2.5);
     // SFD trapezoid
     const pts = `${ox},${oy} ${ox},${oy-V*scale} ${ox+L},${oy+V*scale} ${ox+L},${oy}`;
@@ -9205,7 +9285,7 @@ function secDiscussion() {
     let s = `<svg viewBox="0 0 ${W} ${H}" style="width:100%;max-width:${W}px">`;
     s += `<rect width="${W}" height="${H}" fill="#0a0f1e" rx="6"/>`;
     const baseY = oy + H*0.38;
-    s += `<line x1="${ox}" y1="${baseY}" x2="${ox+L}" y2="${baseY}" stroke="#475569" stroke-width="1"/>`;
+    s += `<line x1="${ox}" y1="${baseY}" x2="${ox+L}" y2="${baseY}" stroke="#64748b" stroke-width="1"/>`;
     const scale = (H-oy-22)/Math.max(b.Mmax, b.Msup||0.01);
     if (isCant) {
       // Triangular hogging
@@ -9642,8 +9722,8 @@ function showConstructionPDFDialog() {
   const old=document.getElementById('cpdDlg');if(old)old.remove();
   const d=document.createElement('div');
   d.id='cpdDlg';
-  d.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.82);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
-  d.innerHTML=`<div style="background:#0d1526;border:1.5px solid #1e40af;border-radius:12px;max-width:540px;width:100%;padding:28px">
+  d.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
+  d.innerHTML=`<div style="background:#0a0f1e;border:1.5px solid #1e40af;border-radius:12px;max-width:540px;width:100%;padding:28px">
     <div style="font-size:19px;font-weight:900;color:#38bdf8;margin-bottom:6px">Generate Construction Drawing Package</div>
     <div style="font-size:11px;color:#64748b;margin-bottom:16px">A3 landscape · Indian structural drawing format · 12 sheets</div>
     ${fails>0?`<div style="padding:10px 14px;background:rgba(248,113,113,0.1);border:1px solid #f87171;border-radius:8px;font-size:11px;color:#fca5a5;margin-bottom:14px">Warning: ${fails} check(s) fail. Fix in Design Summary before generating.</div>`:`<div style="padding:10px 14px;background:rgba(52,211,153,0.1);border:1px solid #34d399;border-radius:8px;font-size:11px;color:#6ee7b7;margin-bottom:14px">All checks pass — ready for drawing generation.</div>`}
@@ -9655,7 +9735,7 @@ function showConstructionPDFDialog() {
       FOR EDUCATIONAL PURPOSE ONLY. All drawings must be reviewed and certified by a licensed Structural Engineer before use in actual construction.
     </div>
     <div style="display:flex;gap:12px;justify-content:flex-end">
-      <button onclick="document.getElementById('cpdDlg').remove()" style="padding:9px 20px;background:transparent;border:1px solid #475569;border-radius:6px;color:#94a3b8;cursor:pointer;font-size:12px">Cancel</button>
+      <button onclick="document.getElementById('cpdDlg').remove()" style="padding:9px 20px;background:transparent;border:1px solid #64748b;border-radius:6px;color:#94a3b8;cursor:pointer;font-size:12px">Cancel</button>
       <button onclick="document.getElementById('cpdDlg').remove();startConstructionPDF()" style="padding:9px 22px;background:#1d4ed8;border:none;border-radius:6px;color:#fff;cursor:pointer;font-size:12px;font-weight:700">Generate 12 Sheets</button>
     </div>
   </div>`;
@@ -11337,7 +11417,7 @@ function checkAutoRestore() {
     banner.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#0f172a;border:1px solid #1e40af;border-radius:10px;padding:12px 20px;z-index:9998;font-size:12px;color:#93c5fd;font-family:monospace;display:flex;gap:12px;align-items:center;box-shadow:0 4px 24px rgba(0,0,0,0.5)';
     banner.innerHTML = '<span>💾 Saved project found (' + (age < 60 ? age + 'm' : Math.round(age/60) + 'h') + ' ago): <strong>' + (data.S&&data.S.name||'unnamed') + '</strong></span>'
       + '<button onclick="loadProject();document.getElementById(\'restoreBanner\').remove()" style="padding:5px 12px;background:#1d4ed8;border:none;border-radius:5px;color:#fff;cursor:pointer;font-size:11px">Restore</button>'
-      + '<button onclick="document.getElementById(\'restoreBanner\').remove()" style="padding:5px 10px;background:transparent;border:1px solid #334155;border-radius:5px;color:#64748b;cursor:pointer;font-size:11px">Dismiss</button>';
+      + '<button onclick="document.getElementById(\'restoreBanner\').remove()" style="padding:5px 10px;background:transparent;border:1px solid #64748b;border-radius:5px;color:#64748b;cursor:pointer;font-size:11px">Dismiss</button>';
     banner.id = 'rBnr';
     document.body.appendChild(banner);
     setTimeout(() => { if(banner.parentElement) banner.remove(); }, 8000);
@@ -11681,7 +11761,7 @@ function secMemberSchedule(){
 
   <!-- ── SLAB SCHEDULE ───────────────────────────────────────── -->
   <div style="margin-bottom:20px">
-    <div style="font-size:12px;font-weight:800;color:var(--blue);margin-bottom:4px">
+    <div style="font-size:12px;font-weight:800;color:var(--cyan);margin-bottom:4px">
       🔲 SLAB PANEL SCHEDULE — Typical Floor
     </div>
     <table style="width:100%;border-collapse:collapse;font-size:10px;min-width:900px">
@@ -11689,7 +11769,7 @@ function secMemberSchedule(){
         <tr style="background:rgba(56,189,248,0.12)">
           ${['Panel','lx m','ly m','Ratio','Case','D mm','d mm','wu kN/m²','Mx kN.m','My kN.m',
              'Bot. Short','Bot. Long','Top Short','Top Long','l/d','Status']
-             .map(h=>`<th style="padding:6px 8px;border:1px solid var(--b1);color:var(--blue);white-space:nowrap">${h}</th>`).join('')}
+             .map(h=>`<th style="padding:6px 8px;border:1px solid var(--b1);color:var(--cyan);white-space:nowrap">${h}</th>`).join('')}
         </tr>
       </thead>
       <tbody>
@@ -12183,7 +12263,7 @@ const _BT = {
         lv===1?'🥉 Foundation unlocked — take the quiz!':
         lv===2?'🥈 Proficiency unlocked — take the quiz!':
         '🥇 Competent unlocked — take the quiz!';
-      lvl.style.color = lv===0?'#475569':lv===1?'#d97706':lv===2?'#94a3b8':'#b8860b';
+      lvl.style.color = lv===0?'#64748b':lv===1?'#d97706':lv===2?'#94a3b8':'#b8860b';
     }
     // Check if new level unlocked
     if(this.level() > 0) {
@@ -12363,7 +12443,7 @@ function saveCertificate(level, certId, userName) {
 
 function getCertColors(level) {
   if(level===1) return { primary:'#d97706', secondary:'#92400e', bg:'#fafaf9', accent:'#f59e0b', text:'#1c1917' };
-  if(level===2) return { primary:'#64748b', secondary:'#334155', bg:'#f8fafc', accent:'#94a3b8', text:'#0f172a' };
+  if(level===2) return { primary:'#64748b', secondary:'#64748b', bg:'#f8fafc', accent:'#94a3b8', text:'#0f172a' };
   return { primary:'#b8860b', secondary:'#7f1d1d', bg:'#fefdf5', accent:'#d4a843', text:'#1a0a00' };
 }
 
@@ -12441,9 +12521,9 @@ function buildCertificateSVG(level, certId, userName, dateStr) {
   <rect x="0" y="0" width="8" height="794" fill="url(#sideBand)"/>
   <rect x="1115" y="0" width="8" height="794" fill="url(#sideBand)"/>
   <linearGradient id="sideBand" x1="0" y1="0" x2="0" y2="1">
-    <stop offset="0%" stop-color="#334155"/>
+    <stop offset="0%" stop-color="#64748b"/>
     <stop offset="50%" stop-color="#94a3b8"/>
-    <stop offset="100%" stop-color="#334155"/>
+    <stop offset="100%" stop-color="#64748b"/>
   </linearGradient>`:''}
 
   <!-- Level 4: corner ornaments -->
@@ -12600,7 +12680,7 @@ function showCertToast(msg, color='#b8860b') {
   if(!t) {
     t = document.createElement('div');
     t.id = '_cert_toast';
-    t.style.cssText = 'position:fixed;top:70px;right:16px;padding:12px 18px;border-radius:10px;font-size:12px;font-weight:700;font-family:sans-serif;z-index:99999;transition:all 0.3s;opacity:0;transform:translateX(100px);max-width:280px;line-height:1.5;background:#0d1526;border:2px solid;';
+    t.style.cssText = 'position:fixed;top:70px;right:16px;padding:12px 18px;border-radius:10px;font-size:12px;font-weight:700;font-family:sans-serif;z-index:99999;transition:all 0.3s;opacity:0;transform:translateX(100px);max-width:280px;line-height:1.5;background:#0a0f1e;border:2px solid;';
     document.body.appendChild(t);
   }
   t.textContent = msg;
@@ -12615,7 +12695,7 @@ function showCertToast(msg, color='#b8860b') {
 function buildLearningPanel() {
   const panel = document.createElement('div');
   panel.id = '_cert_panel';
-  panel.style.cssText = 'position:fixed;bottom:16px;right:16px;width:220px;background:#0d1526;border:1px solid #1e3a8a;border-radius:10px;padding:12px;z-index:9000;font-family:sans-serif;transition:all 0.3s;max-height:calc(100vh - 80px);overflow-y:auto;';
+  panel.style.cssText = 'position:fixed;bottom:16px;right:16px;width:220px;background:#0a0f1e;border:1px solid #1e3a8a;border-radius:10px;padding:12px;z-index:9000;font-family:sans-serif;transition:all 0.3s;max-height:calc(100vh - 80px);overflow-y:auto;';
 
   const hints = [
     "💡 Try changing the seismic zone and observe how column sizes change",
@@ -12631,19 +12711,19 @@ function buildLearningPanel() {
 
     panel.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">'
     + '<div style="font-size:11px;font-weight:700;color:#38bdf8">🎓 Learning Journey</div>'
-    + '<button id="_cert_panel_toggle" onclick="toggleCertPanel()" style="background:none;border:none;color:#475569;cursor:pointer;font-size:14px;padding:0">−</button>'
+    + '<button id="_cert_panel_toggle" onclick="toggleCertPanel()" style="background:none;border:none;color:#64748b;cursor:pointer;font-size:14px;padding:0">−</button>'
     + '</div>'
     + '<div id="_cert_panel_body">'
     + '<div style="margin-bottom:8px">'
     +   '<div style="display:flex;justify-content:space-between;margin-bottom:4px">'
-    +     '<span style="font-size:10px;color:#475569">Design Confidence</span>'
+    +     '<span style="font-size:10px;color:#64748b">Design Confidence</span>'
     +     '<span id="_cert_confidence" style="font-size:11px;font-weight:700;color:#38bdf8">0%</span>'
     +   '</div>'
     +   '<div style="height:6px;background:#1e293b;border-radius:3px;overflow:hidden">'
     +     '<div id="_cert_bar_fill" style="height:100%;width:0%;background:linear-gradient(90deg,#1d4ed8,#38bdf8);border-radius:3px;transition:width 0.5s"></div>'
     +   '</div>'
     + '</div>'
-    + '<div id="_cert_level_text" style="font-size:10px;color:#475569;margin-bottom:8px">Keep exploring...</div>'
+    + '<div id="_cert_level_text" style="font-size:10px;color:#64748b;margin-bottom:8px">Keep exploring...</div>'
     + '<div id="_cert_hint" style="font-size:10px;color:#64748b;line-height:1.5;padding:8px;background:#060f1f;border-radius:6px;margin-bottom:10px;min-height:44px">' + hints[0] + '</div>'
     + '<div style="display:flex;flex-direction:column;gap:5px">'
     +   '<button onclick="startGuidedDesign()" style="width:100%;padding:7px;background:rgba(249,115,22,0.15);border:1px solid #f97316;border-radius:6px;color:#f97316;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">🎯 Guided Design</button>'
@@ -12712,7 +12792,7 @@ function openCertHub() {
         ↓ Download Certificate
       </button>`;
     } else if(locked) {
-      btn = `<div style="text-align:center;font-size:10px;color:#334155;margin-top:8px;padding:6px;background:#060f1f;border-radius:5px">
+      btn = `<div style="text-align:center;font-size:10px;color:#64748b;margin-top:8px;padding:6px;background:#060f1f;border-radius:5px">
         ${!lessonsDoneForLevel[lv]?'<div>📖 Complete all lessons in Module '+lv+' first</div>':''}
         ${lv > level?'<div>🎯 Confidence needs '+[,'40%','70%','100%'][lv]+' (now '+_BT.confidence()+'%)</div>':''}
       </div>`;
@@ -12729,13 +12809,13 @@ function openCertHub() {
     }
 
     return `
-    <div style="background:#0d1526;border:1.5px solid ${locked?'#1e293b':color};border-radius:10px;padding:16px;flex:1;min-width:200px;opacity:${locked?0.5:1}">
+    <div style="background:#0a0f1e;border:1.5px solid ${locked?'#1e293b':color};border-radius:10px;padding:16px;flex:1;min-width:200px;opacity:${locked?0.5:1}">
       <div style="font-size:24px;text-align:center;margin-bottom:6px">${earned?medal:locked?'🔒':medal}</div>
       <div style="font-size:13px;font-weight:700;color:${color};text-align:center;margin-bottom:4px">${title}</div>
-      <div style="font-size:10px;color:#475569;text-align:center;margin-bottom:10px">
+      <div style="font-size:10px;color:#64748b;text-align:center;margin-bottom:10px">
         ${lv===1?'15 questions · 12 min · Free':lv===2?'20 questions · 20 min · Pro':'25 questions · 35 min · Pro'}
       </div>
-      <div style="font-size:10px;color:#475569;line-height:1.7">
+      <div style="font-size:10px;color:#64748b;line-height:1.7">
         ${lv===1?'Pass: 10/15 (67%)':lv===2?'Pass: 13/20 (65%)':'Pass: 18/25 (72%)'}
       </div>
       ${btn}
@@ -12743,13 +12823,13 @@ function openCertHub() {
   }).join('');
 
   hub.innerHTML = `
-  <div style="background:#0d1526;border:2px solid #1e40af;border-radius:14px;width:100%;max-width:700px;padding:28px">
+  <div style="background:#0a0f1e;border:2px solid #1e40af;border-radius:14px;width:100%;max-width:700px;padding:28px">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
       <div style="font-size:20px;font-weight:900;color:#38bdf8">🏆 My Certificates</div>
       <button onclick="document.getElementById('_cert_hub').remove()"
-        style="background:none;border:1px solid #334155;border-radius:6px;color:#64748b;cursor:pointer;padding:4px 10px;font-size:14px">✕</button>
+        style="background:none;border:1px solid #64748b;border-radius:6px;color:#64748b;cursor:pointer;padding:4px 10px;font-size:14px">✕</button>
     </div>
-    <div style="font-size:11px;color:#475569;margin-top:4px;margin-bottom:16px">
+    <div style="font-size:11px;color:#64748b;margin-top:4px;margin-bottom:16px">
       Design Confidence: <strong style="color:#38bdf8">${_BT.confidence()}%</strong> &nbsp;·&nbsp; ${_BT.count()}/10 behaviors
     </div>
 
@@ -12759,22 +12839,22 @@ function openCertHub() {
         <div style="display:flex;gap:10px">
           <span style="font-size:20px;flex-shrink:0">📖</span>
           <div><div style="font-size:12px;font-weight:700;color:#f1f5f9;margin-bottom:3px">Step 1 — Complete Lessons</div>
-          <div style="font-size:11px;color:#475569;line-height:1.6">Finish all lessons in the module and pass each lesson quiz. Foundation is free. Proficiency and Competent require Pro.</div></div>
+          <div style="font-size:11px;color:#64748b;line-height:1.6">Finish all lessons in the module and pass each lesson quiz. Foundation is free. Proficiency and Competent require Pro.</div></div>
         </div>
         <div style="display:flex;gap:10px">
           <span style="font-size:20px;flex-shrink:0">🎯</span>
           <div><div style="font-size:12px;font-weight:700;color:#f1f5f9;margin-bottom:3px">Step 2 — Use the Design Tool</div>
-          <div style="font-size:11px;color:#475569;line-height:1.6">Explore the app — change seismic zones, fix failures, try different designs. Design Confidence % grows as you explore.</div></div>
+          <div style="font-size:11px;color:#64748b;line-height:1.6">Explore the app — change seismic zones, fix failures, try different designs. Design Confidence % grows as you explore.</div></div>
         </div>
         <div style="display:flex;gap:10px">
           <span style="font-size:20px;flex-shrink:0">📝</span>
           <div><div style="font-size:12px;font-weight:700;color:#f1f5f9;margin-bottom:3px">Step 3 — Pass Certificate Quiz</div>
-          <div style="font-size:11px;color:#475569;line-height:1.6">Timed quiz, large question bank, anti-cheat enforced. Both requirements must be met before quiz unlocks.</div></div>
+          <div style="font-size:11px;color:#64748b;line-height:1.6">Timed quiz, large question bank, anti-cheat enforced. Both requirements must be met before quiz unlocks.</div></div>
         </div>
         <div style="display:flex;gap:10px">
           <span style="font-size:20px;flex-shrink:0">🏆</span>
           <div><div style="font-size:12px;font-weight:700;color:#f1f5f9;margin-bottom:3px">Step 4 — Download and Share</div>
-          <div style="font-size:11px;color:#475569;line-height:1.6">Unique certificate ID, verifiable by anyone. Share on LinkedIn to show your IS 456 competence.</div></div>
+          <div style="font-size:11px;color:#64748b;line-height:1.6">Unique certificate ID, verifiable by anyone. Share on LinkedIn to show your IS 456 competence.</div></div>
         </div>
       </div>
     </div>
@@ -12809,13 +12889,13 @@ function showCertificate(level) {
           ↓ Download PDF
         </button>
         <button onclick="document.getElementById('_cert_view').remove()"
-          style="padding:8px 14px;background:transparent;border:1px solid #334155;border-radius:6px;color:#64748b;cursor:pointer;font-size:12px;font-family:inherit">✕</button>
+          style="padding:8px 14px;background:transparent;border:1px solid #64748b;border-radius:6px;color:#64748b;cursor:pointer;font-size:12px;font-family:inherit">✕</button>
       </div>
     </div>
     <div style="background:white;border-radius:8px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.5)">
       ${svg}
     </div>
-    <div style="text-align:center;margin-top:12px;font-size:11px;color:#475569">
+    <div style="text-align:center;margin-top:12px;font-size:11px;color:#64748b">
       Certificate ID: <strong style="color:#38bdf8;font-family:monospace">${cert.id}</strong> ·
       Verify at: <strong style="color:#38bdf8">${window.location.origin}/verify.html?id=${cert.id}</strong>
     </div>
@@ -12883,14 +12963,14 @@ function renderQuiz() {
 
   screen.innerHTML = `
   <!-- Quiz Header -->
-  <div style="background:#0d1526;border-bottom:1px solid #1e293b;padding:10px 20px;display:flex;justify-content:space-between;align-items:center">
+  <div style="background:#0a0f1e;border-bottom:1px solid #1e293b;padding:10px 20px;display:flex;justify-content:space-between;align-items:center">
     <div style="display:flex;align-items:center;gap:12px">
       <div style="font-size:13px;font-weight:700;color:${color}">${getMedalEmoji(level)} Level ${level} Quiz</div>
-      <div style="font-size:11px;color:#475569">Question ${ci+1} of ${qs.length}</div>
+      <div style="font-size:11px;color:#64748b">Question ${ci+1} of ${qs.length}</div>
     </div>
     <div style="display:flex;align-items:center;gap:16px">
       <div id="_quiz_timer" style="font-size:18px;font-weight:900;color:${timeColor};font-family:monospace">${mins}:${secs}</div>
-      <div style="font-size:10px;color:#475569">${_QZ.tabWarnings > 0 ? `⚠ ${_QZ.tabWarnings} warning(s)`:''}</div>
+      <div style="font-size:10px;color:#64748b">${_QZ.tabWarnings > 0 ? `⚠ ${_QZ.tabWarnings} warning(s)`:''}</div>
     </div>
   </div>
 
@@ -12901,7 +12981,7 @@ function renderQuiz() {
 
   <!-- Topic -->
   <div style="padding:8px 24px;background:#060f1f;border-bottom:1px solid #0f1a2e">
-    <span style="font-size:10px;color:#334155;font-weight:700;text-transform:uppercase;letter-spacing:2px">Topic: ${q.topic}</span>
+    <span style="font-size:10px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:2px">Topic: ${q.topic}</span>
   </div>
 
   <!-- Question -->
@@ -12920,7 +13000,7 @@ function renderQuiz() {
           color:${selected?color:'#94a3b8'};
           transition:all 0.15s;">
           <span style="display:inline-block;width:22px;height:22px;border-radius:50%;
-            border:2px solid ${selected?color:'#334155'};margin-right:12px;vertical-align:middle;
+            border:2px solid ${selected?color:'#64748b'};margin-right:12px;vertical-align:middle;
             background:${selected?color:'transparent'};transition:all 0.15s;"></span>
           ${String.fromCharCode(65+i)}. ${opt}
         </button>`;
@@ -12929,15 +13009,15 @@ function renderQuiz() {
   </div>
 
   <!-- Navigation -->
-  <div style="padding:16px 40px;background:#0d1526;border-top:1px solid #1e293b;display:flex;justify-content:space-between;align-items:center">
-    <button onclick="quizNav(-1)" ${ci===0?'disabled':''} style="padding:9px 20px;border-radius:7px;border:1px solid #334155;background:transparent;color:${ci===0?'#1e293b':'#94a3b8'};cursor:${ci===0?'default':'pointer'};font-size:12px;font-family:inherit">← Previous</button>
+  <div style="padding:16px 40px;background:#0a0f1e;border-top:1px solid #1e293b;display:flex;justify-content:space-between;align-items:center">
+    <button onclick="quizNav(-1)" ${ci===0?'disabled':''} style="padding:9px 20px;border-radius:7px;border:1px solid #64748b;background:transparent;color:${ci===0?'#1e293b':'#94a3b8'};cursor:${ci===0?'default':'pointer'};font-size:12px;font-family:inherit">← Previous</button>
 
     <div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:center;max-width:400px">
       ${qs.map((_,i)=>`<div onclick="jumpToQ(${i})"
         style="width:22px;height:22px;border-radius:4px;cursor:pointer;font-size:9px;display:flex;align-items:center;justify-content:center;font-weight:700;
         background:${i===ci?color:_QZ.answers[i]>=0?'rgba(52,211,153,0.2)':'#0f172a'};
         border:1px solid ${i===ci?color:_QZ.answers[i]>=0?'#34d399':'#1e293b'};
-        color:${i===ci?'white':_QZ.answers[i]>=0?'#34d399':'#334155'}">${i+1}</div>`).join('')}
+        color:${i===ci?'white':_QZ.answers[i]>=0?'#34d399':'#64748b'}">${i+1}</div>`).join('')}
     </div>
 
     ${ci < qs.length-1
@@ -13082,7 +13162,7 @@ function showQuizResult(score, total, pass, level, attempts) {
   const cooldownHrs = pass ? 0 : getCooldownHours(level, attempts);
 
   result.innerHTML = `
-  <div style="background:#0d1526;border:2px solid ${pass?'#15803d':'#991b1b'};border-radius:14px;padding:32px;max-width:480px;width:100%;text-align:center">
+  <div style="background:#0a0f1e;border:2px solid ${pass?'#15803d':'#991b1b'};border-radius:14px;padding:32px;max-width:480px;width:100%;text-align:center">
     <div style="font-size:48px;margin-bottom:12px">${pass?'🎉':'😔'}</div>
     <div style="font-size:22px;font-weight:900;color:${pass?'#34d399':'#f87171'};margin-bottom:6px">
       ${pass?'Quiz Passed!':'Quiz Not Passed'}
@@ -13097,12 +13177,12 @@ function showQuizResult(score, total, pass, level, attempts) {
     </div>`}
     ${certSection}
     ${!pass?`
-    <div style="margin-top:14px;font-size:11px;color:#475569;line-height:1.6">
+    <div style="margin-top:14px;font-size:11px;color:#64748b;line-height:1.6">
       💡 Review the report tabs carefully, especially the WHY? buttons.<br>
       The questions are based on what the app shows and explains.
     </div>`:''}
     <button onclick="document.getElementById('_quiz_result').remove();openCertHub()"
-      style="width:100%;margin-top:16px;padding:10px;border:1px solid #334155;border-radius:7px;background:transparent;color:#94a3b8;cursor:pointer;font-size:12px;font-family:inherit">
+      style="width:100%;margin-top:16px;padding:10px;border:1px solid #64748b;border-radius:7px;background:transparent;color:#94a3b8;cursor:pointer;font-size:12px;font-family:inherit">
       Back to Certificate Hub
     </button>
   </div>`;
@@ -13556,8 +13636,8 @@ const VISUAL_CHAPTERS = [
     <path d="M210 16 L210 4" stroke="#f87171" stroke-width="2" marker-end="url(#arrdn)"/>
     <text x="210" y="2" text-anchor="middle" fill="#f87171" font-size="9" font-family="sans-serif">LOAD ↓</text>
     <defs><marker id="arrdn" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto"><path d="M0,0 L0,6 L6,3 Z" fill="#f87171"/></marker></defs>
-    <text x="395" y="135" text-anchor="end" fill="#334155" font-size="8" font-family="sans-serif">LOAD</text>
-    <text x="395" y="145" text-anchor="end" fill="#334155" font-size="8" font-family="sans-serif">PATH ↓</text>
+    <text x="395" y="135" text-anchor="end" fill="#64748b" font-size="8" font-family="sans-serif">LOAD</text>
+    <text x="395" y="145" text-anchor="end" fill="#64748b" font-size="8" font-family="sans-serif">PATH ↓</text>
   </svg>`,
   sections:[
     {
@@ -13685,12 +13765,12 @@ const VISUAL_CHAPTERS = [
     <line x1="225" y1="70" x2="365" y2="70" stroke="#38bdf8" stroke-width="2.5"/>
     <line x1="225" y1="85" x2="365" y2="85" stroke="#38bdf8" stroke-width="2.5"/>
     <text x="295" y="51" text-anchor="middle" fill="#38bdf8" font-size="8" font-family="sans-serif">MAIN bars (short span)</text>
-    <line x1="265" y1="27" x2="265" y2="118" stroke="#475569" stroke-width="0.8" stroke-dasharray="3"/>
-    <line x1="305" y1="27" x2="305" y2="118" stroke="#475569" stroke-width="0.8" stroke-dasharray="3"/>
-    <line x1="345" y1="27" x2="345" y2="118" stroke="#475569" stroke-width="0.8" stroke-dasharray="3"/>
+    <line x1="265" y1="27" x2="265" y2="118" stroke="#64748b" stroke-width="0.8" stroke-dasharray="3"/>
+    <line x1="305" y1="27" x2="305" y2="118" stroke="#64748b" stroke-width="0.8" stroke-dasharray="3"/>
+    <line x1="345" y1="27" x2="345" y2="118" stroke="#64748b" stroke-width="0.8" stroke-dasharray="3"/>
     <text x="295" y="132" text-anchor="middle" fill="#94a3b8" font-size="8" font-family="sans-serif">3m × 7m | ratio 2.33</text>
     <text x="295" y="142" text-anchor="middle" fill="#f87171" font-size="8" font-family="sans-serif">Bends SHORT way only</text>
-    <text x="200" y="175" text-anchor="middle" fill="#475569" font-size="8" font-family="sans-serif">--- Distribution bars in long span (0.12% of bd)</text>
+    <text x="200" y="175" text-anchor="middle" fill="#64748b" font-size="8" font-family="sans-serif">--- Distribution bars in long span (0.12% of bd)</text>
     <text x="200" y="190" text-anchor="middle" fill="#38bdf8" font-size="8" font-family="sans-serif">━ Main bars in short span (designed for moment)</text>
   </svg>`,
   sections:[
@@ -13955,8 +14035,8 @@ const VISUAL_CHAPTERS = [
     <text x="75" y="66" text-anchor="middle" fill="#fbbf24" font-size="8" font-family="sans-serif">Zone III: 0.16 (Mod)</text>
     <text x="75" y="80" text-anchor="middle" fill="#f97316" font-size="8" font-family="sans-serif">Zone IV: 0.24 (High)</text>
     <text x="75" y="94" text-anchor="middle" fill="#f87171" font-size="8" font-family="sans-serif" font-weight="700">Zone V: 0.36 (Very High)</text>
-    <text x="75" y="112" text-anchor="middle" fill="#475569" font-size="7" font-family="sans-serif">Delhi=IV, Mumbai=III</text>
-    <text x="75" y="122" text-anchor="middle" fill="#475569" font-size="7" font-family="sans-serif">Guwahati=V, Chennai=II</text>
+    <text x="75" y="112" text-anchor="middle" fill="#64748b" font-size="7" font-family="sans-serif">Delhi=IV, Mumbai=III</text>
+    <text x="75" y="122" text-anchor="middle" fill="#64748b" font-size="7" font-family="sans-serif">Guwahati=V, Chennai=II</text>
     <defs><marker id="arhs" markerWidth="5" markerHeight="5" refX="2.5" refY="2.5" orient="auto"><path d="M0,0 L5,2.5 L0,5 Z" fill="#f87171"/></marker></defs>
   </svg>`,
   sections:[
@@ -14001,7 +14081,7 @@ const VISUAL_CHAPTERS = [
   visual:`<svg viewBox="0 0 400 190" style="width:100%;max-width:400px;display:block;margin:12px auto">
     <text x="200" y="14" text-anchor="middle" fill="#34d399" font-size="10" font-family="sans-serif" font-weight="700">Safety Tab — what it tells you at a glance</text>
     <rect x="10" y="22" width="380" height="155" rx="6" fill="#060f1f" stroke="#1e293b" stroke-width="1"/>
-    <rect x="10" y="22" width="380" height="22" rx="6" fill="#0d1526"/>
+    <rect x="10" y="22" width="380" height="22" rx="6" fill="#0a0f1e"/>
     <text x="60" y="37" fill="#38bdf8" font-size="9" font-family="sans-serif" font-weight="700">Member</text>
     <text x="170" y="37" fill="#38bdf8" font-size="9" font-family="sans-serif" font-weight="700">Check</text>
     <text x="260" y="37" fill="#38bdf8" font-size="9" font-family="sans-serif" font-weight="700">Result</text>
@@ -14081,8 +14161,8 @@ function openStudentGuide(chapterId) {
       + 'border-left:3px solid '+(isActive?c.color:'transparent')+'">'
       + '<span style="font-size:14px">'+c.icon+'</span>'
       + '<div>'
-      +   '<div style="font-size:11px;font-weight:700;color:'+(isActive?c.color:'#475569')+'">'+c.title+'</div>'
-      +   '<div style="font-size:9px;color:#334155;margin-top:1px">'+c.sections.length+' topics</div>'
+      +   '<div style="font-size:11px;font-weight:700;color:'+(isActive?c.color:'#64748b')+'">'+c.title+'</div>'
+      +   '<div style="font-size:9px;color:#64748b;margin-top:1px">'+c.sections.length+' topics</div>'
       + '</div>'
       + '</div>';
   }).join('');
@@ -14108,18 +14188,18 @@ function openStudentGuide(chapterId) {
       + '</div>';
   }).join('');
 
-  screen.innerHTML = '<div style="width:220px;background:#0d1526;border-right:1px solid #1e293b;padding:14px;overflow-y:auto;flex-shrink:0;display:flex;flex-direction:column">'
+  screen.innerHTML = '<div style="width:220px;background:#0a0f1e;border-right:1px solid #1e293b;padding:14px;overflow-y:auto;flex-shrink:0;display:flex;flex-direction:column">'
     + '<div style="font-size:13px;font-weight:800;color:#38bdf8;margin-bottom:2px">📚 Student Guide</div>'
-    + '<div style="font-size:10px;color:#334155;margin-bottom:14px">IS 456 Complete Reference</div>'
+    + '<div style="font-size:10px;color:#64748b;margin-bottom:14px">IS 456 Complete Reference</div>'
     + sidebarHTML
     + '</div>'
     + '<div style="flex:1;overflow-y:auto;padding:28px 36px;background:#0a0f1e">'
     +   '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px">'
     +     '<div>'
     +       '<div style="font-size:22px;font-weight:900;color:'+activeChapter.color+'">'+activeChapter.icon+' '+activeChapter.title+'</div>'
-    +       '<div style="font-size:12px;color:#334155;margin-top:4px">'+activeChapter.subtitle+'</div>'
+    +       '<div style="font-size:12px;color:#64748b;margin-top:4px">'+activeChapter.subtitle+'</div>'
     +     '</div>'
-    +     '<button onclick="document.getElementById(\'_guide_screen\').remove()" style="padding:6px 14px;background:transparent;border:1px solid #334155;border-radius:6px;color:#64748b;cursor:pointer;font-size:12px;font-family:inherit;flex-shrink:0;margin-left:16px">✕ Close</button>'
+    +     '<button onclick="document.getElementById(\'_guide_screen\').remove()" style="padding:6px 14px;background:transparent;border:1px solid #64748b;border-radius:6px;color:#64748b;cursor:pointer;font-size:12px;font-family:inherit;flex-shrink:0;margin-left:16px">✕ Close</button>'
     +   '</div>'
     + activeChapter.visual
     + '<div style="margin-top:20px">'+sectionsHTML+'</div>'
@@ -14158,23 +14238,23 @@ function showProModulePreview(modId) {
 
   var lessonList = mod.lessons.map(function(l,i) {
     return '<div style="padding:8px 12px;border-bottom:1px solid #1e293b;font-size:12px;color:#64748b;display:flex;align-items:center;gap:10px">'
-      + '<span style="width:20px;height:20px;border-radius:50%;background:#1e293b;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#475569;flex-shrink:0">'+(i+1)+'</span>'
+      + '<span style="width:20px;height:20px;border-radius:50%;background:#1e293b;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#64748b;flex-shrink:0">'+(i+1)+'</span>'
       + '<span>'+l.title+'</span>'
-      + '<span style="margin-left:auto;font-size:10px;color:#334155">'+l.duration+'</span>'
+      + '<span style="margin-left:auto;font-size:10px;color:#64748b">'+l.duration+'</span>'
       + '</div>';
   }).join('');
 
-  popup.innerHTML = '<div style="background:#0d1526;border:2px solid #b8860b;border-radius:14px;padding:28px;max-width:480px;width:100%">'
+  popup.innerHTML = '<div style="background:#0a0f1e;border:2px solid #b8860b;border-radius:14px;padding:28px;max-width:480px;width:100%">'
     + '<div style="display:inline-flex;align-items:center;gap:6px;padding:3px 12px;background:rgba(184,134,11,0.15);border:1px solid #b8860b;border-radius:20px;font-size:10px;font-weight:700;color:#b8860b;margin-bottom:14px">&#9733; PRO FEATURE</div>'
     + '<div style="font-size:18px;font-weight:800;color:#f1f5f9;margin-bottom:4px">'+mod.icon+' '+mod.title+'</div>'
-    + '<div style="font-size:12px;color:#475569;margin-bottom:16px">'+mod.subtitle+'</div>'
+    + '<div style="font-size:12px;color:#64748b;margin-bottom:16px">'+mod.subtitle+'</div>'
     + '<div style="background:#060f1f;border:1px solid #1e293b;border-radius:8px;overflow:hidden;margin-bottom:18px">'
-    + '<div style="padding:10px 12px;background:#0d1526;font-size:10px;font-weight:700;color:#38bdf8;letter-spacing:1px">'+mod.lessons.length+' LESSONS INSIDE</div>'
+    + '<div style="padding:10px 12px;background:#0a0f1e;font-size:10px;font-weight:700;color:#38bdf8;letter-spacing:1px">'+mod.lessons.length+' LESSONS INSIDE</div>'
     + lessonList
     + '</div>'
     + '<div style="font-size:12px;color:#64748b;margin-bottom:16px;line-height:1.7">Upgrade to Pro to access this module, take the quiz, and earn the <strong style="color:#b8860b">'+mod.icon+' '+mod.title.split(' ')[0]+'</strong> certificate.</div>'
     + '<button id="_pro_mod_upgrade" style="width:100%;padding:12px;background:linear-gradient(135deg,#b8860b,#d4a843);border:none;border-radius:8px;color:#1a1208;font-size:14px;font-weight:800;cursor:pointer;font-family:inherit;margin-bottom:8px">&#9889; Upgrade to Pro</button>'
-    + '<button id="_pro_mod_close" style="width:100%;padding:8px;background:transparent;border:1px solid #334155;border-radius:7px;color:#64748b;font-size:12px;cursor:pointer;font-family:inherit">Maybe later</button>'
+    + '<button id="_pro_mod_close" style="width:100%;padding:8px;background:transparent;border:1px solid #64748b;border-radius:7px;color:#64748b;font-size:12px;cursor:pointer;font-family:inherit">Maybe later</button>'
     + '</div>';
 
   document.body.appendChild(popup);
@@ -14214,12 +14294,12 @@ function openModuleDetail(modId) {
     var statusBg    = quizOk ? 'rgba(52,211,153,0.1)' : done ? 'rgba(56,189,248,0.1)' : 'rgba(249,115,22,0.1)';
     var borderColor = quizOk ? '#34d399' : done ? '#38bdf8' : '#1e293b';
 
-    return '<div style="background:#0d1526;border:1.5px solid '+borderColor+';border-radius:10px;padding:18px;margin-bottom:12px;display:flex;align-items:center;gap:16px">'
-      + '<div style="width:36px;height:36px;border-radius:50%;background:'+(quizOk?'rgba(52,211,153,0.15)':'#060f1f')+';border:2px solid '+(quizOk?'#34d399':'#1e293b')+';display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:'+(quizOk?'#34d399':'#475569')+';flex-shrink:0">'
+    return '<div style="background:#0a0f1e;border:1.5px solid '+borderColor+';border-radius:10px;padding:18px;margin-bottom:12px;display:flex;align-items:center;gap:16px">'
+      + '<div style="width:36px;height:36px;border-radius:50%;background:'+(quizOk?'rgba(52,211,153,0.15)':'#060f1f')+';border:2px solid '+(quizOk?'#34d399':'#1e293b')+';display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:'+(quizOk?'#34d399':'#64748b')+';flex-shrink:0">'
       + (quizOk?'✓':(i+1))+'</div>'
       + '<div style="flex:1">'
       +   '<div style="font-size:13px;font-weight:700;color:#f1f5f9;margin-bottom:3px">'+l.title+'</div>'
-      +   '<div style="font-size:11px;color:#475569">'+l.duration+' · Theory + Practice + Quiz</div>'
+      +   '<div style="font-size:11px;color:#64748b">'+l.duration+' · Theory + Practice + Quiz</div>'
       + '</div>'
       + '<button data-lid="'+l.id+'" data-mid="'+mod.id+'" onclick="openLessonFromCard(this)"'
       +   ' style="padding:7px 16px;background:'+statusBg+';border:1px solid '+statusColor+';border-radius:6px;color:'+statusColor+';font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap">'
@@ -14232,7 +14312,7 @@ function openModuleDetail(modId) {
     + '<span style="font-size:16px">'+(allLessonsDone?'✅':'⬜')+'</span>'
     + '<div style="flex:1">'
     +   '<div style="font-size:12px;font-weight:600;color:'+(allLessonsDone?'#34d399':'#f1f5f9')+'">Complete all '+mod.lessons.length+' lesson quizzes</div>'
-    +   '<div style="font-size:11px;color:#475569;margin-top:2px">'+lessonsDone+' / '+mod.lessons.length+' done'+(allLessonsDone?' — ✓ Complete':' — finish remaining lessons')+'</div>'
+    +   '<div style="font-size:11px;color:#64748b;margin-top:2px">'+lessonsDone+' / '+mod.lessons.length+' done'+(allLessonsDone?' — ✓ Complete':' — finish remaining lessons')+'</div>'
     + '</div>'
     + '</div>';
 
@@ -14240,7 +14320,7 @@ function openModuleDetail(modId) {
     + '<span style="font-size:16px">'+(behaviorOk?'✅':'⬜')+'</span>'
     + '<div style="flex:1">'
     +   '<div style="font-size:12px;font-weight:600;color:'+(behaviorOk?'#34d399':'#f1f5f9')+'">Reach Design Confidence '+behaviorsNeeded*10+'%</div>'
-    +   '<div style="font-size:11px;color:#475569;margin-top:2px">Currently '+_BT.confidence()+'%'+(behaviorOk?' — ✓ Achieved':' — keep exploring the design tool')+'</div>'
+    +   '<div style="font-size:11px;color:#64748b;margin-top:2px">Currently '+_BT.confidence()+'%'+(behaviorOk?' — ✓ Achieved':' — keep exploring the design tool')+'</div>'
     +   '<div style="height:4px;background:#1e293b;border-radius:2px;margin-top:6px;overflow:hidden">'
     +     '<div style="height:100%;width:'+Math.min(_BT.confidence(),100)+'%;background:'+(behaviorOk?'#34d399':'#38bdf8')+';border-radius:2px;transition:width 0.5s"></div>'
     +   '</div>'
@@ -14255,7 +14335,7 @@ function openModuleDetail(modId) {
     +   '<div style="font-size:30px">'+(certLevel===1?'🥉':certLevel===2?'🥈':'🥇')+'</div>'
     +   '<div>'
     +     '<div style="font-size:15px;font-weight:800;color:'+(certUnlocked?'#34d399':'#f1f5f9')+'">Certificate Quiz'+(certUnlocked?' — Unlocked! 🎉':'')+'</div>'
-    +     '<div style="font-size:11px;color:#475569;margin-top:2px">'+(certUnlocked?'Both requirements met — you can take the quiz now!':'Complete both requirements below to unlock')+'</div>'
+    +     '<div style="font-size:11px;color:#64748b;margin-top:2px">'+(certUnlocked?'Both requirements met — you can take the quiz now!':'Complete both requirements below to unlock')+'</div>'
     +   '</div>'
     + '</div>'
     + '<div style="background:#060f1f;border-radius:8px;padding:12px 16px;margin-bottom:14px">'
@@ -14263,20 +14343,20 @@ function openModuleDetail(modId) {
     + '</div>'
     + (certUnlocked
       ? '<button onclick="openCertHub()" style="width:100%;padding:12px;background:linear-gradient(135deg,#065f46,#059669);border:none;border-radius:8px;color:white;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">🏆 Take Certificate Quiz →</button>'
-      : '<div style="font-size:11px;color:#334155;text-align:center;padding:6px">Complete both requirements above to unlock the quiz</div>'
+      : '<div style="font-size:11px;color:#64748b;text-align:center;padding:6px">Complete both requirements above to unlock the quiz</div>'
     )
     + '</div>';
 
   screen.innerHTML = '<div style="max-width:720px;margin:0 auto;padding:28px 20px">'
     + '<div style="display:flex;align-items:center;gap:12px;margin-bottom:24px">'
-    +   '<button onclick="document.getElementById(\'_module_detail\').remove();openLearningHub()" style="padding:6px 14px;background:transparent;border:1px solid #334155;border-radius:6px;color:#64748b;font-size:12px;cursor:pointer;font-family:inherit">← All Modules</button>'
+    +   '<button onclick="document.getElementById(\'_module_detail\').remove();openLearningHub()" style="padding:6px 14px;background:transparent;border:1px solid #64748b;border-radius:6px;color:#64748b;font-size:12px;cursor:pointer;font-family:inherit">← All Modules</button>'
     +   '<div style="flex:1">'
     +     '<div style="font-size:22px;font-weight:900;color:#f1f5f9">'+mod.icon+' '+mod.title+'</div>'
-    +     '<div style="font-size:12px;color:#475569;margin-top:2px">'+mod.subtitle+'</div>'
+    +     '<div style="font-size:12px;color:#64748b;margin-top:2px">'+mod.subtitle+'</div>'
     +   '</div>'
     +   '<div style="text-align:right">'
     +     '<div style="font-size:22px;font-weight:900;color:'+(mod.color)+'">'+pct+'%</div>'
-    +     '<div style="font-size:10px;color:#475569">complete</div>'
+    +     '<div style="font-size:10px;color:#64748b">complete</div>'
     +   '</div>'
     + '</div>'
     // Progress bar
@@ -14313,26 +14393,26 @@ function openLearningHub() {
     var done   = mod.lessons.filter(function(l){ return _EDU.isQuizPassed(l.id); }).length;
 
     return '<div data-modid="'+mod.id+'" data-locked="'+(locked?'1':'0')+'" onclick="handleModuleClick(this)"'
-      + ' style="background:#0d1526;border:1.5px solid '+(locked?'#1e293b':mod.color+'55')+';border-radius:12px;padding:22px;cursor:pointer;position:relative;overflow:hidden">'
+      + ' style="background:#0a0f1e;border:1.5px solid '+(locked?'#1e293b':mod.color+'55')+';border-radius:12px;padding:22px;cursor:pointer;position:relative;overflow:hidden">'
       + (locked?'<div style="position:absolute;top:12px;right:12px;background:rgba(184,134,11,0.9);color:#1a1208;font-size:9px;font-weight:700;padding:2px 8px;border-radius:10px">PRO</div>':'')
       + '<div style="font-size:28px;margin-bottom:8px">'+mod.icon+'</div>'
-      + '<div style="font-size:16px;font-weight:800;color:'+(locked?'#475569':mod.color)+';margin-bottom:4px">'+mod.title+'</div>'
-      + '<div style="font-size:11px;color:#334155;margin-bottom:14px">'+mod.subtitle+'</div>'
+      + '<div style="font-size:16px;font-weight:800;color:'+(locked?'#64748b':mod.color)+';margin-bottom:4px">'+mod.title+'</div>'
+      + '<div style="font-size:11px;color:#64748b;margin-bottom:14px">'+mod.subtitle+'</div>'
       // Progress
       + '<div style="display:flex;justify-content:space-between;margin-bottom:6px">'
-      +   '<span style="font-size:10px;color:#475569">'+done+' / '+mod.lessons.length+' lessons done</span>'
+      +   '<span style="font-size:10px;color:#64748b">'+done+' / '+mod.lessons.length+' lessons done</span>'
       +   '<span style="font-size:10px;color:'+mod.color+';font-weight:700">'+pct+'%</span>'
       + '</div>'
       + '<div style="height:4px;background:#1e293b;border-radius:2px;overflow:hidden;margin-bottom:14px">'
       +   '<div style="height:100%;width:'+pct+'%;background:'+mod.color+';border-radius:2px"></div>'
       + '</div>'
       // Lesson list preview
-      + '<div style="font-size:10px;color:#334155">'
+      + '<div style="font-size:10px;color:#64748b">'
       + mod.lessons.slice(0,3).map(function(l,i){
           var ok = _EDU.isQuizPassed(l.id);
           return '<div style="padding:4px 0;border-bottom:1px solid #0f172a;display:flex;gap:8px;align-items:center">'
-            + '<span style="color:'+(ok?'#34d399':'#334155')+'">'+(ok?'✓':'○')+'</span>'
-            + '<span style="color:'+(ok?'#64748b':'#334155')+'">'+(i+1)+'. '+l.title.split('—')[0].trim()+'</span>'
+            + '<span style="color:'+(ok?'#34d399':'#64748b')+'">'+(ok?'✓':'○')+'</span>'
+            + '<span style="color:'+(ok?'#64748b':'#64748b')+'">'+(i+1)+'. '+l.title.split('—')[0].trim()+'</span>'
             + '</div>';
         }).join('')
       + (mod.lessons.length>3?'<div style="padding:4px 0;color:#1e293b">+'+(mod.lessons.length-3)+' more lessons</div>':'')
@@ -14346,8 +14426,8 @@ function openLearningHub() {
   screen.innerHTML = '<div style="max-width:860px;margin:0 auto;padding:28px 20px">'
     + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px">'
     +   '<div><div style="font-size:24px;font-weight:900;color:#38bdf8">📖 Learning Modules</div>'
-    +   '<div style="font-size:12px;color:#475569;margin-top:3px">Complete all lessons in a module to unlock its certificate quiz</div></div>'
-    +   '<button onclick="document.getElementById(\'_module_hub\').remove()" style="padding:7px 16px;background:transparent;border:1px solid #334155;border-radius:6px;color:#64748b;font-size:12px;cursor:pointer;font-family:inherit">✕ Close</button>'
+    +   '<div style="font-size:12px;color:#64748b;margin-top:3px">Complete all lessons in a module to unlock its certificate quiz</div></div>'
+    +   '<button onclick="document.getElementById(\'_module_hub\').remove()" style="padding:7px 16px;background:transparent;border:1px solid #64748b;border-radius:6px;color:#64748b;font-size:12px;cursor:pointer;font-family:inherit">✕ Close</button>'
     + '</div>'
     + '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px">'
     + cards + '</div></div>';
@@ -14382,8 +14462,8 @@ function openLesson(mod, lesson) {
       + ' style="padding:9px 12px;border-radius:6px;cursor:pointer;margin:2px 0;display:flex;align-items:center;gap:8px;'
       + 'background:'+(active?'rgba(56,189,248,0.1)':'transparent')+';'
       + 'border-left:3px solid '+(active?'#38bdf8':passed?'#34d399':'transparent')+'">'
-      + '<span style="font-size:11px;color:'+(active?'#38bdf8':passed?'#34d399':'#334155')+'">'+(passed?'✓':(i+1))+'</span>'
-      + '<span style="font-size:11px;color:'+(active?'#38bdf8':passed?'#64748b':'#334155')+'">'+(i+1)+'. '+l.title.split('—')[0].trim()+'</span>'
+      + '<span style="font-size:11px;color:'+(active?'#38bdf8':passed?'#34d399':'#64748b')+'">'+(passed?'✓':(i+1))+'</span>'
+      + '<span style="font-size:11px;color:'+(active?'#38bdf8':passed?'#64748b':'#64748b')+'">'+(i+1)+'. '+l.title.split('—')[0].trim()+'</span>'
       + '</div>';
   }).join('');
 
@@ -14393,11 +14473,11 @@ function openLesson(mod, lesson) {
     quizHTML = '<div style="background:rgba(52,211,153,0.08);border:1.5px solid #34d399;border-radius:10px;padding:18px;text-align:center">'
       + '<div style="font-size:20px;margin-bottom:8px">🎉</div>'
       + '<div style="font-size:14px;font-weight:700;color:#34d399;margin-bottom:4px">Lesson Complete!</div>'
-      + '<div style="font-size:11px;color:#475569">You passed the quiz for this lesson.</div>'
+      + '<div style="font-size:11px;color:#64748b">You passed the quiz for this lesson.</div>'
       + '</div>';
   } else if(!isDone) {
-    quizHTML = '<div style="background:#0d1526;border:1px solid #1e293b;border-radius:10px;padding:18px;text-align:center">'
-      + '<div style="font-size:13px;color:#475569;margin-bottom:12px">Read the theory and complete the practice task, then mark it done to unlock the quiz.</div>'
+    quizHTML = '<div style="background:#0a0f1e;border:1px solid #1e293b;border-radius:10px;padding:18px;text-align:center">'
+      + '<div style="font-size:13px;color:#64748b;margin-bottom:12px">Read the theory and complete the practice task, then mark it done to unlock the quiz.</div>'
       + '<button data-lid="'+lesson.id+'" data-mid="'+mod.id+'" onclick="doneAndShowQuiz(this)"'
       + ' style="padding:9px 20px;background:rgba(249,115,22,0.15);border:1px solid #f97316;border-radius:7px;color:#f97316;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">'
       + '✓ I have done the practice — show quiz</button>'
@@ -14415,7 +14495,7 @@ function openLesson(mod, lesson) {
         + opts+'</div>';
     }).join('');
 
-    quizHTML = '<div style="background:#0d1526;border:1.5px solid #38bdf8;border-radius:10px;padding:20px">'
+    quizHTML = '<div style="background:#0a0f1e;border:1.5px solid #38bdf8;border-radius:10px;padding:20px">'
       + '<div style="font-size:11px;font-weight:700;color:#38bdf8;letter-spacing:2px;margin-bottom:16px">LESSON QUIZ — '+lesson.quiz.length+' QUESTIONS</div>'
       + qItems
       + '<button data-lid="'+lesson.id+'" data-mid="'+mod.id+'" onclick="submitLessonQuiz(this)"'
@@ -14424,21 +14504,21 @@ function openLesson(mod, lesson) {
       + '</div>';
   }
 
-  screen.innerHTML = '<div style="width:220px;background:#0d1526;border-right:1px solid #1e293b;padding:16px;overflow-y:auto;flex-shrink:0;display:flex;flex-direction:column">'
+  screen.innerHTML = '<div style="width:220px;background:#0a0f1e;border-right:1px solid #1e293b;padding:16px;overflow-y:auto;flex-shrink:0;display:flex;flex-direction:column">'
     + '<div style="font-size:11px;color:'+mod.color+';font-weight:700;margin-bottom:2px">'+mod.icon+' '+mod.title+'</div>'
-    + '<div style="font-size:10px;color:#334155;margin-bottom:14px">'+mod.lessons.length+' lessons</div>'
+    + '<div style="font-size:10px;color:#64748b;margin-bottom:14px">'+mod.lessons.length+' lessons</div>'
     + sideNav
     + '<div style="margin-top:auto;padding-top:16px;border-top:1px solid #1e293b">'
     +   '<button data-mid="'+mod.id+'" onclick="backToDetail(this)"'
-    +     ' style="width:100%;padding:7px;background:transparent;border:1px solid #334155;border-radius:6px;color:#64748b;font-size:11px;cursor:pointer;font-family:inherit">'
+    +     ' style="width:100%;padding:7px;background:transparent;border:1px solid #64748b;border-radius:6px;color:#64748b;font-size:11px;cursor:pointer;font-family:inherit">'
     +     '← Back to Module</button>'
     + '</div>'
     + '</div>'
     + '<div style="flex:1;overflow-y:auto;padding:28px 36px;background:#0a0f1e">'
-    +   '<div style="font-size:10px;color:#475569;margin-bottom:6px">Lesson '+(lessonIdx+1)+' of '+mod.lessons.length+' · '+lesson.duration+'</div>'
+    +   '<div style="font-size:10px;color:#64748b;margin-bottom:6px">Lesson '+(lessonIdx+1)+' of '+mod.lessons.length+' · '+lesson.duration+'</div>'
     +   '<div style="font-size:22px;font-weight:800;color:#f1f5f9;margin-bottom:22px">'+lesson.title+'</div>'
     // Theory
-    +   '<div style="background:#0d1526;border:1px solid #1e293b;border-radius:10px;padding:22px;margin-bottom:18px">'
+    +   '<div style="background:#0a0f1e;border:1px solid #1e293b;border-radius:10px;padding:22px;margin-bottom:18px">'
     +     '<div style="font-size:10px;font-weight:700;color:#38bdf8;letter-spacing:2px;margin-bottom:14px">THEORY</div>'
     +     '<div style="font-size:13px;color:#cbd5e1;line-height:1.9">'+lesson.theory+'</div>'
     +   '</div>'
@@ -14848,31 +14928,31 @@ function showGuideStep() {
     + '</div>'
     // Step dots row
     + '<div style="display:flex;align-items:center;gap:4px;padding:6px 16px;background:#060f1f;border-top:1px solid #1e293b;overflow-x:auto">'
-    + '<span style="font-size:12px;color:#475569;font-weight:600;white-space:nowrap;margin-right:8px">Step '+(_guideStep+1)+' of '+total+'</span>'
+    + '<span style="font-size:12px;color:#64748b;font-weight:600;white-space:nowrap;margin-right:8px">Step '+(_guideStep+1)+' of '+total+'</span>'
     + dots
-    + '<span style="margin-left:auto;font-size:12px;color:#475569;font-weight:600;white-space:nowrap">'+pct+'% complete</span>'
+    + '<span style="margin-left:auto;font-size:12px;color:#64748b;font-weight:600;white-space:nowrap">'+pct+'% complete</span>'
     + '</div>'
     // Main content area
-    + '<div style="display:flex;background:#0d1526;border-top:2px solid #1e40af;max-height:300px">'
+    + '<div style="display:flex;background:#0a0f1e;border-top:2px solid #1e40af;max-height:300px">'
     // Left: step title + 4 explanation rows
     + '<div style="flex:1;overflow-y:auto;padding:16px 22px">'
     +   '<div style="font-size:15px;font-weight:800;color:#38bdf8;margin-bottom:10px">🎯 '+step.title+'</div>'
     +   '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'
     +     '<div style="background:#060f1f;border-radius:8px;padding:12px">'
     +       '<div style="font-size:11px;font-weight:700;color:#f97316;letter-spacing:1px;margin-bottom:6px">WHAT IT IS</div>'
-    +       '<div style="font-size:13px;color:#e2e8f0;line-height:1.7">'+step.what+'</div>'
+    +       '<div style="font-size:13px;color:#f1f5f9;line-height:1.7">'+step.what+'</div>'
     +     '</div>'
     +     '<div style="background:#060f1f;border-radius:7px;padding:10px">'
     +       '<div style="font-size:11px;font-weight:700;color:#f87171;letter-spacing:1px;margin-bottom:6px">WHY IT MATTERS</div>'
-    +       '<div style="font-size:13px;color:#e2e8f0;line-height:1.7">'+step.why+'</div>'
+    +       '<div style="font-size:13px;color:#f1f5f9;line-height:1.7">'+step.why+'</div>'
     +     '</div>'
     +     '<div style="background:#060f1f;border-radius:7px;padding:10px">'
     +       '<div style="font-size:11px;font-weight:700;color:#34d399;letter-spacing:1px;margin-bottom:6px">REAL BUILDINGS USE</div>'
-    +       '<div style="font-size:13px;color:#e2e8f0;line-height:1.7">'+step.realWorld+'</div>'
+    +       '<div style="font-size:13px;color:#f1f5f9;line-height:1.7">'+step.realWorld+'</div>'
     +     '</div>'
     +     '<div style="background:#060f1f;border-radius:7px;padding:10px">'
     +       '<div style="font-size:11px;font-weight:700;color:#a78bfa;letter-spacing:1px;margin-bottom:6px">EFFECT ON STRUCTURE</div>'
-    +       '<div style="font-size:13px;color:#e2e8f0;line-height:1.7">'+step.effect+'</div>'
+    +       '<div style="font-size:13px;color:#f1f5f9;line-height:1.7">'+step.effect+'</div>'
     +     '</div>'
     +   '</div>'
     + '</div>'
@@ -14883,9 +14963,9 @@ function showGuideStep() {
     +     step.actionLabel
     +   '</button>'
     +   (_guideStep > 0
-      ? '<button onclick="prevGuideStep()" style="padding:9px;background:transparent;border:1px solid #334155;border-radius:7px;color:#64748b;font-size:12px;cursor:pointer;font-family:inherit">← Previous</button>'
+      ? '<button onclick="prevGuideStep()" style="padding:9px;background:transparent;border:1px solid #64748b;border-radius:7px;color:#64748b;font-size:12px;cursor:pointer;font-family:inherit">← Previous</button>'
       : '')
-    +   '<button onclick="exitGuide()" style="padding:5px;background:transparent;border:none;color:#334155;font-size:10px;cursor:pointer;font-family:inherit">✕ Exit Guide</button>'
+    +   '<button onclick="exitGuide()" style="padding:5px;background:transparent;border:none;color:#64748b;font-size:10px;cursor:pointer;font-family:inherit">✕ Exit Guide</button>'
     + '</div>'
     + '</div>';
 
@@ -15012,7 +15092,7 @@ function exitGuide() {
             const prompt = document.createElement('div');
             prompt.id = '_welcome_modal';
             prompt.style.cssText = 'position:fixed;inset:0;background:rgba(0,5,20,0.92);z-index:99998;display:flex;align-items:center;justify-content:center;padding:20px;font-family:Segoe UI,sans-serif;';
-            prompt.innerHTML = '<div style="background:#0d1526;border:2px solid #1d4ed8;border-radius:16px;padding:36px;max-width:500px;width:100%;text-align:center">'
+            prompt.innerHTML = '<div style="background:#0a0f1e;border:2px solid #1d4ed8;border-radius:16px;padding:36px;max-width:500px;width:100%;text-align:center">'
               + '<div style="font-size:52px;margin-bottom:16px">&#127959;</div>'
               + '<div style="font-size:22px;font-weight:900;color:#38bdf8;margin-bottom:8px">Welcome to StructLearn Pro!</div>'
               + '<div style="font-size:13px;color:#64748b;line-height:1.8;margin-bottom:24px">The complete IS 456 structural design learning platform.<br>Design real buildings. Earn verified certificates.</div>'
@@ -15020,18 +15100,18 @@ function exitGuide() {
               +   '<div style="padding:14px;background:#060f1f;border:1px solid #1e3a8a;border-radius:10px">'
               +     '<div style="font-size:22px;margin-bottom:6px">&#127919;</div>'
               +     '<div style="font-size:12px;font-weight:700;color:#38bdf8;margin-bottom:4px">Guided Design</div>'
-              +     '<div style="font-size:10px;color:#475569;line-height:1.5">Step-by-step walkthrough — I explain every decision</div>'
+              +     '<div style="font-size:10px;color:#64748b;line-height:1.5">Step-by-step walkthrough — I explain every decision</div>'
               +   '</div>'
               +   '<div style="padding:14px;background:#060f1f;border:1px solid #1e3a8a;border-radius:10px">'
               +     '<div style="font-size:22px;margin-bottom:6px">&#127942;</div>'
               +     '<div style="font-size:12px;font-weight:700;color:#38bdf8;margin-bottom:4px">Earn Certificates</div>'
-              +     '<div style="font-size:10px;color:#475569;line-height:1.5">Complete designs and quizzes to earn IS 456 certificates</div>'
+              +     '<div style="font-size:10px;color:#64748b;line-height:1.5">Complete designs and quizzes to earn IS 456 certificates</div>'
               +   '</div>'
               + '</div>'
               + '<button id="_wm_guided_btn" style="width:100%;padding:14px;background:linear-gradient(135deg,#1d4ed8,#2563eb);border:none;border-radius:9px;color:white;font-size:15px;font-weight:800;cursor:pointer;font-family:inherit;margin-bottom:10px">'
               +   '&#127919; Start Guided Design (Recommended)'
               + '</button>'
-              + '<button id="_wm_skip_btn" style="width:100%;padding:10px;background:transparent;border:1px solid #334155;border-radius:8px;color:#64748b;font-size:12px;cursor:pointer;font-family:inherit">'
+              + '<button id="_wm_skip_btn" style="width:100%;padding:10px;background:transparent;border:1px solid #64748b;border-radius:8px;color:#64748b;font-size:12px;cursor:pointer;font-family:inherit">'
               +   "I'll explore on my own &#8594;"
               + '</button>'
               + '</div>';
@@ -15059,12 +15139,12 @@ function showProPreview(navId, label, desc) {
   const popup = document.createElement('div');
   popup.id = '_pro_preview';
   popup.style.cssText = 'position:fixed;inset:0;background:rgba(0,5,20,0.85);z-index:9990;display:flex;align-items:center;justify-content:center;padding:20px;font-family:Segoe UI,sans-serif;';
-  popup.innerHTML = '<div style="background:#0d1526;border:2px solid #b8860b;border-radius:14px;padding:28px;max-width:440px;width:100%;text-align:center">'
+  popup.innerHTML = '<div style="background:#0a0f1e;border:2px solid #b8860b;border-radius:14px;padding:28px;max-width:440px;width:100%;text-align:center">'
     + '<div style="display:inline-flex;align-items:center;gap:6px;padding:4px 12px;background:rgba(184,134,11,0.15);border:1px solid #b8860b;border-radius:20px;font-size:10px;font-weight:700;color:#b8860b;margin-bottom:16px">&#9733; PRO FEATURE</div>'
     + '<div style="font-size:18px;font-weight:800;color:#f1f5f9;margin-bottom:10px">'+label+'</div>'
     + '<div style="font-size:13px;color:#64748b;line-height:1.8;margin-bottom:24px">'+desc+'</div>'
     + '<div style="background:#060f1f;border:1px solid #1e293b;border-radius:10px;padding:14px;margin-bottom:20px;text-align:left">'
-    +   '<div style="font-size:10px;font-weight:700;color:#475569;margin-bottom:8px;text-transform:uppercase;letter-spacing:1px">What you get with Pro</div>'
+    +   '<div style="font-size:10px;font-weight:700;color:#64748b;margin-bottom:8px;text-transform:uppercase;letter-spacing:1px">What you get with Pro</div>'
     +   '<div style="font-size:12px;color:#cbd5e1;line-height:1.9">'
     +     '&#10003; This feature + all other Pro sections<br>'
     +     '&#10003; Download PDF reports<br>'
@@ -15076,7 +15156,7 @@ function showProPreview(navId, label, desc) {
     + '<button id="_pro_upgrade_btn" style="width:100%;padding:13px;background:linear-gradient(135deg,#b8860b,#d4a843);border:none;border-radius:8px;color:#1a1208;font-size:14px;font-weight:800;cursor:pointer;font-family:inherit;margin-bottom:10px">'
     +   '&#9889; Upgrade to Pro &#8212; &#8377;299/month'
     + '</button>'
-    + '<button id="_pro_close_btn" style="width:100%;padding:9px;background:transparent;border:1px solid #334155;border-radius:7px;color:#64748b;font-size:12px;cursor:pointer;font-family:inherit">'
+    + '<button id="_pro_close_btn" style="width:100%;padding:9px;background:transparent;border:1px solid #64748b;border-radius:7px;color:#64748b;font-size:12px;cursor:pointer;font-family:inherit">'
     +   'Maybe later'
     + '</button>'
     + '</div>';
