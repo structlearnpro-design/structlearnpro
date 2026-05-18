@@ -245,6 +245,166 @@ tr:hover td{background:rgba(56,189,248,0.03);}
       </div>
     </div>
 
+
+    <!-- CERTIFICATES -->
+    <div id="sec-certificates" class="sec">
+      <div class="tbl-wrap">
+        <div class="tbl-head">
+          <div>
+            <div class="tbl-title">Certificates Issued</div>
+            <div id="cert-stats" class="tbl-sub"></div>
+          </div>
+          <input id="c-search" oninput="filterCerts()" placeholder="Search name or cert ID..." class="srch">
+        </div>
+        <table class="tbl">
+          <thead><tr>
+            <th>Cert ID</th><th>Student</th><th>Level</th>
+            <th>Issued</th><th>Status</th><th>Action</th>
+          </tr></thead>
+          <tbody id="certs-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- COUPONS -->
+    <div id="sec-coupons" class="sec">
+      <div class="tbl-wrap">
+        <div class="tbl-head">
+          <div>
+            <div class="tbl-title">Coupon Codes</div>
+            <div id="coupon-stats" class="tbl-sub"></div>
+          </div>
+          <button class="action-btn up" onclick="document.getElementById('create-coupon-form').style.display='block'">+ Create Coupon</button>
+        </div>
+
+        <!-- Create form -->
+        <div id="create-coupon-form" style="display:none;background:#0d1526;border:1px solid #1e293b;border-radius:10px;padding:20px;margin-bottom:16px">
+          <div style="font-size:13px;font-weight:700;color:#38bdf8;margin-bottom:14px">Create New Coupon</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px">
+            <div>
+              <label style="font-size:11px;color:#475569;display:block;margin-bottom:4px">Coupon Code</label>
+              <input id="new-coupon-code" placeholder="e.g. CIVIL50" style="width:100%;padding:8px;background:#060f1f;border:1px solid #1e293b;border-radius:6px;color:#f1f5f9;font-size:12px;font-family:inherit">
+            </div>
+            <div>
+              <label style="font-size:11px;color:#475569;display:block;margin-bottom:4px">Discount Type</label>
+              <select id="new-coupon-type" style="width:100%;padding:8px;background:#060f1f;border:1px solid #1e293b;border-radius:6px;color:#f1f5f9;font-size:12px;font-family:inherit">
+                <option value="percent">Percentage (%)</option>
+                <option value="flat">Flat Amount (₹)</option>
+              </select>
+            </div>
+            <div>
+              <label style="font-size:11px;color:#475569;display:block;margin-bottom:4px">Discount Value</label>
+              <input id="new-coupon-value" type="number" placeholder="e.g. 20" style="width:100%;padding:8px;background:#060f1f;border:1px solid #1e293b;border-radius:6px;color:#f1f5f9;font-size:12px;font-family:inherit">
+            </div>
+            <div>
+              <label style="font-size:11px;color:#475569;display:block;margin-bottom:4px">Max Uses</label>
+              <input id="new-coupon-uses" type="number" placeholder="0 = unlimited" style="width:100%;padding:8px;background:#060f1f;border:1px solid #1e293b;border-radius:6px;color:#f1f5f9;font-size:12px;font-family:inherit">
+            </div>
+            <div>
+              <label style="font-size:11px;color:#475569;display:block;margin-bottom:4px">Expires</label>
+              <input id="new-coupon-expiry" type="date" style="width:100%;padding:8px;background:#060f1f;border:1px solid #1e293b;border-radius:6px;color:#f1f5f9;font-size:12px;font-family:inherit">
+            </div>
+            <div style="display:flex;align-items:flex-end;gap:8px">
+              <button onclick="createCoupon()" class="action-btn up" style="flex:1">Create</button>
+              <button onclick="document.getElementById('create-coupon-form').style.display='none'" class="action-btn dn">Cancel</button>
+            </div>
+          </div>
+        </div>
+
+        <table class="tbl">
+          <thead><tr>
+            <th>Code</th><th>Type</th><th>Value</th>
+            <th>Uses</th><th>Expires</th><th>Status</th><th>Actions</th>
+          </tr></thead>
+          <tbody id="coupons-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- PAYMENTS -->
+    <div id="sec-payments" class="sec">
+      <div class="tbl-wrap">
+        <div class="tbl-head">
+          <div class="tbl-title">Payment History</div>
+        </div>
+        <table class="tbl" style="margin-bottom:32px">
+          <thead><tr>
+            <th>Date</th><th>Student</th><th>Plan</th>
+            <th>Amount</th><th>Method</th><th>Status</th>
+          </tr></thead>
+          <tbody id="payments-tbody"></tbody>
+        </table>
+
+        <div class="tbl-title" style="margin-bottom:16px">Expiring / Expired Pro Subscriptions</div>
+        <div style="display:flex;gap:8px;margin-bottom:12px">
+          <input id="refund-search" oninput="renderRefundTable()" placeholder="Search..." class="srch" style="flex:1">
+          <select id="refund-filter" onchange="renderRefundTable()" style="padding:8px;background:#060f1f;border:1px solid #1e293b;border-radius:6px;color:#94a3b8;font-size:12px;font-family:inherit">
+            <option value="all">All</option>
+            <option value="expired">Expired</option>
+            <option value="expiring">Expiring Soon (7 days)</option>
+          </select>
+        </div>
+        <table class="tbl">
+          <thead><tr>
+            <th>Student</th><th>Phone</th><th>Plan Expires</th>
+            <th>Status</th><th>Actions</th>
+          </tr></thead>
+          <tbody id="refund-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div id="sec-settings" class="sec">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;max-width:800px">
+
+        <!-- Pricing -->
+        <div style="background:#0d1526;border:1px solid #1e293b;border-radius:12px;padding:20px">
+          <div style="font-size:13px;font-weight:700;color:#38bdf8;margin-bottom:16px">💰 Pricing Settings</div>
+          <div style="display:flex;flex-direction:column;gap:12px">
+            <div>
+              <label style="font-size:11px;color:#475569;display:block;margin-bottom:4px">Monthly Price (₹)</label>
+              <input id="s-monthly" type="number" placeholder="299" style="width:100%;padding:8px;background:#060f1f;border:1px solid #1e293b;border-radius:6px;color:#f1f5f9;font-size:13px;font-family:inherit">
+            </div>
+            <div>
+              <label style="font-size:11px;color:#475569;display:block;margin-bottom:4px">Annual Price (₹)</label>
+              <input id="s-annual" type="number" placeholder="2990" style="width:100%;padding:8px;background:#060f1f;border:1px solid #1e293b;border-radius:6px;color:#f1f5f9;font-size:13px;font-family:inherit">
+            </div>
+            <button onclick="savePrices()" class="action-btn up">Save Prices</button>
+          </div>
+        </div>
+
+        <!-- Manual Upgrade -->
+        <div style="background:#0d1526;border:1px solid #1e293b;border-radius:12px;padding:20px">
+          <div style="font-size:13px;font-weight:700;color:#38bdf8;margin-bottom:16px">⬆ Manual Upgrade</div>
+          <div style="display:flex;flex-direction:column;gap:12px">
+            <div>
+              <label style="font-size:11px;color:#475569;display:block;margin-bottom:4px">Mobile Number</label>
+              <input id="mu-mobile" placeholder="+91XXXXXXXXXX" style="width:100%;padding:8px;background:#060f1f;border:1px solid #1e293b;border-radius:6px;color:#f1f5f9;font-size:13px;font-family:inherit">
+            </div>
+            <div>
+              <label style="font-size:11px;color:#475569;display:block;margin-bottom:4px">Duration</label>
+              <select id="mu-duration" style="width:100%;padding:8px;background:#060f1f;border:1px solid #1e293b;border-radius:6px;color:#f1f5f9;font-size:13px;font-family:inherit">
+                <option value="30">1 Month</option>
+                <option value="90">3 Months</option>
+                <option value="180">6 Months</option>
+                <option value="365">1 Year</option>
+                <option value="9999">Lifetime</option>
+              </select>
+            </div>
+            <div>
+              <label style="font-size:11px;color:#475569;display:block;margin-bottom:4px">Reason / Notes</label>
+              <input id="mu-reason" placeholder="e.g. beta tester, refund compensation" style="width:100%;padding:8px;background:#060f1f;border:1px solid #1e293b;border-radius:6px;color:#f1f5f9;font-size:13px;font-family:inherit">
+            </div>
+            <button onclick="manualUpgrade()" class="action-btn up">Upgrade User</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div id="sec-profiles" class="sec"></div>
+
   </div>
 </div>
 
@@ -1260,164 +1420,36 @@ async function loadAll(){
   } catch(e){ console.error('loadAll error',e); }
 }
 
+// ── BUILD HEATMAP ────────────────────────────────────────
+function buildHeatmap(sessions) {
+  if(!sessions || !sessions.length) return '';
+  var days = 30;
+  var today = new Date();
+  var dateMap = {};
+  sessions.forEach(function(s){
+    var mins = s.duration_minutes || 0;
+    dateMap[s.session_date] = (dateMap[s.session_date]||0) + mins;
+  });
+  var cells = '';
+  for(var i=days-1; i>=0; i--){
+    var d = new Date(today);
+    d.setDate(d.getDate()-i);
+    var key = d.toISOString().slice(0,10);
+    var mins = dateMap[key]||0;
+    var bg = mins===0?'#060f1f':mins<10?'#1e3a8a':mins<30?'#2563eb':mins<60?'#38bdf8':'#34d399';
+    cells += '<div title="'+key+': '+mins+'min" style="width:11px;height:11px;border-radius:2px;background:'+bg+'"></div>';
+  }
+  return '<div style="background:#060f1f;border-radius:8px;padding:14px;margin-bottom:14px">'
+    +'<div style="font-size:10px;font-weight:700;color:#334155;letter-spacing:1px;margin-bottom:8px">ACTIVITY — LAST 30 DAYS</div>'
+    +'<div style="display:flex;flex-wrap:wrap;gap:3px">'+cells+'</div>'
+    +'<div style="font-size:9px;color:#334155;margin-top:6px">'
+    +'<span style="color:#1e3a8a">■</span> 1-10m &nbsp;'
+    +'<span style="color:#2563eb">■</span> 10-30m &nbsp;'
+    +'<span style="color:#38bdf8">■</span> 30-60m &nbsp;'
+    +'<span style="color:#34d399">■</span> 60m+'
+    +'</div></div>';
+}
+
 </script>
 </body>
-</h
-    <!-- CERTIFICATES -->
-    <div id="sec-certificates" class="sec">
-      <div class="tbl-wrap">
-        <div class="tbl-head">
-          <div>
-            <div class="tbl-title">Certificates Issued</div>
-            <div id="cert-stats" class="tbl-sub"></div>
-          </div>
-          <input id="c-search" oninput="filterCerts()" placeholder="Search name or cert ID..." class="srch">
-        </div>
-        <table class="tbl">
-          <thead><tr>
-            <th>Cert ID</th><th>Student</th><th>Level</th>
-            <th>Issued</th><th>Status</th><th>Action</th>
-          </tr></thead>
-          <tbody id="certs-tbody"></tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- COUPONS -->
-    <div id="sec-coupons" class="sec">
-      <div class="tbl-wrap">
-        <div class="tbl-head">
-          <div>
-            <div class="tbl-title">Coupon Codes</div>
-            <div id="coupon-stats" class="tbl-sub"></div>
-          </div>
-          <button class="action-btn up" onclick="document.getElementById('create-coupon-form').style.display='block'">+ Create Coupon</button>
-        </div>
-
-        <!-- Create form -->
-        <div id="create-coupon-form" style="display:none;background:#0d1526;border:1px solid #1e293b;border-radius:10px;padding:20px;margin-bottom:16px">
-          <div style="font-size:13px;font-weight:700;color:#38bdf8;margin-bottom:14px">Create New Coupon</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px">
-            <div>
-              <label style="font-size:11px;color:#475569;display:block;margin-bottom:4px">Coupon Code</label>
-              <input id="new-coupon-code" placeholder="e.g. CIVIL50" style="width:100%;padding:8px;background:#060f1f;border:1px solid #1e293b;border-radius:6px;color:#f1f5f9;font-size:12px;font-family:inherit">
-            </div>
-            <div>
-              <label style="font-size:11px;color:#475569;display:block;margin-bottom:4px">Discount Type</label>
-              <select id="new-coupon-type" style="width:100%;padding:8px;background:#060f1f;border:1px solid #1e293b;border-radius:6px;color:#f1f5f9;font-size:12px;font-family:inherit">
-                <option value="percent">Percentage (%)</option>
-                <option value="flat">Flat Amount (₹)</option>
-              </select>
-            </div>
-            <div>
-              <label style="font-size:11px;color:#475569;display:block;margin-bottom:4px">Discount Value</label>
-              <input id="new-coupon-value" type="number" placeholder="e.g. 20" style="width:100%;padding:8px;background:#060f1f;border:1px solid #1e293b;border-radius:6px;color:#f1f5f9;font-size:12px;font-family:inherit">
-            </div>
-            <div>
-              <label style="font-size:11px;color:#475569;display:block;margin-bottom:4px">Max Uses</label>
-              <input id="new-coupon-uses" type="number" placeholder="0 = unlimited" style="width:100%;padding:8px;background:#060f1f;border:1px solid #1e293b;border-radius:6px;color:#f1f5f9;font-size:12px;font-family:inherit">
-            </div>
-            <div>
-              <label style="font-size:11px;color:#475569;display:block;margin-bottom:4px">Expires</label>
-              <input id="new-coupon-expiry" type="date" style="width:100%;padding:8px;background:#060f1f;border:1px solid #1e293b;border-radius:6px;color:#f1f5f9;font-size:12px;font-family:inherit">
-            </div>
-            <div style="display:flex;align-items:flex-end;gap:8px">
-              <button onclick="createCoupon()" class="action-btn up" style="flex:1">Create</button>
-              <button onclick="document.getElementById('create-coupon-form').style.display='none'" class="action-btn dn">Cancel</button>
-            </div>
-          </div>
-        </div>
-
-        <table class="tbl">
-          <thead><tr>
-            <th>Code</th><th>Type</th><th>Value</th>
-            <th>Uses</th><th>Expires</th><th>Status</th><th>Actions</th>
-          </tr></thead>
-          <tbody id="coupons-tbody"></tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- PAYMENTS -->
-    <div id="sec-payments" class="sec">
-      <div class="tbl-wrap">
-        <div class="tbl-head">
-          <div class="tbl-title">Payment History</div>
-        </div>
-        <table class="tbl" style="margin-bottom:32px">
-          <thead><tr>
-            <th>Date</th><th>Student</th><th>Plan</th>
-            <th>Amount</th><th>Method</th><th>Status</th>
-          </tr></thead>
-          <tbody id="payments-tbody"></tbody>
-        </table>
-
-        <div class="tbl-title" style="margin-bottom:16px">Expiring / Expired Pro Subscriptions</div>
-        <div style="display:flex;gap:8px;margin-bottom:12px">
-          <input id="refund-search" oninput="renderRefundTable()" placeholder="Search..." class="srch" style="flex:1">
-          <select id="refund-filter" onchange="renderRefundTable()" style="padding:8px;background:#060f1f;border:1px solid #1e293b;border-radius:6px;color:#94a3b8;font-size:12px;font-family:inherit">
-            <option value="all">All</option>
-            <option value="expired">Expired</option>
-            <option value="expiring">Expiring Soon (7 days)</option>
-          </select>
-        </div>
-        <table class="tbl">
-          <thead><tr>
-            <th>Student</th><th>Phone</th><th>Plan Expires</th>
-            <th>Status</th><th>Actions</th>
-          </tr></thead>
-          <tbody id="refund-tbody"></tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- SETTINGS -->
-    <div id="sec-settings" class="sec">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;max-width:800px">
-
-        <!-- Pricing -->
-        <div style="background:#0d1526;border:1px solid #1e293b;border-radius:12px;padding:20px">
-          <div style="font-size:13px;font-weight:700;color:#38bdf8;margin-bottom:16px">💰 Pricing Settings</div>
-          <div style="display:flex;flex-direction:column;gap:12px">
-            <div>
-              <label style="font-size:11px;color:#475569;display:block;margin-bottom:4px">Monthly Price (₹)</label>
-              <input id="s-monthly" type="number" placeholder="299" style="width:100%;padding:8px;background:#060f1f;border:1px solid #1e293b;border-radius:6px;color:#f1f5f9;font-size:13px;font-family:inherit">
-            </div>
-            <div>
-              <label style="font-size:11px;color:#475569;display:block;margin-bottom:4px">Annual Price (₹)</label>
-              <input id="s-annual" type="number" placeholder="2990" style="width:100%;padding:8px;background:#060f1f;border:1px solid #1e293b;border-radius:6px;color:#f1f5f9;font-size:13px;font-family:inherit">
-            </div>
-            <button onclick="savePrices()" class="action-btn up">Save Prices</button>
-          </div>
-        </div>
-
-        <!-- Manual Upgrade -->
-        <div style="background:#0d1526;border:1px solid #1e293b;border-radius:12px;padding:20px">
-          <div style="font-size:13px;font-weight:700;color:#38bdf8;margin-bottom:16px">⬆ Manual Upgrade</div>
-          <div style="display:flex;flex-direction:column;gap:12px">
-            <div>
-              <label style="font-size:11px;color:#475569;display:block;margin-bottom:4px">Mobile Number</label>
-              <input id="mu-mobile" placeholder="+91XXXXXXXXXX" style="width:100%;padding:8px;background:#060f1f;border:1px solid #1e293b;border-radius:6px;color:#f1f5f9;font-size:13px;font-family:inherit">
-            </div>
-            <div>
-              <label style="font-size:11px;color:#475569;display:block;margin-bottom:4px">Duration</label>
-              <select id="mu-duration" style="width:100%;padding:8px;background:#060f1f;border:1px solid #1e293b;border-radius:6px;color:#f1f5f9;font-size:13px;font-family:inherit">
-                <option value="30">1 Month</option>
-                <option value="90">3 Months</option>
-                <option value="180">6 Months</option>
-                <option value="365">1 Year</option>
-                <option value="9999">Lifetime</option>
-              </select>
-            </div>
-            <div>
-              <label style="font-size:11px;color:#475569;display:block;margin-bottom:4px">Reason / Notes</label>
-              <input id="mu-reason" placeholder="e.g. beta tester, refund compensation" style="width:100%;padding:8px;background:#060f1f;border:1px solid #1e293b;border-radius:6px;color:#f1f5f9;font-size:13px;font-family:inherit">
-            </div>
-            <button onclick="manualUpgrade()" class="action-btn up">Upgrade User</button>
-          </div>
-        </div>
-
-      </div>
-    </div>
-
-    <div id="sec-profiles" class="sec"></div>
+</html>
