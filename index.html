@@ -1124,19 +1124,23 @@ let _currentSessionId = null;
 let _sessionData = { pageViews:{}, analysisRuns:0, failureCount:0, fixCount:0, maxFloors:0, maxZone:'II', whyClicks:0, tabsViewed:[] };
 
 async function trackStudentEvent(eventType, eventData) {
-  if(!U || !U.id) return;
+  console.log('[TRACK] event:', eventType, 'U:', U?.id ? 'ok' : 'MISSING');
+  if(!U || !U.id) { console.warn('[TRACK] No user - skipping'); return; }
   try {
-    await db.from('student_events').insert({
+    const {data, error} = await db.from('student_events').insert({
       user_id: U.id,
       event_type: eventType,
       event_data: eventData || {}
-    });
-  } catch(e) { console.log('Track event error', e); }
+    }).select();
+    if(error) console.error('[TRACK] Insert error:', error.message, error.code);
+    else console.log('[TRACK] Saved:', eventType);
+  } catch(e) { console.error('[TRACK] Exception:', e.message); }
 }
 
 async function flushStudentSession(data) {
-  if(!U || !U.id) return;
-  if(!data.duration || data.duration < 0) return; // nothing to write
+  console.log('[FLUSH] called. U:', U?.id?'ok':'MISSING', 'duration:', data?.duration);
+  if(!U || !U.id) { console.warn('[FLUSH] No user'); return; }
+  if(!data.duration || data.duration < 0) { console.warn('[FLUSH] Duration too low:', data.duration); return; }
   try {
     var today = new Date().toISOString().slice(0,10);
     var duration = Math.max(1, Math.round(data.duration || 0));
