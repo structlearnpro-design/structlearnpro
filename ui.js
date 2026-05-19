@@ -13371,7 +13371,8 @@ window.addEventListener('message', function(e) {
   if(!prog) return;
   if(prog.lessons && Object.keys(prog.lessons).length > 0) {
     var existing = _EDU.getProgress();
-    var merged = Object.assign({}, prog.lessons, existing);
+    // Supabase is authoritative — it wins over local cache
+    var merged = Object.assign({}, existing, prog.lessons);
     localStorage.setItem('slp_edu_progress', JSON.stringify(merged));
   }
   if(prog.behaviors) {

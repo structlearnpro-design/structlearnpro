@@ -714,6 +714,7 @@ async function doLogin(mob){
 async function doLogout(){
   await db.auth.signOut();
   localStorage.removeItem('slp_session');
+  sessionStorage.removeItem('slp_restore_progress');
   U=null;P=null;plan='free';projects=[];
   showScreen('auth-screen');
 }
@@ -1256,19 +1257,25 @@ async function loadAndRestoreProgress() {
   } catch(e) { console.log('Load progress error', e); }
 }
 
-function sendProgressToIframe() {
+function sendProgressToIframe(attempt) {
+  attempt = attempt || 1;
   const raw = sessionStorage.getItem('slp_restore_progress');
   if(!raw) return;
   if(!U) return;
   try {
     const iframe = document.getElementById('app-iframe');
-    if(!iframe || !iframe.contentWindow) return;
+    if(!iframe || !iframe.contentWindow) {
+      if(attempt < 10) setTimeout(()=>sendProgressToIframe(attempt+1), 800);
+      return;
+    }
     iframe.contentWindow.postMessage({
       type: 'RESTORE_PROGRESS',
       progress: JSON.parse(raw)
     }, '*');
-    console.log('Progress sent to iframe ✓');
-  } catch(e) {}
+    console.log('Progress sent to iframe ✓ (attempt '+attempt+')');
+  } catch(e) {
+    if(attempt < 10) setTimeout(()=>sendProgressToIframe(attempt+1), 800);
+  }
 }
 
 // Progress restored via loadAndRestoreProgress() after login
