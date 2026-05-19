@@ -1117,6 +1117,9 @@ function toast(msg,err=false){const t=document.getElementById('toast');t.textCon
     const {data:prof}=await db.from('profiles').select('*').eq('id',U.id).single();
     P=prof;plan=P?.plan||'free';
     updTop();goTo('projects');
+    // Always restore progress from Supabase — works on new device or hard refresh
+    await loadAndRestoreProgress();
+    tellIframe();
   } else {showScreen('auth-screen');}
 })();
 

@@ -10155,8 +10155,26 @@ const _BT = {
   mark(key) {
     if(!this.behaviors[key].done) {
       this.behaviors[key].done = true;
+      this._saveLocal();
       this.updateProgress();
+      // Sync to Supabase immediately so other devices get it too
+      try { if(typeof _EDU !== 'undefined') _EDU._syncToCloud(); } catch(e) {}
     }
+  },
+
+  // Save behaviors to localStorage for hard-refresh survival
+  _saveLocal() {
+    try {
+      localStorage.setItem('slp_bt_behaviors', JSON.stringify(this.export()));
+    } catch(e) {}
+  },
+
+  // Load behaviors from localStorage on startup
+  _loadLocal() {
+    try {
+      var stored = JSON.parse(localStorage.getItem('slp_bt_behaviors') || '{}');
+      this.importFrom(stored);
+    } catch(e) {}
   },
 
   // Count completed behaviors
@@ -10176,6 +10194,7 @@ const _BT = {
     Object.keys(data).forEach(function(k){
       if(self.behaviors[k]) self.behaviors[k].done = true;
     });
+    this._saveLocal();
     // Update UI after restoring
     setTimeout(function(){ 
       try { self.updateProgress(); } catch(e) {}
@@ -13363,6 +13382,9 @@ const _TRACK = {
 
 // Initialize tracker
 _TRACK.init();
+
+// Restore behavior tracker from localStorage (survives hard refresh / Ctrl+Shift+R)
+_BT._loadLocal();
 
 // ── RESTORE PROGRESS FROM SUPABASE (cross-device) ────────────
 window.addEventListener('message', function(e) {
