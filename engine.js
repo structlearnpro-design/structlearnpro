@@ -326,42 +326,91 @@ function sdiv(t){return`<div class="sdiv"><div class="sdiv-l"></div><div class="
 
 
 function svgTribArea(type,spX,spY){
-  const W=380,H=260,pad=40;
-  const bx=[pad,pad+spX*60,pad+spX*120],by=[pad,pad+spY*60,pad+spY*120];
-  // shade trib area based on type
-  const shades={corner:`M${bx[0]},${by[0]} L${(bx[0]+bx[1])/2},${by[0]} L${(bx[0]+bx[1])/2},${(by[0]+by[1])/2} L${bx[0]},${(by[0]+by[1])/2} Z`,
-    edge:`M${bx[0]},${by[0]} L${(bx[0]+bx[1])/2},${by[0]} L${(bx[0]+bx[1])/2},${by[1]} L${bx[0]},${by[1]} Z`,
-    interior:`M${(bx[0]+bx[1])/2},${(by[0]+by[1])/2} L${(bx[1]+bx[2])/2},${(by[0]+by[1])/2} L${(bx[1]+bx[2])/2},${(by[1]+by[2])/2} L${(bx[0]+bx[1])/2},${(by[1]+by[2])/2} Z`};
-  const shade=shades[type]||shades.interior;
+  const W=400,H=300,pad=50;
+  // Auto-scale so both bays fit within canvas
+  const maxW=W-2*pad, maxH=H-2*pad-20;
+  const scX=Math.min(maxW/(2*spX), maxH/(2*spY), 55);
+  const scY=scX;
+  const bW=spX*scX, bH=spY*scY;
+  // 3×3 grid of nodes (2 bays each direction)
+  const bx=[pad, pad+bW, pad+2*bW];
+  const by=[pad, pad+bH, pad+2*bH];
+
+  // Which node is the design column?
+  // corner=top-left(0,0), edge=top-center(1,0), interior=center(1,1)
+  const colNodeX = type==='corner'?0 : type==='edge'?1 : 1;
+  const colNodeY = type==='corner'?0 : type==='edge'?0 : 1;
+  const cx=bx[colNodeX], cy=by[colNodeY];
+
+  // Tributary area shading (half-bay each side from column)
+  let tribX1,tribX2,tribY1,tribY2;
+  if(type==='corner'){
+    tribX1=bx[0]; tribX2=(bx[0]+bx[1])/2;
+    tribY1=by[0]; tribY2=(by[0]+by[1])/2;
+  } else if(type==='edge'){
+    tribX1=(bx[0]+bx[1])/2; tribX2=(bx[1]+bx[2])/2;
+    tribY1=by[0]; tribY2=(by[0]+by[1])/2;
+  } else { // interior
+    tribX1=(bx[0]+bx[1])/2; tribX2=(bx[1]+bx[2])/2;
+    tribY1=(by[0]+by[1])/2; tribY2=(by[1]+by[2])/2;
+  }
+  const tribArea = (tribX2-tribX1)*(tribY2-tribY1)/(scX*scY);
+
   let g=`<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">`;
-  g+=`<rect width="${W}" height="${H}" fill="#0a0f1e"/>`;
-  // grid
-  bx.forEach(x=>by.forEach((y,ri)=>ri<2&&(g+=`<line x1="${x}" y1="${y}" x2="${x}" y2="${by[ri+1]}" stroke="#64748b" stroke-width="2"/>`)));
-  by.forEach(y=>bx.forEach((x,ci)=>ci<2&&(g+=`<line x1="${x}" y1="${y}" x2="${bx[ci+1]}" y2="${y}" stroke="#64748b" stroke-width="2"/>`)));
-  // shaded trib area
-  g+=`<path d="${shade}" fill="rgba(56,189,248,0.18)" stroke="#38bdf8" stroke-width="1.5" stroke-dasharray="4,3"/>`;
-  // columns
-  bx.forEach(x=>by.forEach(y=>{g+=`<rect x="${x-7}" y="${y-7}" width="14" height="14" fill="#374151" stroke="#34d399" stroke-width="2" rx="2"/>`;g+=`<circle cx="${x}" cy="${y}" r="3" fill="#34d399"/>`;}));
-  // highlight target column
-  const cx=type==='corner'?bx[0]:type==='edge'?bx[1]:bx[1];
-  const cy=type==='corner'?by[0]:type==='edge'?by[0]:by[1];
-  g+=`<rect x="${cx-9}" y="${cy-9}" width="18" height="18" fill="#fb923c" stroke="#f97316" stroke-width="2.5" rx="3"/>`;
-  // dimension labels
-  g+=`<text x="${(bx[0]+bx[1])/2}" y="${by[0]-12}" fill="#fb923c" font-size="11" text-anchor="middle" font-family="JetBrains Mono">${spX}m</text>`;
-  g+=`<text x="${bx[0]-28}" y="${(by[0]+by[1])/2+4}" fill="#fb923c" font-size="11" text-anchor="middle" font-family="JetBrains Mono">${spY}m</text>`;
-  // area label
-  const ax=type==='corner'?(bx[0]+bx[1])/4:type==='edge'?(bx[0]+bx[1])/2:(bx[0]+bx[2])/2;
-  const ay=type==='corner'?(by[0]+by[1])/4:type==='edge'?(by[0]+by[1])/2:(by[0]+by[2])/2;
-  const area=type==='corner'?spX*spY/4:type==='edge'?spX*spY/2:spX*spY;
-  g+=`<text x="${ax}" y="${ay}" fill="white" font-size="12" font-weight="bold" text-anchor="middle" font-family="JetBrains Mono">A=${r2(area)}m^2</text>`;
-  // legend
-  g+=`<rect x="${W-120}" y="10" width="12" height="12" fill="rgba(56,189,248,0.18)" stroke="#38bdf8"/>`;
-  g+=`<text x="${W-103}" y="20" fill="#38bdf8" font-size="10" font-family="JetBrains Mono">Tributary area</text>`;
-  g+=`<rect x="${W-120}" y="28" width="12" height="12" fill="#fb923c"/>`;
-  g+=`<text x="${W-103}" y="38" fill="#fb923c" font-size="10" font-family="JetBrains Mono">Design column</text>`;
-  g+=`<text x="${W/2}" y="${H-6}" fill="#64748b" font-size="9" text-anchor="middle" font-family="JetBrains Mono">IS 456  -  Tributary Area Method for Column Loads</text>`;
+  g+=`<rect width="${W}" height="${H}" fill="#0a0f1e" rx="6"/>`;
+  g+=`<text x="${W/2}" y="18" fill="#38bdf8" font-size="11" font-weight="bold" text-anchor="middle" font-family="JetBrains Mono">TRIBUTARY AREA — ${type.toUpperCase()} COLUMN</text>`;
+
+  // Slab panels (light fill)
+  for(let r=0;r<2;r++) for(let ci=0;ci<2;ci++){
+    g+=`<rect x="${bx[ci]}" y="${by[r]}" width="${bW}" height="${bH}" fill="rgba(30,41,59,0.8)" stroke="#334155" stroke-width="1"/>`;
+  }
+
+  // Tributary area shading
+  g+=`<rect x="${tribX1}" y="${tribY1}" width="${tribX2-tribX1}" height="${tribY2-tribY1}" fill="rgba(56,189,248,0.22)" stroke="#38bdf8" stroke-width="1.5" stroke-dasharray="5,3"/>`;
+
+  // Dimension lines — horizontal (span X)
+  g+=`<line x1="${bx[0]}" y1="${by[2]+18}" x2="${bx[1]}" y2="${by[2]+18}" stroke="#f59e0b" stroke-width="1"/>`;
+  g+=`<line x1="${bx[1]}" y1="${by[2]+18}" x2="${bx[2]}" y2="${by[2]+18}" stroke="#f59e0b" stroke-width="1"/>`;
+  g+=`<text x="${(bx[0]+bx[1])/2}" y="${by[2]+30}" fill="#f59e0b" font-size="10" text-anchor="middle" font-family="JetBrains Mono">${spX}m</text>`;
+  g+=`<text x="${(bx[1]+bx[2])/2}" y="${by[2]+30}" fill="#f59e0b" font-size="10" text-anchor="middle" font-family="JetBrains Mono">${spX}m</text>`;
+
+  // Dimension lines — vertical (span Y)
+  g+=`<line x1="${bx[0]-18}" y1="${by[0]}" x2="${bx[0]-18}" y2="${by[1]}" stroke="#f59e0b" stroke-width="1"/>`;
+  g+=`<line x1="${bx[0]-18}" y1="${by[1]}" x2="${bx[0]-18}" y2="${by[2]}" stroke="#f59e0b" stroke-width="1"/>`;
+  g+=`<text x="${bx[0]-30}" y="${(by[0]+by[1])/2+4}" fill="#f59e0b" font-size="10" text-anchor="middle" font-family="JetBrains Mono" transform="rotate(-90,${bx[0]-30},${(by[0]+by[1])/2+4})">${spY}m</text>`;
+  g+=`<text x="${bx[0]-30}" y="${(by[1]+by[2])/2+4}" fill="#f59e0b" font-size="10" text-anchor="middle" font-family="JetBrains Mono" transform="rotate(-90,${bx[0]-30},${(by[1]+by[2])/2+4})">${spY}m</text>`;
+
+  // All column nodes
+  bx.forEach(x=>by.forEach(y=>{
+    g+=`<rect x="${x-6}" y="${y-6}" width="12" height="12" fill="#1e293b" stroke="#64748b" stroke-width="1.5" rx="2"/>`;
+  }));
+
+  // Design column (highlighted)
+  g+=`<rect x="${cx-8}" y="${cy-8}" width="16" height="16" fill="#f97316" stroke="#fb923c" stroke-width="2" rx="2"/>`;
+  g+=`<text x="${cx}" y="${cy+4}" fill="white" font-size="8" font-weight="bold" text-anchor="middle" font-family="JetBrains Mono">C</text>`;
+
+  // Tributary area label
+  const ax=(tribX1+tribX2)/2, ay=(tribY1+tribY2)/2;
+  g+=`<text x="${ax}" y="${ay-6}" fill="white" font-size="11" font-weight="bold" text-anchor="middle" font-family="JetBrains Mono">A=${r2(tribArea)}m²</text>`;
+  g+=`<text x="${ax}" y="${ay+10}" fill="#94a3b8" font-size="8" text-anchor="middle" font-family="JetBrains Mono">trib area</text>`;
+
+  // Trib dim annotations
+  g+=`<line x1="${tribX1}" y1="${tribY2+6}" x2="${tribX2}" y2="${tribY2+6}" stroke="#38bdf8" stroke-width="0.8"/>`;
+  g+=`<text x="${ax}" y="${tribY2+18}" fill="#38bdf8" font-size="8" text-anchor="middle" font-family="JetBrains Mono">${r2((tribX2-tribX1)/scX)}m</text>`;
+  g+=`<line x1="${tribX2+6}" y1="${tribY1}" x2="${tribX2+6}" y2="${tribY2}" stroke="#38bdf8" stroke-width="0.8"/>`;
+  g+=`<text x="${tribX2+22}" y="${ay+4}" fill="#38bdf8" font-size="8" text-anchor="middle" font-family="JetBrains Mono">${r2((tribY2-tribY1)/scY)}m</text>`;
+
+  // Legend
+  g+=`<rect x="${W-130}" y="28" width="10" height="10" fill="rgba(56,189,248,0.22)" stroke="#38bdf8" stroke-width="1"/>`;
+  g+=`<text x="${W-116}" y="38" fill="#38bdf8" font-size="9" font-family="JetBrains Mono">Tributary area</text>`;
+  g+=`<rect x="${W-130}" y="44" width="10" height="10" fill="#f97316"/>`;
+  g+=`<text x="${W-116}" y="54" fill="#f97316" font-size="9" font-family="JetBrains Mono">Design column</text>`;
+  g+=`<rect x="${W-130}" y="60" width="10" height="10" fill="#1e293b" stroke="#64748b" stroke-width="1.5"/>`;
+  g+=`<text x="${W-116}" y="70" fill="#64748b" font-size="9" font-family="JetBrains Mono">Other columns</text>`;
+
+  g+=`<text x="${W/2}" y="${H-6}" fill="#475569" font-size="8" text-anchor="middle" font-family="JetBrains Mono">IS 456 — Tributary Area Method for Column Loads</text>`;
   g+='</svg>';
-  return`<div class="dg">${g}<div class="dg-cap">Fig: Tributary area for ${type} column (shaded). Column load = (DL+LL) x shaded area x number of floors</div></div>`;
+  return`<div class="dg">${g}<div class="dg-cap">Fig: Tributary area (shaded) for ${type} column. Column load = (DL+LL) × ${r2(tribArea)}m² × no. of floors</div></div>`;
 }
 
 // Load diagram on beam - UDL + reactions
