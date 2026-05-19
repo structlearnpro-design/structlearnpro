@@ -1676,8 +1676,9 @@ function secSafety(){
 
   // Group checks by category
   const slabChecks=[];
-  slabChecks.push({it:'Slab l/d ratio',ok:slab.ld_ok,note:'l/d='+r2(slab.lx*1000/slab.slabd)+' (limit 26)',cat:'Slab'});
-  slabChecks.push({it:'Slab Mu < Mulim',ok:slab.ok,note:'Mu='+r2(slab.Mx)+' vs '+r2(slab.Mulim)+' kN.m/m',cat:'Slab'});
+  const slabLd = (slab.lx && slab.slabd) ? r2(slab.lx*1000/slab.slabd) : 'N/A';
+  slabChecks.push({it:'Slab l/d ratio',ok:!!slab.ld_ok,note:'l/d='+slabLd+' (limit 26)',cat:'Slab'});
+  slabChecks.push({it:'Slab Mu < Mulim',ok:!!slab.ok,note:'Mu='+r2(slab.Mx||0)+' vs '+r2(slab.Mulim||0)+' kN.m/m',cat:'Slab'});
 
   const beamChecks=[];
   beams.forEach(b=>{
@@ -1693,9 +1694,10 @@ function secSafety(){
 
   const ftgChecks=[];
   ftgs.forEach(f=>{
-    ftgChecks.push({it:f.lbl+' Punching shear',ok:f.punch_ok,note:'τvp='+r2(f.tvp)+' vs τcp='+r2(f.tcp)+' N/mm²',cat:'Footing'});
-    ftgChecks.push({it:f.lbl+' One-way shear',ok:f.ow_ok,note:'τv='+r2(f.tvow)+' vs τc='+r2(f.tcow),cat:'Footing'});
-    ftgChecks.push({it:f.lbl+' Dev length',ok:f.Ld_ok,note:'Avail='+r0(f.Lda)+' vs req='+r0(f.Ldr)+'mm',cat:'Footing'});
+    const flbl = f.label || f.lbl || 'FTG';
+    ftgChecks.push({it:flbl+' Punching shear',ok:f.punch_ok,note:'τvp='+r2(f.tvp)+' vs τcp='+r2(f.tcp)+' N/mm²',cat:'Footing'});
+    ftgChecks.push({it:flbl+' One-way shear',ok:f.ow_ok,note:'τv='+r2(f.tvow)+' vs τc='+r2(f.tcow),cat:'Footing'});
+    ftgChecks.push({it:flbl+' Dev length',ok:f.Ld_ok,note:'Avail='+r0(f.Lda)+' vs req='+r0(f.Ldr)+'mm',cat:'Footing'});
   });
 
   const allChecks=[...slabChecks,...beamChecks,...colChecks,...ftgChecks];

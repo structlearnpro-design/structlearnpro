@@ -2487,6 +2487,7 @@ function runCalcsFromGrid(){
   const allFtgs=groundCols.map(col=>{
     const ftg=designOneFooting(col,soilBearing,ftgDepth,coverFtg,fck,fy,ftgMinD||300,AstFn);
     ftg.label='FTG-'+col.baseLabel;
+    ftg.lbl=ftg.label; // alias — both f.label and f.lbl work
     ftg.colLabel=col.baseLabel;
     return ftg;
   });
