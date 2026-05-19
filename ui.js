@@ -1270,13 +1270,32 @@ function colDetail(c){
       s+='<rect x="'+ox+'" y="'+oy+'" width="'+bw+'" height="'+bw+'" fill="rgba(71,85,105,0.5)" stroke="#64748b" stroke-width="2" rx="1"/>';
       s+='<rect x="'+(ox+cvs)+'" y="'+(oy+cvs)+'" width="'+(bw-2*cvs)+'" height="'+(bw-2*cvs)+'" fill="none" stroke="#f59e0b" stroke-width="0.5" stroke-dasharray="3,3"/>';
       s+='<rect x="'+(ox+cvs+sts/2)+'" y="'+(oy+cvs+sts/2)+'" width="'+(bw-2*cvs-sts)+'" height="'+(bw-2*cvs-sts)+'" fill="none" stroke="#94a3b8" stroke-width="'+sts+'" stroke-linejoin="round"/>';
-      const nb2=c.nb;const perSide=Math.ceil(nb2/4);const positions=[];
+      const nb2=c.nb;
+      const positions=[];
       const startX=ox+cvs+sts+brs;const startY=oy+cvs+sts+brs;
       const endX=ox+bw-cvs-sts-brs;const endY=oy+bw-cvs-sts-brs;
-      for(let i=0;i<perSide;i++){const t=perSide>1?i/(perSide-1):0;positions.push([startX+t*(endX-startX),startY]);}
-      for(let i=1;i<perSide;i++){const t=i/(perSide-1);positions.push([endX,startY+t*(endY-startY)]);}
-      for(let i=perSide-1;i>=0;i--){const t=perSide>1?i/(perSide-1):0;positions.push([startX+t*(endX-startX),endY]);}
-      for(let i=perSide-2;i>=1;i--){const t=i/(perSide-1);positions.push([startX,startY+t*(endY-startY)]);}
+      // Always place corner bars first, then distribute extras along sides
+      // Corners: TL, TR, BR, BL
+      const corners=[[startX,startY],[endX,startY],[endX,endY],[startX,endY]];
+      corners.forEach(pt=>positions.push(pt));
+      // Extra bars beyond 4 are placed along sides (top, right, bottom, left)
+      const extras=nb2-4;
+      if(extras>0){
+        const perSide=Math.floor(extras/4);
+        const rem=extras%4;
+        // Top side extras
+        const topN=perSide+(rem>0?1:0);
+        for(let i=1;i<=topN;i++) positions.push([startX+(endX-startX)*(i/(topN+1)),startY]);
+        // Right side extras
+        const rightN=perSide+(rem>1?1:0);
+        for(let i=1;i<=rightN;i++) positions.push([endX,startY+(endY-startY)*(i/(rightN+1))]);
+        // Bottom side extras
+        const botN=perSide+(rem>2?1:0);
+        for(let i=1;i<=botN;i++) positions.push([startX+(endX-startX)*(i/(botN+1)),endY]);
+        // Left side extras
+        const leftN=perSide;
+        for(let i=1;i<=leftN;i++) positions.push([startX,startY+(endY-startY)*(i/(leftN+1))]);
+      }
       for(let j=0;j<Math.min(nb2,positions.length);j++){
         s+='<circle cx="'+positions[j][0]+'" cy="'+positions[j][1]+'" r="'+brs+'" fill="#f59e0b" stroke="#fbbf24" stroke-width="1"/>';
       }
