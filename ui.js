@@ -788,7 +788,169 @@ function slabPanelDetail(p){
       Top (negative): D8@${p.spx_n}mm short-span &nbsp;|&nbsp; D8@${p.spy_n}mm long-span
     </div>
   `)}
+  ${sb('S-5','Cross-Section Diagram',svgSlabSection(p),'or')}
 </div>`;
+}
+
+
+function svgSlabSection(p){
+  const D = Math.max(p.D||125, S.slabThk);
+  const d = p.d || D - S.coverSlab - 5;
+  const cover = S.coverSlab || 15;
+  const lx = p.lx || 3;
+  const ly = p.ly || 4;
+  const twoWay = p.twoWay;
+  const diaBot = 10, diaTop = 8, diaLong = 8;
+  const spx = p.spx || 200, spy = p.spy || 250;
+  const spx_n = p.spx_n || 300;
+
+  const W = 660, padL = 80, padR = 90, padT = 70;
+  const slabW = W - padL - padR;
+  const slabH = Math.max(70, Math.min(120, D * 1.8));
+  const scaleH = slabH / D;
+  const sx = padL, sy = padT;
+  const ex = W - padR;
+  const suppH = 24, suppW = 40;
+  const bmdGap = 18;
+  const bmdH = 25;
+  const lgLines = twoWay ? 3 : 2;
+  const totalH = padT + slabH + suppH + bmdGap + bmdH + 50 + lgLines * 15 + 20;
+
+  const botCoverY = sy + slabH - cover * scaleH;
+  const topCoverY = sy + cover * scaleH;
+  const botBarY = botCoverY - diaBot * scaleH / 2;
+  const topBarY = topCoverY + diaTop * scaleH / 2;
+  const longBarY = botBarY - (diaBot + diaLong) * scaleH / 2 - 1;
+  const extPx = Math.round(0.3 * slabW);
+  const nBotBars = Math.max(4, Math.min(9, Math.round(slabW / 45)));
+  const nTopBars = Math.max(2, Math.round(extPx / 30));
+  const nLongBars = Math.max(3, Math.min(7, Math.round(slabW / 55)));
+
+  const bmdY = sy + slabH + suppH + bmdGap;
+
+  // Build SVG as array of strings for clarity
+  const lines = [];
+
+  lines.push('<svg viewBox="0 0 ' + W + ' ' + totalH + '" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block;background:#0a0f1e;border-radius:8px">');
+  lines.push('<defs><marker id="sArr" markerWidth="4" markerHeight="4" refX="2" refY="2" orient="auto"><polygon points="0,0 4,2 0,4" fill="#64748b"/></marker></defs>');
+
+  // Title
+  lines.push('<text x="' + (W/2) + '" y="18" fill="#38bdf8" font-size="11" font-weight="bold" text-anchor="middle" font-family="JetBrains Mono">SLAB CROSS-SECTION — ' + p.bayLabel + ' (D=' + D + 'mm, ' + (twoWay ? 'Two-way' : 'One-way') + ')</text>');
+  lines.push('<text x="' + (W/2) + '" y="34" fill="#64748b" font-size="9" text-anchor="middle" font-family="JetBrains Mono">Section through short span (lx=' + r2(lx) + 'm) — IS 456 Cl 26.5.2 | Cover=' + cover + 'mm | d=' + d + 'mm</text>');
+  lines.push('<text x="' + (W/2) + '" y="50" fill="#475569" font-size="8.5" text-anchor="middle" font-family="JetBrains Mono">M20 concrete — Fe' + S.fy + ' steel — wu=' + r2(p.wu) + ' kN/m² — Case ' + p.caseN + ' (IS 456 Table 26)</text>');
+
+  // Slab concrete body
+  lines.push('<rect x="' + sx + '" y="' + sy + '" width="' + slabW + '" height="' + slabH + '" fill="rgba(100,116,139,0.12)" stroke="#475569" stroke-width="1.5"/>');
+
+  // Concrete hatch
+  lines.push('<clipPath id="slabHatch"><rect x="' + sx + '" y="' + sy + '" width="' + slabW + '" height="' + slabH + '"/></clipPath>');
+  lines.push('<g clip-path="url(#slabHatch)" stroke="rgba(100,116,139,0.18)" stroke-width="0.7">');
+  for (let i = -slabH; i < slabW + slabH; i += 16) {
+    lines.push('<line x1="' + (sx+i) + '" y1="' + sy + '" x2="' + (sx+i+slabH) + '" y2="' + (sy+slabH) + '"/>');
+  }
+  lines.push('</g>');
+
+  // Cover dashed lines
+  lines.push('<line x1="' + (sx+6) + '" y1="' + botCoverY + '" x2="' + (ex-6) + '" y2="' + botCoverY + '" stroke="rgba(99,102,241,0.35)" stroke-width="0.8" stroke-dasharray="4,3"/>');
+  lines.push('<line x1="' + (sx+6) + '" y1="' + topCoverY + '" x2="' + (ex-6) + '" y2="' + topCoverY + '" stroke="rgba(99,102,241,0.35)" stroke-width="0.8" stroke-dasharray="4,3"/>');
+  lines.push('<text x="' + (sx+4) + '" y="' + (topCoverY - 2) + '" fill="rgba(99,102,241,0.6)" font-size="7.5" font-family="JetBrains Mono">cover=' + cover + 'mm</text>');
+
+  // Bottom short-span bars
+  for (let i = 1; i <= nBotBars; i++) {
+    const bx = sx + i * (slabW / (nBotBars + 1));
+    const r = Math.max(3, diaBot * scaleH / 2);
+    lines.push('<circle cx="' + r2(bx) + '" cy="' + r2(botBarY) + '" r="' + r2(r) + '" fill="#34d399" stroke="#166534" stroke-width="0.8"/>');
+  }
+
+  // Long-span bottom bars (above short-span)
+  if (twoWay) {
+    for (let i = 1; i <= nLongBars; i++) {
+      const bx = sx + i * (slabW / (nLongBars + 1));
+      const r = Math.max(3, diaLong * scaleH / 2);
+      lines.push('<circle cx="' + r2(bx) + '" cy="' + r2(longBarY) + '" r="' + r2(r) + '" fill="#38bdf8" stroke="#1e3a5f" stroke-width="0.8"/>');
+    }
+  }
+
+  // Top bars — left zone
+  for (let i = 1; i <= nTopBars; i++) {
+    const bx = sx + i * (extPx / (nTopBars + 1));
+    const r = Math.max(3, diaTop * scaleH / 2);
+    lines.push('<circle cx="' + r2(bx) + '" cy="' + r2(topBarY) + '" r="' + r2(r) + '" fill="#f87171" stroke="#7f1d1d" stroke-width="0.8"/>');
+  }
+  // Top bars — right zone
+  for (let i = 1; i <= nTopBars; i++) {
+    const bx = ex - i * (extPx / (nTopBars + 1));
+    const r = Math.max(3, diaTop * scaleH / 2);
+    lines.push('<circle cx="' + r2(bx) + '" cy="' + r2(topBarY) + '" r="' + r2(r) + '" fill="#f87171" stroke="#7f1d1d" stroke-width="0.8"/>');
+  }
+
+  // Top bar zone extent lines (above slab)
+  const zbY = sy - 7;
+  lines.push('<line x1="' + sx + '" y1="' + zbY + '" x2="' + (sx+extPx) + '" y2="' + zbY + '" stroke="#f87171" stroke-width="1.2"/>');
+  lines.push('<line x1="' + sx + '" y1="' + (zbY-4) + '" x2="' + sx + '" y2="' + (zbY+4) + '" stroke="#f87171" stroke-width="1"/>');
+  lines.push('<line x1="' + (sx+extPx) + '" y1="' + (zbY-4) + '" x2="' + (sx+extPx) + '" y2="' + (zbY+4) + '" stroke="#f87171" stroke-width="1"/>');
+  lines.push('<text x="' + (sx+extPx/2) + '" y="' + (zbY-9) + '" fill="#f87171" font-size="8" text-anchor="middle" font-family="JetBrains Mono">0.3lx=' + r2(0.3*lx) + 'm</text>');
+  lines.push('<line x1="' + (ex-extPx) + '" y1="' + zbY + '" x2="' + ex + '" y2="' + zbY + '" stroke="#f87171" stroke-width="1.2"/>');
+  lines.push('<line x1="' + (ex-extPx) + '" y1="' + (zbY-4) + '" x2="' + (ex-extPx) + '" y2="' + (zbY+4) + '" stroke="#f87171" stroke-width="1"/>');
+  lines.push('<line x1="' + ex + '" y1="' + (zbY-4) + '" x2="' + ex + '" y2="' + (zbY+4) + '" stroke="#f87171" stroke-width="1"/>');
+  lines.push('<text x="' + (ex-extPx/2) + '" y="' + (zbY-9) + '" fill="#f87171" font-size="8" text-anchor="middle" font-family="JetBrains Mono">0.3lx=' + r2(0.3*lx) + 'm</text>');
+  lines.push('<text x="' + (W/2) + '" y="' + (zbY-20) + '" fill="#f87171" font-size="9" font-weight="bold" text-anchor="middle" font-family="JetBrains Mono">D' + diaTop + '@' + spx_n + 'mm TOP — Ast=' + r0(p.Ax_neg) + ' mm\u00b2/m (negative moment at supports)</text>');
+
+  // Supports
+  lines.push('<rect x="' + (sx-suppW) + '" y="' + (sy+slabH) + '" width="' + suppW + '" height="' + suppH + '" fill="rgba(71,85,105,0.5)" stroke="#475569" stroke-width="1"/>');
+  lines.push('<text x="' + (sx-suppW/2) + '" y="' + (sy+slabH+15) + '" fill="#94a3b8" font-size="8" text-anchor="middle" font-family="JetBrains Mono">Support</text>');
+  lines.push('<rect x="' + ex + '" y="' + (sy+slabH) + '" width="' + suppW + '" height="' + suppH + '" fill="rgba(71,85,105,0.5)" stroke="#475569" stroke-width="1"/>');
+  lines.push('<text x="' + (ex+suppW/2) + '" y="' + (sy+slabH+15) + '" fill="#94a3b8" font-size="8" text-anchor="middle" font-family="JetBrains Mono">Support</text>');
+
+  // Depth dimension (left side)
+  const dimX = sx - 22;
+  lines.push('<line x1="' + dimX + '" y1="' + sy + '" x2="' + dimX + '" y2="' + (sy+slabH) + '" stroke="#64748b" stroke-width="0.8"/>');
+  lines.push('<line x1="' + (dimX-4) + '" y1="' + sy + '" x2="' + (dimX+4) + '" y2="' + sy + '" stroke="#64748b" stroke-width="0.8"/>');
+  lines.push('<line x1="' + (dimX-4) + '" y1="' + (sy+slabH) + '" x2="' + (dimX+4) + '" y2="' + (sy+slabH) + '" stroke="#64748b" stroke-width="0.8"/>');
+  lines.push('<text x="' + (dimX-10) + '" y="' + (sy+slabH/2+4) + '" fill="#e2e8f0" font-size="10" font-weight="700" text-anchor="middle" font-family="JetBrains Mono" transform="rotate(-90,' + (dimX-10) + ',' + (sy+slabH/2) + ')">' + D + 'mm</text>');
+
+  // Cover dim right
+  const covX = ex + 22;
+  lines.push('<line x1="' + covX + '" y1="' + (sy+slabH) + '" x2="' + covX + '" y2="' + botCoverY + '" stroke="rgba(99,102,241,0.6)" stroke-width="0.8"/>');
+  lines.push('<line x1="' + (covX-3) + '" y1="' + (sy+slabH) + '" x2="' + (covX+3) + '" y2="' + (sy+slabH) + '" stroke="rgba(99,102,241,0.6)" stroke-width="0.8"/>');
+  lines.push('<line x1="' + (covX-3) + '" y1="' + botCoverY + '" x2="' + (covX+3) + '" y2="' + botCoverY + '" stroke="rgba(99,102,241,0.6)" stroke-width="0.8"/>');
+  lines.push('<text x="' + (covX+10) + '" y="' + ((sy+slabH+botCoverY)/2+3) + '" fill="rgba(99,102,241,0.9)" font-size="8" font-family="JetBrains Mono">' + cover + 'mm</text>');
+
+  // Effective depth d
+  lines.push('<line x1="' + (ex+58) + '" y1="' + topBarY + '" x2="' + (ex+58) + '" y2="' + botBarY + '" stroke="rgba(148,163,184,0.4)" stroke-width="0.8" stroke-dasharray="3,2"/>');
+  lines.push('<text x="' + (ex+68) + '" y="' + ((topBarY+botBarY)/2+3) + '" fill="#94a3b8" font-size="8" font-family="JetBrains Mono">d=' + d + 'mm</text>');
+
+  // BMD
+  lines.push('<text x="' + (W/2) + '" y="' + (bmdY-5) + '" fill="#475569" font-size="8" text-anchor="middle" font-family="JetBrains Mono">— Bending Moment Diagram (schematic) —</text>');
+  lines.push('<line x1="' + sx + '" y1="' + bmdY + '" x2="' + ex + '" y2="' + bmdY + '" stroke="#334155" stroke-width="0.8"/>');
+  // Sagging
+  lines.push('<path d="M' + sx + ',' + bmdY + ' C' + (sx+slabW*0.25) + ',' + bmdY + ' ' + (sx+slabW*0.25) + ',' + (bmdY+bmdH) + ' ' + (W/2) + ',' + (bmdY+bmdH) + ' C' + (ex-slabW*0.25) + ',' + (bmdY+bmdH) + ' ' + (ex-slabW*0.25) + ',' + bmdY + ' ' + ex + ',' + bmdY + '" stroke="#34d399" stroke-width="1.5" fill="rgba(52,211,153,0.12)"/>');
+  lines.push('<text x="' + (W/2) + '" y="' + (bmdY+bmdH+12) + '" fill="#34d399" font-size="8.5" text-anchor="middle" font-family="JetBrains Mono">+Mx = ' + r2(p.Mx) + ' kN.m/m (sagging — bottom tension)</text>');
+  // Hogging
+  const hogH = 16;
+  lines.push('<path d="M' + sx + ',' + bmdY + ' C' + (sx+extPx*0.4) + ',' + bmdY + ' ' + (sx+extPx*0.6) + ',' + (bmdY-hogH) + ' ' + (sx+extPx) + ',' + bmdY + '" stroke="#f87171" stroke-width="1.5" fill="rgba(248,113,113,0.1)"/>');
+  lines.push('<path d="M' + (ex-extPx) + ',' + bmdY + ' C' + (ex-extPx*0.6) + ',' + bmdY + ' ' + (ex-extPx*0.4) + ',' + (bmdY-hogH) + ' ' + ex + ',' + bmdY + '" stroke="#f87171" stroke-width="1.5" fill="rgba(248,113,113,0.1)"/>');
+  lines.push('<text x="' + (sx+extPx/2) + '" y="' + (bmdY-hogH-4) + '" fill="#f87171" font-size="7.5" text-anchor="middle" font-family="JetBrains Mono">-' + r2(p.Mx_neg) + ' kN.m</text>');
+  lines.push('<text x="' + (ex-extPx/2) + '" y="' + (bmdY-hogH-4) + '" fill="#f87171" font-size="7.5" text-anchor="middle" font-family="JetBrains Mono">-' + r2(p.Mx_neg) + ' kN.m</text>');
+
+  // Legend
+  const lgY = bmdY + bmdH + 30;
+  const lgItems = [
+    ['#34d399', 'D' + diaBot + '@' + spx + 'mm c/c — Short-span bottom, Ast_x = ' + r0(p.Ax) + ' mm\u00b2/m'],
+    twoWay ? ['#38bdf8', 'D' + diaLong + '@' + spy + 'mm c/c — Long-span bottom (above), Ast_y = ' + r0(p.Ay) + ' mm\u00b2/m'] : null,
+    ['#f87171', 'D' + diaTop + '@' + spx_n + 'mm c/c — Top/negative bars at supports, Ast_neg = ' + r0(p.Ax_neg) + ' mm\u00b2/m'],
+  ].filter(Boolean);
+
+  lgItems.forEach(function(item, i) {
+    const col = item[0], label = item[1];
+    lines.push('<circle cx="' + (padL+8) + '" cy="' + (lgY+i*15) + '" r="4.5" fill="' + col + '"/>');
+    lines.push('<text x="' + (padL+20) + '" y="' + (lgY+i*15+4) + '" fill="' + col + '" font-size="8.5" font-family="JetBrains Mono">' + label + '</text>');
+  });
+
+  lines.push('</svg>');
+
+  const cap = 'Fig: Cross-section through short span of slab ' + p.bayLabel + ' (lx=' + r2(lx) + 'm, ly=' + r2(ly) + 'm). Top bars at 0.3\u00d7lx=' + r2(0.3*lx) + 'm from supports per IS 456 Cl 26.5.2.3.';
+  return '<div class="dg">' + lines.join('') + '<div class="dg-cap">' + cap + '</div></div>';
 }
 
 function secBeams(){
