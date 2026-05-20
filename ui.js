@@ -962,7 +962,125 @@ function svgBeamCrossSection(b){
 }
 
 function svgTributaryArea(b){
-  const W=420, H=280;
+  const W=420, H=300, padL=55, padT=35, padR=25, padB=50;
+  const spX = S.spansX[b.col]||4;
+  const spY = S.spansY[b.row]||3;
+  const nCols = Math.min(S.spansX.length, 4);
+  const nRows = Math.min(S.spansY.length, 4);
+  const isX = b.dir==='X';
+  const beamRow = b.row||0;
+  const beamCol = b.col||0;
+  const trib = b.trib||spY/2;
+
+  // Scale to fit full grid
+  const maxW = W-padL-padR, maxH = H-padT-padB;
+  const scX = Math.min(maxW/(nCols*spX), maxH/(nRows*spY), 52);
+  const scY = scX;
+  const bW = spX*scX, bH = spY*scY;
+
+  // Node grid positions
+  const xs = [], ys = [];
+  for(let i=0;i<=nCols;i++) xs.push(padL + i*bW);
+  for(let i=0;i<=nRows;i++) ys.push(padT + i*bH);
+
+  let s = `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">`;
+  s += `<rect width="${W}" height="${H}" fill="#0a0f1e" rx="6"/>`;
+  s += `<text x="${W/2}" y="20" fill="#38bdf8" font-size="11" font-weight="bold" text-anchor="middle" font-family="JetBrains Mono">TRIBUTARY AREA — BEAM ${b.label} (PLAN VIEW)</text>`;
+
+  // Draw all slab panels
+  for(let r=0;r<nRows;r++) for(let c=0;c<nCols;c++){
+    // Determine if this panel is in the tributary zone
+    let isTrib = false;
+    if(isX){
+      // X-beam runs along row=beamRow
+      // Panels above (row=beamRow-1) and below (row=beamRow) contribute
+      isTrib = (c === beamCol) && (r === beamRow-1 || r === beamRow);
+    } else {
+      // Y-beam runs along col=beamCol
+      isTrib = (r === beamRow) && (c === beamCol-1 || c === beamCol);
+    }
+    const fill = isTrib ? 'rgba(249,115,22,0.25)' : 'rgba(15,23,42,0.8)';
+    const stroke = isTrib ? '#f97316' : '#334155';
+    const sw = isTrib ? 1.5 : 0.8;
+    s += `<rect x="${xs[c]}" y="${ys[r]}" width="${bW}" height="${bH}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}"/>`;
+  }
+
+  // Draw the design beam (thick line)
+  if(isX){
+    // Beam runs horizontally along row=beamRow, spanning col=beamCol to beamCol+1
+    const y = ys[beamRow];
+    const x1 = xs[beamCol], x2 = xs[beamCol+1] || xs[beamCol]+bW;
+    s += `<line x1="${x1}" y1="${y}" x2="${x2}" y2="${y}" stroke="#f59e0b" stroke-width="4" stroke-linecap="round"/>`;
+    // Beam label at midspan
+    s += `<text x="${(x1+x2)/2}" y="${y-6}" fill="#f59e0b" font-size="9" font-weight="bold" text-anchor="middle" font-family="JetBrains Mono">${b.label} (L=${spX}m)</text>`;
+  } else {
+    // Beam runs vertically along col=beamCol
+    const x = xs[beamCol];
+    const y1 = ys[beamRow], y2 = ys[beamRow+1] || ys[beamRow]+bH;
+    s += `<line x1="${x}" y1="${y1}" x2="${x}" y2="${y2}" stroke="#f59e0b" stroke-width="4" stroke-linecap="round"/>`;
+    s += `<text x="${x+6}" y="${(y1+y2)/2}" fill="#f59e0b" font-size="9" font-weight="bold" font-family="JetBrains Mono">${b.label} (L=${spY}m)</text>`;
+  }
+
+  // Draw all column nodes
+  for(let r=0;r<=nRows;r++) for(let c=0;c<=nCols;c++){
+    s += `<rect x="${xs[c]-5}" y="${ys[r]-5}" width="10" height="10" fill="#1e293b" stroke="#a78bfa" stroke-width="1.5" rx="1"/>`;
+  }
+
+  // Tributary width arrows
+  if(isX){
+    // Show trib width vertically on the right side
+    const x = xs[beamCol+1] ? xs[beamCol+1]+12 : xs[beamCol]+bW+12;
+    const yBeam = ys[beamRow];
+    const yTop = yBeam - trib*scY;
+    const yBot = yBeam + trib*scY;
+    // Arrow line
+    s += `<line x1="${x}" y1="${yTop}" x2="${x}" y2="${yBot}" stroke="#38bdf8" stroke-width="1.5"/>`;
+    s += `<line x1="${x-5}" y1="${yTop}" x2="${x+5}" y2="${yTop}" stroke="#38bdf8" stroke-width="1.5"/>`;
+    s += `<line x1="${x-5}" y1="${yBot}" x2="${x+5}" y2="${yBot}" stroke="#38bdf8" stroke-width="1.5"/>`;
+    s += `<text x="${x+14}" y="${(yTop+yBot)/2+4}" fill="#38bdf8" font-size="9" font-family="JetBrains Mono">${r2(trib)}m</text>`;
+    s += `<text x="${x+14}" y="${(yTop+yBot)/2+16}" fill="#64748b" font-size="8" font-family="JetBrains Mono">each side</text>`;
+    // Midline showing beam centre
+    s += `<line x1="${xs[beamCol]-5}" y1="${yBeam}" x2="${x+4}" y2="${yBeam}" stroke="#f59e0b" stroke-width="0.5" stroke-dasharray="3,2"/>`;
+  } else {
+    // Show trib width horizontally at bottom
+    const y = ys[beamRow+1] ? ys[beamRow+1]+12 : ys[beamRow]+bH+12;
+    const xBeam = xs[beamCol];
+    const xL = xBeam - trib*scX;
+    const xR = xBeam + trib*scX;
+    s += `<line x1="${xL}" y1="${y}" x2="${xR}" y2="${y}" stroke="#38bdf8" stroke-width="1.5"/>`;
+    s += `<line x1="${xL}" y1="${y-5}" x2="${xL}" y2="${y+5}" stroke="#38bdf8" stroke-width="1.5"/>`;
+    s += `<line x1="${xR}" y1="${y-5}" x2="${xR}" y2="${y+5}" stroke="#38bdf8" stroke-width="1.5"/>`;
+    s += `<text x="${(xL+xR)/2}" y="${y+14}" fill="#38bdf8" font-size="9" text-anchor="middle" font-family="JetBrains Mono">${r2(trib)}m each side</text>`;
+  }
+
+  // Span dimension lines — bottom
+  for(let c=0;c<nCols;c++){
+    const y0 = ys[nRows]+16;
+    s += `<line x1="${xs[c]}" y1="${y0}" x2="${xs[c+1]}" y2="${y0}" stroke="#f59e0b" stroke-width="0.8"/>`;
+    s += `<line x1="${xs[c]}" y1="${y0-3}" x2="${xs[c]}" y2="${y0+3}" stroke="#f59e0b" stroke-width="0.8"/>`;
+    s += `<line x1="${xs[c+1]}" y1="${y0-3}" x2="${xs[c+1]}" y2="${y0+3}" stroke="#f59e0b" stroke-width="0.8"/>`;
+    s += `<text x="${(xs[c]+xs[c+1])/2}" y="${y0+12}" fill="#f59e0b" font-size="9" text-anchor="middle" font-family="JetBrains Mono">${spX}m</text>`;
+  }
+  // Span dimension lines — left
+  for(let r=0;r<nRows;r++){
+    const x0 = padL-16;
+    s += `<line x1="${x0}" y1="${ys[r]}" x2="${x0}" y2="${ys[r+1]}" stroke="#f59e0b" stroke-width="0.8"/>`;
+    s += `<line x1="${x0-3}" y1="${ys[r]}" x2="${x0+3}" y2="${ys[r]}" stroke="#f59e0b" stroke-width="0.8"/>`;
+    s += `<line x1="${x0-3}" y1="${ys[r+1]}" x2="${x0+3}" y2="${ys[r+1]}" stroke="#f59e0b" stroke-width="0.8"/>`;
+    s += `<text x="${x0-14}" y="${(ys[r]+ys[r+1])/2+4}" fill="#f59e0b" font-size="9" text-anchor="middle" font-family="JetBrains Mono" transform="rotate(-90,${x0-14},${(ys[r]+ys[r+1])/2})">${spY}m</text>`;
+  }
+
+  // Legend
+  s += `<rect x="10" y="${H-38}" width="12" height="10" fill="rgba(249,115,22,0.25)" stroke="#f97316" stroke-width="1.5"/>`;
+  s += `<text x="26" y="${H-29}" fill="#f97316" font-size="9" font-family="JetBrains Mono">Slab panels loading this beam</text>`;
+  s += `<line x1="10" y1="${H-18}" x2="22" y2="${H-18}" stroke="#f59e0b" stroke-width="3"/>`;
+  s += `<text x="26" y="${H-14}" fill="#f59e0b" font-size="9" font-family="JetBrains Mono">Design beam (${b.dir}-direction)</text>`;
+  s += `<rect x="200" y="${H-38}" width="10" height="10" fill="#1e293b" stroke="#a78bfa" stroke-width="1.5"/>`;
+  s += `<text x="214" y="${H-29}" fill="#a78bfa" font-size="9" font-family="JetBrains Mono">Columns</text>`;
+
+  s += '</svg>';
+  return`<div class="dg">${s}<div class="dg-cap">Fig: Plan view — orange panels show slab area whose load goes to beam ${b.label}. Trib width = ${r2(trib)}m on each side of beam.</div></div>`;
+}
   const spX = S.spansX[b.col]||4;
   const spY = S.spansY[b.row]||3;
   const nCols = Math.min(S.spansX.length, 4);
@@ -1049,14 +1167,6 @@ function svgTributaryArea(b){
   s += `<text x="${mid.x}" y="${mid.y-8}" fill="#f59e0b" font-size="9" text-anchor="middle" font-family="JetBrains Mono">L=${r2(isX?spX*nCols:spY*nRows)}m</text>`;
 
   // Legend
-  s += `<rect x="10" y="240" width="12" height="8" fill="rgba(249,115,22,0.25)" stroke="#f97316" stroke-width="1.5"/>`;
-  s += `<text x="26" y="248" fill="#f97316" font-size="9" font-family="JetBrains Mono">Slab area loading this beam</text>`;
-  s += `<line x1="10" y1="258" x2="22" y2="258" stroke="#f59e0b" stroke-width="3"/>`;
-  s += `<text x="26" y="262" fill="#f59e0b" font-size="9" font-family="JetBrains Mono">Design beam (${b.dir}-direction)</text>`;
-
-  s += '</svg>';
-  return`<div class="dg">${s}<div class="dg-cap">Fig: Orange panels = slab area whose load goes to beam ${b.label}. Tributary width = ${r2(trib)}m each side.</div></div>`;
-}
 function beamFailureExplanation(b){
   if(b.deflOK && b.shearSafe) return '';
   let html='<div style="margin-top:10px;padding:12px;background:rgba(248,113,113,0.06);border:1.5px solid rgba(248,113,113,0.3);border-radius:8px">';
