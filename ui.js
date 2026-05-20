@@ -188,6 +188,81 @@ function p5(){return`
       </div>
     </div>
   </div>
+
+  <!-- ── FOOTING TYPE SELECTION ─────────────────────────────── -->
+  <div style="margin-top:16px;padding:12px;background:rgba(251,191,36,0.05);border:1px solid rgba(251,191,36,0.2);border-radius:8px">
+    <div style="font-size:11px;font-weight:700;color:#fbbf24;margin-bottom:8px">🏗 Footing Type</div>
+    <div style="font-size:10px;color:#94a3b8;margin-bottom:10px">Select foundation type. App auto-checks if isolated footings overlap and warns you to switch. For weak soils (SBC &lt; 75 kN/m²), raft is recommended.</div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      ${[
+        {id:'isolated', label:'Isolated Pad', desc:'One footing per column. IS 456 Cl 34.', icon:'⬜', color:'#34d399'},
+        {id:'combined', label:'Combined Footing', desc:'Two columns share one elongated pad.', icon:'▭', color:'#f59e0b'},
+        {id:'raft',     label:'Raft / Mat',   desc:'Continuous slab under all columns. IS 456 Cl 34.4.', icon:'▦', color:'#f87171'},
+      ].map(t=>`
+        <button onclick="S.ftgType='${t.id}';go(5)"
+          style="flex:1;min-width:140px;padding:10px 12px;border-radius:8px;cursor:pointer;text-align:left;
+          border:1.5px solid ${(S.ftgType||'isolated')===t.id?t.color:'rgba(30,58,138,0.4)'};
+          background:${(S.ftgType||'isolated')===t.id?'rgba('+((S.ftgType||'isolated')===t.id&&t.color==="#34d399"?'52,211,153':t.color==='#f59e0b'?'245,158,11':'248,113,113')+',0.08)':'transparent'}">
+          <div style="font-size:13px;margin-bottom:3px">${t.icon}</div>
+          <div style="font-size:10px;font-weight:700;color:${(S.ftgType||'isolated')===t.id?t.color:'#94a3b8'}">${t.label}</div>
+          <div style="font-size:8px;color:#64748b;margin-top:2px">${t.desc}</div>
+        </button>`).join('')}
+    </div>
+    ${(S.ftgType||'isolated')==='raft'?`<div style="margin-top:8px;padding:8px;background:rgba(248,113,113,0.08);border-radius:6px;font-size:9px;color:#f87171">⚠ Raft foundation design requires separate detailed analysis. The app will size individual column footings as reference; actual raft design must be done by a structural engineer.</div>`:''}
+    ${(S.ftgType||'isolated')==='combined'?`<div style="margin-top:8px;padding:8px;background:rgba(245,158,11,0.08);border-radius:6px;font-size:9px;color:#f59e0b">ℹ Combined footing: app designs each column's tributary area. For actual combined footing, the engineer must design the connecting beam/slab.</div>`:''}
+  </div>
+
+  <!-- ── STAIR TYPE SELECTION ───────────────────────────────── -->
+  <div style="margin-top:14px;padding:12px;background:rgba(245,158,11,0.05);border:1px solid rgba(245,158,11,0.2);border-radius:8px">
+    <div style="font-size:11px;font-weight:700;color:#f59e0b;margin-bottom:8px">🪜 Staircase Type & Geometry <span style="font-size:9px;color:#64748b;font-weight:400">(only needed if you marked a bay as Staircase)</span></div>
+
+    <!-- Type selector -->
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+      ${[
+        {id:'straight', label:'Straight Flight', desc:'Single run, no turn. Bay ≥ 2m × 4m.', col:'#f59e0b'},
+        {id:'dogleg',   label:'Dog-Leg (U-Turn)',desc:'Two flights + mid landing. Bay ≥ 2.5m × 5m.', col:'#34d399'},
+        {id:'90turn',   label:'90° Quarter-Turn',desc:'L-shaped with quarter landing. Bay ≥ 3m × 3m.', col:'#38bdf8'},
+      ].map(t=>`
+        <button onclick="S.stairType='${t.id}';go(5)"
+          style="flex:1;min-width:130px;padding:8px 10px;border-radius:8px;cursor:pointer;text-align:left;
+          border:1.5px solid ${(S.stairType||'dogleg')===t.id?t.col:'rgba(30,58,138,0.4)'};
+          background:${(S.stairType||'dogleg')===t.id?'rgba(245,158,11,0.06)':'transparent'}">
+          <div style="font-size:10px;font-weight:700;color:${(S.stairType||'dogleg')===t.id?t.col:'#94a3b8'}">${t.label} ${(S.stairType||'dogleg')===t.id?'✓':''}</div>
+          <div style="font-size:8px;color:#64748b;margin-top:2px">${t.desc}</div>
+        </button>`).join('')}
+    </div>
+
+    <!-- Riser / Tread inputs -->
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
+      <div>
+        <label style="font-size:10px;color:#94a3b8;display:block;margin-bottom:3px">Riser (R) mm</label>
+        <input type="number" value="${S.riser||150}" min="100" max="200" step="5"
+          style="width:100%;background:#0f172a;color:#f1f5f9;border:1px solid ${(S.riser||150)<100||(S.riser||150)>200?'#f87171':'#1e3a8a'};border-radius:6px;padding:6px 8px;font-size:11px;font-family:monospace"
+          oninput="S.riser=Math.max(100,Math.min(200,parseInt(this.value)||150));this.style.borderColor=S.riser<100||S.riser>200?'#f87171':'#1e3a8a'">
+        <div style="font-size:8px;color:#64748b;margin-top:2px">IS NBC: 100–200mm</div>
+      </div>
+      <div>
+        <label style="font-size:10px;color:#94a3b8;display:block;margin-bottom:3px">Tread (T) mm</label>
+        <input type="number" value="${S.tread||270}" min="250" max="350" step="5"
+          style="width:100%;background:#0f172a;color:#f1f5f9;border:1px solid ${(S.tread||270)<250?'#f87171':'#1e3a8a'};border-radius:6px;padding:6px 8px;font-size:11px;font-family:monospace"
+          oninput="S.tread=Math.max(250,Math.min(400,parseInt(this.value)||270));this.style.borderColor=S.tread<250?'#f87171':'#1e3a8a'">
+        <div style="font-size:8px;color:#64748b;margin-top:2px">IS NBC: min 250mm</div>
+      </div>
+      <div>
+        <label style="font-size:10px;color:#94a3b8;display:block;margin-bottom:3px">2R + T check</label>
+        <div style="padding:6px 8px;background:#0f172a;border:1px solid ${Math.abs(2*(S.riser||150)+(S.tread||270)-600)<=50?'#34d399':'#f87171'};border-radius:6px;font-size:11px;color:${Math.abs(2*(S.riser||150)+(S.tread||270)-600)<=50?'#34d399':'#f87171'};font-family:monospace">
+          ${2*(S.riser||150)+(S.tread||270)} mm
+        </div>
+        <div style="font-size:8px;color:#64748b;margin-top:2px">Should be 550–650mm (IS NBC)</div>
+      </div>
+    </div>
+    <div style="margin-top:8px;font-size:9px;color:#64748b">
+      Steps per floor = ${Math.ceil((S.floorHt||3.2)*1000/(S.riser||150))} steps at ${S.riser||150}mm rise &nbsp;|&nbsp;
+      Flight run = ${Math.ceil((S.floorHt||3.2)*1000/(S.riser||150))} × ${S.tread||270} = ${Math.ceil((S.floorHt||3.2)*1000/(S.riser||150))*(S.tread||270)}mm (${r2(Math.ceil((S.floorHt||3.2)*1000/(S.riser||150))*(S.tread||270)/1000)}m)
+      &nbsp;|&nbsp; θ = ${Math.round(Math.atan((S.riser||150)/(S.tread||270))*180/Math.PI)}°
+    </div>
+  </div>
+
   <div style="display:flex;justify-content:space-between;margin-top:12px">
     <button class="btn se" onclick="go(4)"><- Back</button>
     <button class="btn" onclick="go(6)">Next -></button>
@@ -372,15 +447,15 @@ function secOverview(){
 function svgStairSection(st) {
   var spX = st.spX || 3, spY = st.spY || 4;
   var flightSpan = st.flightSpan || spX * 0.7;
-  var riser = st.riser || 150;   // mm
-  var tread = st.tread || 270;   // mm
-  var steps = st.steps || Math.ceil(S.floorHt * 1000 / riser);
+  var riser = st.riser || S.riser || 150;   // use student input
+  var tread = st.tread || S.tread || 270;   // use student input
+  var steps = Math.ceil(S.floorHt * 1000 / riser);
   var wD = st.wD || 150;         // waist slab thickness mm
   var cover = S.coverSlab || 20;
-  var Ast = st.Ast || 400;       // mm²/m
+  var Ast = st.Ast2 || st.Ast || 400;       // mm²/m
 
-  // Determine stair type from bay
-  var type = spX >= 2.5 && spY >= 5 ? 'dogleg' : spX >= 3 && spY >= 3 ? '90turn' : 'straight';
+  // Use student-selected type from result (set before analysis) or S state
+  var type = st.stairType || S.stairType || (spX >= 2.5 && spY >= 5 ? 'dogleg' : spX >= 3 && spY >= 3 ? '90turn' : 'straight');
 
   var W = 660, H = 380;
   var lines = [];
@@ -2711,9 +2786,15 @@ function secFootings(){
 function ftgDetail(f){
   if(!f)return'';
   const ok=f.punch_ok&&f.ow_ok&&f.Ld_ok;
+  const ftgTypeLabel={'isolated':'Isolated Pad','combined':'Combined Footing','raft':'Raft Foundation'}[S.ftgType||'isolated']||'Isolated Pad';
+  const ftgTypeColor={'isolated':'#34d399','combined':'#f59e0b','raft':'#f87171'}[S.ftgType||'isolated']||'#34d399';
   return`
 <div style="border:1px solid ${ok?'rgba(251,191,36,0.3)':'rgba(248,113,113,0.4)'};border-radius:8px;padding:12px">
-  <div style="font-size:13px;font-weight:800;color:#fbbf24;margin-bottom:6px">${f.label||'FTG-'+f.baseLabel}</div>
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;flex-wrap:wrap">
+    <div style="font-size:13px;font-weight:800;color:#fbbf24">${f.label||'FTG-'+f.baseLabel}</div>
+    <span style="padding:2px 8px;border-radius:4px;font-size:9px;font-weight:700;background:rgba(0,0,0,0.3);border:1px solid ${ftgTypeColor};color:${ftgTypeColor}">${ftgTypeLabel}</span>
+    ${(S.ftgType||'isolated')!=='isolated'?`<span style="font-size:9px;color:#64748b">⚠ Refer to engineer for detailed ${ftgTypeLabel.toLowerCase()} design</span>`:''}
+  </div>
   ${vd(ok,ok?'All checks PASS OK':'One or more checks FAIL — REVISE')}
 
   ${sb('F-1','Size & Pressure',`

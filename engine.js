@@ -96,7 +96,12 @@ const S={
   fck:25,fy:500,Es:200000,
   udlLL:2.0,udlRoof:1.5,floorFinish:1.0,partitions:1.5,wallLoad:12,
   slabThk:150,coverSlab:20,coverBeam:40,coverCol:40,coverFtg:75,
-  soilBearing:200,ftgDepth:1.5, ftgMinD:0,windZone:'IV',terrain:'2'
+  soilBearing:200,ftgDepth:1.5, ftgMinD:0,windZone:'IV',terrain:'2',
+  // Foundation and stair type selections (set in p5)
+  ftgType:'isolated',          // 'isolated' | 'combined' | 'raft'
+  stairType:'dogleg',          // 'straight' | 'dogleg' | '90turn'
+  riser:150,                   // mm — stair riser height
+  tread:270,                   // mm — stair tread depth
 };
 
 // =======================================================
@@ -3785,9 +3790,13 @@ function runCalcsFromGrid(){
   const Vz=VbW*k2,pz=0.6*Vz*Vz/1000,Fw=1.3*pz;
 
   // ── STAIR: design each stair bay individually ────────────────
-  // Riser/tread from actual floor height
-  const riser=Math.min(175,Math.round(floorHt*1000/Math.ceil(floorHt*1000/165)));
-  const tread=Math.max(250,600-riser);
+  // Riser/tread: use student input if set, else auto-calculate from floor height
+  const riser = S.riser && S.riser >= 100 && S.riser <= 200
+    ? S.riser
+    : Math.min(175, Math.round(floorHt*1000/Math.ceil(floorHt*1000/165)));
+  const tread = S.tread && S.tread >= 250
+    ? S.tread
+    : Math.max(250, 600-riser);
   const theta=Math.atan(riser/tread);  // stair angle in radians
 
   function designStairBay(bay){
@@ -3823,6 +3832,7 @@ function runCalcsFromGrid(){
       wD, wd, DL_waist, DL_steps, DLst, wust,
       LL_stair, Mst, Ast2, stsp,
       stairReaction,
+      stairType: S.stairType || 'dogleg', // student-selected type
       isStair:true,
     };
   }
