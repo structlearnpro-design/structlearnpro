@@ -1680,6 +1680,7 @@ function drawGrid(canvas){
   // Background
   ctx.fillStyle='#0a0f1e';ctx.fillRect(0,0,canvas.width,canvas.height);
 
+  if(!S.columns){
   // ── BAY FILLS ─────────────────────────────────────────────────
   GRID.bays.forEach(bay=>{
     const x0=xs[bay.col],y0=ys[bay.row],x1=xs[bay.col+1],y1=ys[bay.row+1];
@@ -1727,12 +1728,15 @@ function drawGrid(canvas){
       ctx.textAlign='center';ctx.fillText('Case '+caseN,cx2,cy2+5);
     }
   });
+  } // end bay fills
 
+  if(!S.columns){
   // ── GRID LINES (faint) ────────────────────────────────────────
   ctx.strokeStyle='rgba(30,58,138,0.4)';ctx.lineWidth=0.5;ctx.setLineDash([3,4]);
   xs.forEach(x=>{ctx.beginPath();ctx.moveTo(x,PAD.t);ctx.lineTo(x,CANVAS_H-PAD.b);ctx.stroke();});
   ys.forEach(y=>{ctx.beginPath();ctx.moveTo(PAD.l,y);ctx.lineTo(CANVAS_W-PAD.r,y);ctx.stroke();});
   ctx.setLineDash([]);
+  }
 
   // ── BEAMS ─────────────────────────────────────────────────────
   GRID.beams.forEach(beam=>{
@@ -1809,12 +1813,47 @@ function drawGrid(canvas){
         ctx.beginPath();ctx.moveTo(i,pos.y-5);ctx.lineTo(i-4,pos.y+5);ctx.stroke();
       }
     }else{
-      // Missing/removed column — X marker
-      ctx.strokeStyle=isSel?'#0a0f1e':'#f87171';ctx.lineWidth=2.5;
-      ctx.beginPath();ctx.moveTo(pos.x-6,pos.y-6);ctx.lineTo(pos.x+6,pos.y+6);ctx.stroke();
-      ctx.beginPath();ctx.moveTo(pos.x+6,pos.y-6);ctx.lineTo(pos.x-6,pos.y+6);ctx.stroke();
+      // Missing/removed column — X marker (only in legacy span mode)
+      if(!S.columns){
+        ctx.strokeStyle=isSel?'#0a0f1e':'#f87171';ctx.lineWidth=2.5;
+        ctx.beginPath();ctx.moveTo(pos.x-6,pos.y-6);ctx.lineTo(pos.x+6,pos.y+6);ctx.stroke();
+        ctx.beginPath();ctx.moveTo(pos.x+6,pos.y-6);ctx.lineTo(pos.x-6,pos.y+6);ctx.stroke();
+      }
     }
   });
+
+  // ── COORDINATE LABELS (coordinate mode only) ─────────────────
+  if(S.columns && S.columns.length > 0){
+    // Light snap grid
+    const pw2=CANVAS_W-PAD.l-PAD.r,ph2=CANVAS_H-PAD.t-PAD.b;
+    const maxX=Math.max(...S.spansX.reduce((a,s,i)=>[...a,a[i]+s],[0]),1);
+    const maxY=Math.max(...S.spansY.reduce((a,s,i)=>[...a,a[i]+s],[0]),1);
+    ctx.strokeStyle='rgba(30,58,138,0.18)';ctx.lineWidth=0.5;ctx.setLineDash([2,8]);
+    for(let gx=0;gx<=maxX;gx+=2){
+      const cx2=PAD.l+gx/maxX*pw2;
+      ctx.beginPath();ctx.moveTo(cx2,PAD.t);ctx.lineTo(cx2,CANVAS_H-PAD.b);ctx.stroke();
+    }
+    for(let gy=0;gy<=maxY;gy+=2){
+      const cy2=PAD.t+gy/maxY*ph2;
+      ctx.beginPath();ctx.moveTo(PAD.l,cy2);ctx.lineTo(CANVAS_W-PAD.r,cy2);ctx.stroke();
+    }
+    ctx.setLineDash([]);
+    // Axis arrows and labels
+    ctx.fillStyle='#475569';ctx.font='bold 9px JetBrains Mono';
+    ctx.textAlign='right';ctx.fillText('X (m) →',CANVAS_W-PAD.r,PAD.t-10);
+    ctx.save();ctx.translate(PAD.l-28,PAD.t+60);ctx.rotate(-Math.PI/2);
+    ctx.textAlign='center';ctx.fillText('Y (m)',0,0);ctx.restore();
+    // Coordinate labels next to each column
+    GRID.nodes.forEach(node=>{
+      if(!node.hasColumn)return;
+      const pos=nodeCanvas(node);
+      const lx=Math.round(S.spansX.slice(0,node.col).reduce((a,b)=>a+b,0)*100)/100;
+      const ly=Math.round(S.spansY.slice(0,node.row).reduce((a,b)=>a+b,0)*100)/100;
+      ctx.fillStyle='rgba(148,163,184,0.85)';ctx.font='8px JetBrains Mono';
+      ctx.textAlign='left';
+      ctx.fillText('('+lx+','+ly+')',pos.x+9,pos.y+4);
+    });
+  }
 
   // ── SECONDARY BEAM DRAG PREVIEW ──────────────────────────────
   if(GE.dragSecStart&&GE.dragSecCurrent){
@@ -2946,81 +2985,70 @@ function clearAllColumns() {
 }
 
 // Click on canvas to place column
-let _placingColumn = false;
-function addColumnOnCanvas() {
-  _placingColumn = true;
-  const tip = document.getElementById('geTip');
-  if (tip) tip.textContent = '🖱 Click on canvas to place a column. Press Escape to cancel.';
-  document.addEventListener('keydown', function esc(e) {
-    if (e.key === 'Escape') { _placingColumn = false; document.removeEventListener('keydown', esc); }
-  });
-}
-
 // Template layouts
 function applyTemplate(name) {
   const templates = {
-    '3x3_4x3': () => {
-      const cols = [];
-      [0,4,8].forEach(x => [0,3,6].forEach(y => cols.push({x,y})));
-      return cols;
-    },
-    '4x3_4x3': () => {
-      const cols = [];
-      [0,4,8,12].forEach(x => [0,3,6].forEach(y => cols.push({x,y})));
-      return cols;
-    },
-    'L_4x3': () => {
-      // L-shape: full left column + bottom row only on right
-      const cols = [];
-      [0,4,8].forEach(x => [0,3,6].forEach(y => {
-        if (x <= 4 || y === 0) cols.push({x,y});
-      }));
-      return cols;
-    },
-    'T_4x3': () => {
-      // T-shape: full top + middle column
-      const cols = [];
-      [0,4,8,12].forEach(x => [0,3,6].forEach(y => {
-        if (y === 6 || x === 4) cols.push({x,y});
-      }));
-      return cols;
-    },
-    '5x4_4x3': () => {
-      const cols = [];
-      [0,4,8,12,16].forEach(x => [0,3,6,9].forEach(y => cols.push({x,y})));
-      return cols;
-    },
+    '3x3_4x3': ()=>{const c=[];[0,4,8].forEach(x=>[0,3,6].forEach(y=>c.push({x,y})));return c;},
+    '4x3_4x3': ()=>{const c=[];[0,4,8,12].forEach(x=>[0,3,6].forEach(y=>c.push({x,y})));return c;},
+    'L_4x3':   ()=>[[0,0],[4,0],[8,0],[0,3],[4,3],[0,6],[4,6],[0,9],[4,9],[8,9]].map(([x,y])=>({x,y})),
+    'T_4x3':   ()=>[[0,0],[4,0],[8,0],[12,0],[4,3],[8,3],[4,6],[8,6]].map(([x,y])=>({x,y})),
+    '5x4_4x3': ()=>{const c=[];[0,4,8,12,16].forEach(x=>[0,3,6,9].forEach(y=>c.push({x,y})));return c;},
   };
-  const fn = templates[name];
-  if (!fn) return;
-  S.columns = fn();
-  GRID = null; initGrid(); go(2);
+  const fn=templates[name];
+  if(!fn){console.error('Unknown template:',name);return;}
+  S.columns=fn();
+  const r=coordsToGrid();
+  if(!r.ok){alert('Template error: '+r.error);return;}
+  GRID=null;initGrid();go(2);
 }
 
-// Override canvas click handler to support column placement
-const _origHandleGridClick = typeof handleGridClick !== 'undefined' ? handleGridClick : null;
-function handleGridClick(e, canvas) {
-  if (_placingColumn && S.columns) {
-    const rect = canvas.getBoundingClientRect();
-    const scaleX = CANVAS_W / rect.width, scaleY = CANVAS_H / rect.height;
-    const cx = (e.clientX - rect.left) * scaleX;
-    const cy = (e.clientY - rect.top) * scaleY;
-    // Convert canvas pixels to metres
-    const pw = CANVAS_W - PAD.l - PAD.r, ph = CANVAS_H - PAD.t - PAD.b;
-    const totalX = S.columns.length > 0 ? Math.max(...S.columns.map(c=>c.x)) || 12 : 12;
-    const totalY = S.columns.length > 0 ? Math.max(...S.columns.map(c=>c.y)) || 9 : 9;
-    const mx = Math.round(((cx - PAD.l) / pw * totalX) * 2) / 2; // snap 0.5m
-    const my = Math.round(((cy - PAD.t) / ph * totalY) * 2) / 2;
-    if (mx >= 0 && my >= 0) {
-      S.columns.push({ x: mx, y: my });
-      updateCoordinate(S.columns.length - 1, 'x', mx);
+// Canvas column placement mode
+let _placingColumn=false;
+function addColumnOnCanvas(){
+  if(!S.columns){alert('Switch to Coordinate mode first to place columns on canvas.');return;}
+  _placingColumn=true;
+  const tip=document.getElementById('geTip');
+  if(tip){tip.style.color='#34d399';tip.textContent='Click anywhere on the canvas to place a column. Press Esc to cancel.';}
+  document.addEventListener('keydown',function esc(e){
+    if(e.key==='Escape'){
+      _placingColumn=false;
+      document.removeEventListener('keydown',esc);
+      const t=document.getElementById('geTip');
+      if(t){t.style.color='#38bdf8';t.textContent='Click any node, beam, or bay to inspect and edit its properties';}
     }
-    _placingColumn = false;
-    GRID = null; initGrid(); go(2);
-    return;
-  }
-  if (_origHandleGridClick) _origHandleGridClick(e, canvas);
+  });
 }
+
+// Patch handleGridClick to intercept canvas clicks in coordinate placement mode
+(function(){
+  const _orig=handleGridClick;
+  handleGridClick=function(e,canvas){
+    if(_placingColumn&&S.columns){
+      const rect=canvas.getBoundingClientRect();
+      const scaleX=CANVAS_W/rect.width,scaleY=CANVAS_H/rect.height;
+      const cx=(e.clientX-rect.left)*scaleX;
+      const cy=(e.clientY-rect.top)*scaleY;
+      const pw=CANVAS_W-PAD.l-PAD.r,ph=CANVAS_H-PAD.t-PAD.b;
+      const maxX=S.columns.length>0?Math.max(...S.columns.map(c=>c.x),12):12;
+      const maxY=S.columns.length>0?Math.max(...S.columns.map(c=>c.y),9):9;
+      const mx=Math.round(((cx-PAD.l)/pw*maxX)*2)/2;
+      const my=Math.round(((cy-PAD.t)/ph*maxY)*2)/2;
+      if(mx>=0&&my>=0){
+        S.columns.push({x:Math.max(0,mx),y:Math.max(0,my)});
+        const r=coordsToGrid();
+        if(r.ok){GRID=null;initGrid();}
+        const el=document.getElementById('coord_result');
+        if(el){el.innerHTML=r.ok?'<span style="color:#34d399">&#x2713; '+r.summary+'</span>':'<span style="color:#f87171">&#x2717; '+r.error+'</span>';}
+        go(2);
+      }
+      _placingColumn=false;
+      const tip=document.getElementById('geTip');
+      if(tip){tip.style.color='#38bdf8';tip.textContent='Click any node, beam, or bay to inspect and edit its properties';}
+      return;
+    }
+    _orig.call(this,e,canvas);
+  };
+})();
 
 // ── MAIN ENGINE ────────────────────────────────────────────────
 function runCalcsFromGrid(){
