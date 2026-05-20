@@ -972,13 +972,10 @@ function svgTributaryArea(b){
   const beamCol = b.col||0;
   const trib = b.trib||spY/2;
 
-  // Scale to fit full grid
   const maxW = W-padL-padR, maxH = H-padT-padB;
   const scX = Math.min(maxW/(nCols*spX), maxH/(nRows*spY), 52);
   const scY = scX;
   const bW = spX*scX, bH = spY*scY;
-
-  // Node grid positions
   const xs = [], ys = [];
   for(let i=0;i<=nCols;i++) xs.push(padL + i*bW);
   for(let i=0;i<=nRows;i++) ys.push(padT + i*bH);
@@ -987,83 +984,52 @@ function svgTributaryArea(b){
   s += `<rect width="${W}" height="${H}" fill="#0a0f1e" rx="6"/>`;
   s += `<text x="${W/2}" y="20" fill="#38bdf8" font-size="11" font-weight="bold" text-anchor="middle" font-family="JetBrains Mono">TRIBUTARY AREA — BEAM ${b.label} (PLAN VIEW)</text>`;
 
-  // Draw all slab panels
+  // Slab panels
   for(let r=0;r<nRows;r++) for(let c=0;c<nCols;c++){
-    // Determine if this panel is in the tributary zone
-    let isTrib = false;
-    if(isX){
-      // X-beam runs along row=beamRow
-      // Panels above (row=beamRow-1) and below (row=beamRow) contribute
-      isTrib = (c === beamCol) && (r === beamRow-1 || r === beamRow);
-    } else {
-      // Y-beam runs along col=beamCol
-      isTrib = (r === beamRow) && (c === beamCol-1 || c === beamCol);
-    }
-    const fill = isTrib ? 'rgba(249,115,22,0.25)' : 'rgba(15,23,42,0.8)';
-    const stroke = isTrib ? '#f97316' : '#334155';
-    const sw = isTrib ? 1.5 : 0.8;
-    s += `<rect x="${xs[c]}" y="${ys[r]}" width="${bW}" height="${bH}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}"/>`;
+    let isTrib = isX
+      ? (c===beamCol && (r===beamRow-1||r===beamRow))
+      : (r===beamRow && (c===beamCol-1||c===beamCol));
+    s += `<rect x="${xs[c]}" y="${ys[r]}" width="${bW}" height="${bH}" fill="${isTrib?'rgba(249,115,22,0.25)':'rgba(15,23,42,0.8)'}" stroke="${isTrib?'#f97316':'#334155'}" stroke-width="${isTrib?1.5:0.8}"/>`;
   }
 
-  // Draw the design beam (thick line)
+  // Design beam
   if(isX){
-    // Beam runs horizontally along row=beamRow, spanning col=beamCol to beamCol+1
-    const y = ys[beamRow];
-    const x1 = xs[beamCol], x2 = xs[beamCol+1] || xs[beamCol]+bW;
+    const y=ys[beamRow], x1=xs[beamCol], x2=xs[beamCol+1]||xs[beamCol]+bW;
     s += `<line x1="${x1}" y1="${y}" x2="${x2}" y2="${y}" stroke="#f59e0b" stroke-width="4" stroke-linecap="round"/>`;
-    // Beam label at midspan
     s += `<text x="${(x1+x2)/2}" y="${y-6}" fill="#f59e0b" font-size="9" font-weight="bold" text-anchor="middle" font-family="JetBrains Mono">${b.label} (L=${spX}m)</text>`;
+    // Trib width arrows
+    const ax=xs[Math.min(beamCol+1,nCols)]+12, yT=ys[beamRow]-trib*scY, yB=ys[beamRow]+trib*scY;
+    s += `<line x1="${ax}" y1="${yT}" x2="${ax}" y2="${yB}" stroke="#38bdf8" stroke-width="1.5"/>`;
+    s += `<line x1="${ax-4}" y1="${yT}" x2="${ax+4}" y2="${yT}" stroke="#38bdf8" stroke-width="1.5"/>`;
+    s += `<line x1="${ax-4}" y1="${yB}" x2="${ax+4}" y2="${yB}" stroke="#38bdf8" stroke-width="1.5"/>`;
+    s += `<text x="${ax+12}" y="${(yT+yB)/2+3}" fill="#38bdf8" font-size="9" font-family="JetBrains Mono">${r2(trib)}m each side</text>`;
   } else {
-    // Beam runs vertically along col=beamCol
-    const x = xs[beamCol];
-    const y1 = ys[beamRow], y2 = ys[beamRow+1] || ys[beamRow]+bH;
+    const x=xs[beamCol], y1=ys[beamRow], y2=ys[beamRow+1]||ys[beamRow]+bH;
     s += `<line x1="${x}" y1="${y1}" x2="${x}" y2="${y2}" stroke="#f59e0b" stroke-width="4" stroke-linecap="round"/>`;
     s += `<text x="${x+6}" y="${(y1+y2)/2}" fill="#f59e0b" font-size="9" font-weight="bold" font-family="JetBrains Mono">${b.label} (L=${spY}m)</text>`;
+    const ay=ys[Math.min(beamRow+1,nRows)]+12, xL=xs[beamCol]-trib*scX, xR=xs[beamCol]+trib*scX;
+    s += `<line x1="${xL}" y1="${ay}" x2="${xR}" y2="${ay}" stroke="#38bdf8" stroke-width="1.5"/>`;
+    s += `<line x1="${xL}" y1="${ay-4}" x2="${xL}" y2="${ay+4}" stroke="#38bdf8" stroke-width="1.5"/>`;
+    s += `<line x1="${xR}" y1="${ay-4}" x2="${xR}" y2="${ay+4}" stroke="#38bdf8" stroke-width="1.5"/>`;
+    s += `<text x="${(xL+xR)/2}" y="${ay+14}" fill="#38bdf8" font-size="9" text-anchor="middle" font-family="JetBrains Mono">${r2(trib)}m each side</text>`;
   }
 
-  // Draw all column nodes
+  // Column nodes
   for(let r=0;r<=nRows;r++) for(let c=0;c<=nCols;c++){
     s += `<rect x="${xs[c]-5}" y="${ys[r]-5}" width="10" height="10" fill="#1e293b" stroke="#a78bfa" stroke-width="1.5" rx="1"/>`;
   }
 
-  // Tributary width arrows
-  if(isX){
-    // Show trib width vertically on the right side
-    const x = xs[beamCol+1] ? xs[beamCol+1]+12 : xs[beamCol]+bW+12;
-    const yBeam = ys[beamRow];
-    const yTop = yBeam - trib*scY;
-    const yBot = yBeam + trib*scY;
-    // Arrow line
-    s += `<line x1="${x}" y1="${yTop}" x2="${x}" y2="${yBot}" stroke="#38bdf8" stroke-width="1.5"/>`;
-    s += `<line x1="${x-5}" y1="${yTop}" x2="${x+5}" y2="${yTop}" stroke="#38bdf8" stroke-width="1.5"/>`;
-    s += `<line x1="${x-5}" y1="${yBot}" x2="${x+5}" y2="${yBot}" stroke="#38bdf8" stroke-width="1.5"/>`;
-    s += `<text x="${x+14}" y="${(yTop+yBot)/2+4}" fill="#38bdf8" font-size="9" font-family="JetBrains Mono">${r2(trib)}m</text>`;
-    s += `<text x="${x+14}" y="${(yTop+yBot)/2+16}" fill="#64748b" font-size="8" font-family="JetBrains Mono">each side</text>`;
-    // Midline showing beam centre
-    s += `<line x1="${xs[beamCol]-5}" y1="${yBeam}" x2="${x+4}" y2="${yBeam}" stroke="#f59e0b" stroke-width="0.5" stroke-dasharray="3,2"/>`;
-  } else {
-    // Show trib width horizontally at bottom
-    const y = ys[beamRow+1] ? ys[beamRow+1]+12 : ys[beamRow]+bH+12;
-    const xBeam = xs[beamCol];
-    const xL = xBeam - trib*scX;
-    const xR = xBeam + trib*scX;
-    s += `<line x1="${xL}" y1="${y}" x2="${xR}" y2="${y}" stroke="#38bdf8" stroke-width="1.5"/>`;
-    s += `<line x1="${xL}" y1="${y-5}" x2="${xL}" y2="${y+5}" stroke="#38bdf8" stroke-width="1.5"/>`;
-    s += `<line x1="${xR}" y1="${y-5}" x2="${xR}" y2="${y+5}" stroke="#38bdf8" stroke-width="1.5"/>`;
-    s += `<text x="${(xL+xR)/2}" y="${y+14}" fill="#38bdf8" font-size="9" text-anchor="middle" font-family="JetBrains Mono">${r2(trib)}m each side</text>`;
-  }
-
-  // Span dimension lines — bottom
+  // Span dims — bottom
   for(let c=0;c<nCols;c++){
-    const y0 = ys[nRows]+16;
+    const y0=ys[nRows]+16;
     s += `<line x1="${xs[c]}" y1="${y0}" x2="${xs[c+1]}" y2="${y0}" stroke="#f59e0b" stroke-width="0.8"/>`;
     s += `<line x1="${xs[c]}" y1="${y0-3}" x2="${xs[c]}" y2="${y0+3}" stroke="#f59e0b" stroke-width="0.8"/>`;
     s += `<line x1="${xs[c+1]}" y1="${y0-3}" x2="${xs[c+1]}" y2="${y0+3}" stroke="#f59e0b" stroke-width="0.8"/>`;
     s += `<text x="${(xs[c]+xs[c+1])/2}" y="${y0+12}" fill="#f59e0b" font-size="9" text-anchor="middle" font-family="JetBrains Mono">${spX}m</text>`;
   }
-  // Span dimension lines — left
+  // Span dims — left
   for(let r=0;r<nRows;r++){
-    const x0 = padL-16;
+    const x0=padL-16;
     s += `<line x1="${x0}" y1="${ys[r]}" x2="${x0}" y2="${ys[r+1]}" stroke="#f59e0b" stroke-width="0.8"/>`;
     s += `<line x1="${x0-3}" y1="${ys[r]}" x2="${x0+3}" y2="${ys[r]}" stroke="#f59e0b" stroke-width="0.8"/>`;
     s += `<line x1="${x0-3}" y1="${ys[r+1]}" x2="${x0+3}" y2="${ys[r+1]}" stroke="#f59e0b" stroke-width="0.8"/>`;
@@ -1075,98 +1041,11 @@ function svgTributaryArea(b){
   s += `<text x="26" y="${H-29}" fill="#f97316" font-size="9" font-family="JetBrains Mono">Slab panels loading this beam</text>`;
   s += `<line x1="10" y1="${H-18}" x2="22" y2="${H-18}" stroke="#f59e0b" stroke-width="3"/>`;
   s += `<text x="26" y="${H-14}" fill="#f59e0b" font-size="9" font-family="JetBrains Mono">Design beam (${b.dir}-direction)</text>`;
-  s += `<rect x="200" y="${H-38}" width="10" height="10" fill="#1e293b" stroke="#a78bfa" stroke-width="1.5"/>`;
-  s += `<text x="214" y="${H-29}" fill="#a78bfa" font-size="9" font-family="JetBrains Mono">Columns</text>`;
-
+  s += `<rect x="220" y="${H-38}" width="10" height="10" fill="#1e293b" stroke="#a78bfa" stroke-width="1.5"/>`;
+  s += `<text x="234" y="${H-29}" fill="#a78bfa" font-size="9" font-family="JetBrains Mono">Columns</text>`;
   s += '</svg>';
-  return`<div class="dg">${s}<div class="dg-cap">Fig: Plan view — orange panels show slab area whose load goes to beam ${b.label}. Trib width = ${r2(trib)}m on each side of beam.</div></div>`;
+  return`<div class="dg">${s}<div class="dg-cap">Fig: Plan view — orange panels = slab area loading beam ${b.label}. Trib width = ${r2(trib)}m each side.</div></div>`;
 }
-  const spX = S.spansX[b.col]||4;
-  const spY = S.spansY[b.row]||3;
-  const nCols = Math.min(S.spansX.length, 4);
-  const nRows = Math.min(S.spansY.length, 4);
-  const isX = b.dir==='X';
-  const trib = b.trib||spY/2;
-
-  // 3D isometric projection settings
-  const isoX = 0.7, isoY = 0.4; // perspective skew
-  const sc = Math.min(55, 180/Math.max(nCols*spX, nRows*spY));
-  const bW = spX*sc, bH = spY*sc;
-  // Origin point (bottom-left of grid in screen space)
-  const ox = 60, oy = 200;
-
-  // Project a grid point (col, row) to screen (x, y)
-  function proj(c, r) {
-    return {
-      x: ox + c*bW*isoX - r*bH*isoX*0.6,
-      y: oy - c*bW*isoY - r*bH*(1-isoY*0.5)
-    };
-  }
-
-  let s = `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">`;
-  s += `<rect width="${W}" height="${H}" fill="#0a0f1e" rx="6"/>`;
-  s += `<text x="${W/2}" y="18" fill="#38bdf8" font-size="11" font-weight="bold" text-anchor="middle" font-family="JetBrains Mono">TRIBUTARY AREA — BEAM ${b.label}</text>`;
-
-  // Draw slab panels (3D faces)
-  for(let r=0;r<nRows;r++) for(let c=0;c<nCols;c++){
-    const p00=proj(c,r), p10=proj(c+1,r), p11=proj(c+1,r+1), p01=proj(c,r+1);
-    // Check if this panel contributes to our beam's tributary area
-    const beamRow = b.row||0, beamCol = b.col||0;
-    let isTrib = false;
-    if(isX){
-      // X-beam at row=beamRow — panels in rows beamRow-1 and beamRow contribute
-      isTrib = (r===beamRow-1||r===beamRow) && c===beamCol;
-    } else {
-      // Y-beam at col=beamCol — panels in cols beamCol-1 and beamCol contribute
-      isTrib = (c===beamCol-1||c===beamCol) && r===beamRow;
-    }
-    const fill = isTrib ? 'rgba(249,115,22,0.25)' : 'rgba(30,41,59,0.8)';
-    const stroke = isTrib ? '#f97316' : '#334155';
-    s += `<polygon points="${p00.x},${p00.y} ${p10.x},${p10.y} ${p11.x},${p11.y} ${p01.x},${p01.y}" fill="${fill}" stroke="${stroke}" stroke-width="${isTrib?1.5:0.8}"/>`;
-  }
-
-  // Draw the beam itself (thick highlighted line)
-  if(isX){
-    const r = b.row||0;
-    const p0=proj(0,r), p1=proj(nCols,r);
-    // Beam shadow/depth
-    s += `<line x1="${p0.x}" y1="${p0.y+3}" x2="${p1.x}" y2="${p1.y+3}" stroke="#92400e" stroke-width="6" stroke-linecap="round"/>`;
-    s += `<line x1="${p0.x}" y1="${p0.y}" x2="${p1.x}" y2="${p1.y}" stroke="#f59e0b" stroke-width="4" stroke-linecap="round"/>`;
-  } else {
-    const c = b.col||0;
-    const p0=proj(c,0), p1=proj(c,nRows);
-    s += `<line x1="${p0.x}" y1="${p0.y+3}" x2="${p1.x}" y2="${p1.y+3}" stroke="#92400e" stroke-width="6" stroke-linecap="round"/>`;
-    s += `<line x1="${p0.x}" y1="${p0.y}" x2="${p1.x}" y2="${p1.y}" stroke="#f59e0b" stroke-width="4" stroke-linecap="round"/>`;
-  }
-
-  // Draw column nodes
-  for(let r=0;r<=nRows;r++) for(let c=0;c<=nCols;c++){
-    const p=proj(c,r);
-    s += `<rect x="${p.x-4}" y="${p.y-4}" width="8" height="8" fill="#a78bfa" stroke="#c4b5fd" stroke-width="1" rx="1"/>`;
-  }
-
-  // Tributary width annotation arrows
-  if(isX){
-    const beamR = b.row||0;
-    const pBeam=proj(nCols+0.1, beamR);
-    const pTop=proj(nCols+0.1, Math.max(0,beamR-1));
-    const pBot=proj(nCols+0.1, Math.min(nRows,beamR+1));
-    s += `<line x1="${pTop.x}" y1="${pTop.y}" x2="${pBot.x}" y2="${pBot.y}" stroke="#38bdf8" stroke-width="1" stroke-dasharray="3,2"/>`;
-    s += `<text x="${pBeam.x+14}" y="${pBeam.y+4}" fill="#38bdf8" font-size="9" font-family="JetBrains Mono">trib=${r2(trib)}m</text>`;
-  } else {
-    const beamC = b.col||0;
-    const pBeam=proj(beamC, nRows+0.1);
-    const pL=proj(Math.max(0,beamC-1), nRows+0.1);
-    const pR=proj(Math.min(nCols,beamC+1), nRows+0.1);
-    s += `<line x1="${pL.x}" y1="${pL.y}" x2="${pR.x}" y2="${pR.y}" stroke="#38bdf8" stroke-width="1" stroke-dasharray="3,2"/>`;
-    s += `<text x="${pBeam.x}" y="${pBeam.y+14}" fill="#38bdf8" font-size="9" text-anchor="middle" font-family="JetBrains Mono">trib=${r2(trib)}m</text>`;
-  }
-
-  // Span label
-  const mid=proj(nCols/2, 0);
-  s += `<text x="${mid.x}" y="${mid.y-8}" fill="#f59e0b" font-size="9" text-anchor="middle" font-family="JetBrains Mono">L=${r2(isX?spX*nCols:spY*nRows)}m</text>`;
-
-  // Legend
 function beamFailureExplanation(b){
   if(b.deflOK && b.shearSafe) return '';
   let html='<div style="margin-top:10px;padding:12px;background:rgba(248,113,113,0.06);border:1.5px solid rgba(248,113,113,0.3);border-radius:8px">';
@@ -10109,7 +9988,7 @@ function p18(){return RES?secDesignSummary():'<div class="card"><div class="ct">
 function p19(){return secParametric();}
 function p20(){return RES?secDiscussion():'<div class="card"><div class="ct">Analysis Discussion</div><div class="cd">Run analysis first.</div><button class="btn" onclick="go(6)">Run Analysis</button></div>';}
 
-const pages=[p0,p1,p2,p3,p4,p5,p6,p7,p8,p9,p10,p11,p12,p13,p14,p15,p16,p17,p18,p19,p20];
+var pages=[p0,p1,p2,p3,p4,p5,p6,p7,p8,p9,p10,p11,p12,p13,p14,p15,p16,p17,p18,p19,p20];
 go(0);
 setTimeout(()=>renderGridPrev&&renderGridPrev(),200);
 setInterval(()=>{try{saveToParent('draft');}catch(e){}},30000);
