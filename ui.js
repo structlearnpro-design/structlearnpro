@@ -558,6 +558,7 @@ function secSlab(){
   return`
 <div class="card">
   <div class="ct">🔲 Slab Design — Every Bay Individually — IS 456 Cl 24, 26.5.2, Table 26</div>
+  ${glossaryBar(['lx','ly','αx','αy','Mx','My','Mulim','Ast','d','l/d','fck','fy'])}
   ${warns}
 
   <!-- Floor selector -->
@@ -1014,6 +1015,7 @@ function beamDetail(b){
   const flrLbl=b.isRoof?'Roof':`Floor ${b.floor}`;
   return`
 <div style="border:1px solid ${ok?'rgba(249,115,22,0.3)':'rgba(248,113,113,0.4)'};border-radius:8px;padding:12px;margin-top:4px">
+  ${glossaryBar(['D','b','d','wu','Mmax','Mulim','Ast','Ld','tv','tcmax','trib'])}
   <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap">
     <div style="font-size:13px;font-weight:800;color:var(--orange)">${b.label}</div>
     <div style="font-size:10px;color:var(--txt3)">${flrLbl} | ${b.dir==='X'?'X-direction':'Y-direction'} | L=${b.L}m</div>
@@ -1209,6 +1211,7 @@ function colDetail(c){
   const ok=c.safe;
   return`
 <div style="border:1px solid ${ok?'rgba(167,139,250,0.3)':'rgba(248,113,113,0.4)'};border-radius:8px;padding:12px">
+  ${glossaryBar(['Pu','Ps','Pcap','Ag','Ac','Asc','fck','fy','pt','leff','emin','Lo'])}
   <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap">
     <div style="font-size:13px;font-weight:800;color:#a78bfa">${c.label}</div>
     <div style="font-size:10px;color:var(--txt3)">
@@ -1220,7 +1223,7 @@ function colDetail(c){
   ${vd(ok,ok?'SAFE — Pu('+r2(c.Pu)+'kN) ≤ Pcap('+r2(c.Pcap)+'kN)':'UNSAFE — Pu('+r2(c.Pu)+'kN) > Pcap('+r2(c.Pcap)+'kN) — REVISE',c.Pu/c.Pcap)}
 
   ${sb('C-1','Tributary Area & Axial Load',`
-    ${svgTribArea(c.corner?'corner':c.edge?'edge':'interior',S.spansX[c.col]||4,S.spansY[c.row]||3)}
+    ${svgTribArea(c.corner?'corner':c.edge?'edge':'interior', S.spansX[c.col]||4, S.spansY[c.row]||3, c.row, c.col, S.spansY.length, S.spansX.length)}
     ${fm('Slab trib area (slab bays only, voids excluded)',r2(c.ta)+' m²','')}
     ${c.perimLen>0?fm('Perimeter beam length (wall load)',r2(c.perimLen)+' m',''):''}
     ${fm('Ps per floor = DL_tot×area + LL×area×0.25 + wallLoad×perimLen',r2(c.Ps/c.floorsAbove)+' kN/floor','')}
@@ -1432,6 +1435,7 @@ function ftgDetail(f){
   const ok=f.punch_ok&&f.ow_ok&&f.Ld_ok;
   return`
 <div style="border:1px solid ${ok?'rgba(251,191,36,0.3)':'rgba(248,113,113,0.4)'};border-radius:8px;padding:12px">
+  ${glossaryBar(['Bf','qu','Ps','Pu','Vpu','tvp','tcp','Lda','Ldr','fck'])}
   <div style="font-size:13px;font-weight:800;color:#fbbf24;margin-bottom:6px">${f.label||'FTG-'+f.baseLabel}</div>
   ${vd(ok,ok?'All checks PASS OK':'One or more checks FAIL — REVISE')}
 

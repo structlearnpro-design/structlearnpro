@@ -238,8 +238,9 @@ function fmWhy(eq, res, ref, why) {
   if (!why) return fm(eq, res, ref);
   const id = 'why_' + (++_whyCounter);
   const refHtml = ref ? clauseRef(ref) : '';
+  const eqAnnotated = annotateTerms(String(eq||''));
   return `<div class="fm">
-    ${eq} <span class="r">= ${res}</span>
+    ${eqAnnotated} <span class="r">= ${res}</span>
     ${refHtml ? '<span style="margin-left:6px">' + refHtml + '</span>' : ''}
     <button onclick="toggleWhy('${id}')" style="margin-left:8px;padding:1px 7px;background:rgba(56,189,248,0.1);border:1px solid rgba(56,189,248,0.3);border-radius:4px;color:#38bdf8;cursor:pointer;font-size:9px;font-weight:700" title="Expand to see why this formula is used">WHY?</button>
     <div id="${id}" style="display:none;margin-top:6px;padding:8px 12px;background:rgba(14,165,233,0.06);border-left:2px solid #0ea5e9;border-radius:0 6px 6px 0;font-size:10.5px;color:var(--txt2);line-height:1.8">${why}</div>
@@ -250,9 +251,114 @@ function toggleWhy(id) {
   if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
 }
 
+// Glossary strip — shows key terms for a given page type
+function glossaryBar(terms) {
+  const pills = terms.map(t => {
+    const desc = TERM_GLOSSARY[t] || '';
+    if (!desc) return '';
+    return `<span title="${desc}" style="display:inline-block;padding:2px 8px;margin:2px 3px;background:rgba(56,189,248,0.08);border:1px solid rgba(56,189,248,0.2);border-radius:12px;font-size:9px;color:#64748b;cursor:help;white-space:nowrap" onclick="this.style.color=this.style.color===' #38bdf8'?'#64748b':'#38bdf8'"><span style="color:#94a3b8;font-weight:700">${t}</span> = ${desc}</span>`;
+  }).filter(Boolean).join('');
+  if (!pills) return '';
+  return `<div style="margin-bottom:10px;padding:8px 10px;background:rgba(15,23,42,0.6);border:1px solid rgba(56,189,248,0.1);border-radius:8px">
+    <div style="font-size:9px;color:#475569;margin-bottom:4px;font-weight:700">📖 KEY TERMS USED ON THIS PAGE</div>
+    <div style="line-height:2">${pills}</div>
+  </div>`;
+}
+
 function krow(k,v,ref='',cls=''){return`<div class="kv"><span class="kv-k">${k}</span><span class="kv-v ${cls}">${v}</span>${ref?`<span class="kv-r">${ref}</span>`:''}</div>`;}
 
 // Auto-WHY lookup — keyed by substrings that appear in the equation string
+// ── TERM GLOSSARY — short descriptions shown inline next to each term ──
+const TERM_GLOSSARY = {
+  'fck':    'concrete compressive strength (N/mm²)',
+  'fy':     'steel yield strength (N/mm²)',
+  'Pu':     'factored axial load (1.5 × service load)',
+  'Ps':     'service axial load (unfactored)',
+  'Pcap':   'column axial capacity (IS 456 Cl 39.3)',
+  'Ag':     'gross cross-section area of column (mm²)',
+  'Ac':     'net concrete area = Ag − Asc (mm²)',
+  'Asc':    'area of longitudinal steel in column (mm²)',
+  'Ast':    'area of tension reinforcement (mm²)',
+  'Asc_req':'steel area required from demand',
+  'Asc_min':'minimum steel (0.8% of Ag) per IS 456',
+  'Asc_max':'maximum steel (4% of Ag) per IS 456',
+  'Aprov':  'steel area actually provided',
+  'pt':     'percentage of steel (Asc/Ag × 100)',
+  'Mulim':  'limiting moment — max a singly reinforced beam can carry',
+  'Mmax':   'maximum bending moment in beam',
+  'Mu':     'factored bending moment (design moment)',
+  'Mx':     'factored moment in X-direction (short span)',
+  'My':     'factored moment in Y-direction (long span)',
+  'wu':     'factored UDL on beam (1.5 × total load)',
+  'wu =':   'factored UDL on beam (1.5 × total load)',
+  'D =':    'overall depth of beam or slab (mm)',
+  'D':      'overall depth of beam or slab (mm)',
+  'b =':    'width of beam (mm)',
+  'b':      'width of beam (mm)',
+  'd =':    'effective depth = D − cover − stirrup − half bar (mm)',
+  'd':      'effective depth from top fibre to steel centroid (mm)',
+  'Ld':     'development length — min bar embedment to avoid pullout',
+  'Lda':    'development length available inside footing',
+  'Ldr':    'development length required by IS 456',
+  'RA':     'reaction at support A (end shear force)',
+  'tv':     'nominal shear stress = V/(b×d)',
+  'tcmax':  'maximum permissible shear stress for concrete grade',
+  'tc':     'design shear strength of concrete (IS 456 Table 19)',
+  'Vpu':    'punching shear force around column perimeter',
+  'tvp':    'punching shear stress at critical perimeter',
+  'tcp':    'permissible punching shear = 0.25√fck',
+  'Bf':     'footing plan size (m)',
+  'qu':     'factored net upward soil pressure (kN/m²)',
+  'Ps_sbc': 'service load used for soil pressure check',
+  'Vb':     'base shear — total lateral seismic force on building',
+  'Ah':     'design seismic coefficient (Z×Sa/g)/(2×R×I)',
+  'Sa/g':   'spectral acceleration from IS 1893 response spectrum',
+  'Ta':     'fundamental natural time period of building (seconds)',
+  'Z':      'seismic zone factor (IS 1893 Table 3)',
+  'R':      'response reduction factor (5 for ductile frames)',
+  'I':      'importance factor (1.0 residential, 1.5 hospitals)',
+  'Vz':     'design wind speed at height z (m/s)',
+  'pz':     'design wind pressure at height z (kN/m²)',
+  'Vb =':   'basic wind speed from IS 875 Part 3 map (m/s)',
+  'k1':     'risk coefficient (1.0 for 50-year return period)',
+  'k2':     'terrain, height & size factor (IS 875 P3 Table 2)',
+  'k3':     'topography factor (1.0 for flat ground)',
+  'Cpe':    'external pressure coefficient (wind on surface)',
+  'Cpi':    'internal pressure coefficient (wind inside building)',
+  'lx':     'shorter span of slab panel (m)',
+  'ly':     'longer span of slab panel (m)',
+  'αx':     'moment coefficient for short span (IS 456 Table 26)',
+  'αy':     'moment coefficient for long span (IS 456 Table 26)',
+  'l/d':    'span-to-depth ratio (deflection check)',
+  'Lo':     'confinement zone length at column ends (IS 13920)',
+  'leff':   'effective length of column for buckling check',
+  'emin':   'minimum eccentricity of load in column (IS 456 Cl 25.4)',
+  'trib':   'tributary width — slab width feeding load to this beam',
+};
+
+// Auto-annotate known terms in formula text with small tooltip badge
+function annotateTerms(text) {
+  if (!text || typeof text !== 'string') return text;
+  // Only annotate the left side (equation part), not units or IS references
+  // Simple pass: find exact term at word boundary and wrap with tooltip
+  let result = text;
+  // Sort by length descending to match longer terms first (Asc_req before Asc)
+  const terms = Object.entries(TERM_GLOSSARY).sort((a,b)=>b[0].length-a[0].length);
+  const annotated = new Set();
+  for (const [term, desc] of terms) {
+    // Only annotate first occurrence to avoid cluttering
+    const clean = term.replace(/[=]/g,'').trim();
+    if (annotated.has(clean)) continue;
+    // Match term as a word (not inside HTML tags)
+    const regex = new RegExp(`(?<![a-zA-Z_])(${clean.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})(?![a-zA-Z_0-9])`, '');
+    if (regex.test(result)) {
+      result = result.replace(regex, `$1<sup title="${desc}" style="cursor:help;font-size:8px;color:#64748b;margin-left:1px;border-bottom:1px dotted #64748b" onclick="event.stopPropagation()">?</sup>`);
+      annotated.add(clean);
+    }
+  }
+  return result;
+}
+
 const FM_WHY = {
   'D = d_min':    'Beam depth D rounded up to nearest 25mm from span/12 rule. Effective depth d = D - cover - stirrup - half bar diameter. Rounding UP to 25mm is standard Indian practice for formwork economy.',
   'b = max(230':  'Minimum beam width 200mm from IS 456 Cl 26.5.1. b = max(230, 0.4D) ensures the section is compact enough to fit the required bar arrangement with cover and spacing.',
@@ -282,19 +388,20 @@ const FM_WHY = {
 
 let _fmCount = 0;
 function fm(eq, res, ref='') {
+  // Annotate known terms with tooltip badges
+  const eqAnnotated = annotateTerms(String(eq||''));
   // Look up auto-WHY explanation
   let why = '';
   const eqStr = String(eq||'');
   for (const [key, explanation] of Object.entries(FM_WHY)) {
     if (eqStr.includes(key)) { why = explanation; break; }
   }
-  // Also check fmWhy override
   const refHtml = ref ? clauseRef(ref) : '';
   if (!why) {
-    return `<div class="fm">${eq} <span class="r">= ${res}</span>${refHtml ? ' '+refHtml : ''}</div>`;
+    return `<div class="fm">${eqAnnotated} <span class="r">= ${res}</span>${refHtml ? ' '+refHtml : ''}</div>`;
   }
   const id = 'fw' + (++_fmCount);
-  return `<div class="fm">${eq} <span class="r">= ${res}</span>${refHtml ? ' '+refHtml : ''}
+  return `<div class="fm">${eqAnnotated} <span class="r">= ${res}</span>${refHtml ? ' '+refHtml : ''}
     <button onclick="var e=document.getElementById('${id}');if(e)e.style.display=e.style.display==='none'?'block':'none'" style="margin-left:8px;padding:1px 7px;background:rgba(56,189,248,0.12);border:1px solid rgba(56,189,248,0.35);border-radius:4px;color:#38bdf8;cursor:pointer;font-size:9px;font-weight:700;vertical-align:middle">WHY?</button>
     <div id="${id}" style="display:none;margin-top:6px;padding:8px 12px;background:rgba(14,165,233,0.07);border-left:2px solid #0ea5e9;border-radius:0 6px 6px 0;font-size:10.5px;color:var(--txt2);line-height:1.8">${why}</div>
   </div>`;
@@ -325,92 +432,103 @@ function sdiv(t){return`<div class="sdiv"><div class="sdiv-l"></div><div class="
 
 
 
-function svgTribArea(type,spX,spY){
-  const W=400,H=300,pad=50;
-  // Auto-scale so both bays fit within canvas
-  const maxW=W-2*pad, maxH=H-2*pad-20;
-  const scX=Math.min(maxW/(2*spX), maxH/(2*spY), 55);
-  const scY=scX;
-  const bW=spX*scX, bH=spY*scY;
-  // 3×3 grid of nodes (2 bays each direction)
-  const bx=[pad, pad+bW, pad+2*bW];
-  const by=[pad, pad+bH, pad+2*bH];
+function svgTribArea(type,spX,spY,colRow,colCol,gridNY,gridNX){
+  // colRow, colCol = actual grid position (0-indexed)
+  // gridNY, gridNX = total rows/cols in grid
+  // Default to 2x2 grid for backward compat
+  const nRows = Math.min(gridNY||2, 4);
+  const nCols = Math.min(gridNX||2, 4);
+  const cr = Math.min(colRow||0, nRows);
+  const cc = Math.min(colCol||0, nCols);
 
-  // Which node is the design column?
-  // corner=top-left(0,0), edge=top-center(1,0), interior=center(1,1)
-  const colNodeX = type==='corner'?0 : type==='edge'?1 : 1;
-  const colNodeY = type==='corner'?0 : type==='edge'?0 : 1;
-  const cx=bx[colNodeX], cy=by[colNodeY];
+  const W=420, H=320, padL=55, padT=30, padR=20, padB=50;
+  const maxW = W-padL-padR, maxH = H-padT-padB;
+  // Scale to fit the full grid
+  const scX = Math.min(maxW/(nCols*spX), maxH/(nRows*spY), 50);
+  const scY = scX;
+  const bW = spX*scX, bH = spY*scY;
 
-  // Tributary area shading (half-bay each side from column)
-  let tribX1,tribX2,tribY1,tribY2;
-  if(type==='corner'){
-    tribX1=bx[0]; tribX2=(bx[0]+bx[1])/2;
-    tribY1=by[0]; tribY2=(by[0]+by[1])/2;
-  } else if(type==='edge'){
-    tribX1=(bx[0]+bx[1])/2; tribX2=(bx[1]+bx[2])/2;
-    tribY1=by[0]; tribY2=(by[0]+by[1])/2;
-  } else { // interior
-    tribX1=(bx[0]+bx[1])/2; tribX2=(bx[1]+bx[2])/2;
-    tribY1=(by[0]+by[1])/2; tribY2=(by[1]+by[2])/2;
-  }
-  const tribArea = (tribX2-tribX1)*(tribY2-tribY1)/(scX*scY);
+  // Node positions for full grid
+  const xs = [], ys = [];
+  for(let i=0;i<=nCols;i++) xs.push(padL + i*bW);
+  for(let i=0;i<=nRows;i++) ys.push(padT + i*bH);
+
+  // Column node position
+  const cx = xs[cc], cy = ys[cr];
+
+  // Tributary area bounds (half bay each side, clamp to grid edge)
+  const tribX1 = cc===0 ? xs[0] : xs[cc]-bW/2;
+  const tribX2 = cc===nCols ? xs[nCols] : xs[cc]+bW/2;
+  const tribY1 = cr===0 ? ys[0] : ys[cr]-bH/2;
+  const tribY2 = cr===nRows ? ys[nRows] : ys[cr]+bH/2;
+  const tribW = (tribX2-tribX1)/scX;
+  const tribH = (tribY2-tribY1)/scY;
+  const tribArea = tribW * tribH;
 
   let g=`<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">`;
   g+=`<rect width="${W}" height="${H}" fill="#0a0f1e" rx="6"/>`;
-  g+=`<text x="${W/2}" y="18" fill="#38bdf8" font-size="11" font-weight="bold" text-anchor="middle" font-family="JetBrains Mono">TRIBUTARY AREA — ${type.toUpperCase()} COLUMN</text>`;
+  g+=`<text x="${W/2}" y="20" fill="#38bdf8" font-size="11" font-weight="bold" text-anchor="middle" font-family="JetBrains Mono">TRIBUTARY AREA — ${type.toUpperCase()} COLUMN</text>`;
 
-  // Slab panels (light fill)
-  for(let r=0;r<2;r++) for(let ci=0;ci<2;ci++){
-    g+=`<rect x="${bx[ci]}" y="${by[r]}" width="${bW}" height="${bH}" fill="rgba(30,41,59,0.8)" stroke="#334155" stroke-width="1"/>`;
+  // Slab panels
+  for(let r=0;r<nRows;r++) for(let ci=0;ci<nCols;ci++){
+    g+=`<rect x="${xs[ci]}" y="${ys[r]}" width="${bW}" height="${bH}" fill="rgba(15,23,42,0.9)" stroke="#334155" stroke-width="1"/>`;
   }
 
   // Tributary area shading
-  g+=`<rect x="${tribX1}" y="${tribY1}" width="${tribX2-tribX1}" height="${tribY2-tribY1}" fill="rgba(56,189,248,0.22)" stroke="#38bdf8" stroke-width="1.5" stroke-dasharray="5,3"/>`;
+  g+=`<rect x="${tribX1}" y="${tribY1}" width="${tribX2-tribX1}" height="${tribY2-tribY1}" fill="rgba(56,189,248,0.2)" stroke="#38bdf8" stroke-width="1.5" stroke-dasharray="5,3"/>`;
 
-  // Dimension lines — horizontal (span X)
-  g+=`<line x1="${bx[0]}" y1="${by[2]+18}" x2="${bx[1]}" y2="${by[2]+18}" stroke="#f59e0b" stroke-width="1"/>`;
-  g+=`<line x1="${bx[1]}" y1="${by[2]+18}" x2="${bx[2]}" y2="${by[2]+18}" stroke="#f59e0b" stroke-width="1"/>`;
-  g+=`<text x="${(bx[0]+bx[1])/2}" y="${by[2]+30}" fill="#f59e0b" font-size="10" text-anchor="middle" font-family="JetBrains Mono">${spX}m</text>`;
-  g+=`<text x="${(bx[1]+bx[2])/2}" y="${by[2]+30}" fill="#f59e0b" font-size="10" text-anchor="middle" font-family="JetBrains Mono">${spX}m</text>`;
+  // Trib dimension lines
+  const tdMidX=(tribX1+tribX2)/2, tdMidY=(tribY1+tribY2)/2;
+  // Horizontal trib dim
+  g+=`<line x1="${tribX1}" y1="${tribY2+8}" x2="${tribX2}" y2="${tribY2+8}" stroke="#38bdf8" stroke-width="0.8"/>`;
+  g+=`<line x1="${tribX1}" y1="${tribY2+5}" x2="${tribX1}" y2="${tribY2+11}" stroke="#38bdf8" stroke-width="0.8"/>`;
+  g+=`<line x1="${tribX2}" y1="${tribY2+5}" x2="${tribX2}" y2="${tribY2+11}" stroke="#38bdf8" stroke-width="0.8"/>`;
+  g+=`<text x="${tdMidX}" y="${tribY2+20}" fill="#38bdf8" font-size="9" text-anchor="middle" font-family="JetBrains Mono">${r2(tribW)}m</text>`;
+  // Vertical trib dim
+  g+=`<line x1="${tribX2+8}" y1="${tribY1}" x2="${tribX2+8}" y2="${tribY2}" stroke="#38bdf8" stroke-width="0.8"/>`;
+  g+=`<line x1="${tribX2+5}" y1="${tribY1}" x2="${tribX2+11}" y2="${tribY1}" stroke="#38bdf8" stroke-width="0.8"/>`;
+  g+=`<line x1="${tribX2+5}" y1="${tribY2}" x2="${tribX2+11}" y2="${tribY2}" stroke="#38bdf8" stroke-width="0.8"/>`;
+  g+=`<text x="${tribX2+22}" y="${tdMidY+4}" fill="#38bdf8" font-size="9" text-anchor="middle" font-family="JetBrains Mono" transform="rotate(90,${tribX2+22},${tdMidY})">${r2(tribH)}m</text>`;
 
-  // Dimension lines — vertical (span Y)
-  g+=`<line x1="${bx[0]-18}" y1="${by[0]}" x2="${bx[0]-18}" y2="${by[1]}" stroke="#f59e0b" stroke-width="1"/>`;
-  g+=`<line x1="${bx[0]-18}" y1="${by[1]}" x2="${bx[0]-18}" y2="${by[2]}" stroke="#f59e0b" stroke-width="1"/>`;
-  g+=`<text x="${bx[0]-30}" y="${(by[0]+by[1])/2+4}" fill="#f59e0b" font-size="10" text-anchor="middle" font-family="JetBrains Mono" transform="rotate(-90,${bx[0]-30},${(by[0]+by[1])/2+4})">${spY}m</text>`;
-  g+=`<text x="${bx[0]-30}" y="${(by[1]+by[2])/2+4}" fill="#f59e0b" font-size="10" text-anchor="middle" font-family="JetBrains Mono" transform="rotate(-90,${bx[0]-30},${(by[1]+by[2])/2+4})">${spY}m</text>`;
+  // Span dimension lines — bottom
+  for(let i=0;i<nCols;i++){
+    const y0=ys[nRows]+14;
+    g+=`<line x1="${xs[i]}" y1="${y0}" x2="${xs[i+1]}" y2="${y0}" stroke="#f59e0b" stroke-width="0.8"/>`;
+    g+=`<text x="${(xs[i]+xs[i+1])/2}" y="${y0+12}" fill="#f59e0b" font-size="9" text-anchor="middle" font-family="JetBrains Mono">${spX}m</text>`;
+  }
+  // Span dimension lines — left
+  for(let i=0;i<nRows;i++){
+    const x0=padL-14;
+    g+=`<line x1="${x0}" y1="${ys[i]}" x2="${x0}" y2="${ys[i+1]}" stroke="#f59e0b" stroke-width="0.8"/>`;
+    g+=`<text x="${x0-10}" y="${(ys[i]+ys[i+1])/2+4}" fill="#f59e0b" font-size="9" text-anchor="middle" font-family="JetBrains Mono" transform="rotate(-90,${x0-10},${(ys[i]+ys[i+1])/2})">${spY}m</text>`;
+  }
 
   // All column nodes
-  bx.forEach(x=>by.forEach(y=>{
-    g+=`<rect x="${x-6}" y="${y-6}" width="12" height="12" fill="#1e293b" stroke="#64748b" stroke-width="1.5" rx="2"/>`;
+  xs.forEach(x=>ys.forEach(y=>{
+    if(x===cx&&y===cy) return; // skip design column slot
+    g+=`<rect x="${x-5}" y="${y-5}" width="10" height="10" fill="#1e293b" stroke="#64748b" stroke-width="1.5" rx="1"/>`;
   }));
 
-  // Design column (highlighted)
+  // Design column
   g+=`<rect x="${cx-8}" y="${cy-8}" width="16" height="16" fill="#f97316" stroke="#fb923c" stroke-width="2" rx="2"/>`;
   g+=`<text x="${cx}" y="${cy+4}" fill="white" font-size="8" font-weight="bold" text-anchor="middle" font-family="JetBrains Mono">C</text>`;
 
-  // Tributary area label
-  const ax=(tribX1+tribX2)/2, ay=(tribY1+tribY2)/2;
-  g+=`<text x="${ax}" y="${ay-6}" fill="white" font-size="11" font-weight="bold" text-anchor="middle" font-family="JetBrains Mono">A=${r2(tribArea)}m²</text>`;
-  g+=`<text x="${ax}" y="${ay+10}" fill="#94a3b8" font-size="8" text-anchor="middle" font-family="JetBrains Mono">trib area</text>`;
-
-  // Trib dim annotations
-  g+=`<line x1="${tribX1}" y1="${tribY2+6}" x2="${tribX2}" y2="${tribY2+6}" stroke="#38bdf8" stroke-width="0.8"/>`;
-  g+=`<text x="${ax}" y="${tribY2+18}" fill="#38bdf8" font-size="8" text-anchor="middle" font-family="JetBrains Mono">${r2((tribX2-tribX1)/scX)}m</text>`;
-  g+=`<line x1="${tribX2+6}" y1="${tribY1}" x2="${tribX2+6}" y2="${tribY2}" stroke="#38bdf8" stroke-width="0.8"/>`;
-  g+=`<text x="${tribX2+22}" y="${ay+4}" fill="#38bdf8" font-size="8" text-anchor="middle" font-family="JetBrains Mono">${r2((tribY2-tribY1)/scY)}m</text>`;
+  // Area label inside trib
+  g+=`<text x="${tdMidX}" y="${tdMidY-5}" fill="white" font-size="12" font-weight="bold" text-anchor="middle" font-family="JetBrains Mono">A=${r2(tribArea)}m²</text>`;
+  g+=`<text x="${tdMidX}" y="${tdMidY+10}" fill="#94a3b8" font-size="8" text-anchor="middle" font-family="JetBrains Mono">tributary area</text>`;
 
   // Legend
-  g+=`<rect x="${W-130}" y="28" width="10" height="10" fill="rgba(56,189,248,0.22)" stroke="#38bdf8" stroke-width="1"/>`;
-  g+=`<text x="${W-116}" y="38" fill="#38bdf8" font-size="9" font-family="JetBrains Mono">Tributary area</text>`;
-  g+=`<rect x="${W-130}" y="44" width="10" height="10" fill="#f97316"/>`;
-  g+=`<text x="${W-116}" y="54" fill="#f97316" font-size="9" font-family="JetBrains Mono">Design column</text>`;
-  g+=`<rect x="${W-130}" y="60" width="10" height="10" fill="#1e293b" stroke="#64748b" stroke-width="1.5"/>`;
-  g+=`<text x="${W-116}" y="70" fill="#64748b" font-size="9" font-family="JetBrains Mono">Other columns</text>`;
+  const lx=W-135, ly=28;
+  g+=`<rect x="${lx}" y="${ly}" width="10" height="10" fill="rgba(56,189,248,0.2)" stroke="#38bdf8" stroke-width="1"/>`;
+  g+=`<text x="${lx+14}" y="${ly+9}" fill="#38bdf8" font-size="9" font-family="JetBrains Mono">Tributary area</text>`;
+  g+=`<rect x="${lx}" y="${ly+16}" width="10" height="10" fill="#f97316"/>`;
+  g+=`<text x="${lx+14}" y="${ly+25}" fill="#f97316" font-size="9" font-family="JetBrains Mono">Design column</text>`;
+  g+=`<rect x="${lx}" y="${ly+32}" width="10" height="10" fill="#1e293b" stroke="#64748b" stroke-width="1.5"/>`;
+  g+=`<text x="${lx+14}" y="${ly+41}" fill="#64748b" font-size="9" font-family="JetBrains Mono">Other columns</text>`;
 
-  g+=`<text x="${W/2}" y="${H-6}" fill="#475569" font-size="8" text-anchor="middle" font-family="JetBrains Mono">IS 456 — Tributary Area Method for Column Loads</text>`;
+  g+=`<text x="${W/2}" y="${H-4}" fill="#475569" font-size="8" text-anchor="middle" font-family="JetBrains Mono">IS 456 — Tributary Area Method for Column Loads</text>`;
   g+='</svg>';
-  return`<div class="dg">${g}<div class="dg-cap">Fig: Tributary area (shaded) for ${type} column. Column load = (DL+LL) × ${r2(tribArea)}m² × no. of floors</div></div>`;
+  return`<div class="dg">${g}<div class="dg-cap">Fig: Tributary area (shaded) for ${type} column at grid position Row ${cr+1}, Col ${cc+1}. Area = ${r2(tribArea)}m²</div></div>`;
 }
 
 // Load diagram on beam - UDL + reactions
