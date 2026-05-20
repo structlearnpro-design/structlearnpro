@@ -9467,9 +9467,9 @@ async function startConstructionPDF() {
 
       F(6.5,'bold',0,0,0);Txt('6. CLEAR COVER FOR REINFORCEMENT:',NX,ny);ny+=4.5;
       F(6,'normal',0,0,0);
-      const cvs=[['A) GRADE/PLINTH BEAM','25 MM (1")'],['B) FOOTING - BOTTOM','75 MM (3")'],
-        ['C) COLUMN',S.coverCol+' MM'],['D) FOOTING - SIDE','50 MM (2")'],
-        ['E) ALL ROOF BEAM','25 MM (1")'],['F) ALL ROOF SLAB',S.coverSlab+' MM'],
+      const cvs=[['A) GRADE/PLINTH BEAM','25 MM'],['B) FOOTING - BOTTOM','75 MM'],
+        ['C) COLUMN',S.coverCol+' MM'],['D) FOOTING - SIDE','50 MM'],
+        ['E) ALL ROOF BEAM','25 MM'],['F) ALL ROOF SLAB',S.coverSlab+' MM'],
         ['G) ALL FLOOR SLAB',S.coverSlab+' MM']];
       cvs.forEach(([a,b2])=>{F(5.5,'normal',0,0,0);Txt(a,NX+1,ny);Txt(b2,NX+NW,ny,{align:'right'});ny+=3.8;});
       ny+=3;
@@ -9543,7 +9543,7 @@ async function startConstructionPDF() {
         F(5,'bold',80,80,100);Txt(label+':',x+1,y-1.5);
         F(6.5,'bold',0,0,0);Txt(s2(String(val||'').slice(0,truncLen||22)),x+1,y+4);
       };
-      lbl2('TITLE',s2(title).slice(0,20),tx,r1,20);
+      lbl2('TITLE',s2(title).slice(0,28),tx,r1,28);
       lbl2('DRAWN','Student',tx+cw4,r1);
       lbl2('DESIGNED','Student',tx+2*cw4,r1);
       lbl2('PROJECT NO',(s2(S.name||'').replace(/\s+/g,'-').slice(0,14))+'-'+new Date().getFullYear(),tx+3*cw4,r1);
@@ -9558,7 +9558,7 @@ async function startConstructionPDF() {
       lbl2('SCALE',scale||'NTS',tx,r4);
       lbl2('SURVEY NO','AS/SITE',tx+cw4,r4);
       lbl2('BLOCK NO','AS/ARCH',tx+2*cw4,r4);
-      lbl2('SHEET',String(pgN+1)+' / 12',tx+3*cw4,r4);
+      lbl2('SHEET',String(pgN+1)+' / 15',tx+3*cw4,r4);
 
       // Sheet title bar inside drawing area
       FC(220,230,248);Rect(DR_X,DR_Y,DR_W,8,'F');
@@ -9834,11 +9834,11 @@ async function startConstructionPDF() {
       // Cross centre mark
       LW(0.2);Line(gx-fw/2,gy,gx+fw/2,gy);Line(gx,gy-fw/2,gx,gy+fw/2);
       // Type label above, size inside box, check status indicator
-      F(6.5,'bold',0,0,100);Txt(ct,gx,gy-fw/2-2,{align:'center'});
+      F(6.5,'bold',0,0,100);Txt(ct==='C1'?'CF':ct==='C2'?'EF':'IF',gx,gy-fw/2-2,{align:'center'});
       // Size label below box
-      F(5.5,'normal',0,0,0);Txt(ftin(f.Bf||1)+'x'+ftin(f.Bf||1),gx,gy+fw/2+4,{align:'center'});
+      FC(255,255,255);Rect(gx-fw/2+2,gy-2.5,fw-4,5,'F');F(5,'normal',0,0,0);Txt(ftin(f.Bf||1)+'x'+ftin(f.Bf||1),gx,gy+1,{align:'center'});
       // D= inside box
-      F(5,'italic',60,80,120);Txt('D='+r0(f.D||300),gx,gy+1.5,{align:'center'});
+      F(5,'italic',60,80,120);Txt('D='+r0(f.D||300),gx+fw/2+4,gy+1.5,{align:'left'});
     });});
 
     // Plot line dashed border
@@ -9858,9 +9858,9 @@ async function startConstructionPDF() {
     const schY=fpY+planH+34;
     F(7,'bold',0,0,0);Txt('FOOTING SCHEDULE SUMMARY:',fpX,schY);
     F(6.5,'normal',0,0,0);
-    Txt('C1 (Corner): '+ftin(f1.Bf||0.5)+' x '+ftin(f1.Bf||0.5)+' x D='+r0(f1.D||300)+'mm  |  Ps='+r2(f1.Ps||0)+'kN',fpX,schY+6);
-    Txt('C2 (Edge):   '+ftin(f2.Bf||0.8)+' x '+ftin(f2.Bf||0.8)+' x D='+r0(f2.D||350)+'mm  |  Ps='+r2(f2.Ps||0)+'kN',fpX,schY+12);
-    Txt('C3 (Interior):'+ftin(f3.Bf||1.0)+' x '+ftin(f3.Bf||1.0)+' x D='+r0(f3.D||400)+'mm  |  Ps='+r2(f3.Ps||0)+'kN',fpX,schY+18);
+    Txt('CF (Corner Footing): '+ftin(f1.Bf||0.5)+' x '+ftin(f1.Bf||0.5)+' x D='+r0(f1.D||300)+'mm  |  Ps='+r2(f1.Ps||0)+'kN',fpX,schY+6);
+    Txt('EF (Edge Footing):   '+ftin(f2.Bf||0.8)+' x '+ftin(f2.Bf||0.8)+' x D='+r0(f2.D||350)+'mm  |  Ps='+r2(f2.Ps||0)+'kN',fpX,schY+12);
+    Txt('IF (Interior Ftg):   '+ftin(f3.Bf||1.0)+' x '+ftin(f3.Bf||1.0)+' x D='+r0(f3.D||400)+'mm  |  Ps='+r2(f3.Ps||0)+'kN',fpX,schY+18);
     F(6.5,'italic',80,80,80);Txt('NOTE: All footings are ISOLATED SQUARE footings. All dimensions refer to plan size (L x B). Refer ST/FD02 for cross-section details.',fpX,schY+26);
 
     log('Sheet 3 done',28);
@@ -9968,7 +9968,7 @@ async function startConstructionPDF() {
       LC(180,0,0);LW(0.3);doc.setLineDashPattern([2,1.5],0);
       Rect(fcx-colSW2/2-pOff,secTopY-pOff,colSW2+2*pOff,ftSH/2+pOff,'D');
       doc.setLineDashPattern([],0);
-      F(5.5,'italic',150,0,0);Txt('Punching perim.',fcx,secTopY-pOff-1.5,{align:'center'});
+      F(5.5,'italic',150,0,0);Txt('Punching perim.',fzX+fzW-2,secTopY+ftSH/3,{align:'right'});
       // Section dims
       DH(ssx,ssx+ftSW,secTopY+ftSH+8,ftin(f.Bf||1),false);
       DV(ssx+ftSW+4,secTopY,secTopY+ftSH,r0(f.D||300)+'mm',false);
@@ -10147,7 +10147,7 @@ async function startConstructionPDF() {
       FC(220,228,248);Rect(czX+2,sbY2,czW2-4,6,'F');
       F(6.5,'bold',0,0,100);Txt('SCHEDULE',fcx2,sbY2+4.5,{align:'center'});
       F(6.5,'normal',0,0,0);let sy4=sbY2+10;
-      [['SIZE',r0(c.size)+'x'+r0(c.size)+' mm ('+s2(Math.round(c.size/25.4)+'" x '+Math.round(c.size/25.4)+'")')],
+      [['SIZE',r0(c.size)+'x'+r0(c.size)+' mm'],
        ['MAIN BARS',nb3+'-D'+c.dB+' (pt='+r2(c.pt)+'%)'],
        ['TIES (GEN)','D8@'+r0(c.ts)+'mm'],
        ['TIES (CONF)','D8@'+r0(c.tsc)+'mm (Lo='+r0(c.Lo)+'mm)'],
@@ -10202,7 +10202,7 @@ async function startConstructionPDF() {
           const b3=beams[bIdx%beams.length]||{b:230,D:350};
           LC(0,100,0);LW(bThick);Line(gx,gy,gx,cyA[j+1]);
           // Y-beam label to the RIGHT of the line
-          F(6,'bold',0,100,0);Txt('B'+(bIdx+1),gx+2.5,(gy+cyA[j+1])/2+1.5);
+          F(6,'bold',0,100,0);Txt('B'+(bIdx+1)+'('+b3.b+'x'+b3.D+')',gx+2.5,(gy+cyA[j+1])/2+1.5);
           bIdx++;
         }
       });
@@ -10266,8 +10266,8 @@ async function startConstructionPDF() {
     FC(220,228,248);Rect(tdX,tdY,78,7,'F');
     F(7,'bold',0,0,100);Txt('TYPICAL STIRRUP DETAIL',tdX+39,tdY+5,{align:'center'});
     F(6.5,'normal',0,0,0);
-    Txt('AT SUPPORT: D8@5" c/c (135 deg hook)',tdX+2,tdY+12);
-    Txt('AT MIDSPAN: D8@7" c/c (135 deg hook)',tdX+2,tdY+17);
+    Txt('AT SUPPORT: D8@'+r0(showB[0]?showB[0].svd:100)+'mm c/c (135 deg hook)',tdX+2,tdY+12);
+    Txt('AT MIDSPAN: D8@'+r0(showB[0]?showB[0].sv:250)+'mm c/c (135 deg hook)',tdX+2,tdY+17);
     TW('Confinement zone: max(2D, L/4) from support',tdX+2,tdY+22,76);
 
     // Show up to 3 unique beam types, one per row
@@ -10313,7 +10313,7 @@ async function startConstructionPDF() {
       // Dims
       DH(bx4,bx4+bw3,by4+bh3+3,r0(b3.b)+'mm',false);
       DV(bx4-4,by4,by4+bh3,r0(b3.D)+'mm',true);
-      F(5.5,'italic',80,80,80);Txt('Scale 1:'+Math.round(1/sc3),bcx2,by4+bh3+10,{align:'center'});
+      (()=>{const rawSc=Math.round(1/sc3);const stdScales=[5,10,15,20,25,50];const nearest=stdScales.reduce((a,b)=>Math.abs(b-rawSc)<Math.abs(a-rawSc)?b:a);F(5.5,'italic',80,80,80);Txt('Scale 1:'+nearest,bcx2,by4+bh3+10,{align:'center'});})();
       // Leaders — offset to avoid overlap
       F(6.5,'normal',0,0,0);
       Ld(bx4+cv4+strDia+barR4,by4+bh3-cv4-strDia-barR4,DR_X+4,bzy+bRowH-8,nb4+'-Y20 (BOT)');
@@ -10467,15 +10467,20 @@ async function startConstructionPDF() {
     FC(220,228,248);Rect(DX,y,DW2,6,'FD');LC(0,0,0);LW(0.1);Rect(DX,y,DW2,6,'D');
     F(6.5,'bold',0,0,100);let six2=DX+1;shdr2.forEach((h,i)=>{Txt(h,six2+1,y+4.5);six2+=sws2[i];});
     y+=6;
-    ['S1','S2','S3'].forEach((slbl,sri)=>{
+    // Use actual slab panels if available, else generate from grid
+    const slabRows = (RES.allSlabPanels && RES.allSlabPanels.length > 0)
+      ? RES.allSlabPanels.filter(p=>p.floor==='Typical'||p.floor===1).slice(0,12)
+      : [{bayLabel:'A1',lx:sl.lx,ly:sl.ly,spx:sl.spx,spy:sl.spy,spx_n:sl.spx_n,twoWay:sl.twoWay}];
+    slabRows.forEach((sp2,sri)=>{
       if(sri%2===0){FC(246,249,255);Rect(DX,y,DW2,6,'F');}
       LC(0,0,0);LW(0.1);Rect(DX,y,DW2,6,'D');
       six2=DX+1;
-      F(6.5,'bold',0,0,0);Txt(slbl,six2+1,y+4.5);six2+=sws2[0];
+      F(6.5,'bold',0,0,0);Txt(sp2.bayLabel||('S'+(sri+1)),six2+1,y+4.5);six2+=sws2[0];
       F(6.5,'normal',0,0,0);
-      [ftin(sl.ly),ftin(sl.lx),'D8@'+sl.spx_n+' c/c','D8@'+sl.spx_n+' c/c',
-       'Y'+slabBarDia+'@'+sl.spx+' c/c','D8@'+sl.spy+' c/c',
-       sl.twoWay?'TWO WAY':'ONE WAY','REFER TYPICAL DETAIL'
+      [ftin(sp2.ly||sl.ly),ftin(sp2.lx||sl.lx),
+       'D8@'+(sp2.spx_n||sl.spx_n)+' c/c','D8@'+(sp2.spx_n||sl.spx_n)+' c/c',
+       'Y'+slabBarDia+'@'+(sp2.spx||sl.spx)+' c/c','D8@'+(sp2.spy||sl.spy)+' c/c',
+       (sp2.twoWay||sl.twoWay)?'TWO WAY':'ONE WAY','REFER ST/SL01'
       ].forEach((v,i)=>{Txt(v,six2+1,y+4.5);six2+=sws2[i+1];});
       y+=6;
     });
@@ -10605,7 +10610,7 @@ async function startConstructionPDF() {
         F(5,'bold',200,0,0);Txt('D8@'+spxnVal+' TOP',bmx,byT+8,{align:'center'});
 
         // Bay grid reference label (bottom-right, small)
-        F(6.5,'bold',0,60,120);Txt(String.fromCharCode(65+ri)+(ci+1),bxR-3,byB-2,{align:'right'});
+        F(6,'bold',0,60,120);Txt(String.fromCharCode(65+ri)+(ci+1),bxL+2,byT+6);
         // Span labels (bottom-left, tiny)
         F(4.5,'normal',100,100,100);Txt(ftin(lx),bxL+2,byB-4);
         Txt('x'+ftin(ly),bxL+2,byB-1);
@@ -10616,8 +10621,8 @@ async function startConstructionPDF() {
     cxA.forEach((gx2,ci2)=>cyA.forEach((gy2,ri2)=>{
       const ftgNode=getFtgAt(ri2,ci2);
       const cSzN=(ftgNode?.colSize||300);
-      const cSzP=Math.max(2.5,cSzN*slPlanScale);
-      FC(40,40,40);LC(0,0,0);LW(0.5);Rect(gx2-cSzP/2,gy2-cSzP/2,cSzP,cSzP,'FD');
+      const cSzP=Math.max(2,cSzN*slPlanScale*0.6);  // smaller, lighter
+      FC(80,80,120);LC(0,0,0);LW(0.3);Rect(gx2-cSzP/2,gy2-cSzP/2,cSzP,cSzP,'FD');
     }));
 
     // Gridlines and column labels
@@ -10709,13 +10714,13 @@ async function startConstructionPDF() {
 
     // Dimension chains — individual span
     S.spansX.slice(0,nBX).forEach((sp,i)=>{
-      DH(cxA[i],cxA[i+1],clPY+planH+18,r0(sp*1000),false);
+      DH(cxA[i],cxA[i+1],clPY+planH+18,r0(sp*1000)+'mm',false);
     });
-    DH(clPX,clPX+planW,clPY+planH+26,r0(totX*1000)+' (TOTAL)',false);
+    DH(clPX,clPX+planW,clPY+planH+26,r0(totX*1000)+'mm (TOTAL)',false);
     S.spansY.slice(0,nBY).forEach((sp,j)=>{
-      DV(clPX-26,cyA[j],cyA[j+1],r0(sp*1000),true);
+      DV(clPX-26,cyA[j],cyA[j+1],r0(sp*1000)+'mm',true);
     });
-    DV(clPX-34,clPY,clPY+planH,r0(totY*1000)+' (TOTAL)',true);
+    DV(clPX-34,clPY,clPY+planH,r0(totY*1000)+'mm (TOTAL)',true);
 
     // Setting-out notes box
     const soY=clPY+planH+38;
@@ -10901,7 +10906,7 @@ async function startConstructionPDF() {
       const sP=r0(2*(b3.b-2*S.coverBeam)+2*(b3.D-2*S.coverBeam)+2*11.2*8);
       const nZ=Math.ceil(Math.max(2*b3.D,b3.L*1000/4)/b3.svd);
       const nM=Math.max(1,Math.ceil((b3.L*1000-2*Math.max(2*b3.D,b3.L*1000/4))/b3.sv));
-      const pfx='B'+(bi+1);
+      const pfx=(b3.label?b3.label.replace(/[^A-Za-z0-9]/g,'').slice(0,6):'B'+(bi+1));
       bbsRow(pfx+'b',20,'Str+Hook',cBt,'',cBt,b3.nm*mc*S.numFloors,'Bot-cts');
       bbsRow(pfx+'t',20,'Straight',cTp,'',cTp,b3.ns*2*mc*S.numFloors,'Top-supt');
       bbsRow(pfx+'se',8,'Closed 135',r0(b3.b-2*S.coverBeam+88),r0(b3.D-2*S.coverBeam),sP,nZ*2*mc*S.numFloors,'Conf.zone');
@@ -10983,8 +10988,10 @@ async function startConstructionPDF() {
       const gy=feY0-f2*S.floorHt*1000*feSc2;
       LC(160,170,200);LW(0.2);doc.setLineDashPattern([5,3],0);
       Line(feX3-8,gy,feX3+feW3+8,gy);doc.setLineDashPattern([],0);
-      const lbl=f2===0?'G.L.':f2===S.numFloors?'ROOF':'F.F.L.'+(f2>1?f2:'');
-      F(7,'bold',0,0,0);Txt(lbl,feX3-10,gy+1.5,{align:'right'});
+      const lbl=f2===0?'G.L.':f2===S.numFloors?'ROOF':'FFL '+(f2);
+      // Offset label above line, not on line
+      F(6.5,'bold',0,0,100);Txt(lbl,feX3-10,gy-2,{align:'right'});
+      F(5.5,'normal',80,80,80);Txt(f2===0?'±0.000':('+'+r2(f2*S.floorHt)+'m'),feX3-10,gy+4,{align:'right'});
     }
 
     // Columns (visible solid rectangles)
@@ -11150,8 +11157,8 @@ async function startConstructionPDF() {
     FC(220,228,248);Rect(ssX,y-4,ssW,7,'F');
     F(7,'bold',0,0,100);Txt('STAIRCASE SCHEDULE',ssX+ssW/2,y+0.5,{align:'center'});
     let sy5=y+10;F(6.5,'normal',0,0,0);
-    [['Riser',r0(st.riser)+'mm ('+Math.round(st.riser/25.4*2)/2+'")'],
-     ['Tread',r0(st.tread)+'mm ('+Math.round(st.tread/25.4*2)/2+'")'],
+    [['Riser',r0(st.riser)+'mm'],
+     ['Tread',r0(st.tread)+'mm'],
      ['Waist D',r0(st.wD)+'mm'],['Eff. depth d',r0(st.wd)+'mm'],
      ['No. of Steps',nSteps+' per flight'],['Concrete','M'+S.fck+' (IS 456)'],
      ['Steel','Fe'+S.fy+'D'],['Main bars','Y'+(st.Ast2>300?12:10)+'@'+r0(st.stsp)+'mm'],
