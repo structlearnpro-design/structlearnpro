@@ -2243,8 +2243,23 @@ function showGEToast(msg,color){
 // ── CONTEXT PANEL (right panel shown when item selected) ─────────
 // ── MISSING NODE DIALOG ─────────────────────────────────────────
 function showMissingNodeDialog(missingNodes, onComplete) {
-  // Store callback globally so HTML button can call it without serialization
+  // Store callback and node keys globally — avoids serializing JS into HTML attributes
   window._missingNodeCallback = onComplete;
+  window._missingNodeKeys = missingNodes.map(n => getNodeChoiceKey(n));
+  window._confirmMissingNodes = function() {
+    const missing = window._missingNodeKeys.filter(k => !window._nodeChoices[k]);
+    if (missing.length > 0) {
+      alert('Please select Void or Transfer Beam for all missing columns before continuing.');
+      return;
+    }
+    const dlg = document.getElementById('_missingNodeDialog');
+    if (dlg) dlg.remove();
+    if (window._missingNodeCallback) {
+      const cb = window._missingNodeCallback;
+      window._missingNodeCallback = null;
+      cb();
+    }
+  };
 
   // Remove any existing dialog
   const existing = document.getElementById('_missingNodeDialog');
@@ -2303,13 +2318,7 @@ function showMissingNodeDialog(missingNodes, onComplete) {
 
   html += `
     <div style="display:flex;gap:10px;margin-top:16px">
-      <button onclick="(function(){
-        const keys=${JSON.stringify(missingNodes.map(n=>getNodeChoiceKey(n)))};
-        const missing=keys.filter(k=>!window._nodeChoices[k]);
-        if(missing.length>0){alert('Please select Void or Transfer Beam for all missing columns.');return;}
-        document.getElementById('_missingNodeDialog').remove();
-        if(window._missingNodeCallback){window._missingNodeCallback();window._missingNodeCallback=null;}
-      })()" style="flex:1;padding:10px;background:rgba(56,189,248,0.12);border:1.5px solid #38bdf8;border-radius:8px;color:#38bdf8;cursor:pointer;font-size:11px;font-weight:700">
+      <button onclick="window._confirmMissingNodes()" style="flex:1;padding:10px;background:rgba(56,189,248,0.12);border:1.5px solid #38bdf8;border-radius:8px;color:#38bdf8;cursor:pointer;font-size:11px;font-weight:700">
         ✓ Confirm & Run Analysis
       </button>
       <button onclick="document.getElementById('_missingNodeDialog').remove()"
@@ -2321,6 +2330,7 @@ function showMissingNodeDialog(missingNodes, onComplete) {
       💡 TRANSFER BEAM: A beam that carries the load of columns from all floors above it, at a specific point along its span. It must be significantly deeper and heavier than normal beams. IS 456 does not have a simple design method — the result here is an approximation. Always verify with a qualified structural engineer before construction.
     </div>
   </div>`;
+
 
   overlay.innerHTML = html;
   document.body.appendChild(overlay);
