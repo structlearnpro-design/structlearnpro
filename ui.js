@@ -302,6 +302,12 @@ function secOverview(){
   return`
 <div class="card bl">
   <div class="ct">Design Summary  -  ${S.name}</div>
+  ${RES.sanityWarnings&&RES.sanityWarnings.length>0?`
+  <div style="margin-bottom:14px;padding:12px;background:rgba(245,158,11,0.08);border:2px solid rgba(245,158,11,0.6);border-radius:8px">
+    <div style="font-size:12px;font-weight:800;color:#f59e0b;margin-bottom:8px">⚠ SANITY CHECK — Review Before Trusting Results</div>
+    ${RES.sanityWarnings.map(w=>`<div style="font-size:10.5px;color:#fbbf24;line-height:1.7;margin-bottom:4px">${w}</div>`).join('')}
+    <div style="font-size:9px;color:#92400e;margin-top:8px">Go back to <button onclick="go(2)" style="background:none;border:none;color:#f59e0b;cursor:pointer;text-decoration:underline;font-size:9px">Plan & Spans</button> and verify your inputs.</div>
+  </div>`:``}
   ${RES.gridSummary&&RES.gridSummary.nMissing>0?`<div class="cp" style="border-left-color:var(--yellow);margin-bottom:10px"><strong style="color:var(--yellow)">Irregular Structure:</strong> ${RES.gridSummary.nMissing} missing column(s), ${RES.gridSummary.nTransfer} transfer beam(s), ${RES.gridSummary.nCant} cantilever(s). Results account for actual grid configuration.</div>`:''}
   <div style="font-size:11px;color:var(--txt3);margin-bottom:12px">G+${S.numFloors-1} . ${S.buildingL}mx${S.buildingW}m . M${S.fck}/Fe${S.fy} . Zone ${S.zone} seismic . Zone ${S.windZone} wind</div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">

@@ -88,6 +88,11 @@ const S={
   zone:'IV',soilType:'II',importance:1.0,
   numFloors:4,floorHt:3.2,buildingL:12,buildingW:9,
   spansX:[4,4,4],spansY:[3,3,3],
+  // ── NEW: Coordinate-based column input ──
+  // Each column: {x, y} in metres from origin (bottom-left = 0,0)
+  // null = use spansX/spansY (legacy mode)
+  // array = coordinate mode (new)
+  columns: null,
   fck:25,fy:500,Es:200000,
   udlLL:2.0,udlRoof:1.5,floorFinish:1.0,partitions:1.5,wallLoad:12,
   slabThk:150,coverSlab:20,coverBeam:40,coverCol:40,coverFtg:75,
@@ -1141,8 +1146,128 @@ function runCalcs(){
 
 let GRID = null;
 
+// ── COORDINATE → GRID CONVERSION ────────────────────────────────
+// Converts S.columns [{x,y},...] to S.spansX, S.spansY and a
+// set of missing nodes (void columns). Returns a validation report.
+function coordsToGrid() {
+  if (!S.columns || S.columns.length === 0) return { ok: false, error: 'No columns defined.' };
+
+  const cols = S.columns;
+  if (cols.length < 2) return { ok: false, error: 'Need at least 2 columns.' };
+
+  // Extract unique X and Y values, sorted
+  const SNAP = 0.05; // 5cm tolerance for grouping
+  function snapGroup(vals) {
+    const sorted = [...new Set(vals.map(v => Math.round(v / SNAP) * SNAP))].sort((a,b)=>a-b);
+    // Merge values within 0.1m of each other
+    const merged = [sorted[0]];
+    for (let i = 1; i < sorted.length; i++) {
+      if (sorted[i] - merged[merged.length-1] > 0.1) merged.push(sorted[i]);
+    }
+    return merged;
+  }
+
+  const uniqueX = snapGroup(cols.map(c => c.x));
+  const uniqueY = snapGroup(cols.map(c => c.y));
+
+  if (uniqueX.length < 2) return { ok: false, error: 'Need columns at least 2 different X positions.' };
+  if (uniqueY.length < 2) return { ok: false, error: 'Need columns at least 2 different Y positions.' };
+
+  // Compute spans
+  const spansX = [];
+  for (let i = 0; i < uniqueX.length - 1; i++) {
+    const span = Math.round((uniqueX[i+1] - uniqueX[i]) * 100) / 100;
+    if (span < 1.0) return { ok: false, error: `X span of ${span}m between X=${uniqueX[i]} and X=${uniqueX[i+1]} is too small (min 1.0m).` };
+    if (span > 15) return { ok: false, error: `X span of ${span}m exceeds 15m maximum for RC frames.` };
+    spansX.push(span);
+  }
+  const spansY = [];
+  for (let i = 0; i < uniqueY.length - 1; i++) {
+    const span = Math.round((uniqueY[i+1] - uniqueY[i]) * 100) / 100;
+    if (span < 1.0) return { ok: false, error: `Y span of ${span}m is too small (min 1.0m).` };
+    if (span > 15) return { ok: false, error: `Y span of ${span}m exceeds 15m maximum for RC frames.` };
+    spansY.push(span);
+  }
+
+  // Map each student column to grid (row, col)
+  const snapVal = (v, arr) => {
+    let closest = arr[0], minD = Math.abs(v - arr[0]);
+    arr.forEach(a => { const d = Math.abs(v-a); if(d<minD){minD=d;closest=a;} });
+    return closest;
+  };
+
+  const placedNodes = new Set();
+  const offGridWarnings = [];
+
+  cols.forEach((c, i) => {
+    const sx = snapVal(c.x, uniqueX);
+    const sy = snapVal(c.y, uniqueY);
+    if (Math.abs(c.x - sx) > 0.15 || Math.abs(c.y - sy) > 0.15) {
+      offGridWarnings.push(`Column ${i+1} at (${c.x},${c.y}) snapped to grid (${sx},${sy})`);
+    }
+    const col = uniqueX.indexOf(sx);
+    const row = uniqueY.indexOf(sy);
+    placedNodes.add(`${row}:${col}`);
+  });
+
+  // Find missing nodes (grid positions with no column placed)
+  const missingNodes = [];
+  for (let r = 0; r <= spansY.length; r++) {
+    for (let c = 0; c <= spansX.length; c++) {
+      if (!placedNodes.has(`${r}:${c}`)) {
+        missingNodes.push({ row: r, col: c, x: uniqueX[c], y: uniqueY[r] });
+      }
+    }
+  }
+
+  // Apply to S
+  S.spansX = spansX;
+  S.spansY = spansY;
+  S.buildingL = Math.round((uniqueX[uniqueX.length-1] - uniqueX[0]) * 100) / 100;
+  S.buildingW = Math.round((uniqueY[uniqueY.length-1] - uniqueY[0]) * 100) / 100;
+
+  return {
+    ok: true,
+    spansX, spansY,
+    uniqueX, uniqueY,
+    missingNodes,
+    warnings: offGridWarnings,
+    summary: `${cols.length} columns → ${spansX.length}×${spansY.length} grid | X spans: [${spansX.join(', ')}]m | Y spans: [${spansY.join(', ')}]m${missingNodes.length ? ` | ${missingNodes.length} missing nodes (auto transfer beams)` : ''}`
+  };
+}
+
+// ── DEFAULT COLUMNS from current spansX/spansY ──
+// Converts legacy span arrays to coordinate columns for UI display
+function spansToColumns() {
+  const cols = [];
+  let y = 0;
+  const ys = [0];
+  S.spansY.forEach(s => { y += s; ys.push(Math.round(y*100)/100); });
+  let x = 0;
+  const xs = [0];
+  S.spansX.forEach(s => { x += s; xs.push(Math.round(x*100)/100); });
+  ys.forEach(yv => xs.forEach(xv => cols.push({ x: xv, y: yv })));
+  return cols;
+}
+
 // ── GRID INITIALISATION ─────────────────────────────────────────
 function initGrid() {
+  // If coordinate mode, convert columns to spansX/spansY first
+  if (S.columns && S.columns.length >= 2) {
+    const result = coordsToGrid();
+    if (!result.ok) {
+      console.warn('coordsToGrid failed:', result.error);
+      // Fall back to existing spansX/spansY
+    } else if (result.missingNodes.length > 0) {
+      // Store missing nodes so initGrid can mark them
+      window._missingFromCoords = result.missingNodes;
+    } else {
+      window._missingFromCoords = [];
+    }
+  } else {
+    window._missingFromCoords = [];
+  }
+
   const nx = S.spansX.length, ny = S.spansY.length;
   const nodes = [], beams = [], bays = [];
 
@@ -1197,6 +1322,15 @@ function initGrid() {
   }
 
   GRID = { nodes, beams, bays, nx, ny };
+
+  // Mark missing nodes from coordinate mode
+  if (window._missingFromCoords && window._missingFromCoords.length > 0) {
+    window._missingFromCoords.forEach(m => {
+      const node = getNode(m.row, m.col);
+      if (node) node.hasColumn = false;
+    });
+  }
+
   GE.selected = null;
   return GRID;
 }
@@ -2198,37 +2332,152 @@ function p2(){
         ontouchend="handleGridTouchEnd(event,this)">
       </canvas>
 
-      <!-- Span inputs -->
-      <div style="display:flex;gap:10px;margin-top:8px;flex-wrap:wrap">
-        <div style="flex:1;min-width:180px">
-          <div style="font-size:10px;font-weight:700;color:#38bdf8;margin-bottom:5px">X Spans (m) — Columns 1→${S.spansX.length+1}</div>
-          ${S.spansX.map((s,i)=>`
+      <!-- ── COORDINATE INPUT SYSTEM ── -->
+      <div style="margin-top:10px">
+        <!-- Mode toggle: Coordinate vs Legacy -->
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;padding:8px 10px;background:#0f172a;border:1px solid #1e3a8a;border-radius:8px">
+          <span style="font-size:10px;color:#64748b;font-weight:700">INPUT MODE:</span>
+          <button id="btn_coord_mode" onclick="setInputMode('coord')"
+            style="padding:4px 12px;border-radius:6px;font-size:10px;font-weight:700;cursor:pointer;border:1.5px solid ${!S.columns?'#1e3a8a':'#38bdf8'};background:${!S.columns?'transparent':'rgba(56,189,248,0.12)'};color:${!S.columns?'#64748b':'#38bdf8'}">
+            📍 Coordinate (AutoCAD-style)
+          </button>
+          <button id="btn_span_mode" onclick="setInputMode('span')"
+            style="padding:4px 12px;border-radius:6px;font-size:10px;font-weight:700;cursor:pointer;border:1.5px solid ${S.columns?'#1e3a8a':'#38bdf8'};background:${S.columns?'transparent':'rgba(56,189,248,0.12)'};color:${S.columns?'#64748b':'#38bdf8'}">
+            📏 Span Length (classic)
+          </button>
+        </div>
+
+        <!-- COORDINATE MODE -->
+        <div id="coord_input_panel" style="display:${S.columns?'block':'none'}">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <!-- Left: Coordinate table -->
+            <div>
+              <div style="font-size:10px;font-weight:700;color:#38bdf8;margin-bottom:6px">
+                📍 Column Coordinates (metres from origin)
+                <span style="font-size:9px;color:#64748b;font-weight:400;margin-left:6px">Origin (0,0) = bottom-left corner</span>
+              </div>
+              <div style="max-height:220px;overflow-y:auto;padding-right:4px">
+                <table style="width:100%;border-collapse:collapse;font-size:10px">
+                  <tr style="background:#0f172a">
+                    <th style="padding:4px 6px;border:1px solid #1e3a8a;color:#64748b;text-align:left;width:30px">#</th>
+                    <th style="padding:4px 6px;border:1px solid #1e3a8a;color:#38bdf8;text-align:center">X (m)</th>
+                    <th style="padding:4px 6px;border:1px solid #1e3a8a;color:#34d399;text-align:center">Y (m)</th>
+                    <th style="padding:4px 6px;border:1px solid #1e3a8a;width:24px"></th>
+                  </tr>
+                  ${(S.columns||[]).map((c,i)=>`<tr id="coord_row_${i}" style="background:${i%2===0?'transparent':'rgba(255,255,255,0.02)'}">
+                    <td style="padding:3px 6px;border:1px solid #1e293b;color:#64748b;font-family:monospace">${i+1}</td>
+                    <td style="padding:2px 4px;border:1px solid #1e293b">
+                      <input type="number" value="${c.x}" min="0" max="100" step="0.5"
+                        style="width:100%;background:transparent;border:none;color:#38bdf8;font-family:monospace;font-size:10px;text-align:center;outline:none"
+                        oninput="updateCoordinate(${i},'x',parseFloat(this.value)||0)"/>
+                    </td>
+                    <td style="padding:2px 4px;border:1px solid #1e293b">
+                      <input type="number" value="${c.y}" min="0" max="100" step="0.5"
+                        style="width:100%;background:transparent;border:none;color:#34d399;font-family:monospace;font-size:10px;text-align:center;outline:none"
+                        oninput="updateCoordinate(${i},'y',parseFloat(this.value)||0)"/>
+                    </td>
+                    <td style="padding:2px 4px;border:1px solid #1e293b;text-align:center">
+                      <button onclick="removeColumn(${i})" style="background:none;border:none;color:#f87171;cursor:pointer;font-size:11px;padding:0">✕</button>
+                    </td>
+                  </tr>`).join('')}
+                </table>
+              </div>
+              <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
+                <button onclick="addColumnCoord()" style="padding:4px 12px;background:#0f172a;border:1px solid #38bdf8;border-radius:5px;color:#38bdf8;cursor:pointer;font-size:10px">+ Add Column</button>
+                <button onclick="addColumnOnCanvas()" style="padding:4px 12px;background:#0f172a;border:1px solid #34d399;border-radius:5px;color:#34d399;cursor:pointer;font-size:10px">🖱 Click on Canvas</button>
+                <button onclick="clearAllColumns()" style="padding:4px 12px;background:#0f172a;border:1px solid #f87171;border-radius:5px;color:#f87171;cursor:pointer;font-size:10px">Clear All</button>
+              </div>
+              <!-- Conversion result -->
+              <div id="coord_result" style="margin-top:8px;padding:8px;background:#0a0f1e;border:1px solid #1e3a8a;border-radius:6px;font-size:9px;color:#64748b;min-height:36px">
+                ${(()=>{
+                  if(!S.columns||S.columns.length<2) return 'Add at least 2 columns to see the frame.';
+                  const r=coordsToGrid();
+                  return r.ok
+                    ? `<span style="color:#34d399">✓ ${r.summary}</span>${r.warnings.length?'<br><span style="color:#f59e0b">⚠ '+r.warnings.join(' | ')+'</span>':''}`
+                    : `<span style="color:#f87171">✗ ${r.error}</span>`;
+                })()}
+              </div>
+            </div>
+
+            <!-- Right: Quick-fill templates -->
+            <div>
+              <div style="font-size:10px;font-weight:700;color:#64748b;margin-bottom:6px">⚡ Quick Templates</div>
+              <div style="display:flex;flex-direction:column;gap:5px">
+                ${[
+                  {name:'3×3 Grid (4m×3m)',fn:'applyTemplate("3x3_4x3")'},
+                  {name:'4×3 Grid (4m×3m)',fn:'applyTemplate("4x3_4x3")'},
+                  {name:'L-Shape (4m×3m)',fn:'applyTemplate("L_4x3")'},
+                  {name:'T-Shape (4m×3m)',fn:'applyTemplate("T_4x3")'},
+                  {name:'Custom 5×4 Grid',fn:'applyTemplate("5x4_4x3")'},
+                ].map(t=>`<button onclick="${t.fn}" style="padding:5px 10px;background:#0f172a;border:1px solid #334155;border-radius:6px;color:#94a3b8;cursor:pointer;font-size:9px;text-align:left;transition:all 0.15s" onmouseover="this.style.borderColor='#38bdf8';this.style.color='#38bdf8'" onmouseout="this.style.borderColor='#334155';this.style.color='#94a3b8'">${t.name}</button>`).join('')}
+              </div>
+              <div style="margin-top:10px;padding:8px;background:rgba(56,189,248,0.04);border:1px solid rgba(56,189,248,0.1);border-radius:6px;font-size:9px;color:#64748b;line-height:1.7">
+                <strong style="color:#38bdf8">How to use:</strong><br>
+                1. Type X, Y coordinates for each column<br>
+                2. Or click "Click on Canvas" then click to place<br>
+                3. Origin (0,0) = bottom-left corner<br>
+                4. All distances in <strong>metres</strong><br>
+                5. App auto-draws beams between aligned columns<br>
+                6. Missing intersections → auto transfer beams
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- LEGACY SPAN MODE -->
+        <div id="span_input_panel" style="display:${S.columns?'none':'flex'};gap:10px;flex-wrap:wrap">
+          <div style="flex:1;min-width:180px">
+            <div style="font-size:10px;font-weight:700;color:#38bdf8;margin-bottom:5px">X Spans (m) — Columns 1→${S.spansX.length+1}</div>
+            ${S.spansX.map((s,i)=>`
             <div style="display:flex;gap:5px;align-items:center;margin-bottom:4px">
               <span style="font-size:9px;color:#64748b;min-width:22px">X${i+1}</span>
               <input type="number" value="${s}" min="1.5" max="15" step="0.1"
                 style="flex:1;background:#0f172a;color:#f1f5f9;border:1px solid #1e3a8a;border-radius:5px;padding:4px 6px;font-size:10px;font-family:monospace"
-                oninput="S.spansX[${i}]=parseFloat(this.value)||3;GRID=null;initGrid();redrawGrid();updateStructSummary()"/>
+                id="spx_${i}"
+                oninput="(function(el,i){
+                  const v=parseFloat(el.value);
+                  if(isNaN(v)||v<1.5||v>15){
+                    el.style.borderColor='rgba(248,113,113,0.8)';el.style.background='rgba(248,113,113,0.08)';
+                    let tip=document.getElementById('spx_tip_'+i);
+                    if(!tip){tip=document.createElement('div');tip.id='spx_tip_'+i;tip.style.cssText='font-size:9px;color:#f87171;margin-top:2px';el.parentElement.appendChild(tip);}
+                    tip.textContent=v>15?'⚠ Max span is 15m for RC frames.':v<1.5?'⚠ Min span is 1.5m':'⚠ Enter a number';return;
+                  }
+                  el.style.borderColor='#1e3a8a';el.style.background='#0f172a';
+                  const tip=document.getElementById('spx_tip_'+i);if(tip)tip.textContent='';
+                  S.spansX[i]=v;GRID=null;initGrid();redrawGrid();updateStructSummary();
+                })(this,${i})"/>
               <span style="font-size:9px;color:#64748b">m</span>
-              ${S.spansX.length>1?`<button onclick="S.spansX.splice(${i},1);GRID=null;initGrid();go(2)"
-                style="padding:2px 7px;background:transparent;border:1px solid #374151;border-radius:4px;color:#f87171;cursor:pointer;font-size:10px">✕</button>`:''}
+              ${S.spansX.length>1?`<button onclick="S.spansX.splice(${i},1);GRID=null;initGrid();go(2)" style="padding:2px 7px;background:transparent;border:1px solid #374151;border-radius:4px;color:#f87171;cursor:pointer;font-size:10px">✕</button>`:''}
             </div>`).join('')}
-          <button onclick="S.spansX.push(3.5);GRID=null;initGrid();go(2)"
-            style="font-size:9px;padding:3px 10px;background:#0f172a;border:1px solid #1e3a8a;border-radius:5px;color:#38bdf8;cursor:pointer">+ Bay X</button>
-        </div>
-        <div style="flex:1;min-width:180px">
-          <div style="font-size:10px;font-weight:700;color:#38bdf8;margin-bottom:5px">Y Spans (m) — Rows A→${String.fromCharCode(65+S.spansY.length)}</div>
-          ${S.spansY.map((s,i)=>`
+            <button onclick="S.spansX.push(3.5);GRID=null;initGrid();go(2)"
+              style="font-size:9px;padding:3px 10px;background:#0f172a;border:1px solid #1e3a8a;border-radius:5px;color:#38bdf8;cursor:pointer">+ Bay X</button>
+          </div>
+          <div style="flex:1;min-width:180px">
+            <div style="font-size:10px;font-weight:700;color:#38bdf8;margin-bottom:5px">Y Spans (m) — Rows A→${String.fromCharCode(65+S.spansY.length)}</div>
+            ${S.spansY.map((s,i)=>`
             <div style="display:flex;gap:5px;align-items:center;margin-bottom:4px">
               <span style="font-size:9px;color:#64748b;min-width:22px">Y${i+1}</span>
               <input type="number" value="${s}" min="1.5" max="15" step="0.1"
                 style="flex:1;background:#0f172a;color:#f1f5f9;border:1px solid #1e3a8a;border-radius:5px;padding:4px 6px;font-size:10px;font-family:monospace"
-                oninput="S.spansY[${i}]=parseFloat(this.value)||3;GRID=null;initGrid();redrawGrid();updateStructSummary()"/>
+                id="spy_${i}"
+                oninput="(function(el,i){
+                  const v=parseFloat(el.value);
+                  if(isNaN(v)||v<1.5||v>15){
+                    el.style.borderColor='rgba(248,113,113,0.8)';el.style.background='rgba(248,113,113,0.08)';
+                    let tip=document.getElementById('spy_tip_'+i);
+                    if(!tip){tip=document.createElement('div');tip.id='spy_tip_'+i;tip.style.cssText='font-size:9px;color:#f87171;margin-top:2px';el.parentElement.appendChild(tip);}
+                    tip.textContent=v>15?'⚠ Max span is 15m for RC frames.':v<1.5?'⚠ Min span is 1.5m':'⚠ Enter a number';return;
+                  }
+                  el.style.borderColor='#1e3a8a';el.style.background='#0f172a';
+                  const tip=document.getElementById('spy_tip_'+i);if(tip)tip.textContent='';
+                  S.spansY[i]=v;GRID=null;initGrid();redrawGrid();updateStructSummary();
+                })(this,${i})"/>
               <span style="font-size:9px;color:#64748b">m</span>
-              ${S.spansY.length>1?`<button onclick="S.spansY.splice(${i},1);GRID=null;initGrid();go(2)"
-                style="padding:2px 7px;background:transparent;border:1px solid #374151;border-radius:4px;color:#f87171;cursor:pointer;font-size:10px">✕</button>`:''}
+              ${S.spansY.length>1?`<button onclick="S.spansY.splice(${i},1);GRID=null;initGrid();go(2)" style="padding:2px 7px;background:transparent;border:1px solid #374151;border-radius:4px;color:#f87171;cursor:pointer;font-size:10px">✕</button>`:''}
             </div>`).join('')}
-          <button onclick="S.spansY.push(3);GRID=null;initGrid();go(2)"
-            style="font-size:9px;padding:3px 10px;background:#0f172a;border:1px solid #1e3a8a;border-radius:5px;color:#38bdf8;cursor:pointer">+ Bay Y</button>
+            <button onclick="S.spansY.push(3);GRID=null;initGrid();go(2)"
+              style="font-size:9px;padding:3px 10px;background:#0f172a;border:1px solid #1e3a8a;border-radius:5px;color:#38bdf8;cursor:pointer">+ Bay Y</button>
+          </div>
         </div>
       </div>
 
@@ -2645,8 +2894,164 @@ function designOneBeam(gridBeam, floorNum, isRoof,
   };
 }
 
+// ── COORDINATE INPUT CONTROLLER ─────────────────────────────────
+
+function setInputMode(mode) {
+  if (mode === 'coord') {
+    // Switch to coordinate mode — initialise from current spans if no columns yet
+    if (!S.columns || S.columns.length === 0) {
+      S.columns = spansToColumns();
+    }
+  } else {
+    // Switch to legacy span mode — clear coordinate overrides
+    S.columns = null;
+  }
+  GRID = null; initGrid(); go(2);
+}
+
+function updateCoordinate(idx, axis, val) {
+  if (!S.columns || idx >= S.columns.length) return;
+  S.columns[idx][axis] = Math.round(val * 100) / 100;
+  const r = coordsToGrid();
+  const el = document.getElementById('coord_result');
+  if (el) {
+    el.innerHTML = r.ok
+      ? `<span style="color:#34d399">✓ ${r.summary}</span>${r.warnings.length ? '<br><span style="color:#f59e0b">⚠ ' + r.warnings.join(' | ') + '</span>' : ''}`
+      : `<span style="color:#f87171">✗ ${r.error}</span>`;
+  }
+  if (r.ok) { GRID = null; initGrid(); redrawGrid(); updateStructSummary(); }
+}
+
+function addColumnCoord() {
+  if (!S.columns) S.columns = [];
+  // Add near last column with +4m offset
+  const last = S.columns[S.columns.length - 1] || { x: 0, y: 0 };
+  S.columns.push({ x: Math.round((last.x + 4) * 100) / 100, y: last.y });
+  GRID = null; initGrid(); go(2);
+}
+
+function removeColumn(idx) {
+  if (!S.columns || S.columns.length <= 2) {
+    alert('Need at least 2 columns to form a frame.');
+    return;
+  }
+  S.columns.splice(idx, 1);
+  GRID = null; initGrid(); go(2);
+}
+
+function clearAllColumns() {
+  if (!confirm('Clear all column coordinates and start fresh?')) return;
+  S.columns = [{ x: 0, y: 0 }, { x: 4, y: 0 }, { x: 0, y: 3 }, { x: 4, y: 3 }];
+  GRID = null; initGrid(); go(2);
+}
+
+// Click on canvas to place column
+let _placingColumn = false;
+function addColumnOnCanvas() {
+  _placingColumn = true;
+  const tip = document.getElementById('geTip');
+  if (tip) tip.textContent = '🖱 Click on canvas to place a column. Press Escape to cancel.';
+  document.addEventListener('keydown', function esc(e) {
+    if (e.key === 'Escape') { _placingColumn = false; document.removeEventListener('keydown', esc); }
+  });
+}
+
+// Template layouts
+function applyTemplate(name) {
+  const templates = {
+    '3x3_4x3': () => {
+      const cols = [];
+      [0,4,8].forEach(x => [0,3,6].forEach(y => cols.push({x,y})));
+      return cols;
+    },
+    '4x3_4x3': () => {
+      const cols = [];
+      [0,4,8,12].forEach(x => [0,3,6].forEach(y => cols.push({x,y})));
+      return cols;
+    },
+    'L_4x3': () => {
+      // L-shape: full left column + bottom row only on right
+      const cols = [];
+      [0,4,8].forEach(x => [0,3,6].forEach(y => {
+        if (x <= 4 || y === 0) cols.push({x,y});
+      }));
+      return cols;
+    },
+    'T_4x3': () => {
+      // T-shape: full top + middle column
+      const cols = [];
+      [0,4,8,12].forEach(x => [0,3,6].forEach(y => {
+        if (y === 6 || x === 4) cols.push({x,y});
+      }));
+      return cols;
+    },
+    '5x4_4x3': () => {
+      const cols = [];
+      [0,4,8,12,16].forEach(x => [0,3,6,9].forEach(y => cols.push({x,y})));
+      return cols;
+    },
+  };
+  const fn = templates[name];
+  if (!fn) return;
+  S.columns = fn();
+  GRID = null; initGrid(); go(2);
+}
+
+// Override canvas click handler to support column placement
+const _origHandleGridClick = typeof handleGridClick !== 'undefined' ? handleGridClick : null;
+function handleGridClick(e, canvas) {
+  if (_placingColumn && S.columns) {
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = CANVAS_W / rect.width, scaleY = CANVAS_H / rect.height;
+    const cx = (e.clientX - rect.left) * scaleX;
+    const cy = (e.clientY - rect.top) * scaleY;
+    // Convert canvas pixels to metres
+    const pw = CANVAS_W - PAD.l - PAD.r, ph = CANVAS_H - PAD.t - PAD.b;
+    const totalX = S.columns.length > 0 ? Math.max(...S.columns.map(c=>c.x)) || 12 : 12;
+    const totalY = S.columns.length > 0 ? Math.max(...S.columns.map(c=>c.y)) || 9 : 9;
+    const mx = Math.round(((cx - PAD.l) / pw * totalX) * 2) / 2; // snap 0.5m
+    const my = Math.round(((cy - PAD.t) / ph * totalY) * 2) / 2;
+    if (mx >= 0 && my >= 0) {
+      S.columns.push({ x: mx, y: my });
+      updateCoordinate(S.columns.length - 1, 'x', mx);
+    }
+    _placingColumn = false;
+    GRID = null; initGrid(); go(2);
+    return;
+  }
+  if (_origHandleGridClick) _origHandleGridClick(e, canvas);
+}
+
 // ── MAIN ENGINE ────────────────────────────────────────────────
 function runCalcsFromGrid(){
+  // ── PRE-FLIGHT VALIDATION ────────────────────────────────────────
+  const errors = [];
+  const preWarnings = [];
+
+  // Span validation
+  const allSpans = [...S.spansX, ...S.spansY];
+  const maxSpan = Math.max(...allSpans);
+  const minSpan = Math.min(...allSpans);
+  if(maxSpan > 15) errors.push(`❌ Span of ${maxSpan}m exceeds 15m maximum for RC frames. Maximum practical RC beam span is 10–12m without post-tensioning. Please check your span inputs — did you accidentally type ${maxSpan} instead of ${maxSpan/10}?`);
+  if(minSpan < 1.5) errors.push(`❌ Span of ${minSpan}m is too small. Minimum practical bay span is 1.5m.`);
+  if(maxSpan > 8) preWarnings.push(`⚠ Span of ${maxSpan}m is large for residential RC. Typical spans are 3–6m. Verify this is intentional.`);
+
+  // Floor height validation
+  if(S.floorHt < 2.4 || S.floorHt > 6) errors.push(`❌ Floor height ${S.floorHt}m is outside 2.4–6m range.`);
+
+  // Materials
+  if(S.fck < 20 || S.fck > 60) errors.push(`❌ Concrete grade fck=${S.fck} N/mm² is outside M20–M60 range.`);
+  if(S.fy < 250 || S.fy > 600) errors.push(`❌ Steel grade fy=${S.fy} N/mm² is outside 250–600 N/mm² range.`);
+
+  // Loads
+  if(S.udlLL < 0.5 || S.udlLL > 15) errors.push(`❌ Live load ${S.udlLL} kN/m² is unrealistic. Typical: 2 kN/m² residential, 5 kN/m² office.`);
+  if(S.numFloors < 1 || S.numFloors > 25) errors.push(`❌ Number of floors ${S.numFloors} is outside 1–25 range.`);
+
+  if(errors.length > 0){
+    const msg = errors.join('\n') + (preWarnings.length ? '\n\n' + preWarnings.join('\n') : '');
+    throw new Error('INPUT VALIDATION FAILED:\n\n' + msg + '\n\nPlease fix these before running analysis.');
+  }
+
   // Ensure GRID is initialized — initGrid() is idempotent and safe to call.
   // We no longer fall back to the old runCalcs() because it returns a
   // structurally-different RES that breaks downstream report rendering.
@@ -2964,6 +3369,9 @@ function runCalcsFromGrid(){
     ok:Mx_r<=Mulim_sl,floor:'Roof',udlLL:udlRoof||1.5};
 
 
+  // ── PRE-FLIGHT VALIDATION ERRORS (stored before this point) ──
+  // (validation errors already threw before reaching here)
+
   // ── WARNINGS ──────────────────────────────────────────────────
   const warnings=[];
   const missingCols=GRID.nodes.filter(n=>!n.hasColumn&&!n.isWall);
@@ -3016,6 +3424,24 @@ function runCalcsFromGrid(){
       totalCols:allCols.length,
       totalFtgs:allFtgs.length,
     },
+
+    // ── SANITY FLAGS — shown as prominent warnings in UI ──
+    sanityWarnings: (()=>{
+      const sw = [];
+      // Check for unreasonably large beams (suggests bad span input)
+      const maxBeamD = Math.max(...allBeams.map(b=>b.D||0));
+      const maxSpan = Math.max(...S.spansX, ...S.spansY);
+      const expectedMaxD = maxSpan * 1000 / 8; // L/8 is deep but still reasonable
+      if(maxBeamD > 1200) sw.push(`⚠ SANITY CHECK: Largest beam depth = ${maxBeamD}mm. This is unusually large — typical RC beams are 300–800mm. Please verify your spans are in metres, not cm or mm.`);
+      else if(maxBeamD > expectedMaxD) sw.push(`⚠ SANITY CHECK: Beam depth (${maxBeamD}mm) seems large for the longest span of ${maxSpan}m. Expected depth ~L/12 = ${Math.round(maxSpan*1000/12)}mm. If spans are correct, this may indicate very heavy loads.`);
+      // Check for unreasonable column sizes
+      const maxColSize = Math.max(...allCols.filter(c=>c.floor===1).map(c=>c.size||0));
+      if(maxColSize > 1000) sw.push(`⚠ SANITY CHECK: Column size = ${maxColSize}×${maxColSize}mm. This is extremely large. Please verify load inputs.`);
+      // Check for unreasonable footing sizes
+      const maxFtgSize = Math.max(...allFtgs.map(f=>f.Bf||0));
+      if(maxFtgSize > 8) sw.push(`⚠ SANITY CHECK: Footing size = ${r2(maxFtgSize)}m × ${r2(maxFtgSize)}m. This is very large — consider increasing soil bearing capacity or reducing loads.`);
+      return sw;
+    })(),
   };
 }
 
@@ -3029,13 +3455,44 @@ function runNow(){
       if(!GRID)initGrid();
       RES=runCalcsFromGrid();
       if(!RES){alert('Calculation returned empty. Check inputs.');return;}
+      // Push to history as the original/first run
+      if(window._analysisHistory&&window._analysisHistory.length===0){
+        pushHistory('Original analysis');
+      }
       go(7);
+      // Show sanity warnings after results load
+      if(RES.sanityWarnings&&RES.sanityWarnings.length>0){
+        setTimeout(()=>{
+          const m=document.getElementById('main');
+          if(m){
+            const sw=document.createElement('div');
+            sw.style.cssText='margin:0 0 12px 0;padding:12px;background:rgba(245,158,11,0.1);border:1.5px solid rgba(245,158,11,0.5);border-radius:8px;font-size:11px;color:#fbbf24';
+            sw.innerHTML='<strong>⚠ SANITY WARNINGS — Please review before trusting these results:</strong><br><br>'+RES.sanityWarnings.join('<br><br>');
+            m.insertBefore(sw,m.firstChild);
+          }
+        },500);
+      }
     }catch(e){
       console.error('runCalcs error:',e);
+      if(ldEl)ldEl.style.display='none';
+      if(rbEl)rbEl.disabled=false;
       const m=document.getElementById('main');
-      if(m)m.innerHTML='<div class="card" style="border-color:rgba(248,113,113,.5)"><div class="ct" style="color:var(--red)">Calculation Error</div><div class="cp re"><strong>Error:</strong> '+e.message+'</div><button class="btn" onclick="go(2)">Fix Plan</button></div>';
+      if(m){
+        // Format validation errors nicely
+        const isValidation=e.message.startsWith('INPUT VALIDATION FAILED');
+        const errLines=e.message.split('\n').filter(Boolean);
+        m.innerHTML=`<div class="card" style="border-color:rgba(248,113,113,.5)">
+          <div class="ct" style="color:var(--red)">${isValidation?'⛔ Cannot Run Analysis — Invalid Inputs':'Calculation Error'}</div>
+          ${errLines.map(l=>`<div style="padding:4px 0;font-size:11px;color:${l.startsWith('❌')?'#f87171':l.startsWith('⚠')?'#fbbf24':'#94a3b8'};line-height:1.6">${l}</div>`).join('')}
+          <div style="margin-top:12px;display:flex;gap:8px">
+            <button class="btn" onclick="go(2)">← Fix Plan & Spans</button>
+            <button class="btn" onclick="go(3)">Fix Loads</button>
+            <button class="btn" onclick="go(4)">Fix Materials</button>
+          </div>
+        </div>`;
+      }
     }
-  },1200);
+  },200);
 }
 
 
