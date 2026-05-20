@@ -2221,6 +2221,9 @@ function showGEToast(msg,color){
 // ── CONTEXT PANEL (right panel shown when item selected) ─────────
 // ── MISSING NODE DIALOG ─────────────────────────────────────────
 function showMissingNodeDialog(missingNodes, onComplete) {
+  // Store callback globally so HTML button can call it without serialization
+  window._missingNodeCallback = onComplete;
+
   // Remove any existing dialog
   const existing = document.getElementById('_missingNodeDialog');
   if (existing) existing.remove();
@@ -2279,12 +2282,11 @@ function showMissingNodeDialog(missingNodes, onComplete) {
   html += `
     <div style="display:flex;gap:10px;margin-top:16px">
       <button onclick="(function(){
-        // Check all nodes have a choice
         const keys=${JSON.stringify(missingNodes.map(n=>getNodeChoiceKey(n)))};
         const missing=keys.filter(k=>!window._nodeChoices[k]);
         if(missing.length>0){alert('Please select Void or Transfer Beam for all missing columns.');return;}
         document.getElementById('_missingNodeDialog').remove();
-        (${onComplete.toString()})();
+        if(window._missingNodeCallback){window._missingNodeCallback();window._missingNodeCallback=null;}
       })()" style="flex:1;padding:10px;background:rgba(56,189,248,0.12);border:1.5px solid #38bdf8;border-radius:8px;color:#38bdf8;cursor:pointer;font-size:11px;font-weight:700">
         ✓ Confirm & Run Analysis
       </button>
@@ -3273,53 +3275,62 @@ function applyNodeChoices() {
     node._choice = choice;
   });
 
-  // Second pass: for TRANSFER nodes, merge the two beam segments into one transfer beam
+  // Second pass: for TRANSFER nodes, merge the two through-beam segments into one
+  // A "through-beam" has the missing node in the MIDDLE (one segment each side)
+  // A "dead-end beam" only has one segment (terminates at the missing node)
+  // Dead-end beams at transfer nodes must be removed
+  const mergedBeamIds = new Set(); // track which original segment IDs were merged
+  const deadEndBeamIds = new Set(); // track dead-end beams to remove
+
   getMissingNodes().filter(n=>n._choice==='transfer').forEach(missingNode => {
-    // Find beams that touch this missing node
     const touching = GRID.beams.filter(b => b.n1===missingNode.id || b.n2===missingNode.id);
 
-    // Group by direction
     ['X','Y'].forEach(dir => {
       const segs = touching.filter(b=>b.dir===dir);
-      if (segs.length < 2) return; // need exactly 2 segments to merge
+      if (segs.length >= 2) {
+        // Two segments → can merge into through-beam
+        segs.sort((a,b) => {
+          const oa = GRID.nodes[a.n1===missingNode.id ? a.n2 : a.n1];
+          const ob = GRID.nodes[b.n1===missingNode.id ? b.n2 : b.n1];
+          return dir==='X' ? oa.x - ob.x : oa.y - ob.y;
+        });
 
-      // Sort: segment whose OTHER end is to the left/top first
-      segs.sort((a,b) => {
-        const oa = GRID.nodes[a.n1===missingNode.id ? a.n2 : a.n1];
-        const ob = GRID.nodes[b.n1===missingNode.id ? b.n2 : b.n1];
-        return dir==='X' ? oa.x - ob.x : oa.y - ob.y;
-      });
+        const seg1 = segs[0], seg2 = segs[1];
+        const topNodeId  = seg1.n1===missingNode.id ? seg1.n2 : seg1.n1;
+        const botNodeId  = seg2.n1===missingNode.id ? seg2.n2 : seg2.n1;
+        const topNode = GRID.nodes[topNodeId];
+        const botNode = GRID.nodes[botNodeId];
+        if (!topNode || !botNode) return;
 
-      const seg1 = segs[0], seg2 = segs[1];
-      const leftNodeId  = seg1.n1===missingNode.id ? seg1.n2 : seg1.n1;
-      const rightNodeId = seg2.n1===missingNode.id ? seg2.n2 : seg2.n1;
-      const leftNode  = GRID.nodes[leftNodeId];
-      const rightNode = GRID.nodes[rightNodeId];
-      if (!leftNode || !rightNode) return;
+        const totalL = seg1.L + seg2.L;
 
-      const totalL = seg1.L + seg2.L;
+        const mergedBeam = {
+          id: Date.now() + Math.random(), // unique new ID — NOT reusing seg1.id
+          dir, n1: topNodeId, n2: botNodeId,
+          row: dir==='Y' ? Math.min(topNode.row, botNode.row) : missingNode.row,
+          col: dir==='X' ? Math.min(topNode.col, botNode.col) : missingNode.col,
+          L: totalL,
+          spX: dir==='X' ? totalL : (seg1.spX||4),
+          spY: dir==='Y' ? totalL : (seg1.spY||3),
+          x1: topNode.x, y1: topNode.y, x2: botNode.x, y2: botNode.y,
+          endLeft: seg1.endLeft||'column', endRight: seg2.endRight||'column',
+          isSecondary:false, isCantilever:false, isTransfer:true,
+          endCondOverride: seg1.endCondOverride, customWu:null,
+          _transferNode: missingNode.id,
+        };
 
-      // Create merged transfer beam
-      const mergedBeam = {
-        id: seg1.id, // reuse id
-        dir, n1: leftNodeId, n2: rightNodeId,
-        row: missingNode.row, col: Math.min(leftNode.col, rightNode.col),
-        L: totalL,
-        spX: dir==='X' ? totalL : (seg1.spX||4),
-        spY: dir==='Y' ? totalL : (seg1.spY||3),
-        x1: leftNode.x, y1: leftNode.y, x2: rightNode.x, y2: rightNode.y,
-        endLeft: seg1.endLeft || 'column',
-        endRight: seg2.endRight || 'column',
-        isSecondary: false, isCantilever: false, isTransfer: true,
-        endCondOverride: seg1.endCondOverride, customWu: null,
-        _transferNode: missingNode.id, // store which node is the floating column
-      };
-
-      // Remove old segments and add merged beam
-      GRID.beams = GRID.beams.filter(b => b.id!==seg1.id && b.id!==seg2.id);
-      GRID.beams.push(mergedBeam);
+        mergedBeamIds.add(seg1.id);
+        mergedBeamIds.add(seg2.id);
+        GRID.beams.push(mergedBeam);
+      } else if (segs.length === 1) {
+        // Only ONE segment in this direction → dead-end beam → remove it
+        deadEndBeamIds.add(segs[0].id);
+      }
     });
   });
+
+  // Remove original segments that were merged, AND dead-end beams at transfer nodes
+  GRID.beams = GRID.beams.filter(b => !mergedBeamIds.has(b.id) && !deadEndBeamIds.has(b.id));
 
   // Third pass: remove beams that terminate at VOID nodes
   GRID.beams = GRID.beams.filter(beam => {

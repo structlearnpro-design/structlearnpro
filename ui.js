@@ -980,18 +980,23 @@ function svgBeamCrossSection(b){
 
 function svgTributaryArea(b){
   const W=440, H=320, padL=55, padT=40, padR=30, padB=55;
-  const spX = b.spX||S.spansX[b.col]||4; // Stage 2: use beam stored span
-  const spY = b.spY||S.spansY[b.row]||3; // Stage 2
+
+  // For transfer beams: use actual beam span L (merged), not stored spX/spY
+  const isX = b.dir==='X';
+  const beamSpanActual = b.L || (isX ? b.spX||4 : b.spY||3);
+  const spX = isX ? beamSpanActual : (b.spX||S.spansX[b.col]||4);
+  const spY = isX ? (b.spY||S.spansY[b.row]||3) : beamSpanActual;
+
+  // For transfer beams: use merged span in the relevant direction
   const nCols = Math.min(S.spansX.length, 4);
   const nRows = Math.min(S.spansY.length, 4);
-  const isX = b.dir==='X';
   const beamRow = b.row||0;
   const beamCol = b.col||0;
 
   // Determine slab type for adjacent bays
-  const lx_bay = Math.min(spX, spY);
-  const ly_bay = Math.max(spX, spY);
-  const ratio = ly_bay / lx_bay;
+  const lx_bay = Math.min(isX ? b.L||spX : spX, isX ? spY : b.L||spY);
+  const ly_bay = Math.max(isX ? b.L||spX : spX, isX ? spY : b.L||spY);
+  const ratio = ly_bay / Math.max(lx_bay, 0.1);
   const twoWay = ratio < 2.0;
 
   // Is this beam along the short span?
@@ -1063,15 +1068,40 @@ function svgTributaryArea(b){
     }
   }
 
-  // Draw the design beam
+  // Draw the design beam — for transfer beams, span full merged length
   if(isX){
-    const y=ys[beamRow], x1=xs[beamCol], x2=xs[beamCol+1]||xs[beamCol]+bW;
-    s += `<line x1="${x1}" y1="${y}" x2="${x2}" y2="${y}" stroke="#f59e0b" stroke-width="4" stroke-linecap="round"/>`;
-    s += `<text x="${(x1+x2)/2}" y="${y-7}" fill="#f59e0b" font-size="9" font-weight="bold" text-anchor="middle" font-family="JetBrains Mono">${b.label} (L=${spX}m)</text>`;
+    const y=ys[beamRow];
+    // For transfer beam: draw from beamCol to end of merged span
+    const x1=xs[beamCol];
+    const x2 = b.isTransfer ? (xs[beamCol]+beamSpanActual*((W-padL-padR)/S.spansX.reduce((a,v)=>a+v,0))) : (xs[beamCol+1]||xs[beamCol]+bW);
+    const beamColor = b.isTransfer ? '#f59e0b' : '#f59e0b';
+    const beamDash = b.isTransfer ? '8,4' : '';
+    if(beamDash) s += `<line x1="${x1}" y1="${y}" x2="${x2}" y2="${y}" stroke="${beamColor}" stroke-width="6" stroke-dasharray="${beamDash}" stroke-linecap="round"/>`;
+    else s += `<line x1="${x1}" y1="${y}" x2="${x2}" y2="${y}" stroke="${beamColor}" stroke-width="4" stroke-linecap="round"/>`;
+    s += `<text x="${(x1+x2)/2}" y="${y-7}" fill="${beamColor}" font-size="9" font-weight="bold" text-anchor="middle" font-family="JetBrains Mono">${b.label} (L=${b.L||spX}m${b.isTransfer?' TRANSFER':''})</text>`;
+    // Mark floating column position if transfer
+    if(b.isTransfer && b.transferPL){
+      const maxX=S.spansX.reduce((a,v)=>a+v,0)||12;
+      const pw=W-padL-padR;
+      const ptX = x1 + b.transferPL.a/maxX*pw;
+      s += `<line x1="${ptX}" y1="${y-15}" x2="${ptX}" y2="${y+15}" stroke="#f87171" stroke-width="2" stroke-dasharray="3,2"/>`;
+      s += `<text x="${ptX}" y="${y-18}" fill="#f87171" font-size="8" text-anchor="middle" font-family="JetBrains Mono">↓ P_u=${r2(b.transferPL.P_u)}kN</text>`;
+    }
   } else {
-    const x=xs[beamCol], y1=ys[beamRow], y2=ys[beamRow+1]||ys[beamRow]+bH;
-    s += `<line x1="${x}" y1="${y1}" x2="${x}" y2="${y2}" stroke="#f59e0b" stroke-width="4" stroke-linecap="round"/>`;
-    s += `<text x="${x+6}" y="${(y1+y2)/2+4}" fill="#f59e0b" font-size="9" font-weight="bold" font-family="JetBrains Mono">${b.label} (L=${spY}m)</text>`;
+    const x=xs[beamCol];
+    const y1=ys[beamRow];
+    const y2 = b.isTransfer ? (ys[beamRow]+beamSpanActual*((H-padT-padB)/S.spansY.reduce((a,v)=>a+v,0))) : (ys[beamRow+1]||ys[beamRow]+bH);
+    const beamDash = b.isTransfer ? '8,4' : '';
+    if(beamDash) s += `<line x1="${x}" y1="${y1}" x2="${x}" y2="${y2}" stroke="#f59e0b" stroke-width="6" stroke-dasharray="${beamDash}" stroke-linecap="round"/>`;
+    else s += `<line x1="${x}" y1="${y1}" x2="${x}" y2="${y2}" stroke="#f59e0b" stroke-width="4" stroke-linecap="round"/>`;
+    s += `<text x="${x+6}" y="${(y1+y2)/2+4}" fill="#f59e0b" font-size="9" font-weight="bold" font-family="JetBrains Mono">${b.label} (L=${b.L||spY}m${b.isTransfer?' TRANSFER':''})</text>`;
+    if(b.isTransfer && b.transferPL){
+      const maxY=S.spansY.reduce((a,v)=>a+v,0)||9;
+      const ph=H-padT-padB;
+      const ptY = y1 + b.transferPL.a/maxY*ph;
+      s += `<line x1="${x-15}" y1="${ptY}" x2="${x+15}" y2="${ptY}" stroke="#f87171" stroke-width="2" stroke-dasharray="3,2"/>`;
+      s += `<text x="${x+18}" y="${ptY+4}" fill="#f87171" font-size="8" font-family="JetBrains Mono">← P_u=${r2(b.transferPL.P_u)}kN</text>`;
+    }
   }
 
   // Column nodes
