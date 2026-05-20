@@ -384,6 +384,8 @@ const FM_WHY = {
   'Sa/g':         'Spectral acceleration Sa/g from IS 1893 Fig. 2 response spectrum. Depends on building period Ta and soil type. For short stiff buildings Sa/g = 2.5 (peak). Reduces for longer periods.',
 };
 
+let _fmCount = 0;
+
 // Auto-description for formula results — shown as grey line below each fm() row
 const FM_DESC = {
   // Geometry
