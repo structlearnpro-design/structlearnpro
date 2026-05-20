@@ -859,6 +859,230 @@ function secSeismic(){
   `,'tl')}
 </div>`;}
 
+
+// ── WIND DIAGRAMS ────────────────────────────────────────────────
+
+// 1. Building wind pressure diagram — elevation showing Cpe arrows on all faces
+function svgWindPressure(wind, H, B, L, hb) {
+  var W = 660, SVG_H = 340;
+  var padL = 60, padR = 60, padT = 55, padB = 60;
+
+  var bldW = 240, bldH = Math.max(100, Math.min(180, H * 12));
+  var bx = (W - bldW) / 2, by = padT;
+  var ex = bx + bldW;
+
+  var pz = wind.pz;
+  var cpe_w = 0.8, cpe_l = 0.5, cpe_s = hb <= 1 ? 0.7 : 0.8;
+  var cpi = 0.2;
+  var net_w = (cpe_w + cpi) * pz;  // windward net pressure
+  var net_l = (cpe_l + cpi) * pz;  // leeward net suction
+  var maxArrow = 80;
+  var scaleArrow = maxArrow / ((cpe_w + cpi) * pz);
+
+  var lines = [];
+  lines.push('<svg viewBox="0 0 ' + W + ' ' + SVG_H + '" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block;background:#0a0f1e;border-radius:8px">');
+
+  // Title
+  lines.push('<text x="' + (W/2) + '" y="18" fill="#fb923c" font-size="11" font-weight="bold" text-anchor="middle" font-family="JetBrains Mono">WIND PRESSURE ON BUILDING — IS 875 Part 3:2015</text>');
+  lines.push('<text x="' + (W/2) + '" y="32" fill="#64748b" font-size="9" text-anchor="middle" font-family="JetBrains Mono">Vb=' + wind.VbW + 'm/s | Vz=' + r2(wind.Vz) + 'm/s | pz=' + r2(pz) + ' kN/m² | Net lateral pressure=' + r2(wind.Fw) + ' kN/m²</text>');
+
+  // Wind direction arrow (left side, horizontal)
+  var windY = by + bldH / 2;
+  lines.push('<defs><marker id="wArr" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><polygon points="0,0 6,3 0,6" fill="#38bdf8"/></marker></defs>');
+  lines.push('<line x1="' + (bx - 90) + '" y1="' + windY + '" x2="' + (bx - 10) + '" y2="' + windY + '" stroke="#38bdf8" stroke-width="2.5" marker-end="url(#wArr)"/>');
+  lines.push('<text x="' + (bx - 50) + '" y="' + (windY - 10) + '" fill="#38bdf8" font-size="9" font-weight="700" text-anchor="middle" font-family="JetBrains Mono">WIND</text>');
+  lines.push('<text x="' + (bx - 50) + '" y="' + (windY + 20) + '" fill="#38bdf8" font-size="8" text-anchor="middle" font-family="JetBrains Mono">Vb=' + wind.VbW + 'm/s</text>');
+
+  // Building concrete body
+  lines.push('<rect x="' + bx + '" y="' + by + '" width="' + bldW + '" height="' + bldH + '" fill="rgba(100,116,139,0.15)" stroke="#475569" stroke-width="1.5"/>');
+  // Floor lines
+  var nF = S.numFloors || 4;
+  for (var fi = 1; fi < nF; fi++) {
+    var fy2 = by + fi * bldH / nF;
+    lines.push('<line x1="' + bx + '" y1="' + r2(fy2) + '" x2="' + ex + '" y2="' + r2(fy2) + '" stroke="#334155" stroke-width="1"/>');
+  }
+  // Ground
+  lines.push('<rect x="' + (bx - 20) + '" y="' + (by + bldH) + '" width="' + (bldW + 40) + '" height="12" fill="rgba(71,85,105,0.6)" stroke="#475569" stroke-width="1"/>');
+  for (var gi = 0; gi < 10; gi++) {
+    lines.push('<line x1="' + (bx - 20 + gi * (bldW + 40) / 9) + '" y1="' + (by + bldH + 12) + '" x2="' + (bx - 24 + gi * (bldW + 40) / 9) + '" y2="' + (by + bldH + 22) + '" stroke="#475569" stroke-width="1"/>');
+  }
+
+  // ── WINDWARD PRESSURE (arrows pointing INTO building, from left) ──
+  var nArrows = 5;
+  var arrowLen = r2(net_w * scaleArrow);
+  lines.push('<text x="' + (bx - 5) + '" y="' + (by + bldH / 4) + '" fill="#34d399" font-size="8.5" text-anchor="end" font-weight="700" font-family="JetBrains Mono">WINDWARD</text>');
+  lines.push('<text x="' + (bx - 5) + '" y="' + (by + bldH / 4 + 12) + '" fill="#34d399" font-size="8" text-anchor="end" font-family="JetBrains Mono">Cpe=+' + cpe_w + '</text>');
+  lines.push('<text x="' + (bx - 5) + '" y="' + (by + bldH / 4 + 24) + '" fill="#34d399" font-size="8" text-anchor="end" font-family="JetBrains Mono">Net=' + r2(net_w) + 'kN/m²</text>');
+  for (var ai = 0; ai < nArrows; ai++) {
+    var ay2 = by + (ai + 0.5) * bldH / nArrows;
+    var aLen = parseFloat(arrowLen) * (0.7 + 0.06 * ai); // slight increase with height
+    lines.push('<line x1="' + r2(bx - aLen) + '" y1="' + r2(ay2) + '" x2="' + bx + '" y2="' + r2(ay2) + '" stroke="#34d399" stroke-width="2" marker-end="url(#wArr2)"/>');
+  }
+  lines.push('<defs><marker id="wArr2" markerWidth="5" markerHeight="5" refX="4" refY="2.5" orient="auto"><polygon points="0,0 5,2.5 0,5" fill="#34d399"/></marker></defs>');
+
+  // Windward pressure fill zone
+  var wFillW = parseFloat(arrowLen) * 1.1;
+  lines.push('<rect x="' + r2(bx - wFillW) + '" y="' + by + '" width="' + r2(wFillW) + '" height="' + bldH + '" fill="rgba(52,211,153,0.08)" stroke="none"/>');
+
+  // ── LEEWARD SUCTION (arrows pointing AWAY from building, right side) ──
+  var lArrowLen = r2(net_l * scaleArrow);
+  lines.push('<defs><marker id="wArr3" markerWidth="5" markerHeight="5" refX="1" refY="2.5" orient="auto"><polygon points="5,0 0,2.5 5,5" fill="#f87171"/></marker></defs>');
+  for (var ai2 = 0; ai2 < nArrows; ai2++) {
+    var ay3 = by + (ai2 + 0.5) * bldH / nArrows;
+    lines.push('<line x1="' + ex + '" y1="' + r2(ay3) + '" x2="' + r2(ex + parseFloat(lArrowLen)) + '" y2="' + r2(ay3) + '" stroke="#f87171" stroke-width="2" marker-end="url(#wArr3)"/>');
+  }
+  lines.push('<rect x="' + ex + '" y="' + by + '" width="' + r2(parseFloat(lArrowLen) * 1.1) + '" height="' + bldH + '" fill="rgba(248,113,113,0.08)" stroke="none"/>');
+  lines.push('<text x="' + (ex + 5) + '" y="' + (by + bldH / 4) + '" fill="#f87171" font-size="8.5" font-weight="700" font-family="JetBrains Mono">LEEWARD</text>');
+  lines.push('<text x="' + (ex + 5) + '" y="' + (by + bldH / 4 + 12) + '" fill="#f87171" font-size="8" font-family="JetBrains Mono">Cpe=-' + cpe_l + '</text>');
+  lines.push('<text x="' + (ex + 5) + '" y="' + (by + bldH / 4 + 24) + '" fill="#f87171" font-size="8" font-family="JetBrains Mono">Net=' + r2(net_l) + 'kN/m²</text>');
+
+  // ── ROOF UPLIFT (arrows pointing UP from roof) ──
+  var roofArrows = 5;
+  var roofArrowLen = 35;
+  lines.push('<defs><marker id="wArr4" markerWidth="5" markerHeight="5" refX="2.5" refY="1" orient="auto"><polygon points="0,5 2.5,0 5,5" fill="#a78bfa"/></marker></defs>');
+  for (var ri = 0; ri < roofArrows; ri++) {
+    var rx2 = bx + 20 + ri * (bldW - 40) / (roofArrows - 1);
+    lines.push('<line x1="' + r2(rx2) + '" y1="' + by + '" x2="' + r2(rx2) + '" y2="' + r2(by - roofArrowLen) + '" stroke="#a78bfa" stroke-width="2" marker-end="url(#wArr4)"/>');
+  }
+  lines.push('<text x="' + (bx + bldW / 2) + '" y="' + (by - roofArrowLen - 8) + '" fill="#a78bfa" font-size="8.5" font-weight="700" text-anchor="middle" font-family="JetBrains Mono">ROOF UPLIFT — Cpe = -0.5 to -0.9 (suction)</text>');
+
+  // ── NET FORCE LABEL ──
+  var netY = by + bldH + 35;
+  lines.push('<line x1="' + (W/2 - 60) + '" y1="' + netY + '" x2="' + (W/2 + 60) + '" y2="' + netY + '" stroke="#fb923c" stroke-width="2" marker-end="url(#wArr)"/>');
+  lines.push('<text x="' + (W/2) + '" y="' + (netY - 8) + '" fill="#fb923c" font-size="9" font-weight="700" text-anchor="middle" font-family="JetBrains Mono">NET LATERAL FORCE = (Cpe_w + Cpe_l + 2Cpi) × pz = 1.3 × ' + r2(pz) + ' = ' + r2(wind.Fw) + ' kN/m²</text>');
+
+  // Height label
+  lines.push('<line x1="' + (bx - 40) + '" y1="' + by + '" x2="' + (bx - 40) + '" y2="' + (by + bldH) + '" stroke="#64748b" stroke-width="0.8"/>');
+  lines.push('<text x="' + (bx - 52) + '" y="' + (by + bldH / 2 + 4) + '" fill="#64748b" font-size="9" text-anchor="middle" font-family="JetBrains Mono" transform="rotate(-90,' + (bx - 52) + ',' + (by + bldH / 2) + ')">H=' + r2(H) + 'm</text>');
+
+  // Building dimension
+  lines.push('<line x1="' + bx + '" y1="' + (by + bldH + 22) + '" x2="' + ex + '" y2="' + (by + bldH + 22) + '" stroke="#64748b" stroke-width="0.8"/>');
+  lines.push('<text x="' + (bx + bldW / 2) + '" y="' + (by + bldH + 34) + '" fill="#64748b" font-size="9" text-anchor="middle" font-family="JetBrains Mono">B=' + B + 'm</text>');
+
+  // h/b label
+  lines.push('<text x="' + (bx + bldW + 5) + '" y="' + (by + 12) + '" fill="#64748b" font-size="8" font-family="JetBrains Mono">h/b=' + r2(hb) + '</text>');
+
+  lines.push('</svg>');
+  return '<div class="dg">' + lines.join('') + '<div class="dg-cap">Fig: Wind pressure distribution on building faces per IS 875 Part 3:2015. Green = windward face (pressure INTO building). Red = leeward face (suction AWAY). Purple = roof uplift. The combined effect is a net lateral force acting at each floor level.</div></div>';
+}
+
+// 2. k2 wind speed profile — height vs design wind speed
+function svgWindProfile(wind, windFloors, H) {
+  var W = 320, SVG_H = 280;
+  var padL = 55, padR = 30, padT = 30, padB = 45;
+  var plotW = W - padL - padR, plotH = SVG_H - padT - padB;
+
+  var maxH = Math.max(H + 2, 20);
+  var maxVz = wind.VbW * 1.25;
+  function px(Vz) { return padL + (Vz / maxVz) * plotW; }
+  function py2(h)  { return padT + plotH - (h / maxH) * plotH; }
+
+  var lines = [];
+  lines.push('<svg viewBox="0 0 ' + W + ' ' + SVG_H + '" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block;background:#0a0f1e">');
+
+  // Title
+  lines.push('<text x="' + (W/2) + '" y="14" fill="#fb923c" font-size="9" font-weight="700" text-anchor="middle" font-family="JetBrains Mono">WIND SPEED PROFILE</text>');
+  lines.push('<text x="' + (W/2) + '" y="24" fill="#475569" font-size="8" text-anchor="middle" font-family="JetBrains Mono">Terrain Cat ' + S.terrain + ' | k2 increases with height</text>');
+
+  // Axes
+  lines.push('<line x1="' + padL + '" y1="' + padT + '" x2="' + padL + '" y2="' + (padT + plotH) + '" stroke="#334155" stroke-width="1.5"/>');
+  lines.push('<line x1="' + padL + '" y1="' + (padT + plotH) + '" x2="' + (padL + plotW) + '" y2="' + (padT + plotH) + '" stroke="#334155" stroke-width="1.5"/>');
+  lines.push('<text x="' + (W/2) + '" y="' + (SVG_H - 3) + '" fill="#64748b" font-size="8" text-anchor="middle" font-family="JetBrains Mono">Design Wind Speed Vz (m/s)</text>');
+  lines.push('<text x="10" y="' + (padT + plotH / 2) + '" fill="#64748b" font-size="8" text-anchor="middle" font-family="JetBrains Mono" transform="rotate(-90,10,' + (padT + plotH / 2) + ')">Height (m)</text>');
+
+  // Grid
+  [10, 20, 30, 40].forEach(function(Vz2) {
+    if (Vz2 <= maxVz) {
+      var x2 = px(Vz2);
+      lines.push('<line x1="' + x2 + '" y1="' + padT + '" x2="' + x2 + '" y2="' + (padT + plotH) + '" stroke="#1e293b" stroke-width="0.8"/>');
+      lines.push('<text x="' + x2 + '" y="' + (padT + plotH + 12) + '" fill="#475569" font-size="7.5" text-anchor="middle" font-family="JetBrains Mono">' + Vz2 + '</text>');
+    }
+  });
+  [5, 10, 15, 20].forEach(function(h2) {
+    if (h2 <= maxH) {
+      var y2 = py2(h2);
+      lines.push('<line x1="' + padL + '" y1="' + y2 + '" x2="' + (padL + plotW) + '" y2="' + y2 + '" stroke="#1e293b" stroke-width="0.8"/>');
+      lines.push('<text x="' + (padL - 4) + '" y="' + (y2 + 3) + '" fill="#475569" font-size="7.5" text-anchor="end" font-family="JetBrains Mono">' + h2 + '</text>');
+    }
+  });
+
+  // Vb reference line (basic wind speed at 10m)
+  var vbX = px(wind.VbW);
+  lines.push('<line x1="' + vbX + '" y1="' + padT + '" x2="' + vbX + '" y2="' + (padT + plotH) + '" stroke="rgba(251,191,36,0.4)" stroke-width="1" stroke-dasharray="4,3"/>');
+  lines.push('<text x="' + (vbX + 3) + '" y="' + (padT + 10) + '" fill="#fbbf24" font-size="7.5" font-family="JetBrains Mono">Vb=' + wind.VbW + '</text>');
+
+  // Profile fill
+  var profilePts = windFloors.map(function(f) { return r2(px(f.Vz)) + ',' + r2(py2(f.h)); }).join(' ');
+  lines.push('<polygon points="' + padL + ',' + (padT + plotH) + ' ' + profilePts + ' ' + padL + ',' + py2(windFloors[windFloors.length - 1].h) + '" fill="rgba(251,191,36,0.1)"/>');
+
+  // Profile curve
+  lines.push('<polyline points="' + profilePts + '" fill="none" stroke="#fb923c" stroke-width="2"/>');
+
+  // Data points + horizontal pressure bars
+  windFloors.forEach(function(f) {
+    var fx = px(f.Vz), fy = py2(f.h);
+    // Horizontal bar showing force at this floor
+    var barLen = (f.Fi / windFloors[windFloors.length - 1].Fi) * 50;
+    lines.push('<rect x="' + (padL + plotW) + '" y="' + r2(fy - 4) + '" width="' + r2(barLen) + '" height="8" fill="rgba(251,191,36,0.3)" stroke="#fbbf24" stroke-width="0.8"/>');
+    lines.push('<circle cx="' + fx + '" cy="' + fy + '" r="3.5" fill="#fb923c" stroke="#0a0f1e" stroke-width="1"/>');
+    lines.push('<text x="' + (fx + 5) + '" y="' + (fy + 4) + '" fill="#fb923c" font-size="7.5" font-family="JetBrains Mono">' + r2(f.Vz) + 'm/s</text>');
+  });
+
+  // Force bar legend
+  lines.push('<text x="' + (padL + plotW + 2) + '" y="' + (padT - 4) + '" fill="#fbbf24" font-size="7.5" font-family="JetBrains Mono">Floor force→</text>');
+
+  // Building height marker
+  var bldTopY = py2(H);
+  lines.push('<line x1="' + padL + '" y1="' + bldTopY + '" x2="' + (padL + plotW) + '" y2="' + bldTopY + '" stroke="#64748b" stroke-width="1" stroke-dasharray="3,3"/>');
+  lines.push('<text x="' + (padL + 4) + '" y="' + (bldTopY - 3) + '" fill="#64748b" font-size="7.5" font-family="JetBrains Mono">H=' + r2(H) + 'm (roof)</text>');
+
+  lines.push('</svg>');
+  return lines.join('');
+}
+
+// 3. Floor-by-floor wind force + comparison with seismic
+function svgWindForces(windFloors, totalWindForce, seisVb) {
+  var W = 320, SVG_H = 280;
+  var padL = 45, padR = 20, padT = 30, padB = 45;
+  var plotW = W - padL - padR, plotH = SVG_H - padT - padB;
+
+  var maxForce = Math.max.apply(null, windFloors.map(function(f) { return f.Fi; }));
+  var nF = windFloors.length;
+  var barH = (plotH / nF) * 0.7;
+  var barGap = (plotH / nF) * 0.3;
+
+  var lines = [];
+  lines.push('<svg viewBox="0 0 ' + W + ' ' + SVG_H + '" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block;background:#0a0f1e">');
+
+  lines.push('<text x="' + (W/2) + '" y="14" fill="#fb923c" font-size="9" font-weight="700" text-anchor="middle" font-family="JetBrains Mono">FLOOR-BY-FLOOR WIND FORCE</text>');
+  lines.push('<text x="' + (W/2) + '" y="24" fill="#475569" font-size="8" text-anchor="middle" font-family="JetBrains Mono">Total Vw=' + r2(totalWindForce) + 'kN vs Seismic Vb=' + r2(seisVb) + 'kN</text>');
+
+  // Axes
+  lines.push('<line x1="' + padL + '" y1="' + padT + '" x2="' + padL + '" y2="' + (padT + plotH) + '" stroke="#334155" stroke-width="1.5"/>');
+  lines.push('<line x1="' + padL + '" y1="' + (padT + plotH) + '" x2="' + (padL + plotW) + '" y2="' + (padT + plotH) + '" stroke="#334155" stroke-width="1.5"/>');
+  lines.push('<text x="' + (padL + plotW / 2) + '" y="' + (SVG_H - 3) + '" fill="#64748b" font-size="8" text-anchor="middle" font-family="JetBrains Mono">Wind Force Fi (kN)</text>');
+
+  // Bars (top floor at top)
+  windFloors.slice().reverse().forEach(function(f, i) {
+    var barW = (f.Fi / maxForce) * plotW * 0.85;
+    var barY = padT + i * (barH + barGap);
+    var isRoof = f.floor === S.numFloors;
+
+    lines.push('<rect x="' + padL + '" y="' + r2(barY) + '" width="' + r2(barW) + '" height="' + r2(barH) + '" fill="' + (isRoof ? 'rgba(167,139,250,0.4)' : 'rgba(251,191,36,0.35)') + '" stroke="' + (isRoof ? '#a78bfa' : '#fb923c') + '" stroke-width="1" rx="2"/>');
+    lines.push('<text x="' + (padL - 3) + '" y="' + r2(barY + barH / 2 + 3) + '" fill="#64748b" font-size="8" text-anchor="end" font-family="JetBrains Mono">' + (isRoof ? 'Roof' : 'F' + f.floor) + '</text>');
+    lines.push('<text x="' + r2(padL + barW + 4) + '" y="' + r2(barY + barH / 2 + 3) + '" fill="' + (isRoof ? '#a78bfa' : '#fb923c') + '" font-size="8" font-family="JetBrains Mono">' + r2(f.Fi) + 'kN</text>');
+  });
+
+  // Note: wind increases with height (unlike seismic which is concentrated at top)
+  var noteY = padT + plotH + 28;
+  var seismicGoverns = seisVb > totalWindForce;
+  lines.push('<rect x="' + padL + '" y="' + noteY + '" width="' + plotW + '" height="14" rx="3" fill="rgba(' + (seismicGoverns ? '52,211,153' : '251,191,36') + ',0.1)" stroke="' + (seismicGoverns ? '#34d399' : '#fbbf24') + '" stroke-width="0.8"/>');
+  lines.push('<text x="' + (padL + plotW / 2) + '" y="' + (noteY + 10) + '" fill="' + (seismicGoverns ? '#34d399' : '#fbbf24') + '" font-size="8" font-weight="700" text-anchor="middle" font-family="JetBrains Mono">' + (seismicGoverns ? '✓ Seismic governs (' + r2(seisVb) + ' kN > ' + r2(totalWindForce) + ' kN wind)' : '⚠ Wind governs (' + r2(totalWindForce) + ' kN > ' + r2(seisVb) + ' kN seismic)') + '</text>');
+
+  lines.push('</svg>');
+  return lines.join('');
+}
+
 function secWind(){
   const{wind,seis}=RES;
   const H=S.numFloors*S.floorHt;
@@ -916,6 +1140,7 @@ function secWind(){
     <div class="cp" style="border-left-color:var(--blue)">
       <strong>What is Vb?</strong> The basic wind speed is the peak 3-second gust speed at 10m height in open terrain (Category 2) with a 50-year return period. It is NOT the average wind speed \u2014 it is the short-duration maximum that structures must withstand.
     </div>
+    ${svgWindPressure(wind, H, B, L, hb)}
   `,'or')}
 
   ${sb('W-2','Wind Speed Modification Factors (k1, k2, k3, k4)',`
@@ -986,6 +1211,10 @@ function secWind(){
         <td class="val" style="color:var(--orange)">${r2(totalWindForce)} kN</td>
       </tr>
     </table>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px">
+      <div>${svgWindProfile(wind, windFloors, H)}</div>
+      <div>${svgWindForces(windFloors, totalWindForce, seis.Vb)}</div>
+    </div>
   `,'or')}
 
   ${sb('W-5','Seismic vs Wind Comparison \u2014 Which Governs?',`
