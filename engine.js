@@ -234,13 +234,11 @@ function showClauseTip(ref, el) {
 // ── "WHY?" EXPANDABLE EXPLANATIONS ───────────────────────────────
 let _whyCounter = 0;
 function fmWhy(eq, res, ref, why) {
-  // Extended fm() with optional expandable "Why?" section
   if (!why) return fm(eq, res, ref);
   const id = 'why_' + (++_whyCounter);
   const refHtml = ref ? clauseRef(ref) : '';
-  const eqAnnotated = annotateTerms(String(eq||''));
   return `<div class="fm">
-    ${eqAnnotated} <span class="r">= ${res}</span>
+    ${eq} <span class="r">= ${res}</span>
     ${refHtml ? '<span style="margin-left:6px">' + refHtml + '</span>' : ''}
     <button onclick="toggleWhy('${id}')" style="margin-left:8px;padding:1px 7px;background:rgba(56,189,248,0.1);border:1px solid rgba(56,189,248,0.3);border-radius:4px;color:#38bdf8;cursor:pointer;font-size:9px;font-weight:700" title="Expand to see why this formula is used">WHY?</button>
     <div id="${id}" style="display:none;margin-top:6px;padding:8px 12px;background:rgba(14,165,233,0.06);border-left:2px solid #0ea5e9;border-radius:0 6px 6px 0;font-size:10.5px;color:var(--txt2);line-height:1.8">${why}</div>
@@ -388,8 +386,6 @@ const FM_WHY = {
 
 let _fmCount = 0;
 function fm(eq, res, ref='') {
-  // Annotate known terms with tooltip badges
-  const eqAnnotated = annotateTerms(String(eq||''));
   // Look up auto-WHY explanation
   let why = '';
   const eqStr = String(eq||'');
@@ -398,10 +394,10 @@ function fm(eq, res, ref='') {
   }
   const refHtml = ref ? clauseRef(ref) : '';
   if (!why) {
-    return `<div class="fm">${eqAnnotated} <span class="r">= ${res}</span>${refHtml ? ' '+refHtml : ''}</div>`;
+    return `<div class="fm">${eq} <span class="r">= ${res}</span>${refHtml ? ' '+refHtml : ''}</div>`;
   }
   const id = 'fw' + (++_fmCount);
-  return `<div class="fm">${eqAnnotated} <span class="r">= ${res}</span>${refHtml ? ' '+refHtml : ''}
+  return `<div class="fm">${eq} <span class="r">= ${res}</span>${refHtml ? ' '+refHtml : ''}
     <button onclick="var e=document.getElementById('${id}');if(e)e.style.display=e.style.display==='none'?'block':'none'" style="margin-left:8px;padding:1px 7px;background:rgba(56,189,248,0.12);border:1px solid rgba(56,189,248,0.35);border-radius:4px;color:#38bdf8;cursor:pointer;font-size:9px;font-weight:700;vertical-align:middle">WHY?</button>
     <div id="${id}" style="display:none;margin-top:6px;padding:8px 12px;background:rgba(14,165,233,0.07);border-left:2px solid #0ea5e9;border-radius:0 6px 6px 0;font-size:10.5px;color:var(--txt2);line-height:1.8">${why}</div>
   </div>`;
