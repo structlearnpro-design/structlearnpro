@@ -2426,6 +2426,26 @@ function p2(){
           </button>
         </div>
 
+        <!-- ⚡ QUICK TEMPLATES — always visible, auto-switches to coord mode -->
+        <div style="margin-bottom:10px;padding:8px 10px;background:#0a0f1e;border:1px solid #334155;border-radius:8px">
+          <div style="font-size:9px;font-weight:700;color:#64748b;margin-bottom:6px">⚡ QUICK TEMPLATES — click to load a building layout:</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            ${[
+              {name:'3×3 Grid',sub:'4m×3m',fn:'3x3_4x3'},
+              {name:'4×3 Grid',sub:'4m×3m',fn:'4x3_4x3'},
+              {name:'L-Shape',sub:'4m×3m',fn:'L_4x3'},
+              {name:'T-Shape',sub:'4m×3m',fn:'T_4x3'},
+              {name:'5×4 Grid',sub:'4m×3m',fn:'5x4_4x3'},
+            ].map(t=>`<button onclick="applyTemplate('${t.fn}')"
+              style="padding:5px 12px;background:#0f172a;border:1px solid #334155;border-radius:6px;color:#94a3b8;cursor:pointer;font-size:9px;transition:all 0.15s"
+              onmouseover="this.style.borderColor='#38bdf8';this.style.color='#38bdf8';this.style.background='rgba(56,189,248,0.06)'"
+              onmouseout="this.style.borderColor='#334155';this.style.color='#94a3b8';this.style.background='#0f172a'">
+              <span style="font-weight:700">${t.name}</span>
+              <span style="color:#475569;font-size:8px;margin-left:3px">${t.sub}</span>
+            </button>`).join('')}
+          </div>
+        </div>
+
         <!-- COORDINATE MODE -->
         <div id="coord_input_panel" style="display:${window._coordMode?'block':'none'}">
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
@@ -2983,8 +3003,17 @@ function designOneBeam(gridBeam, floorNum, isRoof,
 }
 
 // ── COORDINATE INPUT CONTROLLER ─────────────────────────────────
-// Mode flag — true = coordinate input mode, false = classic span mode
-if(typeof window._coordMode === 'undefined') window._coordMode = false;
+// Mode flag — persisted to localStorage to survive page reloads
+if(typeof window._coordMode === 'undefined'){
+  window._coordMode = localStorage.getItem('_coordMode')==='true';
+  // Restore S.columns from localStorage if in coord mode
+  if(window._coordMode){
+    try{
+      const saved=localStorage.getItem('_coordCols');
+      if(saved){S.columns=JSON.parse(saved);}
+    }catch(e){window._coordMode=false;}
+  }
+}
 
 function setInputMode(mode) {
   if (mode === 'coord') {
@@ -2992,9 +3021,13 @@ function setInputMode(mode) {
       S.columns = spansToColumns();
     }
     window._coordMode = true;
+    localStorage.setItem('_coordMode','true');
+    localStorage.setItem('_coordCols',JSON.stringify(S.columns));
   } else {
     S.columns = null;
     window._coordMode = false;
+    localStorage.setItem('_coordMode','false');
+    localStorage.removeItem('_coordCols');
   }
   GRID = null; initGrid(); go(2);
 }
@@ -3002,6 +3035,7 @@ function setInputMode(mode) {
 function updateCoordinate(idx, axis, val) {
   if (!S.columns || idx >= S.columns.length) return;
   S.columns[idx][axis] = Math.round(val * 100) / 100;
+  localStorage.setItem('_coordCols',JSON.stringify(S.columns));
   const r = coordsToGrid();
   const el = document.getElementById('coord_result');
   if (el) {
@@ -3049,6 +3083,8 @@ function applyTemplate(name) {
   if(!fn){console.error('Unknown template:',name);return;}
   S.columns=fn();
   window._coordMode = true;
+  localStorage.setItem('_coordMode','true');
+  localStorage.setItem('_coordCols',JSON.stringify(S.columns));
   const r=coordsToGrid();
   if(!r.ok){alert('Template error: '+r.error);return;}
   GRID=null;initGrid();go(2);

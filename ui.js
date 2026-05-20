@@ -38,10 +38,15 @@ function go(n){
     },60);
     if(n===2){
       if(!GRID)initGrid();
-      // Draw after a short delay to ensure DOM is ready
-      // Two draws: one immediate, one delayed to catch any async updates
-      setTimeout(()=>{const cv=document.getElementById('gridCanvas');if(cv){drawGrid(cv);}},60);
-      setTimeout(()=>{const cv=document.getElementById('gridCanvas');if(cv){drawGrid(cv);updateStructSummary();}},200);
+      // Multiple draws to ensure _coordMode flag is read correctly
+      setTimeout(()=>{
+        const cv=document.getElementById('gridCanvas');
+        if(cv){drawGrid(cv);updateStructSummary();}
+      },60);
+      setTimeout(()=>{
+        const cv=document.getElementById('gridCanvas');
+        if(cv){drawGrid(cv);}
+      },300);
     }
   }catch(e){
     document.getElementById('main').innerHTML='<div class="card" style="border-color:rgba(248,113,113,.5)"><div class="ct" style="color:#f87171">Page Error</div><div style="color:#94a3b8;font-size:12px;padding:10px">'+e.message+'<br><br><small>Check console for details. Try clicking a different page.</small></div></div>';
