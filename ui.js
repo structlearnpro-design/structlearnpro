@@ -9283,11 +9283,11 @@ function showConstructionPDFDialog() {
   d.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
   d.innerHTML=`<div style="background:#0a0f1e;border:1.5px solid #1e40af;border-radius:12px;max-width:540px;width:100%;padding:28px">
     <div style="font-size:19px;font-weight:900;color:#38bdf8;margin-bottom:6px">Generate Construction Drawing Package</div>
-    <div style="font-size:11px;color:#64748b;margin-bottom:16px">A3 landscape · Indian structural drawing format · 12 sheets</div>
+    <div style="font-size:11px;color:#64748b;margin-bottom:16px">A3 landscape · Indian structural drawing format · 15 sheets</div>
     ${fails>0?`<div style="padding:10px 14px;background:rgba(248,113,113,0.1);border:1px solid #f87171;border-radius:8px;font-size:11px;color:#fca5a5;margin-bottom:14px">Warning: ${fails} check(s) fail. Fix in Design Summary before generating.</div>`:`<div style="padding:10px 14px;background:rgba(52,211,153,0.1);border:1px solid #34d399;border-radius:8px;font-size:11px;color:#6ee7b7;margin-bottom:14px">All checks pass — ready for drawing generation.</div>`}
     <div style="font-size:11px;color:#94a3b8;columns:2;column-gap:20px;line-height:2.2;margin-bottom:16px">
       ST/TP01 — Title Page &amp; Index<br>ST/TN01 — Technical Notes<br>ST/FD01 — Footing Layout Plan<br>ST/FD02 — Footing Detail<br>ST/CL01 — Column Layout Plan<br>ST/CL02 — Column Detail<br>
-      ST/BM01 — Beam Layout Plan<br>ST/BM02 — Beam Detail<br>ST/SL01 — Slab Detail<br>ST/BB01 — Bar Bending Schedule<br>ST/EL01 — Building Elevation<br>ST/SC01 — Staircase Detail
+      ST/BM01 — Beam Layout Plan<br>ST/BM02 — Beam Detail<br>ST/SL01 — Slab Section Detail<br><strong>ST/SL02 — Slab Reinforcement Plan (NEW)</strong><br><strong>ST/CL00 — Centre Line / Setting-Out Plan (NEW)</strong><br><strong>ST/EX01 — Excavation &amp; Footing Layout (NEW)</strong><br>ST/BB01 — Bar Bending Schedule<br>ST/EL01 — Building Elevation<br>ST/SC01 — Staircase Detail
     </div>
     <div style="padding:10px 12px;background:rgba(245,158,11,0.1);border:1px solid #f59e0b;border-radius:7px;font-size:10px;color:#fcd34d;margin-bottom:18px;line-height:1.7">
       FOR EDUCATIONAL PURPOSE ONLY. All drawings must be reviewed and certified by a licensed Structural Engineer before use in actual construction.
@@ -9306,7 +9306,7 @@ async function startConstructionPDF() {
   ov.id='cpdOv';
   ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px';
   ov.innerHTML=`<div style="font-size:24px">&#128208;</div>
-    <div style="font-size:14px;font-weight:700;color:#38bdf8">Generating 12-Sheet Drawing Package...</div>
+    <div style="font-size:14px;font-weight:700;color:#38bdf8">Generating 15-Sheet Drawing Package...</div>
     <div id="cpdLog" style="font-size:10px;color:#64748b;font-family:monospace;text-align:center;line-height:2.2;min-height:60px;max-width:380px"></div>
     <div style="width:280px;height:5px;background:#1e3a8a;border-radius:3px;overflow:hidden">
       <div id="cpdBar" style="height:100%;width:0%;background:#38bdf8;border-radius:3px;transition:width 0.25s"></div>
@@ -9689,7 +9689,10 @@ async function startConstructionPDF() {
      ['ST/CL02/R0','COLUMN DETAIL','Cross-sections, schedule, confinement, lapping','Section & Sched.','1:25'],
      ['ST/BM01/R0','BEAM LAYOUT','Beam layout with beam IDs and sizes for all floors','Layout Plan','1:100'],
      ['ST/BM02/R0','BEAM DETAIL','Elevations showing steel zones and cross-sections','Detail','1:50'],
-     ['ST/SL01/R0','SLAB DETAIL','Reinforcement detail, schedule, edge conditions','Slab Detail','1:50'],
+     ['ST/SL01/R0','SLAB SECTION','Cross-section details, edge/intermediate support','Slab Detail','1:50'],
+     ['ST/SL02/R0','SLAB REINF. PLAN','Full floor plan: bar directions, spacings all bays','Reinf. Plan','1:50'],
+     ['ST/CL00/R0','CENTRE LINE PLAN','Setting-out plan, grid refs, diagonal check, notes','Setting Out','1:100'],
+     ['ST/EX01/R0','EXCAVATION PLAN','Footing positions, excavation sizes, PCC, backfill','Excavation','1:100'],
      ['ST/BB01/R0','BAR BENDING SCHED.','Mark, dia, shape, cut length, number and weight','BBS','NTS'],
      ['ST/EL01/R0','BUILDING ELEVATION','Front and side elevation, all floors dimensioned','Elevation','1:100'],
      ['ST/SC01/R0','STAIRCASE DETAIL','Cross-section, reinforcement, stair schedule','Stair Detail','1:25'],
@@ -10491,6 +10494,319 @@ async function startConstructionPDF() {
     log('Sheet 9 done',76);
 
     // ================================================================
+
+    // ================================================================
+    // SHEET 9A — SLAB REINFORCEMENT PLAN (full floor plan top-view)
+    // ================================================================
+    log('Sheet 9A: Slab reinforcement plan...',74);
+    doc.addPage();drawPage('ST/SL02/R0','SLAB REINFORCEMENT PLAN - TYPICAL FLOOR','1:50');
+    y=DR_Y+14;
+
+    // Get slab data
+    const slP=RES.allSlabPanels&&RES.allSlabPanels.length?RES.allSlabPanels:null;
+    const slT=sl; // fallback
+
+    // Draw full floor plan showing every bay with bars
+    const slPlanScale=Math.min((DR_W-30)/(totX*1000),(DR_H-55)/(totY*1000));
+    const slPW=totX*1000*slPlanScale, slPH=totY*1000*slPlanScale;
+    const slPX=DR_X+(DR_W-slPW)/2, slPY=y+22;
+
+    // Title and notes
+    F(8,'bold',0,0,100);Txt('SLAB REINFORCEMENT PLAN  -  TYPICAL FLOOR ('+ftin(sl.slabD/1000)+' THICK)',DR_X+DR_W/2,y,{align:'center'});
+    F(6.5,'italic',80,80,80);Txt('Note: Short-span bars (Y) shown horizontal. Long-span bars (X) shown vertical. Arrows indicate span direction.',DR_X+DR_W/2,y+6,{align:'center'});
+    F(6.5,'bold',180,0,0);Txt('TOP BARS shown as dashed lines at supports. BOTTOM BARS shown as solid lines.',DR_X+DR_W/2,y+12,{align:'center'});
+
+    // Floor plan outline
+    FC(245,247,252);LC(0,0,0);LW(0.8);Rect(slPX,slPY,slPW,slPH,'FD');
+
+    // Draw each bay with reinforcement
+    for(let ci=0;ci<nBX;ci++){
+      for(let ri=0;ri<nBY;ri++){
+        const bxL=slPX+ci*(slPW/nBX), byT=slPY+ri*(slPH/nBY);
+        const bxR=bxL+slPW/nBX, byB=byT+slPH/nBY;
+        const bmx=(bxL+bxR)/2, bmy=(byT+byB)/2;
+        const bW=bxR-bxL, bH=byB-byT;
+
+        // Get panel data if available
+        const panel=slP?slP.find(p=>p.col===ci&&p.row===ri):null;
+        const lx=panel?panel.lx:(S.spansX[ci]||4);
+        const ly=panel?panel.ly:(S.spansY[ri]||3);
+        const spxVal=panel?panel.spx:(sl.spx||200);
+        const spyVal=panel?panel.spy:(sl.spy||250);
+        const spxnVal=panel?panel.spx_n:(sl.spx_n||300);
+        const isVoid=panel===undefined&&slP; // no panel = void/stair
+
+        if(isVoid){
+          // Hatched void
+          FC(220,220,220);Rect(bxL,byT,bW,bH,'F');
+          LC(160,160,160);LW(0.3);
+          for(let hx=bxL;hx<bxR;hx+=5)Line(hx,byT,hx,byB);
+          F(6,'bold',100,100,100);Txt('VOID',bmx,bmy+2,{align:'center'});
+          continue;
+        }
+
+        // Bay outline
+        LC(0,0,100);LW(0.5);Rect(bxL,byT,bW,bH,'D');
+
+        // SHORT-SPAN BOTTOM BARS — horizontal lines, solid, green-blue
+        const nShortBars=Math.max(3,Math.min(8,Math.round(bH/4)));
+        const shortStep=bH/(nShortBars+1);
+        LC(0,0,180);LW(0.6);
+        for(let i=1;i<=nShortBars;i++){
+          const by2=byT+i*shortStep;
+          Line(bxL+3,by2,bxR-3,by2);
+        }
+        // Short-span arrow pointing horizontal (span direction)
+        const arY=byT+bH*0.35;
+        FC(0,0,180);LC(0,0,180);LW(0.8);
+        Line(bxL+6,arY,bxL+bW*0.4,arY);
+        // Arrowhead
+        doc.triangle?doc.triangle(bxL+bW*0.4,arY,bxL+bW*0.4-4,arY-1.5,bxL+bW*0.4-4,arY+1.5,'F'):null;
+        F(5.5,'bold',0,0,180);Txt('Y10@'+spxVal+'c/c',bmx,arY-2,{align:'center'});
+
+        // LONG-SPAN BOTTOM BARS — vertical lines, dashed, red-brown
+        const nLongBars=Math.max(2,Math.min(6,Math.round(bW/6)));
+        const longStep=bW/(nLongBars+1);
+        LC(180,60,0);LW(0.4);doc.setLineDashPattern([3,2],0);
+        for(let i=1;i<=nLongBars;i++){
+          const bx2=bxL+i*longStep;
+          Line(bx2,byT+3,bx2,byB-3);
+        }
+        doc.setLineDashPattern([],0);
+        // Long-span arrow pointing vertical
+        const arX=bxL+bW*0.65;
+        LC(180,60,0);LW(0.8);
+        Line(arX,byB-6,arX,byT+bH*0.6);
+        doc.triangle?doc.triangle(arX,byT+bH*0.6,arX-1.5,byT+bH*0.6+4,arX+1.5,byT+bH*0.6+4,'F'):null;
+        F(5.5,'bold',180,60,0);Txt('D8@'+spyVal+'c/c',arX+2,bmy+4);
+
+        // TOP BARS AT SUPPORTS — thick dashed at edges, red
+        const topExtPx=Math.min(bW*0.3,bH*0.3);
+        LC(200,0,0);LW(1.0);doc.setLineDashPattern([2,1.5],0);
+        // Top edge (horizontal top bar)
+        Line(bxL+3,byT+4,bxL+bW*0.3,byT+4);
+        Line(bxR-bW*0.3,byT+4,bxR-3,byT+4);
+        // Bottom edge top bar
+        Line(bxL+3,byB-4,bxL+bW*0.3,byB-4);
+        Line(bxR-bW*0.3,byB-4,bxR-3,byB-4);
+        // Left/right vertical top bar
+        Line(bxL+4,byT+3,bxL+4,byT+bH*0.3);
+        Line(bxL+4,byB-bH*0.3,bxL+4,byB-3);
+        Line(bxR-4,byT+3,bxR-4,byT+bH*0.3);
+        Line(bxR-4,byB-bH*0.3,bxR-4,byB-3);
+        doc.setLineDashPattern([],0);
+
+        // Bay label in centre
+        F(6,'bold',0,60,0);Txt(String.fromCharCode(65+ri)+(ci+1),bmx,bmy+8,{align:'center'});
+
+        // Slab ID bottom-left
+        F(5,'normal',80,80,80);Txt('lx='+r2(lx)+'m',bxL+2,byB-7);
+        Txt('ly='+r2(ly)+'m',bxL+2,byB-3);
+      }
+    }
+
+    // Column dots
+    cxA.forEach((gx2,ci2)=>cyA.forEach((gy2,ri2)=>{
+      const ct2=colType(ci2,ri2);
+      const cSz2=(ct2==='C1'?c1:ct2==='C2'?c2:c3)?.size||300;
+      const cSzP=Math.max(2.5,cSz2*slPlanScale);
+      FC(40,40,40);LC(0,0,0);LW(0.4);Rect(gx2-cSzP/2,gy2-cSzP/2,cSzP,cSzP,'FD');
+    }));
+
+    // Gridlines and column labels
+    LC(0,0,0);LW(0.3);
+    cxA.forEach((gx2,i)=>{
+      Line(gx2,slPY-8,gx2,slPY);
+      F(6.5,'bold',0,0,0);Txt(String(i+1),gx2,slPY-10,{align:'center'});
+    });
+    cyA.forEach((gy2,j)=>{
+      Line(slPX-8,gy2,slPX,gy2);
+      F(6.5,'bold',0,0,0);Txt(String.fromCharCode(65+j),slPX-10,gy2+2,{align:'right'});
+    });
+
+    // Dimension chains
+    S.spansX.slice(0,nBX).forEach((sp,i)=>DH(cxA[i],cxA[i+1],slPY+slPH+14,ftin(sp),false));
+    DH(slPX,slPX+slPW,slPY+slPH+22,ftin(totX)+' TOTAL',false);
+    S.spansY.slice(0,nBY).forEach((sp,j)=>DV(slPX-22,cyA[j],cyA[j+1],ftin(sp),true));
+    DV(slPX-30,slPY,slPY+slPH,ftin(totY)+' TOTAL',true);
+
+    // LEGEND box
+    const lgYs=slPY+slPH+32;
+    LC(0,0,100);LW(0.4);FC(245,247,255);Rect(DR_X,lgYs,DR_W,28,'FD');
+    F(7,'bold',0,0,100);Txt('LEGEND:',DR_X+3,lgYs+6);
+    // Short-span
+    LC(0,0,180);LW(1.0);Line(DR_X+30,lgYs+6,DR_X+50,lgYs+6);
+    F(6.5,'normal',0,0,0);Txt('Short-span bottom bars (Y10 horizontal) - SPANS IN X',DR_X+53,lgYs+7);
+    // Long-span
+    LC(180,60,0);LW(0.6);doc.setLineDashPattern([3,2],0);
+    Line(DR_X+30,lgYs+13,DR_X+50,lgYs+13);doc.setLineDashPattern([],0);
+    Txt('Long-span bottom bars (D8 vertical) - SPANS IN Y',DR_X+53,lgYs+14);
+    // Top bar
+    LC(200,0,0);LW(1.0);doc.setLineDashPattern([2,1.5],0);
+    Line(DR_X+30,lgYs+20,DR_X+50,lgYs+20);doc.setLineDashPattern([],0);
+    F(6.5,'bold',200,0,0);Txt('Top bars at supports (D8 dashed) - extend 0.3L from supports both ways',DR_X+53,lgYs+21);
+    F(6,'italic',80,80,80);
+    Txt('All bars: M'+S.fck+' concrete, Fe'+S.fy+' steel. Cover '+S.coverSlab+'mm. Top bars extend 0.3 x short span = '+ftin(sl.lx*0.3)+' from face of support. Refer ST/SL01 for cross-section details.',DR_X+3,lgYs+26);
+
+    log('Sheet 9A done',75);
+
+    // ================================================================
+    // SHEET 9B — CENTRE LINE / SETTING-OUT PLAN
+    // ================================================================
+    log('Sheet 9B: Centre line plan...',77);
+    doc.addPage();drawPage('ST/CL00/R0','CENTRE LINE PLAN - SETTING OUT','1:100');
+    y=DR_Y+14;
+
+    F(8,'bold',0,0,100);Txt('CENTRE LINE PLAN  (SETTING OUT DRAWING)',DR_X+DR_W/2,y,{align:'center'});
+    F(6.5,'italic',80,80,80);Txt('This drawing is for setting out of columns and footings on site. All dimensions are in mm unless noted.',DR_X+DR_W/2,y+7,{align:'center'});
+    y+=16;
+
+    const clPX=DR_X+(DR_W-planW)/2, clPY=y+16;
+
+    // Plot boundary (dashed)
+    LC(100,100,100);LW(0.4);doc.setLineDashPattern([6,3],0);
+    Rect(clPX-24,clPY-24,planW+48,planH+48,'D');
+    doc.setLineDashPattern([],0);
+    F(6.5,'bold',80,80,80);Txt('PLOT BOUNDARY',clPX-22,clPY-16);
+
+    // Centre lines — cross-hatch fine lines through entire plan
+    LC(0,100,180);LW(0.25);doc.setLineDashPattern([10,4,2,4],0);
+    cxA.forEach(gx2=>Line(gx2,clPY-20,gx2,clPY+planH+20));
+    cyA.forEach(gy2=>Line(clPX-20,gy2,clPX+planW+20,gy2));
+    doc.setLineDashPattern([],0);
+
+    // Grid nodes — centre marks (+) and column squares
+    cxA.forEach((gx2,i)=>cyA.forEach((gy2,j)=>{
+      // Centre mark cross
+      LC(0,100,180);LW(0.5);
+      Line(gx2-3,gy2,gx2+3,gy2);Line(gx2,gy2-3,gx2,gy2+3);
+      // Column outline (to scale)
+      const ct2=colType(i,j);
+      const cSz2=(ct2==='C1'?c1:ct2==='C2'?c2:c3)?.size||300;
+      const cSzP2=Math.max(3,cSz2*mmPerM/1000);
+      LC(0,0,0);LW(0.6);FC(220,225,240);Rect(gx2-cSzP2/2,gy2-cSzP2/2,cSzP2,cSzP2,'FD');
+      // Column label and grid ref
+      F(6.5,'bold',0,0,100);Txt(String(i+1)+String.fromCharCode(65+j),gx2,gy2+1.5,{align:'center'});
+    }));
+
+    // Grid row/col labels (A,B,C / 1,2,3)
+    cxA.forEach((gx2,i)=>{
+      F(7,'bold',0,0,0);Txt(String(i+1),gx2,clPY-12,{align:'center'});
+      Txt(String(i+1),gx2,clPY+planH+12,{align:'center'});
+    });
+    cyA.forEach((gy2,j)=>{
+      F(7,'bold',0,0,0);Txt(String.fromCharCode(65+j),clPX-12,gy2+2.5,{align:'right'});
+      Txt(String.fromCharCode(65+j),clPX+planW+12,gy2+2.5);
+    });
+
+    // Dimension chains — individual span
+    S.spansX.slice(0,nBX).forEach((sp,i)=>{
+      DH(cxA[i],cxA[i+1],clPY+planH+18,r0(sp*1000),false);
+    });
+    DH(clPX,clPX+planW,clPY+planH+26,r0(totX*1000)+' (TOTAL)',false);
+    S.spansY.slice(0,nBY).forEach((sp,j)=>{
+      DV(clPX-26,cyA[j],cyA[j+1],r0(sp*1000),true);
+    });
+    DV(clPX-34,clPY,clPY+planH,r0(totY*1000)+' (TOTAL)',true);
+
+    // Setting-out notes box
+    const soY=clPY+planH+38;
+    LC(0,0,100);LW(0.4);FC(240,244,255);Rect(DR_X,soY,DR_W,32,'FD');
+    F(7,'bold',0,0,100);Txt('SETTING OUT NOTES:',DR_X+3,soY+6);
+    F(6.5,'normal',0,0,0);
+    const soNotes=[
+      '1. Establish primary benchmark (BM) at site. All levels refer to FFL (Finished Floor Level) = 0.000.',
+      '2. Use total station or theodolite to set out grid lines. Check diagonals for squareness.',
+      '3. Diagonal: '+ftin(Math.round(Math.sqrt(totX*totX+totY*totY)*100)/100)+' ('+r2(Math.sqrt(totX*totX+totY*totY))+'m). Cross-check both diagonals — must be equal.',
+      '4. Mark column centres with 20mm dia PVC pipe. Protect corners before excavation starts.',
+      '5. Maintain sight lines between all column positions. Do not disturb benchmarks.',
+    ];
+    let soYy=soY+12;
+    soNotes.forEach(nt=>{ TW(nt,DR_X+3,soYy,DR_W-6); soYy+=5.5; });
+
+    log('Sheet 9B done',78);
+
+    // ================================================================
+    // SHEET 9C — EXCAVATION PLAN
+    // ================================================================
+    log('Sheet 9C: Excavation plan...',79);
+    doc.addPage();drawPage('ST/EX01/R0','EXCAVATION & FOOTING LAYOUT PLAN','1:100');
+    y=DR_Y+14;
+
+    F(8,'bold',0,0,100);Txt('EXCAVATION PLAN  +  FOOTING LAYOUT',DR_X+DR_W/2,y,{align:'center'});
+    F(6.5,'italic',80,80,80);Txt('Excavation dimensions include 300mm working space all around footing. All dimensions in mm unless noted.',DR_X+DR_W/2,y+7,{align:'center'});
+    y+=16;
+
+    const exPX=DR_X+(DR_W-planW)/2, exPY=y+16;
+
+    // Ground outline
+    FC(232,218,196);LC(0,0,0);LW(0.3);Rect(exPX-30,exPY-30,planW+60,planH+60,'FD');
+    F(6.5,'bold',120,80,30);Txt('EXISTING GROUND LEVEL',exPX-28,exPY-22);
+
+    // Grid (faint)
+    LC(160,140,100);LW(0.2);
+    cxA.forEach(gx2=>Line(gx2,exPY-20,gx2,exPY+planH+20));
+    cyA.forEach(gy2=>Line(exPX-20,gy2,exPX+planW+20,gy2));
+
+    // Excavation pits and footing rectangles at each column
+    cxA.forEach((gx2,i)=>cyA.forEach((gy2,j)=>{
+      const ct2=colType(i,j);
+      const ftg2=ct2==='C1'?f1:ct2==='C2'?f2:f3;
+      const fSz=Math.max(5,(ftg2.Bf||1)*mmPerM);
+      const excSz=fSz+8; // 400mm working space at scale
+
+      // Excavation pit (light soil colour, dashed)
+      LC(120,80,30);LW(0.3);doc.setLineDashPattern([4,2],0);
+      Rect(gx2-excSz/2,gy2-excSz/2,excSz,excSz,'D');
+      doc.setLineDashPattern([],0);
+
+      // PCC blinding (slightly larger than footing)
+      FC(195,190,178);LC(80,70,50);LW(0.3);Rect(gx2-fSz/2-1,gy2-fSz/2-1,fSz+2,fSz+2,'FD');
+
+      // Footing outline (solid bold)
+      FC(215,218,230);LC(0,0,0);LW(0.6);Rect(gx2-fSz/2,gy2-fSz/2,fSz,fSz,'FD');
+
+      // Column stub
+      const cSz2=(ct2==='C1'?c1:ct2==='C2'?c2:c3)?.size||300;
+      const cSzP2=Math.max(2,cSz2*mmPerM/1000);
+      FC(80,80,130);LC(0,0,0);LW(0.4);Rect(gx2-cSzP2/2,gy2-cSzP2/2,cSzP2,cSzP2,'FD');
+
+      // Footing type label
+      F(5.5,'bold',0,0,100);Txt(ct2,gx2,gy2-fSz/2-2,{align:'center'});
+      // Size label
+      F(5,'normal',0,0,0);Txt(ftin(ftg2.Bf||1)+'x'+ftin(ftg2.Bf||1),gx2,gy2+fSz/2+5,{align:'center'});
+      // Depth label
+      F(5,'italic',80,0,0);Txt('D='+r0(ftg2.D||300),gx2,gy2+2,{align:'center'});
+    }));
+
+    // Dims
+    S.spansX.slice(0,nBX).forEach((sp,i)=>DH(cxA[i],cxA[i+1],exPY+planH+18,ftin(sp),false));
+    DH(exPX,exPX+planW,exPY+planH+26,ftin(totX)+' TOTAL',false);
+    S.spansY.slice(0,nBY).forEach((sp,j)=>DV(exPX-26,cyA[j],cyA[j+1],ftin(sp),true));
+    DV(exPX-34,exPY,exPY+planH,ftin(totY)+' TOTAL',true);
+
+    // Section notation and schedule
+    const exSchY=exPY+planH+38;
+    LC(0,0,100);LW(0.4);FC(242,244,255);Rect(DR_X,exSchY,DR_W/2-4,30,'FD');
+    F(7,'bold',0,0,100);Txt('EXCAVATION SCHEDULE:',DR_X+3,exSchY+6);
+    F(6.5,'normal',0,0,0);
+    [{lbl:'C1 CORNER',f:f1},{lbl:'C2 EDGE',f:f2},{lbl:'C3 INTERIOR',f:f3}].forEach(({lbl,f2},ri)=>{
+      const exSz=((f2.Bf||1)+0.4);
+      Txt(lbl+': Footing '+ftin(f2.Bf||1)+' | Excav. '+ftin(exSz)+' x '+ftin(exSz)+' x '+ftin(S.ftgDepth)+' deep',DR_X+3,exSchY+13+ri*6);
+    });
+
+    // Depth section note
+    FC(242,244,255);LC(0,0,100);LW(0.4);Rect(DR_X+DR_W/2+4,exSchY,DR_W/2-4,30,'FD');
+    F(7,'bold',0,0,100);Txt('EXCAVATION NOTES:',DR_X+DR_W/2+7,exSchY+6);
+    F(6.5,'normal',0,0,0);
+    ['1. Excavate to FGL level shown. SBC = '+S.soilBearing+' kN/m² (IS 6403).',
+     '2. Df = '+ftin(S.ftgDepth)+' below NGL. Net SBC = '+r2(Math.max(80,S.soilBearing-S.ftgDepth*18))+' kN/m².',
+     '3. 75mm PCC (1:4:8) blinding over compacted earth below all footings.',
+     '4. 300mm clearance around footings for formwork. Backfill in 150mm layers, compact to 95% Proctor.',
+    ].forEach((nt,ni)=>{ TW(nt,DR_X+DR_W/2+7,exSchY+13+ni*4.5,DR_W/2-10); });
+
+    log('Sheet 9C done',80);
+
     // SHEET 10 — BAR BENDING SCHEDULE
     // ================================================================
     log('Sheet 10: BBS...',80);
