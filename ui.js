@@ -9347,15 +9347,9 @@ async function startConstructionPDF() {
     const TW=(t2,x,y,mw)=>{const ls=doc.splitTextToSize(s2(String(t2||'')),Math.max(1,n(mw)));if(ls.length&&isFinite(n(x)+n(y)))doc.text(ls,n(x),n(y));return ls.length;};
 
     // ── FEET-INCHES ───────────────────────────────────────────────
-    const ftin=(m)=>{
-      const ti=n(m)*39.3701;
-      const ft=Math.floor(ti/12);
-      const inR=Math.round((ti%12)*2)/2;
-      if(inR===0)return ft+"'-0\"";
-      if(inR===Math.floor(inR))return ft+"'-"+Math.floor(inR)+"\"";
-      return ft+"'-"+Math.floor(inR)+"1/2\"";
-    };
-    const mm2ft=(mm)=>ftin(n(mm)/1000);
+    // Unit helpers — ALL IN MM (Indian structural drawing practice)
+    const ftin=(m)=>r0(n(m)*1000)+'mm';   // metres → mm
+    const mm2ft=(mm)=>r0(n(mm))+'mm';      // mm → mm (identity)
 
     // ── SCALE BAR ─────────────────────────────────────────────────
     const drawScaleBar = (x, y, scaleRatio, realMetres) => {
@@ -9579,9 +9573,13 @@ async function startConstructionPDF() {
     const c1=(RES.allCols||RES.cols).find(c=>c.floor===1&&c.corner)||(RES.allCols||RES.cols)[0];
     const c2=(RES.allCols||RES.cols).find(c=>c.floor===1&&c.edge)||c1;
     const c3=(RES.allCols||RES.cols).find(c=>c.floor===1&&c.inter)||c1;
-    const f1=(RES.allFtgs||RES.ftgs)[0]||{Bf:1,D:300,dBf:12,spf:200,Ps:100,qu:100,quf:150,d:200,col:300,punch_ok:true,ow_ok:true,Ld_ok:true};
-    const f2=(RES.allFtgs||RES.ftgs)[1]||f1;
-    const f3=(RES.allFtgs||RES.ftgs)[2]||f1;
+    const allFtgArr = RES.allFtgs || RES.ftgs || [];
+    // Helper: find footing by grid position (exact match)
+    const getFtgAt = (row,col) => allFtgArr.find(f=>f.row===row&&f.col===col) || allFtgArr[0] || {Bf:1,D:300,dBf:12,spf:200,Ps:100,qu:100,quf:150,d:200,colSize:300,punch_ok:true,ow_ok:true,Ld_ok:true};
+    // Representative footings for schedule (corner=0,0 | edge=0,1 | interior=1,1)
+    const f1 = getFtgAt(0,0);          // corner
+    const f2 = getFtgAt(0,1)||getFtgAt(1,0)||allFtgArr[1]||f1;  // edge
+    const f3 = getFtgAt(1,1)||allFtgArr.find(f=>!f.corner&&!f.edge)||allFtgArr[2]||f1; // interior
     const stair=RES.stair||{riser:165,tread:270,wD:150,wd:125,Ast2:200,stsp:200};
     const nBX=Math.min(S.spansX.length,5);
     const nBY=Math.min(S.spansY.length,4);
@@ -9639,9 +9637,9 @@ async function startConstructionPDF() {
     let py2=y+11;
     [['Client',s2(S.client||S.name||'—')],['Location',s2(S.location||'—')],
      ['No. of Floors','G+'+(S.numFloors-1)+' ('+S.numFloors+' floors)'],
-     ['Floor Height',S.floorHt+' m ('+ftin(S.floorHt)+')'],
+     ['Floor Height',r0(S.floorHt*1000)+'mm'],
      ['Total Height',r2(S.numFloors*S.floorHt)+' m'],
-     ['Plan Dimensions',S.buildingL+'m x '+S.buildingW+'m ('+ftin(S.buildingL)+' x '+ftin(S.buildingW)+')'],
+     ['Plan Dimensions',r0(S.buildingL*1000)+'mm x '+r0(S.buildingW*1000)+'mm'],
      ['Seismic Zone','Zone '+S.zone+' (IS 1893:2016)'],
      ['Wind Zone','Zone '+S.windZone+' (IS 875 Pt.3)'],
      ['Soil Type','Type '+S.soilType+' (IS 1893)'],
@@ -9784,10 +9782,10 @@ async function startConstructionPDF() {
         'BEAM & SLAB: 60 x Dia | COLUMN: 48 x Dia',
         '',
         'MINIMUM LAP FOR COLUMNS (M'+S.fck+', Fe'+S.fy+'):',
-        '  T12 = '+r0(48*12)+'mm ('+ftin(48*12/1000)+')',
-        '  T16 = '+r0(48*16)+'mm ('+ftin(48*16/1000)+')',
-        '  T20 = '+r0(48*20)+'mm ('+ftin(48*20/1000)+')',
-        '  T25 = '+r0(48*25)+'mm ('+ftin(48*25/1000)+')',
+        '  T12 = '+r0(48*12)+'mm',
+        '  T16 = '+r0(48*16)+'mm',
+        '  T20 = '+r0(48*20)+'mm',
+        '  T25 = '+r0(48*25)+'mm',
         '',
         'MINIMUM LAP FOR BEAMS & SLABS:',
         '  T8 = '+r0(60*8)+'mm | T10 = '+r0(60*10)+'mm',
@@ -10169,7 +10167,7 @@ async function startConstructionPDF() {
     FC(240,244,255);Rect(DR_X,lnY,DR_W,7,'F');
     F(7,'bold',0,0,100);Txt('LAPPING NOTES - MINIMUM LAP FOR COLUMN (48D):',DR_X+4,lnY+5);
     F(6.5,'normal',0,0,0);
-    [12,16,20,25].forEach((dia,i)=>{Txt('D'+dia+' = '+r0(48*dia)+'mm  ('+ftin(48*dia/1000)+')',DR_X+4+i*65,lnY+12);});
+    [12,16,20,25].forEach((dia,i)=>{Txt('D'+dia+' = '+r0(48*dia)+'mm',DR_X+4+i*65,lnY+12);});
     F(6.5,'italic',80,80,80);Txt('All ties: 135 deg hooks mandatory (IS 13920). No lapping within Lo zone.',DR_X+4,lnY+17);
 
     log('Sheet 6 done',52);
@@ -10282,7 +10280,7 @@ async function startConstructionPDF() {
       const bzy=y+bi*bRowH;
       // Row header
       FC(0,40,100);Rect(DR_X,bzy,DR_W-82,7,'F');
-      F(7,'bold',255,255,255);Txt(s2((b3.label||'Beam B'+(bi+1)).slice(0,20))+'  '+b3.b+'x'+b3.D+'mm  L='+b3.L+'m ('+ftin(b3.L)+')',DR_X+3,bzy+5);
+      F(7,'bold',255,255,255);Txt(s2((b3.label||'Beam B'+(bi+1)).slice(0,20))+'  '+b3.b+'x'+b3.D+'mm  L='+b3.L+'m = '+ftin(b3.L),DR_X+3,bzy+5);
 
       // ── CROSS SECTION (left ~80mm) ─────────────────────────────
       const secW=72, secH=bRowH-16;
@@ -10378,7 +10376,7 @@ async function startConstructionPDF() {
       F(6.5,'bold',180,0,0);Txt('D8@'+r0(b3.svd)+' (Lo)',elX2+elActW-Lo3/2,elY2+elH2+9,{align:'center'});
 
       // Span and Lo dims — BELOW the stirrup labels
-      DH(elX2,elX2+elActW,elY2+elH2+15,'L = '+b3.L+'m  ('+ftin(b3.L)+')',false);
+      DH(elX2,elX2+elActW,elY2+elH2+15,'L = '+b3.L+'m = '+ftin(b3.L),false);
       DH(elX2,elX2+Lo3,elY2+elH2+22,'Lo='+r0(Math.max(2*b3.D,b3.L*1000/4))+'mm',false);
     });
 
@@ -10427,13 +10425,13 @@ async function startConstructionPDF() {
     LW(1.2);Line(midX3-beamW2/2-topEx,isy+2,midX3+beamW2/2+topEx,isy+2);
     F(6.5,'bold',0,0,0);Txt('D8@'+sl.spx_n+' TOP',midX3,isy+1,{align:'center'});
     // Extent dim
-    DH(midX3-beamW2/2-topEx,midX3-beamW2/2,isy-7,'0.3L ('+ftin(sl.lx*0.3)+')',true);
+    DH(midX3-beamW2/2-topEx,midX3-beamW2/2,isy-7,'0.3L = '+r0(sl.lx*0.3*1000)+'mm',true);
     // Slab thickness dim
     DV(DX+2,isy,isy+slH,r0(sl.slabD)+'mm',true);
     // L labels
     F(7,'bold',0,0,100);Txt('L1',DX+8+diagW/4-beamW2/4,isy+slH/2,{align:'center'});
     Txt('L2',midX3+beamW2/2+diagW/4-2,isy+slH/2,{align:'center'});
-    F(6,'normal',0,0,0);Txt('SLAB D = '+r0(sl.slabD)+'mm  ('+ftin(sl.slabD/1000)+')',DX+4,isy+slH+8);
+    F(6,'normal',0,0,0);Txt('SLAB D = '+r0(sl.slabD)+'mm',DX+4,isy+slH+8);
 
     // ── EDGE SUPPORT ──────────────────────────────────────────────
     const esd_x=DX+diagW+6;
@@ -10486,7 +10484,7 @@ async function startConstructionPDF() {
     // Lapping table
     F(7,'bold',0,0,0);Txt('MINIMUM LAP LENGTH FOR BEAM AND SLAB (60D):',DX,y);y+=6;
     F(6.5,'normal',0,0,0);
-    [8,10,12,16,20,25].forEach((dia,i)=>Txt('D'+dia+' = '+r0(60*dia)+'mm ('+ftin(60*dia/1000)+')',DX+i*45,y));
+    [8,10,12,16,20,25].forEach((dia,i)=>Txt('D'+dia+' = '+r0(60*dia)+'mm',DX+i*45,y));
     y+=8;
     F(6.5,'italic',80,80,80);
     TW('NOTE: D = '+r0(sl.slabD)+'mm  |  d eff = '+r0(sl.slabd)+'mm  |  Cover = '+S.coverSlab+'mm  |  Case '+sl.slabCase+' (IS 456 Table 26)  |  Top bars extend 0.25L ('+ftin(sl.lx*0.25)+') from intermediate support and 0.3L ('+ftin(sl.lx*0.3)+') from edge support. L-bar at all edge supports.',DX,y,DW2-4);
@@ -10538,79 +10536,88 @@ async function startConstructionPDF() {
 
         if(isVoid){
           // Hatched void
-          FC(220,220,220);Rect(bxL,byT,bW,bH,'F');
-          LC(160,160,160);LW(0.3);
-          for(let hx=bxL;hx<bxR;hx+=5)Line(hx,byT,hx,byB);
-          F(6,'bold',100,100,100);Txt('VOID',bmx,bmy+2,{align:'center'});
+          FC(210,210,210);Rect(bxL,byT,bW,bH,'F');
+          LC(140,140,140);LW(0.25);
+          for(let hx=bxL;hx<bxR;hx+=4)Line(hx,byT,hx-bH,byT+bH);
+          for(let hx=bxL;hx<bxR+bH;hx+=4)Line(Math.min(hx,bxR),byT,Math.max(bxL,hx-bH),byB);
+          F(6,'bold',80,80,80);Txt('VOID/STAIR',bmx,bmy+2,{align:'center'});
           continue;
         }
 
+        // Bay background (very light blue)
+        FC(245,248,255);Rect(bxL,byT,bW,bH,'F');
         // Bay outline
-        LC(0,0,100);LW(0.5);Rect(bxL,byT,bW,bH,'D');
+        LC(0,0,100);LW(0.4);Rect(bxL,byT,bW,bH,'D');
 
-        // SHORT-SPAN BOTTOM BARS — horizontal lines, solid, green-blue
-        const nShortBars=Math.max(3,Math.min(8,Math.round(bH/4)));
+        // SHORT-SPAN BOTTOM BARS — horizontal lines (Y10, solid blue)
+        const nShortBars=Math.max(3,Math.min(6,Math.round(bH/5)));
         const shortStep=bH/(nShortBars+1);
-        LC(0,0,180);LW(0.6);
-        for(let i=1;i<=nShortBars;i++){
-          const by2=byT+i*shortStep;
-          Line(bxL+3,by2,bxR-3,by2);
+        LC(0,0,200);LW(0.4);
+        for(let si=1;si<=nShortBars;si++){
+          const by2=byT+si*shortStep;
+          Line(bxL+2,by2,bxR-2,by2);
         }
-        // Short-span arrow pointing horizontal (span direction)
-        const arY=byT+bH*0.35;
-        FC(0,0,180);LC(0,0,180);LW(0.8);
-        Line(bxL+6,arY,bxL+bW*0.4,arY);
-        // Arrowhead
-        doc.triangle?doc.triangle(bxL+bW*0.4,arY,bxL+bW*0.4-4,arY-1.5,bxL+bW*0.4-4,arY+1.5,'F'):null;
-        F(5.5,'bold',0,0,180);Txt('Y10@'+spxVal+'c/c',bmx,arY-2,{align:'center'});
+        // Short-span direction arrow (bold blue, with line arrowhead)
+        const arY=byT+bH*0.38;
+        LC(0,0,200);LW(1.0);
+        Line(bxL+4,arY,bxL+bW*0.42,arY);
+        // Arrowhead using 3 lines (V-shape)
+        const ah=bxL+bW*0.42;
+        Line(ah,arY,ah-3.5,arY-2);
+        Line(ah,arY,ah-3.5,arY+2);
+        // Callout above arrow
+        F(5.5,'bold',0,0,180);Txt('Y10@'+spxVal,bmx,arY-2.5,{align:'center'});
 
-        // LONG-SPAN BOTTOM BARS — vertical lines, dashed, red-brown
-        const nLongBars=Math.max(2,Math.min(6,Math.round(bW/6)));
+        // LONG-SPAN BOTTOM BARS — vertical lines (D8, dashed orange)
+        const nLongBars=Math.max(2,Math.min(5,Math.round(bW/6)));
         const longStep=bW/(nLongBars+1);
-        LC(180,60,0);LW(0.4);doc.setLineDashPattern([3,2],0);
-        for(let i=1;i<=nLongBars;i++){
-          const bx2=bxL+i*longStep;
-          Line(bx2,byT+3,bx2,byB-3);
+        LC(180,80,0);LW(0.3);doc.setLineDashPattern([2.5,1.5],0);
+        for(let li=1;li<=nLongBars;li++){
+          const bx2=bxL+li*longStep;
+          Line(bx2,byT+2,bx2,byB-2);
         }
         doc.setLineDashPattern([],0);
-        // Long-span arrow pointing vertical
-        const arX=bxL+bW*0.65;
-        LC(180,60,0);LW(0.8);
-        Line(arX,byB-6,arX,byT+bH*0.6);
-        doc.triangle?doc.triangle(arX,byT+bH*0.6,arX-1.5,byT+bH*0.6+4,arX+1.5,byT+bH*0.6+4,'F'):null;
-        F(5.5,'bold',180,60,0);Txt('D8@'+spyVal+'c/c',arX+2,bmy+4);
+        // Long-span arrow (vertical, orange)
+        const arX=bxL+bW*0.68;
+        LC(180,80,0);LW(1.0);
+        Line(arX,byB-4,arX,byT+bH*0.58);
+        const av=byT+bH*0.58;
+        Line(arX,av,arX-2,av+3.5);
+        Line(arX,av,arX+2,av+3.5);
+        // Callout right of arrow
+        F(5.5,'bold',180,80,0);Txt('D8@'+spyVal,arX+2,bmy-2);
 
-        // TOP BARS AT SUPPORTS — thick dashed at edges, red
-        const topExtPx=Math.min(bW*0.3,bH*0.3);
-        LC(200,0,0);LW(1.0);doc.setLineDashPattern([2,1.5],0);
-        // Top edge (horizontal top bar)
-        Line(bxL+3,byT+4,bxL+bW*0.3,byT+4);
-        Line(bxR-bW*0.3,byT+4,bxR-3,byT+4);
-        // Bottom edge top bar
-        Line(bxL+3,byB-4,bxL+bW*0.3,byB-4);
-        Line(bxR-bW*0.3,byB-4,bxR-3,byB-4);
-        // Left/right vertical top bar
-        Line(bxL+4,byT+3,bxL+4,byT+bH*0.3);
-        Line(bxL+4,byB-bH*0.3,bxL+4,byB-3);
-        Line(bxR-4,byT+3,bxR-4,byT+bH*0.3);
-        Line(bxR-4,byB-bH*0.3,bxR-4,byB-3);
+        // TOP BARS AT SUPPORTS — red dashed lines at slab edges (0.3L extent)
+        const topExtH=bH*0.28, topExtW=bW*0.28;
+        LC(200,0,0);LW(0.7);doc.setLineDashPattern([1.5,1.5],0);
+        // Horizontal top bars (at top and bottom of bay)
+        Line(bxL+2,byT+3,bxL+topExtW,byT+3);
+        Line(bxR-topExtW,byT+3,bxR-2,byT+3);
+        Line(bxL+2,byB-3,bxL+topExtW,byB-3);
+        Line(bxR-topExtW,byB-3,bxR-2,byB-3);
+        // Vertical top bars (at left and right of bay)
+        Line(bxL+3,byT+2,bxL+3,byT+topExtH);
+        Line(bxL+3,byB-topExtH,bxL+3,byB-2);
+        Line(bxR-3,byT+2,bxR-3,byT+topExtH);
+        Line(bxR-3,byB-topExtH,bxR-3,byB-2);
         doc.setLineDashPattern([],0);
+        // Top bar callout (small, centred)
+        F(5,'bold',200,0,0);Txt('D8@'+spxnVal+' TOP',bmx,byT+8,{align:'center'});
 
-        // Bay label in centre
-        F(6,'bold',0,60,0);Txt(String.fromCharCode(65+ri)+(ci+1),bmx,bmy+8,{align:'center'});
-
-        // Slab ID bottom-left
-        F(5,'normal',80,80,80);Txt('lx='+r2(lx)+'m',bxL+2,byB-7);
-        Txt('ly='+r2(ly)+'m',bxL+2,byB-3);
+        // Bay grid reference label (bottom-right, small)
+        F(6.5,'bold',0,60,120);Txt(String.fromCharCode(65+ri)+(ci+1),bxR-3,byB-2,{align:'right'});
+        // Span labels (bottom-left, tiny)
+        F(4.5,'normal',100,100,100);Txt(ftin(lx),bxL+2,byB-4);
+        Txt('x'+ftin(ly),bxL+2,byB-1);
       }
     }
 
-    // Column dots
+    // Column squares (use actual footing data for size)
     cxA.forEach((gx2,ci2)=>cyA.forEach((gy2,ri2)=>{
-      const ct2=colType(ci2,ri2);
-      const cSz2=(ct2==='C1'?c1:ct2==='C2'?c2:c3)?.size||300;
-      const cSzP=Math.max(2.5,cSz2*slPlanScale);
-      FC(40,40,40);LC(0,0,0);LW(0.4);Rect(gx2-cSzP/2,gy2-cSzP/2,cSzP,cSzP,'FD');
+      const ftgNode=getFtgAt(ri2,ci2);
+      const cSzN=(ftgNode?.colSize||300);
+      const cSzP=Math.max(2.5,cSzN*slPlanScale);
+      FC(40,40,40);LC(0,0,0);LW(0.5);Rect(gx2-cSzP/2,gy2-cSzP/2,cSzP,cSzP,'FD');
     }));
 
     // Gridlines and column labels
@@ -10658,45 +10665,46 @@ async function startConstructionPDF() {
     y=DR_Y+14;
 
     F(8,'bold',0,0,100);Txt('CENTRE LINE PLAN  (SETTING OUT DRAWING)',DR_X+DR_W/2,y,{align:'center'});
-    F(6.5,'italic',80,80,80);Txt('This drawing is for setting out of columns and footings on site. All dimensions are in mm unless noted.',DR_X+DR_W/2,y+7,{align:'center'});
     y+=16;
 
     const clPX=DR_X+(DR_W-planW)/2, clPY=y+16;
+    const clPlanScale=mmPerM/1000; // same as plan scale (1mm on paper per mm real = 1:100 → mmPerM=10, /1000 = 0.01)
 
-    // Plot boundary (dashed)
+    // Note below title, above plan
+    F(6.5,'italic',80,80,80);Txt('This drawing is for setting out of columns and footings on site. All dimensions are in mm unless noted.',DR_X+DR_W/2,y-8,{align:'center'});
+
+    // Plot boundary (dashed, clear outside plan)
     LC(100,100,100);LW(0.4);doc.setLineDashPattern([6,3],0);
-    Rect(clPX-24,clPY-24,planW+48,planH+48,'D');
+    Rect(clPX-20,clPY-20,planW+40,planH+40,'D');
     doc.setLineDashPattern([],0);
-    F(6.5,'bold',80,80,80);Txt('PLOT BOUNDARY',clPX-22,clPY-16);
+    F(6,'normal',80,80,80);Txt('PLOT BOUNDARY',clPX-18,clPY-12);
 
-    // Centre lines — cross-hatch fine lines through entire plan
-    LC(0,100,180);LW(0.25);doc.setLineDashPattern([10,4,2,4],0);
-    cxA.forEach(gx2=>Line(gx2,clPY-20,gx2,clPY+planH+20));
-    cyA.forEach(gy2=>Line(clPX-20,gy2,clPX+planW+20,gy2));
+    // Centre lines — dash-dot through entire plan and beyond
+    LC(0,100,180);LW(0.3);doc.setLineDashPattern([8,3,2,3],0);
+    cxA.forEach(gx2=>Line(gx2,clPY-16,gx2,clPY+planH+16));
+    cyA.forEach(gy2=>Line(clPX-16,gy2,clPX+planW+16,gy2));
     doc.setLineDashPattern([],0);
 
-    // Grid nodes — centre marks (+) and column squares
+    // Column squares (outline only, no fill — keep centre lines visible)
     cxA.forEach((gx2,i)=>cyA.forEach((gy2,j)=>{
-      // Centre mark cross
-      LC(0,100,180);LW(0.5);
-      Line(gx2-3,gy2,gx2+3,gy2);Line(gx2,gy2-3,gx2,gy2+3);
-      // Column outline (to scale)
-      const ct2=colType(i,j);
-      const cSz2=(ct2==='C1'?c1:ct2==='C2'?c2:c3)?.size||300;
-      const cSzP2=Math.max(3,cSz2*mmPerM/1000);
-      LC(0,0,0);LW(0.6);FC(220,225,240);Rect(gx2-cSzP2/2,gy2-cSzP2/2,cSzP2,cSzP2,'FD');
-      // Column label and grid ref
-      F(6.5,'bold',0,0,100);Txt(String(i+1)+String.fromCharCode(65+j),gx2,gy2+1.5,{align:'center'});
+      // Small solid column square
+      const cSzP2=Math.max(3,((getFtgAt(j,i)?.colSize||300))*clPlanScale);
+      FC(180,190,220);LC(0,0,100);LW(0.5);Rect(gx2-cSzP2/2,gy2-cSzP2/2,cSzP2,cSzP2,'FD');
+      // Centre mark cross (on top of column)
+      LC(0,0,100);LW(0.3);
+      Line(gx2-cSzP2*0.7,gy2,gx2+cSzP2*0.7,gy2);
+      Line(gx2,gy2-cSzP2*0.7,gx2,gy2+cSzP2*0.7);
     }));
 
-    // Grid row/col labels (A,B,C / 1,2,3)
+    // Grid column numbers ABOVE plan (outside plot boundary)
     cxA.forEach((gx2,i)=>{
-      F(7,'bold',0,0,0);Txt(String(i+1),gx2,clPY-12,{align:'center'});
-      Txt(String(i+1),gx2,clPY+planH+12,{align:'center'});
+      F(7,'bold',0,0,0);Txt(String(i+1),gx2,clPY-24,{align:'center'});
+      Txt(String(i+1),gx2,clPY+planH+28,{align:'center'});
     });
+    // Grid row letters LEFT and RIGHT of plan
     cyA.forEach((gy2,j)=>{
-      F(7,'bold',0,0,0);Txt(String.fromCharCode(65+j),clPX-12,gy2+2.5,{align:'right'});
-      Txt(String.fromCharCode(65+j),clPX+planW+12,gy2+2.5);
+      F(7,'bold',0,0,0);Txt(String.fromCharCode(65+j),clPX-28,gy2+2.5,{align:'right'});
+      Txt(String.fromCharCode(65+j),clPX+planW+28,gy2+2.5);
     });
 
     // Dimension chains — individual span
@@ -10750,8 +10758,7 @@ async function startConstructionPDF() {
 
     // Excavation pits and footing rectangles at each column
     cxA.forEach((gx2,i)=>cyA.forEach((gy2,j)=>{
-      const ct2=colType(i,j);
-      const ftg2=ct2==='C1'?f1:ct2==='C2'?f2:f3;
+      const ftg2 = getFtgAt(j,i); // row=j, col=i
       const fSz=Math.max(5,(ftg2.Bf||1)*mmPerM);
       const excSz=fSz+8; // 400mm working space at scale
 
@@ -10767,16 +10774,16 @@ async function startConstructionPDF() {
       FC(215,218,230);LC(0,0,0);LW(0.6);Rect(gx2-fSz/2,gy2-fSz/2,fSz,fSz,'FD');
 
       // Column stub
-      const cSz2=(ct2==='C1'?c1:ct2==='C2'?c2:c3)?.size||300;
+      const cSz2=(ftg2.colSize||300);
       const cSzP2=Math.max(2,cSz2*mmPerM/1000);
       FC(80,80,130);LC(0,0,0);LW(0.4);Rect(gx2-cSzP2/2,gy2-cSzP2/2,cSzP2,cSzP2,'FD');
 
-      // Footing type label
-      F(5.5,'bold',0,0,100);Txt(ct2,gx2,gy2-fSz/2-2,{align:'center'});
-      // Size label
-      F(5,'normal',0,0,0);Txt(ftin(ftg2.Bf||1)+'x'+ftin(ftg2.Bf||1),gx2,gy2+fSz/2+5,{align:'center'});
-      // Depth label
-      F(5,'italic',80,0,0);Txt('D='+r0(ftg2.D||300),gx2,gy2+2,{align:'center'});
+      // Grid reference label above
+      F(5.5,'bold',0,0,100);Txt(String(i+1)+String.fromCharCode(65+j),gx2,gy2-fSz/2-2,{align:'center'});
+      // Size label below
+      F(5,'normal',0,0,0);Txt(ftin(ftg2.Bf||1)+'x'+ftin(ftg2.Bf||1),gx2,gy2+fSz/2+4,{align:'center'});
+      // Depth inside
+      F(5,'italic',80,0,0);Txt('D='+r0(ftg2.D||300),gx2,gy2+1.5,{align:'center'});
     }));
 
     // Dims
@@ -10790,9 +10797,9 @@ async function startConstructionPDF() {
     LC(0,0,100);LW(0.4);FC(242,244,255);Rect(DR_X,exSchY,DR_W/2-4,30,'FD');
     F(7,'bold',0,0,100);Txt('EXCAVATION SCHEDULE:',DR_X+3,exSchY+6);
     F(6.5,'normal',0,0,0);
-    [{lbl:'C1 CORNER',f:f1},{lbl:'C2 EDGE',f:f2},{lbl:'C3 INTERIOR',f:f3}].forEach(({lbl,f},ri)=>{
+    [{lbl:'CORNER (e.g. A1)',f:f1},{lbl:'EDGE (e.g. A2)',f:f2},{lbl:'INTERIOR (e.g. B2)',f:f3}].forEach(({lbl,f},ri)=>{
       const exSz=((f?.Bf||1)+0.4);
-      Txt(lbl+': Footing '+ftin(f?.Bf||1)+' | Excav. '+ftin(exSz)+' x '+ftin(exSz)+' x '+ftin(S.ftgDepth)+' deep',DR_X+3,exSchY+13+ri*6);
+      Txt(lbl+': Ftg '+ftin(f?.Bf||1)+' sq | Excav. '+ftin(exSz)+' x '+ftin(exSz)+' x '+ftin(S.ftgDepth)+' deep',DR_X+3,exSchY+13+ri*6);
     });
 
     // Depth section note
@@ -11069,10 +11076,15 @@ async function startConstructionPDF() {
     log('Sheet 12: Staircase...',96);
     doc.addPage();drawPage('ST/SC01/R0','STAIRCASE DETAIL','1:25');
     y=DR_Y+14;
-    F(8,'bold',0,0,100);Txt('TYPICAL STAIRCASE DETAIL',DX+DW2/2,y,{align:'center'});
-    y+=10;
 
-    const st=stair;
+    // Use allStairDesigns if available (has correct stairType from user selection), fallback to RES.stair
+    const stairData = (RES.allStairDesigns && RES.allStairDesigns.length > 0)
+      ? RES.allStairDesigns[0]
+      : RES.stair;
+    const st = stairData || {riser:150,tread:270,wD:150,wd:125,Ast2:200,stsp:200};
+    const stairTypeLabel = st.stairType==='dogleg'?'DOG-LEG (U-TURN)':st.stairType==='90turn'?'90° QUARTER-TURN':'STRAIGHT FLIGHT';
+    F(8,'bold',0,0,100);Txt('STAIRCASE DETAIL  —  '+stairTypeLabel,DX+DW2/2,y,{align:'center'});
+    y+=10;
     const nSteps=Math.round(S.floorHt*1000/st.riser)||10;
     const nTread=Math.ceil(nSteps/2);
     const sc25s=0.035; // ~1:25 but adjusted for page
@@ -11127,7 +11139,7 @@ async function startConstructionPDF() {
     Ld(stX+totalW/2,stBaseY-totalH/2+wD,stX+totalW+22,stBaseY-totalH/2+6,'D8@200mm DIST.');
 
     // Dimensions
-    DH(stX,stX+totalW,stBaseY+12,nTread+'x'+r0(st.tread)+'='+r0(nTread*st.tread)+'mm ('+ftin(nTread*st.tread/1000)+')',false);
+    DH(stX,stX+totalW,stBaseY+12,nTread+'x'+r0(st.tread)+'='+r0(nTread*st.tread)+'mm',false);
     DV(stX-8,stBaseY-totalH,stBaseY,nTread+'x'+r0(st.riser)+'='+r0(nTread*st.riser)+'mm',true);
     DV(stX-14,stBaseY-wD,stBaseY,r0(st.wD)+'mm',true);
     F(6.5,'italic',80,80,80);Txt('SCALE 1:25',stX+totalW/2,stBaseY+22,{align:'center'});
