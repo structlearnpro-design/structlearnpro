@@ -962,7 +962,7 @@ function svgBeamCrossSection(b){
 }
 
 function svgTributaryArea(b){
-  const W=420, H=300, padL=55, padT=35, padR=25, padB=50;
+  const W=440, H=320, padL=55, padT=40, padR=30, padB=55;
   const spX = S.spansX[b.col]||4;
   const spY = S.spansY[b.row]||3;
   const nCols = Math.min(S.spansX.length, 4);
@@ -970,7 +970,16 @@ function svgTributaryArea(b){
   const isX = b.dir==='X';
   const beamRow = b.row||0;
   const beamCol = b.col||0;
-  const trib = b.trib||spY/2;
+
+  // Determine slab type for adjacent bays
+  const lx_bay = Math.min(spX, spY);
+  const ly_bay = Math.max(spX, spY);
+  const ratio = ly_bay / lx_bay;
+  const twoWay = ratio < 2.0;
+
+  // Is this beam along the short span?
+  const beamSpan = isX ? spX : spY;
+  const beamIsShort = beamSpan <= (isX ? spY : spX);
 
   const maxW = W-padL-padR, maxH = H-padT-padB;
   const scX = Math.min(maxW/(nCols*spX), maxH/(nRows*spY), 52);
@@ -982,36 +991,70 @@ function svgTributaryArea(b){
 
   let s = `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">`;
   s += `<rect width="${W}" height="${H}" fill="#0a0f1e" rx="6"/>`;
-  s += `<text x="${W/2}" y="20" fill="#38bdf8" font-size="11" font-weight="bold" text-anchor="middle" font-family="JetBrains Mono">TRIBUTARY AREA — BEAM ${b.label} (PLAN VIEW)</text>`;
 
-  // Slab panels
+  // Title
+  const slabType = twoWay ? 'TWO-WAY SLAB' : 'ONE-WAY SLAB';
+  s += `<text x="${W/2}" y="16" fill="#38bdf8" font-size="10" font-weight="bold" text-anchor="middle" font-family="JetBrains Mono">BEAM ${b.label} \u2014 ${slabType} LOAD PATTERN (IS 456 Annex D)</text>`;
+
+  // Draw slab panels with load pattern shading
   for(let r=0;r<nRows;r++) for(let c=0;c<nCols;c++){
-    let isTrib = isX
+    const isAdjacentBay = isX
       ? (c===beamCol && (r===beamRow-1||r===beamRow))
       : (r===beamRow && (c===beamCol-1||c===beamCol));
-    s += `<rect x="${xs[c]}" y="${ys[r]}" width="${bW}" height="${bH}" fill="${isTrib?'rgba(249,115,22,0.25)':'rgba(15,23,42,0.8)'}" stroke="${isTrib?'#f97316':'#334155'}" stroke-width="${isTrib?1.5:0.8}"/>`;
+
+    s += `<rect x="${xs[c]}" y="${ys[r]}" width="${bW}" height="${bH}" fill="${isAdjacentBay?'rgba(15,23,42,0.95)':'rgba(15,23,42,0.8)'}" stroke="${isAdjacentBay?'#475569':'#1e293b'}" stroke-width="${isAdjacentBay?1.2:0.6}"/>`;
+
+    if(isAdjacentBay && twoWay){
+      // Draw 45° yield lines showing actual load distribution
+      const x1=xs[c], y1=ys[r], x2=xs[c+1], y2=ys[r+1];
+      const w=x2-x1, h=y2-y1;
+      const hl = Math.min(w,h)/2; // half the shorter dimension
+
+      // 45° lines from corners
+      s += `<line x1="${x1}" y1="${y1}" x2="${x1+hl}" y2="${y1+hl}" stroke="#64748b" stroke-width="0.8" stroke-dasharray="3,2"/>`;
+      s += `<line x1="${x2}" y1="${y1}" x2="${x2-hl}" y2="${y1+hl}" stroke="#64748b" stroke-width="0.8" stroke-dasharray="3,2"/>`;
+      s += `<line x1="${x1}" y1="${y2}" x2="${x1+hl}" y2="${y2-hl}" stroke="#64748b" stroke-width="0.8" stroke-dasharray="3,2"/>`;
+      s += `<line x1="${x2}" y1="${y2}" x2="${x2-hl}" y2="${y2-hl}" stroke="#64748b" stroke-width="0.8" stroke-dasharray="3,2"/>`;
+
+      // Shade the tributary zone for THIS beam
+      if(isX){
+        // X-beam gets triangular load: shade the triangles on top/bottom edges
+        const isBayAbove = r===beamRow-1;
+        if(isBayAbove){
+          // Triangle pointing DOWN (beam is at bottom of this bay)
+          s += `<polygon points="${x1},${y2} ${x1+hl},${y2-hl} ${x2-hl},${y2-hl} ${x2},${y2}" fill="rgba(249,115,22,0.25)" stroke="none"/>`;
+        } else {
+          // Triangle pointing UP (beam is at top of this bay)
+          s += `<polygon points="${x1},${y1} ${x1+hl},${y1+hl} ${x2-hl},${y1+hl} ${x2},${y1}" fill="rgba(249,115,22,0.25)" stroke="none"/>`;
+        }
+      } else {
+        // Y-beam gets trapezoidal load: shade left/right edges
+        const isBayLeft = c===beamCol-1;
+        if(isBayLeft){
+          // Trapezoid on right edge of left bay
+          s += `<polygon points="${x2},${y1} ${x2-hl},${y1+hl} ${x2-hl},${y2-hl} ${x2},${y2}" fill="rgba(249,115,22,0.25)" stroke="none"/>`;
+        } else {
+          // Trapezoid on left edge of right bay
+          s += `<polygon points="${x1},${y1} ${x1+hl},${y1+hl} ${x1+hl},${y2-hl} ${x1},${y2}" fill="rgba(249,115,22,0.25)" stroke="none"/>`;
+        }
+      }
+    } else if(isAdjacentBay && !twoWay){
+      // One-way: shade full half-strip for short-span beam, nothing for long-span
+      if(beamIsShort){
+        s += `<rect x="${xs[c]}" y="${ys[r]}" width="${bW}" height="${bH}" fill="rgba(249,115,22,0.2)" stroke="none"/>`;
+      }
+    }
   }
 
-  // Design beam
+  // Draw the design beam
   if(isX){
     const y=ys[beamRow], x1=xs[beamCol], x2=xs[beamCol+1]||xs[beamCol]+bW;
     s += `<line x1="${x1}" y1="${y}" x2="${x2}" y2="${y}" stroke="#f59e0b" stroke-width="4" stroke-linecap="round"/>`;
-    s += `<text x="${(x1+x2)/2}" y="${y-6}" fill="#f59e0b" font-size="9" font-weight="bold" text-anchor="middle" font-family="JetBrains Mono">${b.label} (L=${spX}m)</text>`;
-    // Trib width arrows
-    const ax=xs[Math.min(beamCol+1,nCols)]+12, yT=ys[beamRow]-trib*scY, yB=ys[beamRow]+trib*scY;
-    s += `<line x1="${ax}" y1="${yT}" x2="${ax}" y2="${yB}" stroke="#38bdf8" stroke-width="1.5"/>`;
-    s += `<line x1="${ax-4}" y1="${yT}" x2="${ax+4}" y2="${yT}" stroke="#38bdf8" stroke-width="1.5"/>`;
-    s += `<line x1="${ax-4}" y1="${yB}" x2="${ax+4}" y2="${yB}" stroke="#38bdf8" stroke-width="1.5"/>`;
-    s += `<text x="${ax+12}" y="${(yT+yB)/2+3}" fill="#38bdf8" font-size="9" font-family="JetBrains Mono">${r2(trib)}m each side</text>`;
+    s += `<text x="${(x1+x2)/2}" y="${y-7}" fill="#f59e0b" font-size="9" font-weight="bold" text-anchor="middle" font-family="JetBrains Mono">${b.label} (L=${spX}m)</text>`;
   } else {
     const x=xs[beamCol], y1=ys[beamRow], y2=ys[beamRow+1]||ys[beamRow]+bH;
     s += `<line x1="${x}" y1="${y1}" x2="${x}" y2="${y2}" stroke="#f59e0b" stroke-width="4" stroke-linecap="round"/>`;
-    s += `<text x="${x+6}" y="${(y1+y2)/2}" fill="#f59e0b" font-size="9" font-weight="bold" font-family="JetBrains Mono">${b.label} (L=${spY}m)</text>`;
-    const ay=ys[Math.min(beamRow+1,nRows)]+12, xL=xs[beamCol]-trib*scX, xR=xs[beamCol]+trib*scX;
-    s += `<line x1="${xL}" y1="${ay}" x2="${xR}" y2="${ay}" stroke="#38bdf8" stroke-width="1.5"/>`;
-    s += `<line x1="${xL}" y1="${ay-4}" x2="${xL}" y2="${ay+4}" stroke="#38bdf8" stroke-width="1.5"/>`;
-    s += `<line x1="${xR}" y1="${ay-4}" x2="${xR}" y2="${ay+4}" stroke="#38bdf8" stroke-width="1.5"/>`;
-    s += `<text x="${(xL+xR)/2}" y="${ay+14}" fill="#38bdf8" font-size="9" text-anchor="middle" font-family="JetBrains Mono">${r2(trib)}m each side</text>`;
+    s += `<text x="${x+6}" y="${(y1+y2)/2+4}" fill="#f59e0b" font-size="9" font-weight="bold" font-family="JetBrains Mono">${b.label} (L=${spY}m)</text>`;
   }
 
   // Column nodes
@@ -1019,17 +1062,35 @@ function svgTributaryArea(b){
     s += `<rect x="${xs[c]-5}" y="${ys[r]-5}" width="10" height="10" fill="#1e293b" stroke="#a78bfa" stroke-width="1.5" rx="1"/>`;
   }
 
+  // Equivalent UDL annotation (show what IS 456 formula gives)
+  const w_unit = 10; // example per m² for annotation
+  let equivLabel = '';
+  if(twoWay){
+    if(beamIsShort){
+      equivLabel = `w_eq = w\u00d7lx/3 = w\u00d7${r2(lx_bay)}/3 (triangular\u2192equiv UDL)`;
+    } else {
+      const r2v = lx_bay/ly_bay;
+      equivLabel = `w_eq = w\u00d7lx/3\u00d7(3-(lx/ly)\u00b2)/2 (trapezoidal\u2192equiv UDL)`;
+    }
+  } else {
+    equivLabel = beamIsShort
+      ? `w_eq = w\u00d7lx/2 (one-way: full rectangular load)`
+      : `w_eq \u2248 0 (one-way: negligible load on long-span beam)`;
+  }
+  s += `<text x="${W/2}" y="${H-38}" fill="#38bdf8" font-size="8" text-anchor="middle" font-family="JetBrains Mono">${equivLabel}</text>`;
+  s += `<text x="${W/2}" y="${H-26}" fill="#475569" font-size="8" text-anchor="middle" font-family="JetBrains Mono">IS 456 Annex D | ly/lx=${r2(ratio)} \u2192 ${twoWay?'Two-way':'One-way'} slab</text>`;
+
   // Span dims — bottom
   for(let c=0;c<nCols;c++){
-    const y0=ys[nRows]+16;
+    const y0=ys[nRows]+10;
     s += `<line x1="${xs[c]}" y1="${y0}" x2="${xs[c+1]}" y2="${y0}" stroke="#f59e0b" stroke-width="0.8"/>`;
     s += `<line x1="${xs[c]}" y1="${y0-3}" x2="${xs[c]}" y2="${y0+3}" stroke="#f59e0b" stroke-width="0.8"/>`;
     s += `<line x1="${xs[c+1]}" y1="${y0-3}" x2="${xs[c+1]}" y2="${y0+3}" stroke="#f59e0b" stroke-width="0.8"/>`;
-    s += `<text x="${(xs[c]+xs[c+1])/2}" y="${y0+12}" fill="#f59e0b" font-size="9" text-anchor="middle" font-family="JetBrains Mono">${spX}m</text>`;
+    s += `<text x="${(xs[c]+xs[c+1])/2}" y="${y0+11}" fill="#f59e0b" font-size="9" text-anchor="middle" font-family="JetBrains Mono">${spX}m</text>`;
   }
   // Span dims — left
   for(let r=0;r<nRows;r++){
-    const x0=padL-16;
+    const x0=padL-12;
     s += `<line x1="${x0}" y1="${ys[r]}" x2="${x0}" y2="${ys[r+1]}" stroke="#f59e0b" stroke-width="0.8"/>`;
     s += `<line x1="${x0-3}" y1="${ys[r]}" x2="${x0+3}" y2="${ys[r]}" stroke="#f59e0b" stroke-width="0.8"/>`;
     s += `<line x1="${x0-3}" y1="${ys[r+1]}" x2="${x0+3}" y2="${ys[r+1]}" stroke="#f59e0b" stroke-width="0.8"/>`;
@@ -1037,14 +1098,27 @@ function svgTributaryArea(b){
   }
 
   // Legend
-  s += `<rect x="10" y="${H-38}" width="12" height="10" fill="rgba(249,115,22,0.25)" stroke="#f97316" stroke-width="1.5"/>`;
-  s += `<text x="26" y="${H-29}" fill="#f97316" font-size="9" font-family="JetBrains Mono">Slab panels loading this beam</text>`;
-  s += `<line x1="10" y1="${H-18}" x2="22" y2="${H-18}" stroke="#f59e0b" stroke-width="3"/>`;
-  s += `<text x="26" y="${H-14}" fill="#f59e0b" font-size="9" font-family="JetBrains Mono">Design beam (${b.dir}-direction)</text>`;
-  s += `<rect x="220" y="${H-38}" width="10" height="10" fill="#1e293b" stroke="#a78bfa" stroke-width="1.5"/>`;
-  s += `<text x="234" y="${H-29}" fill="#a78bfa" font-size="9" font-family="JetBrains Mono">Columns</text>`;
+  const ly0 = ys[nRows]+24;
+  s += `<polygon points="10,${ly0+8} 22,${ly0} 22,${ly0+8}" fill="rgba(249,115,22,0.25)" stroke="#f97316" stroke-width="1"/>`;
+  s += `<text x="26" y="${ly0+8}" fill="#f97316" font-size="9" font-family="JetBrains Mono">${twoWay?(beamIsShort?'Triangular load zone':'Trapezoidal load zone'):'Rectangular load zone'}</text>`;
+  s += `<line x1="200" y1="${ly0+4}" x2="212" y2="${ly0+4}" stroke="#f59e0b" stroke-width="3"/>`;
+  s += `<text x="216" y="${ly0+8}" fill="#f59e0b" font-size="9" font-family="JetBrains Mono">Design beam</text>`;
+  if(twoWay){
+    s += `<line x1="300" y1="${ly0+4}" x2="312" y2="${ly0+4}" stroke="#64748b" stroke-width="1" stroke-dasharray="3,2"/>`;
+    s += `<text x="316" y="${ly0+8}" fill="#64748b" font-size="9" font-family="JetBrains Mono">45\u00b0 yield lines</text>`;
+  }
+
   s += '</svg>';
-  return`<div class="dg">${s}<div class="dg-cap">Fig: Plan view — orange panels = slab area loading beam ${b.label}. Trib width = ${r2(trib)}m each side.</div></div>`;
+
+  const loadDesc = twoWay
+    ? (beamIsShort
+        ? `Short-span beam gets triangular load. Equivalent UDL = w × lx/3 = w × ${r2(lx_bay)}/3.`
+        : `Long-span beam gets trapezoidal load. Equivalent UDL = w × lx/3 × (3-(lx/ly)²)/2.`)
+    : (beamIsShort
+        ? `One-way slab: short-span beam gets full rectangular load = w × lx/2.`
+        : `One-way slab: long-span beam carries negligible slab load.`);
+
+  return`<div class="dg">${s}<div class="dg-cap">IS 456 Annex D load pattern for beam ${b.label}. ${loadDesc}</div></div>`;
 }
 function beamFailureExplanation(b){
   if(b.deflOK && b.shearSafe) return '';
@@ -1103,7 +1177,29 @@ function beamDetail(b){
   ${sb('B-2','Loading',`
     ${svgTributaryArea(b)}
     ${fm('Tributary width from grid (slab bays only)',r2(b.trib)+' m','')}
-    ${fm('w_slab = (DL+FF+PL+LL)×trib = '+r2(RES.slab.DL_sl+S.floorFinish+S.partitions+(b.isRoof?S.udlRoof:S.udlLL))+'×'+r2(b.trib),r2(b.wslab)+' kN/m','')}
+    ${(()=>{
+      const lx=Math.min(S.spansX[b.col]||4, S.spansY[b.row]||3);
+      const ly=Math.max(S.spansX[b.col]||4, S.spansY[b.row]||3);
+      const r=ly/lx, twoWay=r<2;
+      const beamSpan=b.dir==='X'?S.spansX[b.col]||4:S.spansY[b.row]||3;
+      const isShort=beamSpan<=Math.max(S.spansX[b.col]||4,S.spansY[b.row]||3);
+      const wBase=r2(RES.slab.DL_sl+S.floorFinish+S.partitions+(b.isRoof?S.udlRoof:S.udlLL));
+      let formula='', result='';
+      if(twoWay && isShort){
+        formula=`w_slab = w × lx/3 = ${wBase} × ${r2(lx)}/3`;
+        result=r2(b.wslab)+' kN/m (triangular → equiv UDL, IS 456 Annex D)';
+      } else if(twoWay && !isShort){
+        formula=`w_slab = w × lx/3 × (3-(lx/ly)²)/2 = ${wBase} × ${r2(lx)}/3 × (3-${r2((lx/ly)**2)})/2`;
+        result=r2(b.wslab)+' kN/m (trapezoidal → equiv UDL, IS 456 Annex D)';
+      } else if(isShort){
+        formula=`w_slab = w × lx/2 = ${wBase} × ${r2(lx)}/2`;
+        result=r2(b.wslab)+' kN/m (one-way slab: rectangular, IS 456 Cl 24.1)';
+      } else {
+        formula=`w_slab ≈ 0 (one-way slab: long-span beam, IS 456 Cl 24.1)`;
+        result=r2(b.wslab)+' kN/m';
+      }
+      return fm(formula, result, '');
+    })()}
     ${fm('w_sw (self-weight) = '+b.b+'/1000 × '+b.D+'/1000 × 25',r2(b.wsw)+' kN/m','')}
     ${b.ww>0?fm('w_wall (perimeter beam)',r2(b.ww)+' kN/m',''):''}
     ${fm('wu = 1.5 × ('+r2(b.wslab)+' + '+r2(b.wsw)+(b.ww>0?' + '+r2(b.ww):'')+') factored',r2(b.wu)+' kN/m','IS 456 Table 18')}

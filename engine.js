@@ -1263,11 +1263,51 @@ function getSlabCase(bay){
 
 function getEffectiveSpan(beam){return beam.L;}
 
+// ── IS 456 CORRECT SLAB LOAD ON BEAMS ────────────────────────────
+// IS 456 Annex D / SP:24 — Equivalent UDL from slab on supporting beams
+// Two-way slab (ly/lx < 2):
+//   Short-span beam: w_eq = w × lx/3        (triangular distribution)
+//   Long-span beam:  w_eq = w × lx/3 × (3-(lx/ly)²)/2  (trapezoidal)
+// One-way slab (ly/lx ≥ 2):
+//   Short-span beam: w_eq = w × lx/2        (full load, rectangular)
+//   Long-span beam:  w_eq = 0               (negligible load transfer)
+
+function getSlabEquivLoad(w_total, lx, ly, beamIsAlongShortSpan){
+  // w_total = total slab load per m² (kN/m²)
+  // lx = shorter span, ly = longer span
+  // beamIsAlongShortSpan: true if beam runs parallel to lx (i.e. it's the SHORT-span beam)
+  //   Short-span beam = beam whose span equals lx (runs along X if lx is X-direction)
+  //   It RECEIVES the triangular load from the slab
+
+  const ratio = ly / lx;
+  const twoWay = ratio < 2.0;
+
+  if(twoWay){
+    if(beamIsAlongShortSpan){
+      // Triangular load → equivalent UDL = w × lx / 3
+      // (IS 456 Annex D, also Varghese "Advanced RC Design" Eq. 3.1)
+      return w_total * lx / 3;
+    } else {
+      // Trapezoidal load → equivalent UDL = w × lx/3 × (3-(lx/ly)²)/2
+      // (IS 456 Annex D, Eq. D-3)
+      const r = lx / ly;
+      return w_total * lx / 3 * (3 - r*r) / 2;
+    }
+  } else {
+    // One-way slab: load goes entirely to short-span beams as rectangular UDL
+    if(beamIsAlongShortSpan){
+      return w_total * lx / 2;  // half the slab on each short-span beam
+    } else {
+      return 0;  // long-span beams carry negligible slab load in one-way slabs
+    }
+  }
+}
+
 function getTribWidth(beam){
-  if(!GRID)return(S.spansY.reduce((a,b)=>a+b,0)/S.spansY.length/2);
+  // Legacy function kept for column tributary area and diagram use only
+  // Returns simple geometric half-span for display purposes
+  if(!GRID) return (S.spansY.reduce((a,b)=>a+b,0)/S.spansY.length/2);
   let trib=0;
-  // Check if a secondary beam exists parallel to this beam in an adjacent bay
-  // If yes, that secondary beam takes half the tributary — primary gets less load
   function secBeamSplits(bayRow,bayCol,perpDir){
     return GRID.beams.some(b=>b.isSecondary&&b.dir===perpDir&&
       b.row===bayRow&&b.col===bayCol);
@@ -1275,17 +1315,15 @@ function getTribWidth(beam){
   if(beam.dir==='X'){
     const ba=getBay(beam.row-1,beam.col);
     const bb=getBay(beam.row,beam.col);
-    // Above bay: full half-span, reduced by 0.5 if secondary Y-beam runs through it
     if(ba&&ba.type==='slab'){
       const factor=secBeamSplits(beam.row-1,beam.col,'X')?0.5:1.0;
       trib+=S.spansY[beam.row-1]/2*factor;
     }
-    // Below bay
     if(bb&&bb.type==='slab'){
       const factor=secBeamSplits(beam.row,beam.col,'X')?0.5:1.0;
       trib+=S.spansY[beam.row]/2*factor;
     }
-  }else{
+  } else {
     const bl=getBay(beam.row,beam.col-1);
     const br=getBay(beam.row,beam.col);
     if(bl&&bl.type==='slab'){
@@ -1300,10 +1338,61 @@ function getTribWidth(beam){
   return Math.max(trib,0.5);
 }
 
+// Get correct IS 456 equivalent UDL from slab on a beam
+function getBeamSlabLoad(beam, w_slab_per_m2){
+  // w_slab_per_m2 = total unfactored slab load (DL+FF+Parts+LL) per m²
+  if(!GRID) return w_slab_per_m2 * getTribWidth(beam);
+
+  let wslab = 0;
+
+  function processBay(bayRow, bayCol, beamDir){
+    const bay = getBay(bayRow, bayCol);
+    if(!bay || bay.type !== 'slab') return 0;
+
+    // Get slab panel dimensions
+    const lx_bay = Math.min(S.spansX[bayCol]||4, S.spansY[bayRow]||3);
+    const ly_bay = Math.max(S.spansX[bayCol]||4, S.spansY[bayRow]||3);
+    const spanX = S.spansX[bayCol]||4;
+    const spanY = S.spansY[bayRow]||3;
+
+    // Is this beam running along the short span of this bay?
+    // X-beam (runs along X direction) is the SHORT-span beam if spansX < spansY
+    // i.e. the beam span equals lx (the shorter dimension)
+    let beamIsAlongShortSpan;
+    if(beamDir === 'X'){
+      // X-beam spans spanX. Is spanX the shorter direction of this bay?
+      beamIsAlongShortSpan = spanX <= spanY;
+    } else {
+      // Y-beam spans spanY. Is spanY the shorter direction?
+      beamIsAlongShortSpan = spanY <= spanX;
+    }
+
+    // Check for secondary beam splitting load
+    function secBeamSplits(perpDir){
+      return GRID.beams.some(b=>b.isSecondary&&b.dir===perpDir&&
+        b.row===bayRow&&b.col===bayCol);
+    }
+    const splitFactor = secBeamSplits(beamDir==='X'?'X':'Y') ? 0.5 : 1.0;
+
+    const equiv = getSlabEquivLoad(w_slab_per_m2, lx_bay, ly_bay, beamIsAlongShortSpan);
+    return equiv * splitFactor;
+  }
+
+  if(beam.dir === 'X'){
+    wslab += processBay(beam.row-1, beam.col, 'X');  // bay above
+    wslab += processBay(beam.row,   beam.col, 'X');  // bay below
+  } else {
+    wslab += processBay(beam.row, beam.col-1, 'Y');  // bay left
+    wslab += processBay(beam.row, beam.col,   'Y');  // bay right
+  }
+
+  return Math.max(wslab, 0);
+}
+
 function getBeamWu(beam,DL_tot,udlLL,wallLoad){
   if(beam.customWu!==null)return beam.customWu;
-  const trib=getTribWidth(beam);
-  const wslab=(DL_tot+udlLL)*trib;
+  const w_slab_per_m2 = DL_tot + udlLL;
+  const wslab = getBeamSlabLoad(beam, w_slab_per_m2); // IS 456 Annex D
   const wsw=(beam.b||230)/1000*(beam.D||350)/1000*25;
   const isPerim=(beam.dir==='X'&&(beam.row===0||beam.row===GRID.ny))||
                 (beam.dir==='Y'&&(beam.col===0||beam.col===GRID.nx));
@@ -2312,8 +2401,9 @@ function designOneBeam(gridBeam, floorNum, isRoof,
 
   // Load: roof uses roof LL, typical floors use floor LL
   const udlLL=isRoof?udlLL_roof:udlLL_floor;
-  const trib=getTribWidth(gridBeam);
-  const wslab=(DL_sl+floorFinish+partitions+udlLL)*trib;
+  const trib=getTribWidth(gridBeam); // kept for display only
+  const w_slab_per_m2 = DL_sl+floorFinish+partitions+udlLL;
+  const wslab = getBeamSlabLoad(gridBeam, w_slab_per_m2); // IS 456 Annex D equivalent UDL
   // Add stair reaction load to beams adjacent to stair bays
   // Stair slab reaction acts on the beams that support the stair landing/flight ends
   let wstair=0;
