@@ -10260,6 +10260,12 @@ async function startConstructionPDF() {
     doc.addPage();drawPage('ST/BM02/R0','BEAM DETAIL','1:25 / 1:50');
     y=DR_Y+14;
 
+    // Define showB FIRST so stirrup detail box can reference it
+    const uBeams2=[];
+    beams.forEach(b=>{if(!uBeams2.find(u=>u.b===b.b&&u.D===b.D&&u.nm===b.nm))uBeams2.push(b);});
+    const showB=uBeams2.slice(0,3);if(!showB.length&&beams.length)showB.push(beams[0]);
+    const bRowH=(DR_H-14)/Math.max(1,showB.length);
+
     // Typical stirrup detail — compact box top-right
     const tdX=DR_X+DR_W-80, tdY=y-2;
     LC(0,0,100);LW(0.4);Rect(tdX,tdY,78,28,'D');
@@ -10271,10 +10277,6 @@ async function startConstructionPDF() {
     TW('Confinement zone: max(2D, L/4) from support',tdX+2,tdY+22,76);
 
     // Show up to 3 unique beam types, one per row
-    const uBeams2=[];
-    beams.forEach(b=>{if(!uBeams2.find(u=>u.b===b.b&&u.D===b.D&&u.nm===b.nm))uBeams2.push(b);});
-    const showB=uBeams2.slice(0,3);if(!showB.length&&beams.length)showB.push(beams[0]);
-    const bRowH=(DR_H-14)/Math.max(1,showB.length);
 
     showB.forEach((b3,bi)=>{
       const bzy=y+bi*bRowH;
