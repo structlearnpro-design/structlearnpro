@@ -264,11 +264,34 @@ function renderGridPrev(){
   sy.forEach(s=>ys.push(ys[ys.length-1]+s*scy));
   let g=`<svg viewBox="0 0 ${W} ${H}" style="width:100%;display:block">`;
   g+=`<rect width="${W}" height="${H}" fill="#0a0f1e"/>`;
-  // beams
-  xs.forEach(x=>g+=`<line x1="${x}" y1="${ys[0]}" x2="${x}" y2="${ys[ys.length-1]}" stroke="#fb923c" stroke-width="3.5" stroke-linecap="round"/>`);
-  ys.forEach(y=>g+=`<line x1="${xs[0]}" y1="${y}" x2="${xs[xs.length-1]}" y2="${y}" stroke="#fb923c" stroke-width="3.5" stroke-linecap="round"/>`);
-  // columns
-  xs.forEach(x=>ys.forEach(y=>{g+=`<rect x="${x-6}" y="${y-6}" width="12" height="12" fill="#374151" stroke="#34d399" stroke-width="1.8" rx="2"/>`;g+=`<circle cx="${x}" cy="${y}" r="2.5" fill="#34d399"/>`;;}));
+  // beams — skip if either endpoint is void/missing
+  xs.forEach((x,ci)=>{
+    ys.forEach((y,ri)=>{
+      if(ri<sy.length){
+        const n1=GRID&&getNode(ri,ci), n2=GRID&&getNode(ri+1,ci);
+        if(n1&&!n1.hasColumn&&n1._choice==='void') return;
+        if(n2&&!n2.hasColumn&&n2._choice==='void') return;
+        g+=`<line x1="${x}" y1="${y}" x2="${x}" y2="${ys[ri+1]}" stroke="#fb923c" stroke-width="3.5" stroke-linecap="round"/>`;
+      }
+    });
+  });
+  ys.forEach((y,ri)=>{
+    xs.forEach((x,ci)=>{
+      if(ci<sx.length){
+        const n1=GRID&&getNode(ri,ci), n2=GRID&&getNode(ri,ci+1);
+        if(n1&&!n1.hasColumn&&n1._choice==='void') return;
+        if(n2&&!n2.hasColumn&&n2._choice==='void') return;
+        g+=`<line x1="${x}" y1="${y}" x2="${xs[ci+1]}" y2="${y}" stroke="#fb923c" stroke-width="3.5" stroke-linecap="round"/>`;
+      }
+    });
+  });
+  // columns — skip void/missing nodes
+  xs.forEach((x,ci)=>ys.forEach((y,ri)=>{
+    const gn=GRID&&getNode(ri,ci);
+    if(gn&&!gn.hasColumn) return; // skip removed columns
+    g+=`<rect x="${x-6}" y="${y-6}" width="12" height="12" fill="#374151" stroke="#34d399" stroke-width="1.8" rx="2"/>`;
+    g+=`<circle cx="${x}" cy="${y}" r="2.5" fill="#34d399"/>`;
+  }));
   // span labels x
   for(let i=0;i<sx.length;i++)g+=`<text x="${(xs[i]+xs[i+1])/2}" y="${ys[0]-6}" fill="#64748b" font-size="8" text-anchor="middle" font-family="JetBrains Mono">${sx[i]}m</text>`;
   // span labels y
@@ -1106,8 +1129,10 @@ function svgTributaryArea(b){
     }
   }
 
-  // Column nodes
+  // Column nodes — skip missing/void nodes
   for(let r=0;r<=nRows;r++) for(let c=0;c<=nCols;c++){
+    const gridNode = GRID && getNode(r, c);
+    if(gridNode && !gridNode.hasColumn) continue; // skip void/removed columns
     s += `<rect x="${xs[c]-5}" y="${ys[r]-5}" width="10" height="10" fill="#1e293b" stroke="#a78bfa" stroke-width="1.5" rx="1"/>`;
   }
 
