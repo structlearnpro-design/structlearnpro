@@ -558,7 +558,6 @@ function secSlab(){
   return`
 <div class="card">
   <div class="ct">🔲 Slab Design — Every Bay Individually — IS 456 Cl 24, 26.5.2, Table 26</div>
-  ${glossaryBar(['lx','ly','αx','αy','Mx','My','Mulim','Ast','d','l/d','fck','fy'])}
   ${warns}
 
   <!-- Floor selector -->
@@ -711,24 +710,40 @@ function slabPanelDetail(p){
   `)}
 
   ${sb('S-3','Moments (IS 456 Table 26)',`
-    ${fm('Mx (short span midspan +ve) = αx×wu×lx² = '+r2(p.ax||0)+'×'+r2(p.wu||0)+'×'+r2(p.lx||0)+'²',r2(p.Mx||0)+' kN.m/m','')}
-    ${fm('My (long span midspan +ve) = αy×wu×lx² = '+r2(p.ay||0)+'×'+r2(p.wu||0)+'×'+r2(p.lx||0)+'²',r2(p.My||0)+' kN.m/m','')}
-    ${fm('Mx_neg (support -ve) = αx_n×wu×lx²',r2(p.Mx_neg||0)+' kN.m/m','')}
-    ${fm('My_neg (support -ve) = αy_n×wu×lx²',r2(p.My_neg||0)+' kN.m/m','')}
-    ${fm('Mulim = 0.138×fck×b×d² = 0.138×'+S.fck+'×1000×'+r0(p.d||0)+'²/1e6',r2(p.Mulim||0)+' kN.m/m','')}
-    ${(()=>{const Mmax=Math.max(p.Mx||0,p.My||0);const momOK=Mmax<=(p.Mulim||0);return vd(momOK,'Max moment '+r2(Mmax)+' kN.m/m '+(momOK?'≤':'>')+' Mulim '+r2(p.Mulim||0)+' → '+(momOK?'Singly reinforced OK':'Increase D'));})()}
+    <div class="cp" style="font-size:10px;line-height:2.0;margin-bottom:8px">
+      <strong>Formula:</strong> Mx = αx × wu × lx² &nbsp;|&nbsp; My = αy × wu × lx²<br>
+      <strong>Where:</strong><br>
+      &nbsp;&nbsp;αx = ${r2(p.ax||0)} (short span moment coefficient from IS 456 Table 26, Case ${p.slabCase||4})<br>
+      &nbsp;&nbsp;αy = ${r2(p.ay||0)} (long span moment coefficient from IS 456 Table 26)<br>
+      &nbsp;&nbsp;wu = ${r2(p.wu||0)} kN/m² (factored load per unit area of slab)<br>
+      &nbsp;&nbsp;lx = ${r2(p.lx||0)} m (shorter span — always used in both Mx and My formulas)<br>
+      <strong>Results:</strong><br>
+      &nbsp;&nbsp;Mx = ${r2(p.ax||0)} × ${r2(p.wu||0)} × ${r2(p.lx||0)}² = <strong style="color:var(--cyan)">${r2(p.Mx||0)} kN.m/m</strong> (short span, +ve midspan)<br>
+      &nbsp;&nbsp;My = ${r2(p.ay||0)} × ${r2(p.wu||0)} × ${r2(p.lx||0)}² = <strong style="color:var(--cyan)">${r2(p.My||0)} kN.m/m</strong> (long span, +ve midspan)<br>
+      &nbsp;&nbsp;Mx_neg = ${r2(p.Mx_neg||0)} kN.m/m (hogging at short-span supports)<br>
+      &nbsp;&nbsp;My_neg = ${r2(p.My_neg||0)} kN.m/m (hogging at long-span supports)<br><br>
+      <strong>Mulim check:</strong> Mulim = 0.138 × fck × b × d² / 10⁶<br>
+      &nbsp;&nbsp;= 0.138 × ${S.fck} × 1000 × ${r0(p.d||0)}² / 10⁶ = <strong style="color:var(--cyan)">${r2(p.Mulim||0)} kN.m/m</strong><br>
+      &nbsp;&nbsp;(0.138 = limiting factor for Fe${S.fy} steel; b = 1000mm for per-metre strip)
+    </div>
+    ${(()=>{const Mmax=Math.max(p.Mx||0,p.My||0);const momOK=Mmax<=(p.Mulim||0);return vd(momOK,'Max moment '+r2(Mmax)+' kN.m/m '+(momOK?'≤':'>')+' Mulim '+r2(p.Mulim||0)+' → '+(momOK?'Singly reinforced OK':'Increase slab depth D'));})()}
   `)}
 
   ${sb('S-4','Reinforcement',`
-    ${fm('Ast_x (bot. short span) from Mx='+r2(p.Mx||0),r0(p.Ax||0)+' mm²/m → D10@'+p.spx+'mm c/c','')}
-    ${fm('Ast_y (bot. long span) from My='+r2(p.My||0),r0(p.Ay||0)+' mm²/m → D8@'+p.spy+'mm c/c','')}
-    ${fm('Ast_x neg (top, at supports)',r0(p.Ax_neg||0)+' mm²/m → D8@'+p.spx_n+'mm c/c','')}
-    ${fm('Ast_y neg (top, at supports)',r0(p.Ay_neg||0)+' mm²/m → D8@'+p.spy_n+'mm c/c','')}
+    <div class="cp" style="font-size:10px;line-height:2.0;margin-bottom:8px">
+      <strong>Formula:</strong> Ast = Mu / (0.87 × fy × d × [1 − Mu/(fck × b × d²)])<br>
+      <strong>Where:</strong> fy=${S.fy} N/mm², d=${r0(p.d||0)} mm, fck=${S.fck} N/mm², b=1000mm (per metre strip)<br>
+      <strong>Results:</strong><br>
+      &nbsp;&nbsp;Ast_x (short span, bottom) = <strong>${r0(p.Ax||0)} mm²/m</strong> → Provide D10@${p.spx}mm c/c<br>
+      &nbsp;&nbsp;Ast_y (long span, bottom) = <strong>${r0(p.Ay||0)} mm²/m</strong> → Provide D8@${p.spy}mm c/c<br>
+      &nbsp;&nbsp;Ast_x_neg (short span top at supports) = ${r0(p.Ax_neg||0)} mm²/m → D8@${p.spx_n}mm c/c<br>
+      &nbsp;&nbsp;Ast_y_neg (long span top at supports) = ${r0(p.Ay_neg||0)} mm²/m → D8@${p.spy_n}mm c/c<br>
+      &nbsp;&nbsp;Top bars extend 0.3×lx = ${r2((p.lx||3)*0.3)}m from each support face
+    </div>
     <div class="cp" style="margin-top:8px">
-      <strong>Provide (${p.bayLabel}):</strong><br>
-      Bot. short-span: D10@${p.spx}mm c/c | Bot. long-span: D8@${p.spy}mm c/c<br>
-      Top (neg.): D8@${p.spx_n}mm short-span, D8@${p.spy_n}mm long-span<br>
-      Top bars extend 0.3×lx = ${r2((p.lx||3)*0.3)}m from support
+      <strong>Summary — Provide (${p.bayLabel}):</strong><br>
+      Bottom short-span: D10@${p.spx}mm c/c &nbsp;|&nbsp; Bottom long-span: D8@${p.spy}mm c/c<br>
+      Top (negative): D8@${p.spx_n}mm short-span &nbsp;|&nbsp; D8@${p.spy_n}mm long-span
     </div>
   `)}
 </div>`;
@@ -947,36 +962,101 @@ function svgBeamCrossSection(b){
 }
 
 function svgTributaryArea(b){
-  const W=260,H=140;
-  let s=`<svg viewBox="0 0 ${W} ${H}" style="width:100%;max-width:260px;display:block">`;
-  s+=`<rect width="${W}" height="${H}" fill="#0a0f1e" rx="6"/>`;
-  s+=`<text x="${W/2}" y="14" fill="#38bdf8" font-size="9" font-weight="bold" text-anchor="middle" font-family="JetBrains Mono">TRIBUTARY AREA</text>`;
-  const mx=30, my=24, pw=200, ph=90;
-  // Grid frame
-  s+=`<rect x="${mx}" y="${my}" width="${pw}" height="${ph}" fill="none" stroke="#475569" stroke-width="1"/>`;
-  // Beam (highlighted)
-  const isX=b.dir==='X';
-  if(isX){
-    s+=`<line x1="${mx}" y1="${my+ph/2}" x2="${mx+pw}" y2="${my+ph/2}" stroke="#f59e0b" stroke-width="3"/>`;
-    // Tributary shading
-    const tw=Math.min(ph/2, ph*b.trib/(b.trib*2+0.01));
-    s+=`<rect x="${mx}" y="${my+ph/2-tw}" width="${pw}" height="${tw*2}" fill="rgba(249,115,22,0.12)" stroke="#f59e0b" stroke-width="0.5" stroke-dasharray="4,3"/>`;
-    s+=`<text x="${mx+pw+6}" y="${my+ph/2+3}" fill="#f59e0b" font-size="7" font-family="JetBrains Mono">trib=${r2(b.trib)}m</text>`;
-  } else {
-    s+=`<line x1="${mx+pw/2}" y1="${my}" x2="${mx+pw/2}" y2="${my+ph}" stroke="#f59e0b" stroke-width="3"/>`;
-    const tw=Math.min(pw/2, pw*b.trib/(b.trib*2+0.01));
-    s+=`<rect x="${mx+pw/2-tw}" y="${my}" width="${tw*2}" height="${ph}" fill="rgba(249,115,22,0.12)" stroke="#f59e0b" stroke-width="0.5" stroke-dasharray="4,3"/>`;
-    s+=`<text x="${mx+pw/2}" y="${my+ph+12}" fill="#f59e0b" font-size="7" text-anchor="middle" font-family="JetBrains Mono">trib=${r2(b.trib)}m</text>`;
-  }
-  // Column dots at corners
-  [[mx,my],[mx+pw,my],[mx,my+ph],[mx+pw,my+ph]].forEach(([x,y])=>{
-    s+=`<rect x="${x-4}" y="${y-4}" width="8" height="8" fill="#a78bfa" stroke="#c4b5fd" stroke-width="1" rx="1"/>`;
-  });
-  s+=`<text x="${mx+pw/2}" y="${my+ph+12+(isX?0:12)}" fill="#94a3b8" font-size="7" text-anchor="middle" font-family="JetBrains Mono">Slab load on ${b.dir}-beam = w × ${r2(b.trib)}m</text>`;
-  s+='</svg>';
-  return`<div class="dg">${s}<div class="dg-cap">Fig: Tributary area feeding load to beam ${b.label}</div></div>`;
-}
+  const W=420, H=280;
+  const spX = S.spansX[b.col]||4;
+  const spY = S.spansY[b.row]||3;
+  const nCols = Math.min(S.spansX.length, 4);
+  const nRows = Math.min(S.spansY.length, 4);
+  const isX = b.dir==='X';
+  const trib = b.trib||spY/2;
 
+  // 3D isometric projection settings
+  const isoX = 0.7, isoY = 0.4; // perspective skew
+  const sc = Math.min(55, 180/Math.max(nCols*spX, nRows*spY));
+  const bW = spX*sc, bH = spY*sc;
+  // Origin point (bottom-left of grid in screen space)
+  const ox = 60, oy = 200;
+
+  // Project a grid point (col, row) to screen (x, y)
+  function proj(c, r) {
+    return {
+      x: ox + c*bW*isoX - r*bH*isoX*0.6,
+      y: oy - c*bW*isoY - r*bH*(1-isoY*0.5)
+    };
+  }
+
+  let s = `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">`;
+  s += `<rect width="${W}" height="${H}" fill="#0a0f1e" rx="6"/>`;
+  s += `<text x="${W/2}" y="18" fill="#38bdf8" font-size="11" font-weight="bold" text-anchor="middle" font-family="JetBrains Mono">TRIBUTARY AREA — BEAM ${b.label}</text>`;
+
+  // Draw slab panels (3D faces)
+  for(let r=0;r<nRows;r++) for(let c=0;c<nCols;c++){
+    const p00=proj(c,r), p10=proj(c+1,r), p11=proj(c+1,r+1), p01=proj(c,r+1);
+    // Check if this panel contributes to our beam's tributary area
+    const beamRow = b.row||0, beamCol = b.col||0;
+    let isTrib = false;
+    if(isX){
+      // X-beam at row=beamRow — panels in rows beamRow-1 and beamRow contribute
+      isTrib = (r===beamRow-1||r===beamRow) && c===beamCol;
+    } else {
+      // Y-beam at col=beamCol — panels in cols beamCol-1 and beamCol contribute
+      isTrib = (c===beamCol-1||c===beamCol) && r===beamRow;
+    }
+    const fill = isTrib ? 'rgba(249,115,22,0.25)' : 'rgba(30,41,59,0.8)';
+    const stroke = isTrib ? '#f97316' : '#334155';
+    s += `<polygon points="${p00.x},${p00.y} ${p10.x},${p10.y} ${p11.x},${p11.y} ${p01.x},${p01.y}" fill="${fill}" stroke="${stroke}" stroke-width="${isTrib?1.5:0.8}"/>`;
+  }
+
+  // Draw the beam itself (thick highlighted line)
+  if(isX){
+    const r = b.row||0;
+    const p0=proj(0,r), p1=proj(nCols,r);
+    // Beam shadow/depth
+    s += `<line x1="${p0.x}" y1="${p0.y+3}" x2="${p1.x}" y2="${p1.y+3}" stroke="#92400e" stroke-width="6" stroke-linecap="round"/>`;
+    s += `<line x1="${p0.x}" y1="${p0.y}" x2="${p1.x}" y2="${p1.y}" stroke="#f59e0b" stroke-width="4" stroke-linecap="round"/>`;
+  } else {
+    const c = b.col||0;
+    const p0=proj(c,0), p1=proj(c,nRows);
+    s += `<line x1="${p0.x}" y1="${p0.y+3}" x2="${p1.x}" y2="${p1.y+3}" stroke="#92400e" stroke-width="6" stroke-linecap="round"/>`;
+    s += `<line x1="${p0.x}" y1="${p0.y}" x2="${p1.x}" y2="${p1.y}" stroke="#f59e0b" stroke-width="4" stroke-linecap="round"/>`;
+  }
+
+  // Draw column nodes
+  for(let r=0;r<=nRows;r++) for(let c=0;c<=nCols;c++){
+    const p=proj(c,r);
+    s += `<rect x="${p.x-4}" y="${p.y-4}" width="8" height="8" fill="#a78bfa" stroke="#c4b5fd" stroke-width="1" rx="1"/>`;
+  }
+
+  // Tributary width annotation arrows
+  if(isX){
+    const beamR = b.row||0;
+    const pBeam=proj(nCols+0.1, beamR);
+    const pTop=proj(nCols+0.1, Math.max(0,beamR-1));
+    const pBot=proj(nCols+0.1, Math.min(nRows,beamR+1));
+    s += `<line x1="${pTop.x}" y1="${pTop.y}" x2="${pBot.x}" y2="${pBot.y}" stroke="#38bdf8" stroke-width="1" stroke-dasharray="3,2"/>`;
+    s += `<text x="${pBeam.x+14}" y="${pBeam.y+4}" fill="#38bdf8" font-size="9" font-family="JetBrains Mono">trib=${r2(trib)}m</text>`;
+  } else {
+    const beamC = b.col||0;
+    const pBeam=proj(beamC, nRows+0.1);
+    const pL=proj(Math.max(0,beamC-1), nRows+0.1);
+    const pR=proj(Math.min(nCols,beamC+1), nRows+0.1);
+    s += `<line x1="${pL.x}" y1="${pL.y}" x2="${pR.x}" y2="${pR.y}" stroke="#38bdf8" stroke-width="1" stroke-dasharray="3,2"/>`;
+    s += `<text x="${pBeam.x}" y="${pBeam.y+14}" fill="#38bdf8" font-size="9" text-anchor="middle" font-family="JetBrains Mono">trib=${r2(trib)}m</text>`;
+  }
+
+  // Span label
+  const mid=proj(nCols/2, 0);
+  s += `<text x="${mid.x}" y="${mid.y-8}" fill="#f59e0b" font-size="9" text-anchor="middle" font-family="JetBrains Mono">L=${r2(isX?spX*nCols:spY*nRows)}m</text>`;
+
+  // Legend
+  s += `<rect x="10" y="240" width="12" height="8" fill="rgba(249,115,22,0.25)" stroke="#f97316" stroke-width="1.5"/>`;
+  s += `<text x="26" y="248" fill="#f97316" font-size="9" font-family="JetBrains Mono">Slab area loading this beam</text>`;
+  s += `<line x1="10" y1="258" x2="22" y2="258" stroke="#f59e0b" stroke-width="3"/>`;
+  s += `<text x="26" y="262" fill="#f59e0b" font-size="9" font-family="JetBrains Mono">Design beam (${b.dir}-direction)</text>`;
+
+  s += '</svg>';
+  return`<div class="dg">${s}<div class="dg-cap">Fig: Orange panels = slab area whose load goes to beam ${b.label}. Tributary width = ${r2(trib)}m each side.</div></div>`;
+}
 function beamFailureExplanation(b){
   if(b.deflOK && b.shearSafe) return '';
   let html='<div style="margin-top:10px;padding:12px;background:rgba(248,113,113,0.06);border:1.5px solid rgba(248,113,113,0.3);border-radius:8px">';
@@ -1015,7 +1095,6 @@ function beamDetail(b){
   const flrLbl=b.isRoof?'Roof':`Floor ${b.floor}`;
   return`
 <div style="border:1px solid ${ok?'rgba(249,115,22,0.3)':'rgba(248,113,113,0.4)'};border-radius:8px;padding:12px;margin-top:4px">
-  ${glossaryBar(['D','b','d','wu','Mmax','Mulim','Ast','Ld','tv','tcmax','trib'])}
   <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap">
     <div style="font-size:13px;font-weight:800;color:var(--orange)">${b.label}</div>
     <div style="font-size:10px;color:var(--txt3)">${flrLbl} | ${b.dir==='X'?'X-direction':'Y-direction'} | L=${b.L}m</div>
@@ -1043,28 +1122,56 @@ function beamDetail(b){
 
   ${sb('B-3','Bending Moment & Shear Force Diagrams',`
     ${svgBeamBMD_SFD(b)}
-    ${fm('Mmax = alpha × wu × L² = '+r2(b.isCantilever?0.5:b.wu/(b.wu||1))+'... × '+r2(b.wu)+'×'+b.L+'²',r2(b.Mmax)+' kN.m','')}
-    ${b.Msup>0?fm('Msup (at support) = alpha_sup × wu × L²',r2(b.Msup)+' kN.m',''):''}
-    ${fm('Mulim = 0.36×xu_max×(1-0.42×xu_max)×fck×b×d² = Mf×'+S.fck+'×'+b.b+'×'+b.d+'²/1e6',r2(b.Mulim)+' kN.m','')}
-    ${vd(b.Mmax<=b.Mulim,'Mmax ('+r2(b.Mmax)+') '+(b.Mmax<=b.Mulim?'≤':'>')+' Mulim ('+r2(b.Mulim)+') → '+(b.Mmax<=b.Mulim?'Singly reinforced OK':'DOUBLY reinforced needed'),b.momUtil)}
+    <div class="cp or" style="font-size:10px;line-height:2.0;margin-bottom:8px">
+      <strong>Formula:</strong> Mmax = α × wu × L²<br>
+      <strong>Where:</strong><br>
+      &nbsp;&nbsp;α = moment coefficient = ${r2(b.isCantilever?0.5:b.Mmax/(b.wu*b.L*b.L))} (${b.isCantilever?'cantilever = 0.5':'IS 456 Table 12'})<br>
+      &nbsp;&nbsp;wu = ${r2(b.wu)} kN/m (factored UDL = 1.5 × total service load)<br>
+      &nbsp;&nbsp;L = ${b.L} m (effective span of beam)<br>
+      <strong>Result:</strong> Mmax = ${r2(b.isCantilever?0.5:b.Mmax/(b.wu*b.L*b.L))} × ${r2(b.wu)} × ${b.L}² = <strong style="color:var(--orange)">${r2(b.Mmax)} kN.m</strong><br><br>
+      <strong>Formula:</strong> Mulim = Mf × fck × b × d² / 10⁶<br>
+      <strong>Where:</strong><br>
+      &nbsp;&nbsp;Mf = ${r2(b.Mulim*1e6/(S.fck*b.b*b.d*b.d))} (limiting factor for Fe${S.fy} steel from IS 456 Annex G)<br>
+      &nbsp;&nbsp;fck = ${S.fck} N/mm² (concrete grade M${S.fck})<br>
+      &nbsp;&nbsp;b = ${b.b} mm (beam width)<br>
+      &nbsp;&nbsp;d = ${b.d} mm (effective depth)<br>
+      <strong>Result:</strong> Mulim = ${r2(b.Mulim*1e6/(S.fck*b.b*b.d*b.d))} × ${S.fck} × ${b.b} × ${b.d}² / 10⁶ = <strong style="color:var(--orange)">${r2(b.Mulim)} kN.m</strong>
+    </div>
+    ${vd(b.Mmax<=b.Mulim,'Mmax ('+r2(b.Mmax)+') '+(b.Mmax<=b.Mulim?'≤':'>')+' Mulim ('+r2(b.Mulim)+') → '+(b.Mmax<=b.Mulim?'Singly reinforced OK':'DOUBLY reinforced needed — or increase depth'),b.momUtil)}
   `,'or')}
 
   ${sb('B-4','Reinforcement & Cross-Section',`
     ${svgBeamCrossSection(b)}
-    ${fm('Ast_bottom = Mu/(0.87fy×d×[1 - Mu/(fck×b×d²×0.48)])',r0(b.Am)+' mm²','')}
+    <div class="cp or" style="font-size:10px;line-height:2.0;margin-bottom:8px">
+      <strong>Formula:</strong> Ast = Mu / (0.87 × fy × d × [1 − Mu/(fck × b × d² × 0.48)])<br>
+      <strong>Where:</strong><br>
+      &nbsp;&nbsp;Mu = ${r2(b.Mmax)} kN.m (design bending moment)<br>
+      &nbsp;&nbsp;fy = ${S.fy} N/mm² (steel yield strength Fe${S.fy})<br>
+      &nbsp;&nbsp;d = ${b.d} mm (effective depth)<br>
+      &nbsp;&nbsp;fck = ${S.fck} N/mm² (concrete grade M${S.fck})<br>
+      &nbsp;&nbsp;b = ${b.b} mm (beam width)<br>
+      <strong>Result:</strong> Ast_required = <strong style="color:var(--orange)">${r0(b.Am)} mm²</strong>
+    </div>
     ${fm('No. of T20 bars = Ast/π×100 = '+r0(b.Am)+'/314',b.nm+' bars (Ap='+r0(b.Ap)+' mm²)','IS 456 Cl 26.5.1.2')}
-    ${b.ns>0?fm('Top bars (at support)',b.ns+' bars',''):''}
+    ${b.ns>0?fm('Top bars (at support — compression/hogging)',b.ns+' bars',''):''}
     ${fm('pt = Ap/(b×d) × 100 = '+r0(b.Ap)+'/('+b.b+'×'+b.d+')×100',r2(b.pt)+'%','')}
     ${fm('Ld = 0.87fy×φ/(4τbd) = 0.87×'+S.fy+'×20/(4×1.6×1.25×√'+S.fck+')',r0(b.Ld)+' mm','IS 456 Cl 26.2')}
   `,'or')}
 
-  ${sb('B-5','Shear',`
-    ${fm('RA = '+(b.isCantilever?'wu×L':'0.55×wu×L')+' = '+(b.isCantilever?'wu':'0.55×'+r2(b.wu))+'×'+b.L,r2(b.RA)+' kN','')}
-    ${fm('tv = RA×1000/(b×d) = '+r2(b.RA)+'×1000/('+b.b+'×'+b.d+')',r2(b.tv)+' N/mm²','')}
-    ${fm('tc (from Table 19, pt='+r2(b.pt)+'%)',r2(b.tc)+' N/mm²','IS 456 Table 19')}
-    ${fm('tc_max (Table 20, M'+S.fck+')',r2(b.tcmax)+' N/mm²','IS 456 Table 20')}
-    ${vd(b.shearSafe,'tv ('+r2(b.tv)+') '+(b.shearSafe?'≤':'>')+' tc_max ('+r2(b.tcmax)+') → '+(b.shearSafe?'OK':'FAIL — increase b×d'),b.shearUtil)}
-    ${fm('Stirrups (conf.zone): D8@'+b.svd+'mm | Midspan: D8@'+b.sv+'mm','Lo=max(2D,L/4)='+r0(Math.max(2*b.D,b.L*1000/4))+'mm','IS 13920 Cl 6.3.5')}
+  ${sb('B-5','Shear Design',`
+    <div class="cp or" style="font-size:10px;line-height:2.0;margin-bottom:8px">
+      <strong>Formula:</strong> τv = Vu / (b × d)<br>
+      <strong>Where:</strong><br>
+      &nbsp;&nbsp;Vu = end shear = ${b.isCantilever?'wu × L':'0.55 × wu × L'} = ${b.isCantilever?r2(b.wu)+'×'+b.L:'0.55×'+r2(b.wu)+'×'+b.L} = <strong>${r2(b.RA)} kN</strong><br>
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(${b.isCantilever?'cantilever: full wu×L at support':'IS 456 Table 12 shear coefficient 0.55 for continuous beam'})<br>
+      &nbsp;&nbsp;b = ${b.b} mm (beam width)<br>
+      &nbsp;&nbsp;d = ${b.d} mm (effective depth)<br>
+      <strong>Result:</strong> τv = ${r2(b.RA)} × 1000 / (${b.b} × ${b.d}) = <strong style="color:var(--orange)">${r2(b.tv)} N/mm²</strong><br><br>
+      &nbsp;&nbsp;τc = ${r2(b.tc)} N/mm² (concrete shear capacity from IS 456 Table 19 at pt=${r2(b.pt)}%)<br>
+      &nbsp;&nbsp;τc,max = ${r2(b.tcmax)} N/mm² (maximum limit for M${S.fck} from IS 456 Table 20)
+    </div>
+    ${vd(b.shearSafe,'τv ('+r2(b.tv)+') '+(b.shearSafe?'≤':'>')+' τc,max ('+r2(b.tcmax)+') → '+(b.shearSafe?'Shear OK':'FAIL — increase b or D'),b.shearUtil)}
+    ${fm('Stirrups (confinement zone Lo): D8@'+b.svd+'mm | Midspan: D8@'+b.sv+'mm','Lo=max(2D,L/4)='+r0(Math.max(2*b.D,b.L*1000/4))+'mm','IS 13920 Cl 6.3.5')}
   `,'or')}
 
   ${sb('B-6','Deflection',`
@@ -1211,7 +1318,6 @@ function colDetail(c){
   const ok=c.safe;
   return`
 <div style="border:1px solid ${ok?'rgba(167,139,250,0.3)':'rgba(248,113,113,0.4)'};border-radius:8px;padding:12px">
-  ${glossaryBar(['Pu','Ps','Pcap','Ag','Ac','Asc','fck','fy','pt','leff','emin','Lo'])}
   <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap">
     <div style="font-size:13px;font-weight:800;color:#a78bfa">${c.label}</div>
     <div style="font-size:10px;color:var(--txt3)">
@@ -1435,7 +1541,6 @@ function ftgDetail(f){
   const ok=f.punch_ok&&f.ow_ok&&f.Ld_ok;
   return`
 <div style="border:1px solid ${ok?'rgba(251,191,36,0.3)':'rgba(248,113,113,0.4)'};border-radius:8px;padding:12px">
-  ${glossaryBar(['Bf','qu','Ps','Pu','Vpu','tvp','tcp','Lda','Ldr','fck'])}
   <div style="font-size:13px;font-weight:800;color:#fbbf24;margin-bottom:6px">${f.label||'FTG-'+f.baseLabel}</div>
   ${vd(ok,ok?'All checks PASS OK':'One or more checks FAIL — REVISE')}
 
@@ -1448,35 +1553,62 @@ function ftgDetail(f){
   `,'ye')}
 
   ${sb('F-2','Footing Depth',`
-    ${fm('Projection from col face = (Bf×1000 - col_size)/4 = ('+r2(f.Bf*1000)+' - '+f.colSize+')/4',r0((f.Bf*1000-f.colSize)/4)+' mm','')}
-    ${fm('D = max('+( S.ftgMinD||300)+', projection+cover+8) rounded to 25mm',r0(f.D)+' mm','IS 456 Cl 34.1.2')}
-    ${fm('d = D - cover - bar = '+r0(f.D)+' - '+S.coverFtg+' - 8',r0(f.d)+' mm','')}
-    ${fm('Factored qu_f = 1.5 × qu',r2(f.quf)+' kN/m²','')}
+    <div class="cp ye" style="font-size:10px;line-height:2.0;margin-bottom:8px">
+      <strong>Formula:</strong> D = max(min depth, projection + cover + bar)<br>
+      <strong>Where:</strong><br>
+      &nbsp;&nbsp;Projection = (Bf × 1000 − col_size) / 4 = (${r2(f.Bf*1000)} − ${f.colSize}) / 4 = <strong>${r0((f.Bf*1000-f.colSize)/4)} mm</strong><br>
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(controls cantilever bending and shear demand on footing)<br>
+      &nbsp;&nbsp;cover = ${S.coverFtg} mm (concrete cover to reinforcement in footing)<br>
+      <strong>Result:</strong> D = ${r0(f.D)} mm (rounded up to nearest 25mm, min ${S.ftgMinD||300}mm)<br>
+      &nbsp;&nbsp;d = D − cover − bar = ${r0(f.D)} − ${S.coverFtg} − 8 = <strong style="color:#fbbf24">${r0(f.d)} mm</strong> (effective depth)<br>
+      &nbsp;&nbsp;Factored qu_f = 1.5 × qu = 1.5 × ${r2(f.qu)} = <strong>${r2(f.quf)} kN/m²</strong> (factored upward soil pressure for section design)
+    </div>
   `,'ye')}
 
   ${sb('F-3 ★','Punching Shear (IS 456 Cl 31.6)',`
-    ${fm('Critical perimeter bo = 4×(col_size + d) = 4×('+f.colSize+'+'+r0(f.d)+')',r0(f.bo)+' mm','IS 456 Cl 31.6.1')}
-    ${fm('Vpu = Pu - quf×(col+d)² = '+r2(f.Pu)+' - '+r2(f.quf)+'×'+r2((f.colSize/1000+f.d/1000)**2)+'×1000',r2(f.Vpu)+' kN','')}
-    ${fm('tvp = Vpu×1000/(bo×d) = '+r2(f.Vpu)+'×1000/('+r0(f.bo)+'×'+r0(f.d)+')',r2(f.tvp)+' N/mm²','')}
-    ${fm('tcp = 0.25×√fck = 0.25×√'+S.fck,r2(f.tcp)+' N/mm²','IS 456 Cl 31.6.3')}
-    ${vd(f.punch_ok,'tvp ('+r2(f.tvp)+') '+(f.punch_ok?'≤':'>')+' tcp ('+r2(f.tcp)+') → '+(f.punch_ok?'SAFE':'FAIL — increase d'),f.tvp/f.tcp)}
+    <div class="cp ye" style="font-size:10px;line-height:2.0;margin-bottom:8px">
+      <strong>What is punching shear?</strong> The column punches DOWN through the footing like a cookie cutter. The failure perimeter is a square at d/2 from the column face on all four sides.<br><br>
+      <strong>Formula:</strong> τvp = Vpu × 1000 / (bo × d)<br>
+      <strong>Where:</strong><br>
+      &nbsp;&nbsp;bo = 4 × (col_size + d) = 4 × (${f.colSize} + ${r0(f.d)}) = <strong>${r0(f.bo)} mm</strong> (critical perimeter at d/2 from column face)<br>
+      &nbsp;&nbsp;Vpu = Pu − qu_f × (col+d)² = ${r2(f.Pu)} − ${r2(f.quf)} × ${r2((f.colSize/1000+f.d/1000)**2)} × 1000 = <strong>${r2(f.Vpu)} kN</strong><br>
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(net upward punch = total load minus upward pressure inside the critical perimeter)<br>
+      &nbsp;&nbsp;Pu = ${r2(f.Pu)} kN (factored column load), d = ${r0(f.d)} mm<br>
+      <strong>Result:</strong> τvp = ${r2(f.Vpu)} × 1000 / (${r0(f.bo)} × ${r0(f.d)}) = <strong style="color:#fbbf24">${r2(f.tvp)} N/mm²</strong><br>
+      &nbsp;&nbsp;Limit: τcp = 0.25×√fck = 0.25×√${S.fck} = <strong>${r2(f.tcp)} N/mm²</strong> (IS 456 Cl 31.6.3)
+    </div>
+    ${vd(f.punch_ok,'τvp ('+r2(f.tvp)+') '+(f.punch_ok?'≤':'>')+' τcp ('+r2(f.tcp)+') → '+(f.punch_ok?'SAFE — punching shear OK':'FAIL — increase footing depth d'),f.tvp/f.tcp)}
   `,'ye')}
 
   ${sb('F-4 ★','One-Way Shear (IS 456 Cl 34.2.4)',`
-    ${fm('Critical at d from col face; proj = (Bf-col)/2 - d',r2(Math.max(0,(f.Bf*1000-f.colSize)/2-f.d))+' mm','')}
-    ${fm('Vow = quf×Bf×proj/1000',r2(f.Vow)+' kN','')}
-    ${fm('tvow = Vow×1000/(Bf×1000×d)',r2(f.tvow)+' N/mm²','')}
-    ${fm('tcow = 0.36 N/mm² (IS 456 Table 19, pt≈0.15%)',r2(f.tcow)+' N/mm²','')}
-    ${vd(f.ow_ok,'tvow ('+r2(f.tvow)+') '+(f.ow_ok?'≤':'>')+' tcow ('+r2(f.tcow)+') → '+(f.ow_ok?'SAFE':'FAIL — increase D'),f.tvow/f.tcow)}
+    <div class="cp ye" style="font-size:10px;line-height:2.0;margin-bottom:8px">
+      <strong>What is one-way shear?</strong> The footing bends like a cantilever slab from each column face outward. Shear failure can occur across the full width at distance d from column face.<br><br>
+      <strong>Formula:</strong> τvow = Vow × 1000 / (Bf × 1000 × d)<br>
+      <strong>Where:</strong><br>
+      &nbsp;&nbsp;Critical section is at d = ${r0(f.d)} mm from column face (IS 456 Cl 34.2.4)<br>
+      &nbsp;&nbsp;Projection to critical section = (Bf − col)/2 − d = ${r2(Math.max(0,(f.Bf*1000-f.colSize)/2-f.d))} mm<br>
+      &nbsp;&nbsp;Vow = qu_f × Bf × projection / 1000 = ${r2(f.quf)} × ${r2(f.Bf)} × ${r2(Math.max(0,(f.Bf*1000-f.colSize)/2-f.d))}/1000 = <strong>${r2(f.Vow)} kN</strong><br>
+      &nbsp;&nbsp;Bf = ${r2(f.Bf)} m (footing width), d = ${r0(f.d)} mm<br>
+      <strong>Result:</strong> τvow = ${r2(f.Vow)} × 1000 / (${r2(f.Bf*1000)} × ${r0(f.d)}) = <strong style="color:#fbbf24">${r2(f.tvow)} N/mm²</strong><br>
+      &nbsp;&nbsp;Limit: τcow = ${r2(f.tcow)} N/mm² (IS 456 Table 19 at pt ≈ 0.15%)
+    </div>
+    ${vd(f.ow_ok,'τvow ('+r2(f.tvow)+') '+(f.ow_ok?'≤':'>')+' τcow ('+r2(f.tcow)+') → '+(f.ow_ok?'SAFE — one-way shear OK':'FAIL — increase footing depth D'),f.tvow/f.tcow)}
   `,'ye')}
 
   ${sb('F-5','Bending & Steel',`
-    ${fm('x = (Bf - col/1000)/2 = ('+r2(f.Bf)+' - '+r2(f.colSize/1000)+')/2',r2((f.Bf-f.colSize/1000)/2)+' m','')}
-    ${fm('Mu = quf×Bf×x²/2',r2(f.Mu)+' kN.m','')}
-    ${fm('Af = Ast from Mu (or 0.12%Bt min)',r0(f.Af)+' mm² | D'+f.dBf+'@'+f.spf+'mm both ways','IS 456 Cl 34.3')}
+    <div class="cp ye" style="font-size:10px;line-height:2.0;margin-bottom:8px">
+      <strong>Formula:</strong> Mu = qu_f × Bf × x² / 2 &nbsp; (cantilever bending moment at column face)<br>
+      <strong>Where:</strong><br>
+      &nbsp;&nbsp;x = cantilever arm = (Bf − col_size/1000) / 2 = (${r2(f.Bf)} − ${r2(f.colSize/1000)}) / 2 = <strong>${r2((f.Bf-f.colSize/1000)/2)} m</strong><br>
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(the footing overhang acts as a cantilever slab from column face to edge)<br>
+      &nbsp;&nbsp;qu_f = ${r2(f.quf)} kN/m² (factored upward soil pressure), Bf = ${r2(f.Bf)} m<br>
+      <strong>Result:</strong> Mu = ${r2(f.quf)} × ${r2(f.Bf)} × ${r2((f.Bf-f.colSize/1000)/2)}² / 2 = <strong style="color:#fbbf24">${r2(f.Mu)} kN.m</strong><br>
+      &nbsp;&nbsp;Ast = ${r0(f.Af)} mm² → Provide D${f.dBf}@${f.spf}mm both ways (IS 456 Cl 34.3)
+    </div>
     ${fm('Ld_req (90° hook in footing)',r0(f.Ldr)+' mm | Ld_avail = '+r0(f.Lda)+' mm','IS 456 Cl 26.2.2')}
     ${vd(f.Ld_ok,'Ld_avail ('+r0(f.Lda)+') '+(f.Ld_ok?'≥':'<')+' Ld_req ('+r0(f.Ldr)+') → '+(f.Ld_ok?'OK':'FAIL — see below'))}
   `,'ye')}
+
 
   ${!f.Ld_ok?`
   <div style="margin-top:10px;padding:12px;background:rgba(248,113,113,0.06);border:1.5px solid rgba(248,113,113,0.3);border-radius:8px">

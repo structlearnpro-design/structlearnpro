@@ -384,22 +384,113 @@ const FM_WHY = {
   'Sa/g':         'Spectral acceleration Sa/g from IS 1893 Fig. 2 response spectrum. Depends on building period Ta and soil type. For short stiff buildings Sa/g = 2.5 (peak). Reduces for longer periods.',
 };
 
-let _fmCount = 0;
+// Auto-description for formula results — shown as grey line below each fm() row
+const FM_DESC = {
+  // Geometry
+  'lx':         'lx = shorter span of the slab panel',
+  'ly':         'ly = longer span of the slab panel',
+  'ly/lx':      'ly/lx = aspect ratio — determines if slab is one-way or two-way',
+  'l/d':        'l/d = span-to-depth ratio — IS 456 deflection check (limit 26 for slabs)',
+  'Min D':      'D = minimum overall slab/beam depth to control deflection',
+  'leff':       'leff = effective length of column used for slenderness check',
+  'Slenderness':'slenderness = leff/size — if ≤ 12, column is SHORT (no extra moment needed)',
+  // Loads
+  'DL_slab':    'DL_slab = self-weight of concrete slab = thickness × 25 kN/m³',
+  'Floor finish':'floor finish + partitions = superimposed dead load on slab',
+  'Live Load':  'LL = live load from IS 875 Part 2 (2 kN/m² residential, 3 kN/m² office)',
+  'wu':         'wu = factored load = 1.5 × (DL + LL) — the 1.5 is IS 456 safety factor',
+  'w_slab':     'w_slab = slab load transferred to beam over its tributary width',
+  'w_sw':       'w_sw = beam self-weight = b × D × 25 kN/m³ (concrete density)',
+  'w_wall':     'w_wall = wall load on beam = wall height × wall thickness × 20 kN/m³',
+  'Tributary':  'tributary width = half the slab span on each side of the beam',
+  'Ps per floor':'Ps = service load per floor = (DL + 0.25LL) × area + wall load',
+  'Ps = ':      'Ps = total service load on column from ALL floors above (unfactored)',
+  'Pu = 1.5':   'Pu = factored load = 1.5 × Ps — used for designing the concrete section',
+  // Moments
+  'Mmax':       'Mmax = maximum bending moment in beam = wu × L² / 8 (for simple support)',
+  'Msup':       'Msup = hogging moment at support — for continuous beams from IS 456 Table 12',
+  'Mulim':      'Mulim = limiting moment — if Mu > Mulim, beam needs compression steel or bigger depth',
+  'Mx':         'Mx = design moment in short span direction (IS 456 Table 26 coefficient αx)',
+  'My':         'My = design moment in long span direction (IS 456 Table 26 coefficient αy)',
+  'Mu':         'Mu = factored design moment the member must resist',
+  // Steel
+  'Ast':        'Ast = area of tension steel required to resist the bending moment',
+  'Asc_req':    'Asc_req = steel area needed from structural demand (can be zero if Pu is small)',
+  'Asc_min':    'Asc_min = minimum 0.8% of column area — prevents brittle failure (IS 456 Cl 26.5.3)',
+  'Asc_max':    'Asc_max = maximum 4% of column area — prevents congestion (IS 456 Cl 26.5.3)',
+  'Provide:':   'bars provided — actual steel area ≥ required area; pt = steel percentage',
+  'Aprov':      'Aprov = steel area actually provided by the chosen bar arrangement',
+  'pt':         'pt = steel percentage = (Asc/Ag) × 100 — must be 0.8% to 4% for columns',
+  // Shear
+  'Vu':         'Vu = factored shear force at beam end = wu × L / 2',
+  'tv':         'τv = nominal shear stress = Vu / (b × d) — must be < τc,max',
+  'tc ':        'τc = concrete shear capacity from IS 456 Table 19 based on steel % and grade',
+  'tcmax':      'τc,max = maximum shear stress concrete can take — if exceeded, section is too small',
+  'Vus':        'Vus = shear carried by stirrups = Vu − τc × b × d',
+  'Sv':         'Sv = stirrup spacing — closer near supports (Lo zone) where shear is highest',
+  // Column
+  'Required Ag':'Ag = gross area needed — from axial load formula Pu = 0.4fck·Ac + 0.67fy·Asc',
+  'Size = ':    'column size rounded up to nearest 25mm — standard Indian formwork sizes',
+  'Pcap':       'Pcap = column capacity (IS 456 Cl 39.3) = 0.4·fck·Ac + 0.67·fy·Asc',
+  'emin':       'emin = minimum eccentricity of load (IS 456 Cl 25.4) — accounts for construction imperfection',
+  'Lo =':       'Lo = confinement zone at top and bottom of column — closer ties required here (IS 13920)',
+  'tie spacing':'tie spacing — general zone uses larger spacing; confinement zone Lo uses closer spacing',
+  // Footing
+  'B = ':       'B = footing size = √(Ps / net SBC) — use service load for soil pressure',
+  'qu':         'qu = factored upward soil pressure = Pu / B² — used to design footing depth and steel',
+  'Vpu':        'Vpu = punching shear force around column — acts on perimeter at d/2 from column face',
+  'tvp':        'τvp = punching shear stress — must be < 0.25√fck (IS 456 Cl 31.6.3)',
+  'tcp':        'τcp = permissible punching shear = 0.25√fck — concrete punching resistance',
+  'ow_shear':   'one-way shear — acts across full footing width at distance d from column face',
+  'Ld_req':     'Ld = development length — minimum bar length inside footing to prevent bar pullout',
+  'Lda':        'Lda = available straight length = (B − col size)/2 − cover',
+  // Seismic
+  'Z ':         'Z = seismic zone factor (IS 1893 Table 3) — Zone II: 0.10, III: 0.16, IV: 0.24, V: 0.36',
+  'I ':         'I = importance factor (1.0 for residential, 1.5 for hospitals and schools)',
+  'R ':         'R = response reduction factor (5.0 for ductile RC moment frames per IS 13920)',
+  'Ta':         'Ta = fundamental time period of building — longer period = less seismic force',
+  'Sa/g':       'Sa/g = spectral acceleration from IS 1893 Fig. 2 — depends on soil type and period',
+  'Ah':         'Ah = design seismic coefficient = Z × Sa/g / (2 × R × I)',
+  'Vb = Ah':    'Vb = total base shear = Ah × W — horizontal force the building must resist',
+  'Qi':         'Qi = seismic force at floor i — upper floors get more force (inverted triangle pattern)',
+  // Wind
+  'Vb (Zone':   'Vb = basic wind speed from IS 875 Part 3 map — peak gust at 10m in open terrain',
+  'k1':         'k1 = risk coefficient (1.0 for 50-year design life)',
+  'k2':         'k2 = terrain & height factor — increases with height, decreases in sheltered terrain',
+  'k3':         'k3 = topography factor (1.0 for flat ground, higher for hills and ridges)',
+  'Vz':         'Vz = design wind speed at height z = Vb × k1 × k2 × k3',
+  'pz':         'pz = design wind pressure = 0.6 × Vz² / 1000 kN/m²',
+  'Cpe':        'Cpe = external pressure coefficient — +ve pushes into surface, −ve is suction',
+  'Net pressure':'net wind pressure = (Cpe + Cpi) × pz — worst combination of internal and external',
+  // Stair
+  'R (riser':   'R = riser height — vertical step height, typically 150–175mm',
+  'T (tread':   'T = tread width — horizontal step depth, typically 250–300mm',
+  'waist':      'waist = structural slab thickness along stair slope — carries the load',
+  'Leff stair': 'effective span of stair = horizontal distance between supports',
+};
+
 function fm(eq, res, ref='') {
-  // Look up auto-WHY explanation
-  let why = '';
   const eqStr = String(eq||'');
+  // Look up WHY explanation
+  let why = '';
   for (const [key, explanation] of Object.entries(FM_WHY)) {
     if (eqStr.includes(key)) { why = explanation; break; }
   }
+  // Look up short description for the result line
+  let desc = '';
+  for (const [key, d] of Object.entries(FM_DESC)) {
+    if (eqStr.includes(key)) { desc = d; break; }
+  }
   const refHtml = ref ? clauseRef(ref) : '';
+  const descHtml = desc ? `<div style="font-size:9.5px;color:#64748b;margin-top:2px;padding-left:4px;font-style:italic">↳ ${desc}</div>` : '';
   if (!why) {
-    return `<div class="fm">${eq} <span class="r">= ${res}</span>${refHtml ? ' '+refHtml : ''}</div>`;
+    return `<div class="fm">${eq} <span class="r">= ${res}</span>${refHtml ? ' '+refHtml : ''}${descHtml}</div>`;
   }
   const id = 'fw' + (++_fmCount);
   return `<div class="fm">${eq} <span class="r">= ${res}</span>${refHtml ? ' '+refHtml : ''}
     <button onclick="var e=document.getElementById('${id}');if(e)e.style.display=e.style.display==='none'?'block':'none'" style="margin-left:8px;padding:1px 7px;background:rgba(56,189,248,0.12);border:1px solid rgba(56,189,248,0.35);border-radius:4px;color:#38bdf8;cursor:pointer;font-size:9px;font-weight:700;vertical-align:middle">WHY?</button>
     <div id="${id}" style="display:none;margin-top:6px;padding:8px 12px;background:rgba(14,165,233,0.07);border-left:2px solid #0ea5e9;border-radius:0 6px 6px 0;font-size:10.5px;color:var(--txt2);line-height:1.8">${why}</div>
+    ${descHtml}
   </div>`;
 }
 
