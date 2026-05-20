@@ -10790,9 +10790,9 @@ async function startConstructionPDF() {
     LC(0,0,100);LW(0.4);FC(242,244,255);Rect(DR_X,exSchY,DR_W/2-4,30,'FD');
     F(7,'bold',0,0,100);Txt('EXCAVATION SCHEDULE:',DR_X+3,exSchY+6);
     F(6.5,'normal',0,0,0);
-    [{lbl:'C1 CORNER',f:f1},{lbl:'C2 EDGE',f:f2},{lbl:'C3 INTERIOR',f:f3}].forEach(({lbl,f2},ri)=>{
-      const exSz=((f2.Bf||1)+0.4);
-      Txt(lbl+': Footing '+ftin(f2.Bf||1)+' | Excav. '+ftin(exSz)+' x '+ftin(exSz)+' x '+ftin(S.ftgDepth)+' deep',DR_X+3,exSchY+13+ri*6);
+    [{lbl:'C1 CORNER',f:f1},{lbl:'C2 EDGE',f:f2},{lbl:'C3 INTERIOR',f:f3}].forEach(({lbl,f},ri)=>{
+      const exSz=((f?.Bf||1)+0.4);
+      Txt(lbl+': Footing '+ftin(f?.Bf||1)+' | Excav. '+ftin(exSz)+' x '+ftin(exSz)+' x '+ftin(S.ftgDepth)+' deep',DR_X+3,exSchY+13+ri*6);
     });
 
     // Depth section note
