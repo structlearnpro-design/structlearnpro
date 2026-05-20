@@ -953,6 +953,351 @@ function svgSlabSection(p){
   return '<div class="dg">' + lines.join('') + '<div class="dg-cap">' + cap + '</div></div>';
 }
 
+
+// ── BEAM LONGITUDINAL DIAGRAM ────────────────────────────────────
+// Shows: elevation view with beam outline, bar zones, stirrup spacing,
+// cover, D, L, tension/compression zones, lap positions
+function svgBeamLongitudinal(b) {
+  var L = b.L, bw = b.b, D = b.D, d = b.d;
+  var cover = S.coverBeam || 40;
+  var nm = b.nm || 2, ns = b.ns || 2;
+  var diaBotBar = 20, diaTopBar = 20, diaStirrup = 8;
+  var sv = b.sv || 200, svd = b.svd || 100;
+  var Ld = b.Ld || 500; // development length in mm
+  var Lo = Math.max(2 * D, L * 1000 / 4); // confinement zone
+  var isCant = b.isCantilever, isTrf = b.isTransfer;
+
+  var W = 680, padL = 60, padR = 60, padT = 100, padB = 130;
+  var beamW = W - padL - padR;
+  var beamH = Math.max(60, Math.min(110, D * 0.5));
+  var scaleL = beamW / (L * 1000); // px per mm
+  var scaleD = beamH / D;
+  var sx = padL, sy = padT;
+  var ex = W - padR;
+  var totalH = padT + beamH + padB;
+
+  // Computed positions
+  var coverPx = cover * scaleD;
+  var botBarY = sy + beamH - coverPx - diaStirrup * scaleD - diaBotBar * scaleD / 2;
+  var topBarY = sy + coverPx + diaStirrup * scaleD + diaTopBar * scaleD / 2;
+  var LoPx = Lo * scaleL;
+  var LdPx = Ld * scaleL;
+
+  var lines = [];
+  lines.push('<svg viewBox="0 0 ' + W + ' ' + totalH + '" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block;background:#0a0f1e;border-radius:8px">');
+
+  // Title
+  lines.push('<text x="' + (W/2) + '" y="16" fill="#fb923c" font-size="11" font-weight="bold" text-anchor="middle" font-family="JetBrains Mono">BEAM ELEVATION — ' + b.label + ' (L=' + L + 'm, ' + bw + '×' + D + 'mm)</text>');
+  lines.push('<text x="' + (W/2) + '" y="30" fill="#64748b" font-size="9" text-anchor="middle" font-family="JetBrains Mono">' + b.endCond.split('(')[0].trim() + ' | wu=' + r2(b.wu) + ' kN/m | Mmax=' + r2(b.Mmax) + ' kN.m | RA=' + r2(b.RA) + ' kN</text>');
+  lines.push('<text x="' + (W/2) + '" y="44" fill="#475569" font-size="8.5" text-anchor="middle" font-family="JetBrains Mono">Stirrups: D' + diaStirrup + '@' + svd + 'mm (confinement zone Lo) | D' + diaStirrup + '@' + sv + 'mm (midspan) | Ld=' + r0(Ld) + 'mm</text>');
+
+  // ── SUPPORTS ────────────────────────────────────────────────────
+  var suppW = 28, suppH = beamH + 20;
+  // Left support
+  lines.push('<rect x="' + (sx - suppW) + '" y="' + (sy - 10) + '" width="' + suppW + '" height="' + suppH + '" fill="rgba(71,85,105,0.5)" stroke="#475569" stroke-width="1"/>');
+  // Right support
+  lines.push('<rect x="' + ex + '" y="' + (sy - 10) + '" width="' + suppW + '" height="' + suppH + '" fill="rgba(71,85,105,0.5)" stroke="#475569" stroke-width="1"/>');
+
+  // ── BEAM CONCRETE BODY ──────────────────────────────────────────
+  lines.push('<rect x="' + sx + '" y="' + sy + '" width="' + beamW + '" height="' + beamH + '" fill="rgba(100,116,139,0.1)" stroke="#475569" stroke-width="1.5"/>');
+
+  // Concrete hatch
+  lines.push('<clipPath id="bmClip"><rect x="' + sx + '" y="' + sy + '" width="' + beamW + '" height="' + beamH + '"/></clipPath>');
+  lines.push('<g clip-path="url(#bmClip)" stroke="rgba(100,116,139,0.15)" stroke-width="0.6">');
+  for (var hi = -beamH; hi < beamW + beamH; hi += 14) {
+    lines.push('<line x1="' + (sx + hi) + '" y1="' + sy + '" x2="' + (sx + hi + beamH) + '" y2="' + (sy + beamH) + '"/>');
+  }
+  lines.push('</g>');
+
+  // Cover dashed lines (top and bottom)
+  lines.push('<line x1="' + (sx + 4) + '" y1="' + (sy + coverPx) + '" x2="' + (ex - 4) + '" y2="' + (sy + coverPx) + '" stroke="rgba(99,102,241,0.3)" stroke-width="0.8" stroke-dasharray="4,3"/>');
+  lines.push('<line x1="' + (sx + 4) + '" y1="' + (sy + beamH - coverPx) + '" x2="' + (ex - 4) + '" y2="' + (sy + beamH - coverPx) + '" stroke="rgba(99,102,241,0.3)" stroke-width="0.8" stroke-dasharray="4,3"/>');
+
+  // ── CONFINEMENT ZONES (Lo from each end) ─────────────────────
+  // Left zone
+  lines.push('<rect x="' + sx + '" y="' + sy + '" width="' + Math.min(LoPx, beamW * 0.45) + '" height="' + beamH + '" fill="rgba(248,113,113,0.05)" stroke="none"/>');
+  lines.push('<line x1="' + (sx + Math.min(LoPx, beamW * 0.45)) + '" y1="' + sy + '" x2="' + (sx + Math.min(LoPx, beamW * 0.45)) + '" y2="' + (sy + beamH) + '" stroke="#f87171" stroke-width="0.8" stroke-dasharray="3,3"/>');
+  // Right zone
+  lines.push('<rect x="' + (ex - Math.min(LoPx, beamW * 0.45)) + '" y="' + sy + '" width="' + Math.min(LoPx, beamW * 0.45) + '" height="' + beamH + '" fill="rgba(248,113,113,0.05)" stroke="none"/>');
+  lines.push('<line x1="' + (ex - Math.min(LoPx, beamW * 0.45)) + '" y1="' + sy + '" x2="' + (ex - Math.min(LoPx, beamW * 0.45)) + '" y2="' + (sy + beamH) + '" stroke="#f87171" stroke-width="0.8" stroke-dasharray="3,3"/>');
+
+  // ── STIRRUPS ────────────────────────────────────────────────────
+  // Dense stirrups in confinement zone
+  var LoPx2 = Math.min(LoPx, beamW * 0.45);
+  var svdPx = svd * scaleL, svPx = sv * scaleL;
+  var stY1 = sy + coverPx + diaStirrup * scaleD / 2;
+  var stH = beamH - 2 * coverPx - diaStirrup * scaleD;
+
+  // Left zone stirrups
+  for (var xi = svdPx; xi < LoPx2; xi += svdPx) {
+    lines.push('<rect x="' + r2(sx + xi - 1) + '" y="' + r2(stY1) + '" width="2" height="' + r2(stH) + '" fill="#34d399" opacity="0.7"/>');
+  }
+  // Midspan stirrups
+  var midStart = LoPx2, midEnd = beamW - LoPx2;
+  for (var xi2 = midStart + svPx; xi2 < midEnd; xi2 += svPx) {
+    lines.push('<rect x="' + r2(sx + xi2 - 1) + '" y="' + r2(stY1) + '" width="2" height="' + r2(stH) + '" fill="#34d399" opacity="0.4"/>');
+  }
+  // Right zone stirrups
+  for (var xi3 = svdPx; xi3 < LoPx2; xi3 += svdPx) {
+    lines.push('<rect x="' + r2(ex - xi3 - 1) + '" y="' + r2(stY1) + '" width="2" height="' + r2(stH) + '" fill="#34d399" opacity="0.7"/>');
+  }
+
+  // ── BOTTOM BARS (tension — full length) ─────────────────────────
+  var barR = Math.max(3, diaBotBar * scaleD / 2);
+  for (var bi = 0; bi < nm; bi++) {
+    var byOff = bi * (diaBotBar + 4) * scaleD;
+    lines.push('<line x1="' + (sx + LdPx) + '" y1="' + r2(botBarY - byOff) + '" x2="' + (ex - LdPx) + '" y2="' + r2(botBarY - byOff) + '" stroke="#34d399" stroke-width="' + r2(barR * 1.6) + '" stroke-linecap="round"/>');
+  }
+  // Bottom bar hooks / Ld at ends
+  lines.push('<line x1="' + sx + '" y1="' + r2(botBarY) + '" x2="' + (sx + LdPx) + '" y2="' + r2(botBarY) + '" stroke="#34d399" stroke-width="' + r2(barR * 0.8) + '" stroke-dasharray="3,3" opacity="0.5"/>');
+  lines.push('<line x1="' + (ex - LdPx) + '" y1="' + r2(botBarY) + '" x2="' + ex + '" y2="' + r2(botBarY) + '" stroke="#34d399" stroke-width="' + r2(barR * 0.8) + '" stroke-dasharray="3,3" opacity="0.5"/>');
+
+  // ── TOP BARS (compression/hogging — support zones only) ──────────
+  var topBarR = Math.max(3, diaTopBar * scaleD / 2);
+  var topExtPx = Math.max(LdPx * 1.5, LoPx2); // extend at least Ld past confinement zone
+  for (var ti = 0; ti < ns; ti++) {
+    var tyOff = ti * (diaTopBar + 4) * scaleD;
+    // Left zone top bars
+    lines.push('<line x1="' + sx + '" y1="' + r2(topBarY + tyOff) + '" x2="' + (sx + topExtPx) + '" y2="' + r2(topBarY + tyOff) + '" stroke="#f87171" stroke-width="' + r2(topBarR * 1.4) + '" stroke-linecap="round"/>');
+    // Right zone top bars
+    lines.push('<line x1="' + (ex - topExtPx) + '" y1="' + r2(topBarY + tyOff) + '" x2="' + ex + '" y2="' + r2(topBarY + tyOff) + '" stroke="#f87171" stroke-width="' + r2(topBarR * 1.4) + '" stroke-linecap="round"/>');
+  }
+
+  // ── TRANSFER BEAM: Point load marker ─────────────────────────
+  if (isTrf && b.transferPL) {
+    var ptX = sx + b.transferPL.a * 1000 * scaleL;
+    lines.push('<line x1="' + r2(ptX) + '" y1="' + (sy - 25) + '" x2="' + r2(ptX) + '" y2="' + sy + '" stroke="#f59e0b" stroke-width="2.5"/>');
+    lines.push('<polygon points="' + r2(ptX) + ',' + sy + ' ' + r2(ptX - 6) + ',' + (sy - 12) + ' ' + r2(ptX + 6) + ',' + (sy - 12) + '" fill="#f59e0b"/>');
+    lines.push('<text x="' + r2(ptX) + '" y="' + (sy - 30) + '" fill="#f59e0b" font-size="8.5" text-anchor="middle" font-family="JetBrains Mono">P_u=' + r2(b.transferPL.P_u) + 'kN</text>');
+  }
+
+  // ── DIMENSION LINES ─────────────────────────────────────────────
+  // Total span L
+  var dimY = sy + beamH + 16;
+  lines.push('<line x1="' + sx + '" y1="' + dimY + '" x2="' + ex + '" y2="' + dimY + '" stroke="#f59e0b" stroke-width="0.8"/>');
+  lines.push('<line x1="' + sx + '" y1="' + (dimY - 4) + '" x2="' + sx + '" y2="' + (dimY + 4) + '" stroke="#f59e0b" stroke-width="0.8"/>');
+  lines.push('<line x1="' + ex + '" y1="' + (dimY - 4) + '" x2="' + ex + '" y2="' + (dimY + 4) + '" stroke="#f59e0b" stroke-width="0.8"/>');
+  lines.push('<text x="' + (W/2) + '" y="' + (dimY + 13) + '" fill="#f59e0b" font-size="10" font-weight="700" text-anchor="middle" font-family="JetBrains Mono">L = ' + L + ' m = ' + (L*1000) + ' mm</text>');
+
+  // Lo dimensions
+  var loDimY = sy - 18;
+  lines.push('<line x1="' + sx + '" y1="' + loDimY + '" x2="' + (sx + LoPx2) + '" y2="' + loDimY + '" stroke="#f87171" stroke-width="0.8"/>');
+  lines.push('<text x="' + (sx + LoPx2 / 2) + '" y="' + (loDimY - 5) + '" fill="#f87171" font-size="8" text-anchor="middle" font-family="JetBrains Mono">Lo=' + r0(Lo) + 'mm</text>');
+  lines.push('<line x1="' + (ex - LoPx2) + '" y1="' + loDimY + '" x2="' + ex + '" y2="' + loDimY + '" stroke="#f87171" stroke-width="0.8"/>');
+  lines.push('<text x="' + (ex - LoPx2 / 2) + '" y="' + (loDimY - 5) + '" fill="#f87171" font-size="8" text-anchor="middle" font-family="JetBrains Mono">Lo=' + r0(Lo) + 'mm</text>');
+
+  // Depth D — left side
+  var dDimX = sx - 20;
+  lines.push('<line x1="' + dDimX + '" y1="' + sy + '" x2="' + dDimX + '" y2="' + (sy + beamH) + '" stroke="#64748b" stroke-width="0.8"/>');
+  lines.push('<line x1="' + (dDimX - 4) + '" y1="' + sy + '" x2="' + (dDimX + 4) + '" y2="' + sy + '" stroke="#64748b" stroke-width="0.8"/>');
+  lines.push('<line x1="' + (dDimX - 4) + '" y1="' + (sy + beamH) + '" x2="' + (dDimX + 4) + '" y2="' + (sy + beamH) + '" stroke="#64748b" stroke-width="0.8"/>');
+  lines.push('<text x="' + (dDimX - 10) + '" y="' + (sy + beamH / 2 + 4) + '" fill="#e2e8f0" font-size="9" font-weight="700" text-anchor="middle" font-family="JetBrains Mono" transform="rotate(-90,' + (dDimX - 10) + ',' + (sy + beamH / 2) + ')">' + D + 'mm</text>');
+
+  // ── BAR LABELS ─────────────────────────────────────────────────
+  var lgY = sy + beamH + 38;
+  var lgItems = [
+    ['#34d399', nm + 'T20 bottom bars (tension, full span) — Ast=' + r0(b.Am) + ' mm\u00b2'],
+    ['#f87171', ns + 'T20 top bars at supports (hogging zone Lo) — Ast=' + r0(b.As2||b.ns*314) + ' mm\u00b2'],
+    ['#34d399', 'D' + diaStirrup + '@' + svd + 'mm stirrups in Lo (IS 13920 Cl 6.3.5) | D' + diaStirrup + '@' + sv + 'mm at midspan'],
+  ];
+  if (isTrf) lgItems.push(['#f59e0b', 'Point load P_u=' + r2(b.transferPL ? b.transferPL.P_u : 0) + ' kN from floating column at ' + r2(b.transferPL ? b.transferPL.a : 0) + 'm from left end']);
+
+  lgItems.forEach(function(item, i) {
+    var sw = i === 2 ? 8 : 10;
+    var sy2 = lgY + i * 16;
+    if (i === 2) {
+      lines.push('<rect x="' + (padL + 4) + '" y="' + (sy2 - 5) + '" width="' + sw + '" height="6" fill="' + item[0] + '" opacity="0.7"/>');
+    } else {
+      lines.push('<circle cx="' + (padL + 8) + '" cy="' + (sy2 - 1) + '" r="5" fill="' + item[0] + '"/>');
+    }
+    lines.push('<text x="' + (padL + 20) + '" y="' + (sy2 + 3) + '" fill="' + item[0] + '" font-size="8.5" font-family="JetBrains Mono">' + item[1] + '</text>');
+  });
+
+  lines.push('</svg>');
+  return '<div class="dg">' + lines.join('') + '<div class="dg-cap">Fig: Beam ' + b.label + ' elevation — longitudinal section showing bar zones, stirrup spacing, and confinement zones Lo per IS 13920:2016 Cl 6.3.5. Top bars extend Lo=' + r0(Lo) + 'mm from each support. Bottom bars run full span with development length Ld=' + r0(Ld) + 'mm anchorage into supports.</div></div>';
+}
+
+// ── FOOTING TYPE SELECTION ────────────────────────────────────────
+// Returns the recommended footing type for a node based on:
+// 1. If Bf overlaps with adjacent footing → Combined footing
+// 2. If all footings overlap widely → Raft
+// 3. Otherwise → Isolated
+function getFootingType(ftg) {
+  if (!GRID || !RES || !RES.allFtgs) return 'isolated';
+  var allFtgs = RES.allFtgs;
+  var node = GRID.nodes.find(function(n) { return n.row === ftg.row && n.col === ftg.col; });
+  if (!node) return 'isolated';
+
+  // Check if footing overlaps with adjacent footings
+  // Overlap occurs if Bf/2 + adjacent.Bf/2 > span between columns
+  var overlaps = [];
+  // Check X-direction neighbours
+  var adjRight = allFtgs.find(function(f) { return f.row === ftg.row && f.col === ftg.col + 1; });
+  var adjLeft  = allFtgs.find(function(f) { return f.row === ftg.row && f.col === ftg.col - 1; });
+  var adjDown  = allFtgs.find(function(f) { return f.row === ftg.row + 1 && f.col === ftg.col; });
+  var adjUp    = allFtgs.find(function(f) { return f.row === ftg.row - 1 && f.col === ftg.col; });
+
+  // Practical rule: if Bf > 0.5 × adjacent span, footings would be too close
+  // Combined footing needed. If Bf > 0.75 × span, recommend raft.
+  var maxSpanX = S.spansX.length ? Math.max.apply(null, S.spansX) : 4;
+  var maxSpanY = S.spansY.length ? Math.max.apply(null, S.spansY) : 4;
+  var minSpanX = S.spansX.length ? Math.min.apply(null, S.spansX) : 4;
+  var minSpanY = S.spansY.length ? Math.min.apply(null, S.spansY) : 4;
+  var minSpan = Math.min(minSpanX, minSpanY);
+
+  // Check if any adjacent pair would overlap
+  if (adjRight) {
+    var combinedHalfX = (ftg.Bf + adjRight.Bf) / 2;
+    var spanX = S.spansX[ftg.col] || maxSpanX;
+    if (combinedHalfX > spanX * 0.9) overlaps.push('X+');
+    else if (combinedHalfX > spanX * 0.5) overlaps.push('X+ close');
+  }
+  if (adjLeft) {
+    var combinedHalfX2 = (ftg.Bf + adjLeft.Bf) / 2;
+    var spanX2 = S.spansX[ftg.col - 1] || maxSpanX;
+    if (combinedHalfX2 > spanX2 * 0.9) overlaps.push('X-');
+    else if (combinedHalfX2 > spanX2 * 0.5) overlaps.push('X- close');
+  }
+  if (adjDown) {
+    var combinedHalfY = (ftg.Bf + adjDown.Bf) / 2;
+    var spanY = S.spansY[ftg.row] || maxSpanY;
+    if (combinedHalfY > spanY * 0.9) overlaps.push('Y+');
+    else if (combinedHalfY > spanY * 0.5) overlaps.push('Y+ close');
+  }
+  if (adjUp) {
+    var combinedHalfY2 = (ftg.Bf + adjUp.Bf) / 2;
+    var spanY2 = S.spansY[ftg.row - 1] || maxSpanY;
+    if (combinedHalfY2 > spanY2 * 0.9) overlaps.push('Y-');
+    else if (combinedHalfY2 > spanY2 * 0.5) overlaps.push('Y- close');
+  }
+
+  // Global check: if average Bf > 50% of min span across whole building → raft
+  var avgBf = allFtgs.reduce(function(s, f2) { return s + f2.Bf; }, 0) / allFtgs.length;
+  // Raft: average footing covers >60% of bay, or SBC very low (< 75 kN/m² typical weak soil)
+  var ftgCoverageRatio = avgBf / minSpan;
+  if (ftgCoverageRatio > 0.6 || S.soilBearing < 50) return 'raft';
+  if (ftg.Bf > minSpan * 0.4) return 'combined';
+  if (overlaps.length > 0) return 'combined';
+  return 'isolated';
+}
+
+function svgFootingTypePanel(ftg) {
+  var type = getFootingType(ftg);
+  var Bf = ftg.Bf, D = ftg.D, d = ftg.d, colSz = ftg.colSize || 300;
+  var Ps = ftg.Ps, Pu = ftg.Pu;
+  var SBC = S.soilBearing;
+
+  // Colour and icon by type
+  var typeInfo = {
+    isolated: { col: '#34d399', icon: '⬜', name: 'ISOLATED FOOTING', short: 'Isolated' },
+    combined: { col: '#f59e0b', icon: '▭', name: 'COMBINED FOOTING RECOMMENDED', short: 'Combined' },
+    raft:     { col: '#f87171', icon: '▦', name: 'RAFT FOUNDATION RECOMMENDED', short: 'Raft' },
+  };
+  var ti = typeInfo[type];
+
+  var W = 660, H = 420;
+  var lines = [];
+  lines.push('<svg viewBox="0 0 ' + W + ' ' + H + '" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block;background:#0a0f1e;border-radius:8px">');
+  lines.push('<text x="' + (W/2) + '" y="20" fill="' + ti.col + '" font-size="11" font-weight="bold" text-anchor="middle" font-family="JetBrains Mono">FOOTING TYPE — ' + ti.name + '</text>');
+
+  // Draw all three types side by side with the recommended one highlighted
+  var types = ['isolated', 'combined', 'raft'];
+  var tw = 180, th = 180, tGap = 20;
+  var totW = types.length * tw + (types.length - 1) * tGap;
+  var startX = (W - totW) / 2;
+
+  types.forEach(function(t, i) {
+    var tx = startX + i * (tw + tGap);
+    var ty = 40;
+    var isActive = t === type;
+    var tc = typeInfo[t].col;
+    var alpha = isActive ? '1' : '0.3';
+
+    // Card border
+    lines.push('<rect x="' + tx + '" y="' + ty + '" width="' + tw + '" height="' + th + '" rx="8" fill="' + (isActive ? 'rgba(' + (t==='isolated'?'52,211,153':t==='combined'?'245,158,11':'248,113,113') + ',0.08)' : 'rgba(30,41,59,0.5)') + '" stroke="' + tc + '" stroke-width="' + (isActive ? '2' : '0.5') + '" opacity="' + alpha + '"/>');
+
+    var cx = tx + tw / 2, cy = ty + th / 2;
+
+    if (t === 'isolated') {
+      // Plan view: square pad with column in centre
+      var padW = 80, padH = 80, colW = 20;
+      lines.push('<rect x="' + (cx-padW/2) + '" y="' + (ty+28) + '" width="' + padW + '" height="' + padH + '" fill="rgba(52,211,153,0.15)" stroke="#34d399" stroke-width="' + (isActive?1.5:0.5) + '" opacity="' + alpha + '"/>');
+      lines.push('<rect x="' + (cx-colW/2) + '" y="' + (ty+28+padH/2-colW/2) + '" width="' + colW + '" height="' + colW + '" fill="rgba(52,211,153,0.5)" stroke="#34d399" stroke-width="1" opacity="' + alpha + '"/>');
+      // Dimension arrows
+      lines.push('<text x="' + cx + '" y="' + (ty+28+padH+16) + '" fill="#34d399" font-size="8" text-anchor="middle" font-family="JetBrains Mono" opacity="' + alpha + '">Bf × Bf</text>');
+      // Elevation inset
+      var ey = ty + 28 + padH + 28;
+      lines.push('<rect x="' + (cx-padW/2) + '" y="' + ey + '" width="' + padW + '" height="18" fill="rgba(52,211,153,0.1)" stroke="#34d399" stroke-width="' + (isActive?1:0.5) + '" opacity="' + alpha + '"/>');
+      lines.push('<rect x="' + (cx-colW/2) + '" y="' + (ey-12) + '" width="' + colW + '" height="12" fill="rgba(52,211,153,0.4)" stroke="#34d399" stroke-width="0.8" opacity="' + alpha + '"/>');
+
+    } else if (t === 'combined') {
+      // Two columns on one elongated pad
+      var cpadW = 140, cpadH = 50, ccolW = 18;
+      var cey = ty + 45;
+      lines.push('<rect x="' + (cx-cpadW/2) + '" y="' + (cey+20) + '" width="' + cpadW + '" height="' + cpadH + '" fill="rgba(245,158,11,0.12)" stroke="#f59e0b" stroke-width="' + (isActive?1.5:0.5) + '" opacity="' + alpha + '"/>');
+      // Two columns
+      [-35, 35].forEach(function(ox) {
+        lines.push('<rect x="' + (cx+ox-ccolW/2) + '" y="' + (cey+8) + '" width="' + ccolW + '" height="12" fill="rgba(245,158,11,0.5)" stroke="#f59e0b" stroke-width="0.8" opacity="' + alpha + '"/>');
+        lines.push('<rect x="' + (cx+ox-ccolW/2) + '" y="' + (cey+20) + '" width="' + ccolW + '" height="12" fill="rgba(245,158,11,0.3)" stroke="none" opacity="' + alpha + '"/>');
+      });
+      lines.push('<text x="' + cx + '" y="' + (cey+20+cpadH+14) + '" fill="#f59e0b" font-size="8" text-anchor="middle" font-family="JetBrains Mono" opacity="' + alpha + '">Two columns, one pad</text>');
+      lines.push('<text x="' + cx + '" y="' + (cey+20+cpadH+26) + '" fill="#f59e0b" font-size="7.5" text-anchor="middle" font-family="JetBrains Mono" opacity="' + alpha + '">When footings would overlap</text>');
+
+    } else {
+      // Raft — full slab under building
+      var rpadW = 150, rpadH = 25;
+      var rey = ty + 55;
+      // Slab
+      lines.push('<rect x="' + (cx-rpadW/2) + '" y="' + (rey+20) + '" width="' + rpadW + '" height="' + rpadH + '" fill="rgba(248,113,113,0.1)" stroke="#f87171" stroke-width="' + (isActive?1.5:0.5) + '" opacity="' + alpha + '"/>');
+      // Multiple columns
+      [-55,-18,18,55].forEach(function(ox) {
+        lines.push('<rect x="' + (cx+ox-7) + '" y="' + (rey+8) + '" width="14" height="12" fill="rgba(248,113,113,0.5)" stroke="#f87171" stroke-width="0.8" opacity="' + alpha + '"/>');
+        lines.push('<rect x="' + (cx+ox-7) + '" y="' + (rey+20) + '" width="14" height="10" fill="rgba(248,113,113,0.25)" stroke="none" opacity="' + alpha + '"/>');
+      });
+      lines.push('<text x="' + cx + '" y="' + (rey+20+rpadH+14) + '" fill="#f87171" font-size="8" text-anchor="middle" font-family="JetBrains Mono" opacity="' + alpha + '">Continuous slab under all columns</text>');
+      lines.push('<text x="' + cx + '" y="' + (rey+20+rpadH+26) + '" fill="#f87171" font-size="7.5" text-anchor="middle" font-family="JetBrains Mono" opacity="' + alpha + '">Weak soil or heavy loads</text>');
+    }
+
+    // Label
+    lines.push('<text x="' + cx + '" y="' + (ty + th - 8) + '" fill="' + tc + '" font-size="9" font-weight="700" text-anchor="middle" font-family="JetBrains Mono" opacity="' + alpha + '">' + typeInfo[t].short + (isActive ? ' ✓' : '') + '</text>');
+  });
+
+  // ── DESIGN SUMMARY FOR THIS FOOTING ─────────────────────────
+  var detY = 240;
+  lines.push('<rect x="20" y="' + detY + '" width="' + (W-40) + '" height="165" rx="6" fill="rgba(15,23,42,0.8)" stroke="' + ti.col + '" stroke-width="1"/>');
+  lines.push('<text x="40" y="' + (detY+16) + '" fill="' + ti.col + '" font-size="10" font-weight="700" font-family="JetBrains Mono">' + ti.icon + ' ' + ftg.label + ' — ' + ti.name + '</text>');
+
+  var rows = [
+    ['Service load Ps', r2(Ps) + ' kN', 'From column design (all floors above)'],
+    ['SBC (soil bearing)', SBC + ' kN/m²', 'As specified in Soil & Site input'],
+    ['Area required = Ps / SBC', r2(Ps/SBC) + ' m²', 'IS 456 Cl 34.1'],
+    ['Footing plan size', r2(Bf) + ' × ' + r2(Bf) + ' m = ' + r2(Bf*Bf) + ' m²', 'Square isolated pad'],
+    ['Net upward pressure qu = Pu / Bf²', r2(ftg.quf) + ' kN/m²', 'Factored pressure for design'],
+    ['Depth D (punching governs)', D + ' mm', 'IS 456 Cl 31.6'],
+    ['Effective depth d = D - cover - bar/2', d + ' mm', 'cover=' + S.coverFtg + 'mm'],
+  ];
+  rows.forEach(function(row, i) {
+    var ry = detY + 32 + i * 19;
+    lines.push('<text x="40" y="' + ry + '" fill="#94a3b8" font-size="8.5" font-family="JetBrains Mono">' + row[0] + '</text>');
+    lines.push('<text x="300" y="' + ry + '" fill="#e2e8f0" font-size="8.5" font-weight="700" font-family="JetBrains Mono">' + row[1] + '</text>');
+    lines.push('<text x="420" y="' + ry + '" fill="#475569" font-size="8" font-family="JetBrains Mono">' + row[2] + '</text>');
+  });
+
+  // Type recommendation explanation
+  var expY = detY + 32 + rows.length * 19 + 6;
+  var explanation = {
+    isolated: 'Gap between adjacent footings > 300mm. Individual isolated pads are adequate. No overlap risk at this SBC and column load.',
+    combined: 'Adjacent footings would be within 300mm of each other. Combine them on a single elongated pad to avoid undermining, simplify construction, and distribute load more evenly. Design combined footing as inverted T-beam.',
+    raft: 'More than 50% of footings overlap when individually sized. A raft (mat) foundation is more economical and practical. Raft also reduces differential settlement. Raft design requires separate analysis.',
+  };
+  lines.push('<text x="40" y="' + expY + '" fill="' + ti.col + '" font-size="8.5" font-family="JetBrains Mono">Recommendation: ' + explanation[type] + '</text>');
+
+  lines.push('</svg>');
+
+  var cap = 'Fig: Footing type selection for ' + ftg.label + '. Recommended: ' + ti.name + '. Based on IS 456 Cl 34 and proximity to adjacent footings (gap < 300mm triggers combined footing recommendation).';
+  return '<div class="dg">' + lines.join('') + '<div class="dg-cap">' + cap + '</div></div>';
+}
+
 function secBeams(){
   if(!RES.allBeams||RES.allBeams.length===0)return'<div class="card">No beam data.</div>';
 
@@ -1468,6 +1813,8 @@ function beamDetail(b){
 
   ${sb('B-3','Bending Moment & Shear Force Diagrams',`
     ${svgBeamBMD_SFD(b)}
+    ${sb('B-3a','Longitudinal Section — Bar Layout & Stirrups',svgBeamLongitudinal(b),'or')}
+
     <div class="cp or" style="font-size:10px;line-height:2.0;margin-bottom:8px">
       <strong>Formula:</strong> Mmax = α × wu × L²<br>
       <strong>Where:</strong><br>
@@ -2007,6 +2354,9 @@ function ftgDetail(f){
     ${fm('Actual soil pressure qu = Ps/Bf² = '+r2(f.Ps)+'/'+r2(f.Bf)+'²',r2(f.qu)+' kN/m²','')}
     ${vd(f.qu<=S.soilBearing,'qu ('+r2(f.qu)+') '+(f.qu<=S.soilBearing?'≤':'>')+' SBC ('+S.soilBearing+') → '+(f.qu<=S.soilBearing?'OK':'FAIL'),f.qu/S.soilBearing)}
   `,'ye')}
+
+
+  ${sb('F-1a','Foundation Type Selection',svgFootingTypePanel(f),'or')}
 
   ${sb('F-2','Footing Depth',`
     <div class="cp ye" style="font-size:10px;line-height:2.0;margin-bottom:8px">
