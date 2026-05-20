@@ -1371,6 +1371,8 @@ function getBeamBetween(i1,i2){return GRID&&GRID.beams.find(b=>(b.n1===i1&&b.n2=
 function updateTransferBeams() {
   if(!GRID)return;
   GRID.beams.forEach(b=>{
+    // Don't reset merged transfer beams (they have _transferNode stored)
+    if(b._transferNode !== undefined) { b.isTransfer=true; return; }
     const n1=GRID.nodes[b.n1],n2=GRID.nodes[b.n2];
     if(!n1||!n2)return;
     b.isTransfer=(!n1.hasColumn&&!n1.isWall)||(!n2.hasColumn&&!n2.isWall);
@@ -1702,11 +1704,12 @@ function nodeCanvas(node){
 
 // ── BAY FILL STYLES ──────────────────────────────────────────────
 const BAY_STYLES={
-  slab:      {fill:'rgba(56,189,248,0.06)',hatch:null,label:null,labelColor:null},
-  void:      {fill:'rgba(10,15,30,0.9)',hatch:'rgba(100,116,139,0.3)',label:'VOID',labelColor:'#64748b'},
-  opening:   {fill:'rgba(248,113,113,0.08)',hatch:'rgba(248,113,113,0.25)',label:'OPENING',labelColor:'#f87171'},
-  courtyard: {fill:'rgba(16,185,129,0.08)',hatch:'rgba(16,185,129,0.2)',label:'COURTYARD',labelColor:'#34d399'},
-  staircase: {fill:'rgba(245,158,11,0.1)',hatch:'rgba(245,158,11,0.2)',label:'STAIR',labelColor:'#f59e0b'},
+  slab:      {fill:'rgba(56,189,248,0.07)', hatch:null,                    label:null,       labelColor:null,      legend:'Slab',     legendColor:'#38bdf8'},
+  void:      {fill:'rgba(10,15,30,0.95)',   hatch:'rgba(100,116,139,0.35)',label:'VOID',     labelColor:'#64748b', legend:'Void',     legendColor:'#64748b'},
+  opening:   {fill:'rgba(248,113,113,0.1)', hatch:'rgba(248,113,113,0.3)', label:'OPENING',  labelColor:'#f87171', legend:'Opening',  legendColor:'#f87171'},
+  courtyard: {fill:'rgba(52,211,153,0.08)', hatch:'rgba(52,211,153,0.25)', label:'COURTYARD',labelColor:'#34d399', legend:'Courtyard',legendColor:'#34d399'},
+  staircase: {fill:'rgba(245,158,11,0.12)', hatch:null,                    label:'STAIR',    labelColor:'#f59e0b', legend:'Staircase',legendColor:'#f59e0b'},
+  autovoid:  {fill:'rgba(249,115,22,0.06)', hatch:'rgba(249,115,22,0.2)',  label:'AUTO-VOID',labelColor:'#f97316', legend:'Auto-void',legendColor:'#f97316'},
 };
 const BAY_TYPES=['slab','void','opening','courtyard','staircase'];
 
@@ -1720,25 +1723,52 @@ function drawGrid(canvas){
   // Background
   ctx.fillStyle='#0a0f1e';ctx.fillRect(0,0,canvas.width,canvas.height);
 
-  if(!window._coordMode){
-  // ── BAY FILLS ─────────────────────────────────────────────────
+  // ── BAY FILLS — always shown in both modes ─────────────────────
   GRID.bays.forEach(bay=>{
     const x0=xs[bay.col],y0=ys[bay.row],x1=xs[bay.col+1],y1=ys[bay.row+1];
-    const st=BAY_STYLES[bay.type]||BAY_STYLES.slab;
+    // In coord mode: auto-void bays with missing corners show differently
+    const effectiveType = (window._coordMode && bay.colCount < 4 && bay.type==='void') ? 'autovoid' : bay.type;
+    const st=BAY_STYLES[effectiveType]||BAY_STYLES.slab;
     const isSelected=GE.selected&&GE.selected.type==='bay'&&GE.selected.row===bay.row&&GE.selected.col===bay.col;
 
     ctx.fillStyle=st.fill;
     ctx.fillRect(x0,y0,x1-x0,y1-y0);
 
-    // Hatch for non-slab types
+    // Diagonal hatching for non-slab types
     if(st.hatch){
       ctx.save();ctx.strokeStyle=st.hatch;ctx.lineWidth=0.8;
-      for(let d=-100;d<(x1-x0+y1-y0+100);d+=10){
+      ctx.beginPath();
+      ctx.rect(x0,y0,x1-x0,y1-y0);
+      ctx.clip();
+      for(let d=-(y1-y0);d<(x1-x0+y1-y0);d+=10){
         ctx.beginPath();
-        ctx.moveTo(x0+Math.max(0,d),y0+Math.max(0,-d));
-        ctx.lineTo(x0+Math.min(x1-x0,d+y1-y0),y0+Math.min(y1-y0,d));
+        ctx.moveTo(x0+d,y0);
+        ctx.lineTo(x0+d+(y1-y0),y1);
         ctx.stroke();
       }
+      ctx.restore();
+    }
+
+    // Staircase: draw stair-step lines showing flight
+    if(bay.type==='staircase'){
+      ctx.save();ctx.strokeStyle='rgba(245,158,11,0.5)';ctx.lineWidth=1.2;
+      const steps=5;
+      const w=x1-x0,h=y1-y0;
+      const sw=w/steps;
+      ctx.beginPath();
+      ctx.rect(x0,y0,w,h);ctx.clip();
+      for(let s=0;s<steps;s++){
+        ctx.beginPath();
+        ctx.moveTo(x0+s*sw,y0+h);
+        ctx.lineTo(x0+s*sw,y0+(s/steps)*h);
+        ctx.lineTo(x0+(s+1)*sw,y0+(s/steps)*h);
+        ctx.stroke();
+      }
+      // Arrow showing direction
+      ctx.strokeStyle='rgba(245,158,11,0.8)';ctx.lineWidth=2;
+      ctx.beginPath();
+      ctx.moveTo(x0+4,y1-4);ctx.lineTo(x1-4,y0+4);
+      ctx.stroke();
       ctx.restore();
     }
 
@@ -1749,17 +1779,15 @@ function drawGrid(canvas){
       ctx.setLineDash([]);
     }
 
-    // Slab hatch (subtle)
-    if(bay.type==='slab'){
-      ctx.save();ctx.strokeStyle='rgba(56,189,248,0.05)';ctx.lineWidth=0.5;
-      for(let xi=x0;xi<x1;xi+=14){ctx.beginPath();ctx.moveTo(xi,y0);ctx.lineTo(xi,y1);ctx.stroke();}
-      ctx.restore();
-    }
+    // Bay type border (always visible)
+    ctx.strokeStyle=st.hatch||'rgba(30,58,138,0.3)';
+    ctx.lineWidth=effectiveType==='slab'?0.5:1.0;
+    ctx.strokeRect(x0,y0,x1-x0,y1-y0);
 
-    // Labels
+    // Slab case label (legacy mode only)
     const cx2=(x0+x1)/2,cy2=(y0+y1)/2;
     if(st.label){
-      ctx.fillStyle=st.labelColor;ctx.font='bold 10px JetBrains Mono';
+      ctx.fillStyle=st.labelColor;ctx.font='bold 9px JetBrains Mono';
       ctx.textAlign='center';ctx.fillText(st.label,cx2,cy2-4);
     }
     if(bay.type==='slab'&&GE.showCase){
@@ -1768,7 +1796,6 @@ function drawGrid(canvas){
       ctx.textAlign='center';ctx.fillText('Case '+caseN,cx2,cy2+5);
     }
   });
-  } // end bay fills
 
   if(!window._coordMode){
   // ── GRID LINES (faint) ────────────────────────────────────────
@@ -1953,7 +1980,41 @@ function drawGrid(canvas){
     ctx.fillText(item.label,CANVAS_W-164,legY+7);
     legY+=13;
   });
+
+  // ── BAY TYPE LEGEND ───────────────────────────────────────────
+  // Only show bay types that are actually present in this grid
+  const presentTypes = [...new Set(GRID.bays.map(b=>b.type))];
+  if(presentTypes.some(t=>t!=='slab') || window._coordMode){
+    legY += 6;
+    ctx.fillStyle='rgba(30,41,59,0.7)';
+    ctx.fillRect(CANVAS_W-196,legY-2,188,presentTypes.length*13+8);
+    ctx.fillStyle='#475569';ctx.font='7px JetBrains Mono';ctx.textAlign='left';
+    ctx.fillText('BAY TYPES:',CANVAS_W-192,legY+5);
+    legY+=11;
+    const bayLegItems=[
+      {type:'slab',label:'Slab (structural)'},
+      {type:'void',label:'Void (outside)'},
+      {type:'opening',label:'Opening'},
+      {type:'courtyard',label:'Courtyard'},
+      {type:'staircase',label:'Staircase'},
+      {type:'autovoid',label:'Auto-void (missing col)'},
+    ].filter(item=>presentTypes.includes(item.type)||
+      (item.type==='autovoid'&&window._coordMode&&GRID.bays.some(b=>b.colCount<4&&b.type==='void')));
+    bayLegItems.forEach(item=>{
+      const st=BAY_STYLES[item.type]||BAY_STYLES.slab;
+      ctx.fillStyle=st.fill==='rgba(56,189,248,0.07)'?'rgba(56,189,248,0.5)':st.labelColor||'#64748b';
+      ctx.fillRect(CANVAS_W-192,legY,10,8);
+      if(st.hatch){
+        ctx.strokeStyle=st.hatch;ctx.lineWidth=0.8;
+        ctx.beginPath();ctx.moveTo(CANVAS_W-192,legY+8);ctx.lineTo(CANVAS_W-182,legY);ctx.stroke();
+      }
+      ctx.fillStyle=st.legendColor||'#94a3b8';ctx.font='8px JetBrains Mono';
+      ctx.fillText(item.label,CANVAS_W-178,legY+7);
+      legY+=13;
+    });
+  }
 }
+
 
 // ── HIT TESTING ──────────────────────────────────────────────────
 function hitNode(x,y){
@@ -2053,9 +2114,18 @@ function handleGridClick(e,canvas){
   else if(GE.mode==='column'){
     const node=hitNode(x,y);
     if(node){
-      if(node.hasColumn){node.hasColumn=false;node.isWall=false;}
+      if(node.hasColumn){
+        node.hasColumn=false;node.isWall=false;
+        // Show void/transfer choice popup (Q2: popup/modal dialog)
+        showNodeChoicePopup(node, canvas);
+      }
       else if(node.isWall){node.isWall=false;}
-      else{node.hasColumn=true;}
+      else{
+        node.hasColumn=true;
+        // Clear any stored choice when column is restored
+        delete window._nodeChoices[getNodeChoiceKey(node)];
+        node._choice = null;
+      }
       GRID.beams.forEach(b=>{if(b.n1===node.id||b.n2===node.id)autoEndConditions(b);});
       updateTransferBeams();drawGrid(canvas);updateStructSummary();
     }
@@ -2149,6 +2219,123 @@ function showGEToast(msg,color){
 }
 
 // ── CONTEXT PANEL (right panel shown when item selected) ─────────
+// ── MISSING NODE DIALOG ─────────────────────────────────────────
+function showMissingNodeDialog(missingNodes, onComplete) {
+  // Remove any existing dialog
+  const existing = document.getElementById('_missingNodeDialog');
+  if (existing) existing.remove();
+
+  const overlay = document.createElement('div');
+  overlay.id = '_missingNodeDialog';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px';
+
+  const rowLetter = r => String.fromCharCode(65+r);
+
+  let html = `<div style="background:#0f172a;border:1.5px solid #334155;border-radius:12px;padding:20px;max-width:600px;width:100%;max-height:90vh;overflow-y:auto;font-family:JetBrains Mono">
+    <div style="font-size:14px;font-weight:800;color:#f59e0b;margin-bottom:6px">⚠ Missing Columns Detected</div>
+    <div style="font-size:11px;color:#94a3b8;margin-bottom:16px;line-height:1.7">
+      The following grid positions have no column placed. You must decide what each one represents before running analysis.
+    </div>`;
+
+  missingNodes.forEach((node, i) => {
+    const key = getNodeChoiceKey(node);
+    const suggested = classifyMissingNode(node.row, node.col, GRID.nx, GRID.ny);
+    const stored = window._nodeChoices[key] || suggested;
+    html += `
+    <div style="margin-bottom:14px;padding:12px;background:#0a0f1e;border:1px solid #1e293b;border-radius:8px">
+      <div style="font-size:11px;font-weight:700;color:#e2e8f0;margin-bottom:8px">
+        Position ${rowLetter(node.row)}${node.col+1} &nbsp;·&nbsp; Coordinates (${node.x}m, ${node.y}m)
+        <span style="font-size:9px;color:#475569;margin-left:8px">Suggested: ${suggested==='void'?'Outside Building':'Transfer Beam'}</span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <button onclick="(function(){
+          window._nodeChoices['${key}']='void';
+          document.getElementById('_mn_void_${i}').style.borderColor='#34d399';
+          document.getElementById('_mn_void_${i}').style.background='rgba(52,211,153,0.1)';
+          document.getElementById('_mn_trf_${i}').style.borderColor='#334155';
+          document.getElementById('_mn_trf_${i}').style.background='transparent';
+        })()"
+          id="_mn_void_${i}"
+          style="padding:10px;border-radius:8px;border:1.5px solid ${stored==='void'?'#34d399':'#334155'};background:${stored==='void'?'rgba(52,211,153,0.1)':'transparent'};cursor:pointer;text-align:left">
+          <div style="font-size:11px;font-weight:700;color:#34d399;margin-bottom:4px">⬜ VOID — Outside Building</div>
+          <div style="font-size:9px;color:#64748b;line-height:1.6">No slab, no beam here.<br>Building doesn't extend to this corner.<br>All adjacent bays marked void.<br>Adjacent beams terminated.</div>
+        </button>
+        <button onclick="(function(){
+          window._nodeChoices['${key}']='transfer';
+          document.getElementById('_mn_trf_${i}').style.borderColor='#f59e0b';
+          document.getElementById('_mn_trf_${i}').style.background='rgba(245,158,11,0.1)';
+          document.getElementById('_mn_void_${i}').style.borderColor='#334155';
+          document.getElementById('_mn_void_${i}').style.background='transparent';
+        })()"
+          id="_mn_trf_${i}"
+          style="padding:10px;border-radius:8px;border:1.5px solid ${stored==='transfer'?'#f59e0b':'#334155'};background:${stored==='transfer'?'rgba(245,158,11,0.1)':'transparent'};cursor:pointer;text-align:left">
+          <div style="font-size:11px;font-weight:700;color:#f59e0b;margin-bottom:4px">━ TRANSFER BEAM</div>
+          <div style="font-size:9px;color:#64748b;line-height:1.6">Column removed for architecture.<br>Heavy beam carries load from<br>all floors above across this gap.<br>⚠ Verify with structural engineer.</div>
+        </button>
+      </div>
+    </div>`;
+  });
+
+  html += `
+    <div style="display:flex;gap:10px;margin-top:16px">
+      <button onclick="(function(){
+        // Check all nodes have a choice
+        const keys=${JSON.stringify(missingNodes.map(n=>getNodeChoiceKey(n)))};
+        const missing=keys.filter(k=>!window._nodeChoices[k]);
+        if(missing.length>0){alert('Please select Void or Transfer Beam for all missing columns.');return;}
+        document.getElementById('_missingNodeDialog').remove();
+        (${onComplete.toString()})();
+      })()" style="flex:1;padding:10px;background:rgba(56,189,248,0.12);border:1.5px solid #38bdf8;border-radius:8px;color:#38bdf8;cursor:pointer;font-size:11px;font-weight:700">
+        ✓ Confirm & Run Analysis
+      </button>
+      <button onclick="document.getElementById('_missingNodeDialog').remove()"
+        style="padding:10px 16px;background:transparent;border:1px solid #334155;border-radius:8px;color:#64748b;cursor:pointer;font-size:11px">
+        Cancel
+      </button>
+    </div>
+    <div style="margin-top:10px;font-size:9px;color:#334155;line-height:1.6">
+      💡 TRANSFER BEAM: A beam that carries the load of columns from all floors above it, at a specific point along its span. It must be significantly deeper and heavier than normal beams. IS 456 does not have a simple design method — the result here is an approximation. Always verify with a qualified structural engineer before construction.
+    </div>
+  </div>`;
+
+  overlay.innerHTML = html;
+  document.body.appendChild(overlay);
+}
+
+// Show dialog for a single node in legacy mode (node click in grid editor)
+function showNodeChoicePopup(node, canvas) {
+  const key = getNodeChoiceKey(node);
+  const suggested = classifyMissingNode(node.row, node.col, GRID.nx, GRID.ny);
+  const rowLetter = r => String.fromCharCode(65+r);
+
+  const existing = document.getElementById('_nodeChoicePopup');
+  if (existing) existing.remove();
+
+  const overlay = document.createElement('div');
+  overlay.id = '_nodeChoicePopup';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9999;display:flex;align-items:center;justify-content:center';
+
+  overlay.innerHTML = `<div style="background:#0f172a;border:1.5px solid #334155;border-radius:10px;padding:16px;max-width:480px;width:90%;font-family:JetBrains Mono">
+    <div style="font-size:12px;font-weight:800;color:#f59e0b;margin-bottom:10px">Column Removed — ${rowLetter(node.row)}${node.col+1} (${node.x}m, ${node.y}m)</div>
+    <div style="font-size:10px;color:#94a3b8;margin-bottom:12px">What does this missing column represent?</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+      <button onclick="(function(){window._nodeChoices['${key}']='void';document.getElementById('_nodeChoicePopup').remove();applyNodeChoices();drawGrid(document.getElementById('gridCanvas'));updateStructSummary();})()"
+        style="padding:10px;border-radius:8px;border:1.5px solid #34d399;background:rgba(52,211,153,0.08);cursor:pointer;text-align:left">
+        <div style="font-size:10px;font-weight:700;color:#34d399;margin-bottom:3px">⬜ VOID</div>
+        <div style="font-size:8px;color:#64748b;line-height:1.5">Outside building.<br>No slab, no beam.<br>Adjacent bays voided.</div>
+      </button>
+      <button onclick="(function(){window._nodeChoices['${key}']='transfer';document.getElementById('_nodeChoicePopup').remove();applyNodeChoices();drawGrid(document.getElementById('gridCanvas'));updateStructSummary();})()"
+        style="padding:10px;border-radius:8px;border:1.5px solid #f59e0b;background:rgba(245,158,11,0.08);cursor:pointer;text-align:left">
+        <div style="font-size:10px;font-weight:700;color:#f59e0b;margin-bottom:3px">━ TRANSFER BEAM</div>
+        <div style="font-size:8px;color:#64748b;line-height:1.5">Column removed.<br>Heavy beam above spans gap.<br>Point load calculated.</div>
+      </button>
+    </div>
+    <button onclick="document.getElementById('_nodeChoicePopup').remove()" style="width:100%;padding:7px;border:1px solid #334155;border-radius:6px;background:transparent;color:#64748b;cursor:pointer;font-size:10px">Cancel (keep as missing)</button>
+  </div>`;
+
+  document.body.appendChild(overlay);
+}
+
 function showContextPanel(){
   const panel=document.getElementById('geContextPanel');
   if(!panel)return;
@@ -2586,7 +2773,12 @@ function p2(){
       <!-- Navigation -->
       <div style="display:flex;justify-content:space-between;margin-top:10px">
         <button class="btn se" onclick="go(1)">← Back</button>
-        <button class="btn" onclick="go(3)">Next: Loads →</button>
+        <button class="btn" onclick="(function(){
+          if(!GRID)initGrid();
+          const unch=needsMissingNodeDialog();
+          if(unch.length>0){showMissingNodeDialog(unch,()=>go(3));return;}
+          go(3);
+        })()">Next: Loads →</button>
       </div>
     </div>
 
@@ -2917,6 +3109,15 @@ function designOneBeam(gridBeam, floorNum, isRoof,
     const d_try=D-coverBeam-8-10;
     if(d_try<=0){D+=25;continue;}
     const Mu_try=alpha*wu_try*L*L;
+    // For transfer beams: include point load moment in sizing
+    let Mu_pt=0;
+    if(gridBeam.isTransfer){
+      const mn=getTransferMissingNode(gridBeam);
+      if(mn){
+        const tp=getTransferPointLoad(gridBeam,mn,(DL_sl||3)+(floorFinish||1)+(partitions||1.5),udlLL,udlLL_roof,wwall,S.numFloors||4);
+        if(tp) Mu_pt=tp.P_u*tp.a*tp.b/L;
+      }
+    }
     const Mulim_try=Mf*fck*bW*d_try*d_try/1e6;
     // Deflection per IS 456 Cl 23.2: use service load + effective I.
     // Approximate I_eff ≈ 0.35·Ig (Branson's formula gives roughly this for
@@ -2927,7 +3128,7 @@ function designOneBeam(gridBeam, floorNum, isRoof,
       ?creep*ws_try*L**4/(8*Ec*I_try/1e12)
       :creep*5*ws_try*L**4/(384*Ec*I_try/1e12);
     const dall_try=gridBeam.isCantilever?L*1000/150:L*1000/250;
-    if(Mu_try<=Mulim_try&&dfl_try<=dall_try*0.95) break;
+    if(Mu_try+Mu_pt<=Mulim_try&&dfl_try<=dall_try*0.95) break;
     if(_bOvr && _bOvr.D) break; // override: use as-is, don't iterate up
     D+=25;
   }
@@ -2937,8 +3138,28 @@ function designOneBeam(gridBeam, floorNum, isRoof,
   const wu=1.5*(wslab+wsw+wwall)+wstair; // wstair already factored
   const ws=(wslab+wsw+wwall)+wstair/1.5; // service load for deflection
   const d=D-coverBeam-8-10;
-  const Mmax=alpha*wu*L*L;
-  const Msup=alphaSup*wu*L*L;
+
+  // ── TRANSFER BEAM: add point load from floating column ────────
+  let transferPL = null; // {P_u, P_s, a, b} — point load data
+  let M_ptload = 0;      // additional moment from point load (kN.m)
+  let R_ptload = 0;      // additional reaction from point load (kN)
+  if (gridBeam.isTransfer && !isRoof) {
+    const missingNode = getTransferMissingNode(gridBeam);
+    if (missingNode) {
+      transferPL = getTransferPointLoad(gridBeam, missingNode, DL_sl+floorFinish+partitions, udlLL_floor, udlLL_roof, wallLoad, S.numFloors);
+      if (transferPL) {
+        const {P_u, a, b} = transferPL;
+        // Simply supported beam with point load at distance a from left:
+        // M_max at point load = P*a*b/L
+        M_ptload = P_u * a * b / L; // kN.m
+        // Reaction at left end from point load = P*b/L, at right = P*a/L
+        R_ptload = Math.max(P_u * b / L, P_u * a / L); // max end reaction
+      }
+    }
+  }
+
+  const Mmax = alpha*wu*L*L + M_ptload; // combined UDL moment + point load moment
+  const Msup = alphaSup*wu*L*L;
   const Mulim=Mf*fck*bW*d*d/1e6;
   // End reactions: for shear design we use the MAX end reaction.
   // SS: 0.5wL each end. Propped cantilever (one end fixed, one SS):
@@ -2951,7 +3172,7 @@ function designOneBeam(gridBeam, floorNum, isRoof,
     if(cL||cR) return 0.625;      // one continuous, one pinned → max at fixed end
     return 0.5;                    // simply supported
   }
-  const RA = endReactionFactor(gridBeam.endLeft, gridBeam.endRight, gridBeam.isCantilever) * wu * L;
+  const RA = endReactionFactor(gridBeam.endLeft, gridBeam.endRight, gridBeam.isCantilever) * wu * L + R_ptload;
 
   const AstFn=(Mu,b,d2)=>AstCalc(Mu,b,d2,fck,fy,Mf);
   const bA=Math.PI*100;
@@ -2997,12 +3218,176 @@ function designOneBeam(gridBeam, floorNum, isRoof,
     isCantilever:!!gridBeam.isCantilever,
     isTransfer:!!gridBeam.isTransfer,
     isSecondary:!!gridBeam.isSecondary,
+    transferPL,  // point load data for display
     singly:true, Ast2:0, n2:0, bay:gridBeam.col||0,
     overDesigned:dfl/dall<0.4&&Mmax/Mulim<0.4&&pt<0.5,
   };
 }
 
-// ── COORDINATE INPUT CONTROLLER ─────────────────────────────────
+// ── MISSING NODE CHOICE SYSTEM ───────────────────────────────────
+// Stores student's choice for each missing node: 'void' | 'transfer'
+// Key: "row:col" e.g. "2:3"
+if(!window._nodeChoices) window._nodeChoices = {};
+
+function classifyMissingNode(row, col, nx, ny) {
+  // Determine if missing node is interior (transfer) or edge/corner (void)
+  // Interior = surrounded by other nodes on all 4 sides
+  const hasLeft  = col > 0;
+  const hasRight = col < nx;
+  const hasUp    = row > 0;
+  const hasDown  = row < ny;
+  const isInterior = hasLeft && hasRight && hasUp && hasDown;
+
+  // Check if ADJACENT nodes have columns
+  const adjHaveColumns = [
+    getNode(row, col-1), getNode(row, col+1),
+    getNode(row-1, col), getNode(row+1, col),
+  ].filter(n=>n&&n.hasColumn).length;
+
+  if (isInterior && adjHaveColumns >= 2) return 'transfer'; // interior → likely transfer
+  return 'void'; // edge/corner → likely outside building
+}
+
+function getMissingNodes() {
+  if (!GRID) return [];
+  return GRID.nodes.filter(n => !n.hasColumn && !n.isWall);
+}
+
+function getNodeChoiceKey(node) {
+  return `${node.row}:${node.col}`;
+}
+
+function needsMissingNodeDialog() {
+  // Returns missing nodes that don't have a choice yet
+  return getMissingNodes().filter(n => !window._nodeChoices[getNodeChoiceKey(n)]);
+}
+
+// Apply choices to GRID after student confirms
+function applyNodeChoices() {
+  if (!GRID) return;
+
+  // First pass: apply choices to nodes
+  getMissingNodes().forEach(node => {
+    const key = getNodeChoiceKey(node);
+    const choice = window._nodeChoices[key] || classifyMissingNode(node.row, node.col, GRID.nx, GRID.ny);
+    node._choice = choice;
+  });
+
+  // Second pass: for TRANSFER nodes, merge the two beam segments into one transfer beam
+  getMissingNodes().filter(n=>n._choice==='transfer').forEach(missingNode => {
+    // Find beams that touch this missing node
+    const touching = GRID.beams.filter(b => b.n1===missingNode.id || b.n2===missingNode.id);
+
+    // Group by direction
+    ['X','Y'].forEach(dir => {
+      const segs = touching.filter(b=>b.dir===dir);
+      if (segs.length < 2) return; // need exactly 2 segments to merge
+
+      // Sort: segment whose OTHER end is to the left/top first
+      segs.sort((a,b) => {
+        const oa = GRID.nodes[a.n1===missingNode.id ? a.n2 : a.n1];
+        const ob = GRID.nodes[b.n1===missingNode.id ? b.n2 : b.n1];
+        return dir==='X' ? oa.x - ob.x : oa.y - ob.y;
+      });
+
+      const seg1 = segs[0], seg2 = segs[1];
+      const leftNodeId  = seg1.n1===missingNode.id ? seg1.n2 : seg1.n1;
+      const rightNodeId = seg2.n1===missingNode.id ? seg2.n2 : seg2.n1;
+      const leftNode  = GRID.nodes[leftNodeId];
+      const rightNode = GRID.nodes[rightNodeId];
+      if (!leftNode || !rightNode) return;
+
+      const totalL = seg1.L + seg2.L;
+
+      // Create merged transfer beam
+      const mergedBeam = {
+        id: seg1.id, // reuse id
+        dir, n1: leftNodeId, n2: rightNodeId,
+        row: missingNode.row, col: Math.min(leftNode.col, rightNode.col),
+        L: totalL,
+        spX: dir==='X' ? totalL : (seg1.spX||4),
+        spY: dir==='Y' ? totalL : (seg1.spY||3),
+        x1: leftNode.x, y1: leftNode.y, x2: rightNode.x, y2: rightNode.y,
+        endLeft: seg1.endLeft || 'column',
+        endRight: seg2.endRight || 'column',
+        isSecondary: false, isCantilever: false, isTransfer: true,
+        endCondOverride: seg1.endCondOverride, customWu: null,
+        _transferNode: missingNode.id, // store which node is the floating column
+      };
+
+      // Remove old segments and add merged beam
+      GRID.beams = GRID.beams.filter(b => b.id!==seg1.id && b.id!==seg2.id);
+      GRID.beams.push(mergedBeam);
+    });
+  });
+
+  // Third pass: remove beams that terminate at VOID nodes
+  GRID.beams = GRID.beams.filter(beam => {
+    const n1=GRID.nodes[beam.n1], n2=GRID.nodes[beam.n2];
+    if(!n1||!n2) return false;
+    if(!n1.hasColumn && n1._choice==='void') return false;
+    if(!n2.hasColumn && n2._choice==='void') return false;
+    return true;
+  });
+
+  // Fourth pass: void adjacent bays for void nodes
+  GRID.bays.forEach(bay => {
+    const corners = [
+      GRID.nodes[bay.row*(GRID.nx+1)+bay.col],
+      GRID.nodes[bay.row*(GRID.nx+1)+bay.col+1],
+      GRID.nodes[(bay.row+1)*(GRID.nx+1)+bay.col],
+      GRID.nodes[(bay.row+1)*(GRID.nx+1)+bay.col+1],
+    ];
+    if(corners.some(n=>n&&!n.hasColumn&&n._choice==='void') && bay.type==='slab') {
+      bay.type='void';
+    }
+  });
+
+  updateTransferBeams();
+}
+
+// ── TRANSFER BEAM POINT LOAD ─────────────────────────────────────
+function getTransferPointLoad(beam, missingNode, DL_tot, udlLL, udlRoof, wallLoad, numFloors) {
+  if (!beam || !missingNode) return null;
+  const {slabArea, perimLen} = getColTribAreaDetailed(missingNode);
+  const floorsAbove = numFloors;
+  const llRedFactor = llReductionFactor(floorsAbove);
+  const nTypical = floorsAbove - 1;
+  const LL_total = (nTypical * udlLL + (udlRoof||1.5)) * slabArea * llRedFactor;
+  const wallContrib = nTypical * wallLoad * perimLen;
+  const P_s = floorsAbove * DL_tot * slabArea + LL_total + wallContrib;
+  const P_u = 1.5 * P_s;
+  const n1=GRID.nodes[beam.n1], n2=GRID.nodes[beam.n2];
+  const a = beam.dir==='X'
+    ? Math.abs(missingNode.x - Math.min(n1.x,n2.x))
+    : Math.abs(missingNode.y - Math.min(n1.y,n2.y));
+  const aClamped = Math.max(0.1, Math.min(a, beam.L - 0.1));
+  return { P_s, P_u, a:aClamped, b:beam.L-aClamped, slabArea, floorsAbove };
+}
+
+function getTransferMissingNode(beam) {
+  if (!beam || !beam.isTransfer || !GRID) return null;
+  // First try: check stored _transferNode id (set during merge)
+  if (beam._transferNode !== undefined) {
+    return GRID.nodes.find(n => n.id === beam._transferNode) || null;
+  }
+  // Fallback: search for missing node between beam endpoints
+  const n1=GRID.nodes[beam.n1], n2=GRID.nodes[beam.n2];
+  if (!n1||!n2) return null;
+  return GRID.nodes.find(n => {
+    if (n.hasColumn || n.isWall || n._choice!=='transfer') return false;
+    if (beam.dir==='X') {
+      return n.row===beam.row
+        && n.x > Math.min(n1.x,n2.x)+0.01
+        && n.x < Math.max(n1.x,n2.x)-0.01;
+    } else {
+      return n.col===beam.col
+        && n.y > Math.min(n1.y,n2.y)+0.01
+        && n.y < Math.max(n1.y,n2.y)-0.01;
+    }
+  }) || null;
+}
+
 // Mode flag — persisted to localStorage to survive page reloads
 if(typeof window._coordMode === 'undefined'){
   window._coordMode = localStorage.getItem('_coordMode')==='true';
@@ -3177,6 +3562,7 @@ function runCalcsFromGrid(){
   }
 
   GRID.beams.forEach(b=>autoEndConditions(b));
+  applyNodeChoices(); // apply void/transfer choices for missing nodes
   updateTransferBeams();
 
   const{fck,fy,Es,numFloors,floorHt,
@@ -3564,6 +3950,15 @@ function runCalcsFromGrid(){
 function runNow(){
   const ldEl=document.getElementById('ld');
   const rbEl=document.getElementById('rb');
+
+  // ── CHECK FOR MISSING NODES NEEDING STUDENT INPUT ────────────
+  if(!GRID) initGrid();
+  const unchosenNodes = needsMissingNodeDialog();
+  if(unchosenNodes.length > 0){
+    showMissingNodeDialog(unchosenNodes, ()=>runNow()); // show dialog, callback runs analysis
+    return;
+  }
+
   if(ldEl)ldEl.style.display='block';
   if(rbEl)rbEl.disabled=true;
   setTimeout(()=>{

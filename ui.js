@@ -1185,6 +1185,31 @@ function beamDetail(b){
   ${vd(ok,ok?'All checks PASS — beam is safe':'One or more checks FAIL — revision required')}
   <div style="font-size:10px;color:var(--txt3);margin-bottom:10px">End conditions: <strong style="color:var(--txt2)">${b.endCond||'auto'}</strong></div>
 
+  ${b.isTransfer?`
+  <div style="margin-bottom:12px;padding:12px;background:rgba(245,158,11,0.06);border:1.5px solid rgba(245,158,11,0.4);border-radius:8px">
+    <div style="font-size:12px;font-weight:800;color:#f59e0b;margin-bottom:8px">⚠ TRANSFER BEAM — Read This First</div>
+    <div style="font-size:10px;color:#fbbf24;line-height:1.8;margin-bottom:8px">
+      <strong>What is a transfer beam?</strong><br>
+      A transfer beam carries the load of a <em>floating column</em> — a column that has no support below it. This happens when a column is removed for architectural reasons (open plan, parking, lobby). The transfer beam must carry the entire load from all floors above the missing column, delivered as a heavy <strong>point load</strong> at a specific position along its span, in addition to its normal slab UDL load.
+    </div>
+    ${b.transferPL?`
+    <div style="font-size:10px;color:#94a3b8;line-height:1.8;background:#0a0f1e;padding:8px;border-radius:6px;margin-bottom:8px">
+      <strong style="color:#f59e0b">Point Load from floating column:</strong><br>
+      Service load P_s = <strong>${r2(b.transferPL.P_s)} kN</strong> (${b.transferPL.floorsAbove} floors × ${r2(b.transferPL.slabArea)}m² tributary area)<br>
+      Factored load P_u = 1.5 × ${r2(b.transferPL.P_s)} = <strong style="color:#f59e0b">${r2(b.transferPL.P_u)} kN</strong><br>
+      Position: <strong>${r2(b.transferPL.a)}m from left end</strong>, ${r2(b.transferPL.b)}m from right end (L=${b.L}m)<br>
+      Additional moment: P_u × a × b / L = ${r2(b.transferPL.P_u)} × ${r2(b.transferPL.a)} × ${r2(b.transferPL.b)} / ${b.L} = <strong>${r2(b.transferPL.P_u*b.transferPL.a*b.transferPL.b/b.L)} kN.m</strong>
+    </div>`:``}
+    <div style="font-size:9px;color:#92400e;padding:6px 10px;background:rgba(245,158,11,0.08);border-radius:4px">
+      ⚠ <strong>IMPORTANT:</strong> Transfer beam design is approximate. The actual design must account for:<br>
+      • Deflection under point load (much larger than UDL beams)<br>
+      • Differential settlement at supports<br>
+      • Connection detailing at the floating column<br>
+      • Seismic considerations — IS 1893 requires special detailing<br>
+      <strong>Always verify transfer beam design with a qualified structural engineer before construction.</strong>
+    </div>
+  </div>`:``}
+
   ${sb('B-1','Beam Size',`
     ${fm('D (start at L×1000/12 = '+r2(b.L*1000)+'/12, iterate up until Mu≤Mulim & δ≤δallow)',b.D+' mm','')}
     ${fm('b = max(200, 0.4D) = max(200, '+r0(0.4*b.D)+')',b.b+' mm','IS 456 Cl 26.5.1.2')}
