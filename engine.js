@@ -1252,85 +1252,111 @@ function spansToColumns() {
 
 // ── GRID INITIALISATION ─────────────────────────────────────────
 function initGrid() {
-  // If coordinate mode, convert columns to spansX/spansY first
+  // ── STAGE 2: Node-based grid ─────────────────────────────────
+  // Convert coordinates to spans if in coordinate mode
+  let coordResult = null;
   if (S.columns && S.columns.length >= 2) {
-    const result = coordsToGrid();
-    if (!result.ok) {
-      console.warn('coordsToGrid failed:', result.error);
-      // Fall back to existing spansX/spansY
-    } else if (result.missingNodes.length > 0) {
-      // Store missing nodes so initGrid can mark them
-      window._missingFromCoords = result.missingNodes;
-    } else {
-      window._missingFromCoords = [];
+    coordResult = coordsToGrid();
+    if (!coordResult.ok) {
+      console.warn('coordsToGrid failed:', coordResult.error);
+      coordResult = null;
     }
-  } else {
-    window._missingFromCoords = [];
   }
 
   const nx = S.spansX.length, ny = S.spansY.length;
+
+  // Build cumulative real coordinates from span arrays
+  const xPos = [0];
+  S.spansX.forEach(s => xPos.push(Math.round((xPos[xPos.length-1]+s)*1000)/1000));
+  const yPos = [0];
+  S.spansY.forEach(s => yPos.push(Math.round((yPos[yPos.length-1]+s)*1000)/1000));
+
   const nodes = [], beams = [], bays = [];
 
+  // ── NODES: store actual x,y coordinates ──
   for (let r = 0; r <= ny; r++) {
     for (let c = 0; c <= nx; c++) {
       nodes.push({
         id: r*(nx+1)+c, row: r, col: c,
+        x: xPos[c], y: yPos[r],  // Stage 2: real coordinates
         hasColumn: true, isWall: false,
-        colSize: null,    // null = use global S.colSize
-        label: '',
+        colSize: null, label: '',
       });
     }
   }
-
-  let beamId = 0;
-  // X beams
-  for (let r = 0; r <= ny; r++) {
-    for (let c = 0; c < nx; c++) {
-      const n1 = r*(nx+1)+c, n2 = r*(nx+1)+c+1;
-      beams.push({
-        id: beamId++, dir:'X', n1, n2, row:r, col:c, L:S.spansX[c],
-        endLeft:'column', endRight:'column',
-        isSecondary:false, isCantilever:false, isTransfer:false,
-        endCondOverride: null,  // null=auto | 'continuous'|'pinned'|'fixed'|'free'
-        customWu: null,
-      });
-    }
-  }
-  // Y beams
-  for (let c = 0; c <= nx; c++) {
-    for (let r = 0; r < ny; r++) {
-      const n1 = r*(nx+1)+c, n2 = (r+1)*(nx+1)+c;
-      beams.push({
-        id: beamId++, dir:'Y', n1, n2, row:r, col:c, L:S.spansY[r],
-        endLeft:'column', endRight:'column',
-        isSecondary:false, isCantilever:false, isTransfer:false,
-        endCondOverride: null,
-        customWu: null,
-      });
-    }
-  }
-  // Bays
-  for (let r = 0; r < ny; r++) {
-    for (let c = 0; c < nx; c++) {
-      bays.push({
-        row:r, col:c,
-        type:'slab',   // 'slab'|'void'|'opening'|'courtyard'|'staircase'
-        lx:Math.min(S.spansX[c],S.spansY[r]),
-        ly:Math.max(S.spansX[c],S.spansY[r]),
-      });
-    }
-  }
-
-  GRID = { nodes, beams, bays, nx, ny };
 
   // Mark missing nodes from coordinate mode
-  if (window._missingFromCoords && window._missingFromCoords.length > 0) {
-    window._missingFromCoords.forEach(m => {
-      const node = getNode(m.row, m.col);
+  if (coordResult && coordResult.missingNodes) {
+    coordResult.missingNodes.forEach(m => {
+      const node = nodes.find(n => n.row===m.row && n.col===m.col);
       if (node) node.hasColumn = false;
     });
   }
 
+  // ── BEAMS: only between nodes where at least one has a column ──
+  let beamId = 0;
+  // X beams (horizontal)
+  for (let r = 0; r <= ny; r++) {
+    for (let c = 0; c < nx; c++) {
+      const nId1=r*(nx+1)+c, nId2=r*(nx+1)+c+1;
+      const n1=nodes[nId1], n2=nodes[nId2];
+      if (!n1.hasColumn && !n2.hasColumn) continue; // skip floating beams
+      beams.push({
+        id: beamId++, dir:'X', n1:nId1, n2:nId2, row:r, col:c,
+        L: S.spansX[c],
+        spX: S.spansX[c],
+        spY: S.spansY[r] || S.spansY[r-1] || 3,
+        x1: n1.x, y1: n1.y, x2: n2.x, y2: n2.y,
+        endLeft:'column', endRight:'column',
+        isSecondary:false, isCantilever:false, isTransfer:false,
+        endCondOverride:null, customWu:null,
+      });
+    }
+  }
+  // Y beams (vertical)
+  for (let c = 0; c <= nx; c++) {
+    for (let r = 0; r < ny; r++) {
+      const nId1=r*(nx+1)+c, nId2=(r+1)*(nx+1)+c;
+      const n1=nodes[nId1], n2=nodes[nId2];
+      if (!n1.hasColumn && !n2.hasColumn) continue; // skip floating beams
+      beams.push({
+        id: beamId++, dir:'Y', n1:nId1, n2:nId2, row:r, col:c,
+        L: S.spansY[r],
+        spY: S.spansY[r],
+        spX: S.spansX[c] || S.spansX[c-1] || 4,
+        x1: n1.x, y1: n1.y, x2: n2.x, y2: n2.y,
+        endLeft:'column', endRight:'column',
+        isSecondary:false, isCantilever:false, isTransfer:false,
+        endCondOverride:null, customWu:null,
+      });
+    }
+  }
+
+  // ── BAYS: store span dimensions, auto-void if <2 corners ──
+  for (let r = 0; r < ny; r++) {
+    for (let c = 0; c < nx; c++) {
+      const corners = [
+        nodes[r*(nx+1)+c],   nodes[r*(nx+1)+c+1],
+        nodes[(r+1)*(nx+1)+c], nodes[(r+1)*(nx+1)+c+1],
+      ];
+      const colCount = corners.filter(n=>n&&n.hasColumn).length;
+      const spX=S.spansX[c], spY=S.spansY[r];
+      // In coordinate mode: void if any corner column missing (IS 456 has no method for 3-sided slabs)
+      // In legacy span mode: always slab by default (user can manually set void)
+      const autoVoid = coordResult && colCount < 4;
+      bays.push({
+        row:r, col:c,
+        type: autoVoid ? 'void' : 'slab',
+        lx: Math.min(spX,spY), ly: Math.max(spX,spY),
+        spX, spY,
+        x: xPos[c], y: yPos[r],
+        colCount, hasAllCorners: colCount===4,
+      });
+    }
+  }
+
+  GRID = { nodes, beams, bays, nx, ny,
+           xPos, yPos, totalX:xPos[nx], totalY:yPos[ny] };
   GE.selected = null;
   return GRID;
 }
@@ -1338,6 +1364,9 @@ function initGrid() {
 // ── HELPER QUERIES ──────────────────────────────────────────────
 function getNode(r,c){return GRID&&GRID.nodes.find(n=>n.row===r&&n.col===c);}
 function getBay(r,c){return GRID&&GRID.bays.find(b=>b.row===r&&b.col===c);}
+// Stage 2 helpers:
+function getNodeAt(x,y,tol){tol=tol||0.1;return GRID&&GRID.nodes.find(n=>Math.abs(n.x-x)<tol&&Math.abs(n.y-y)<tol);}
+function getBeamBetween(i1,i2){return GRID&&GRID.beams.find(b=>(b.n1===i1&&b.n2===i2)||(b.n1===i2&&b.n2===i1));}
 
 function updateTransferBeams() {
   if(!GRID)return;
@@ -1438,8 +1467,8 @@ function getSlabEquivLoad(w_total, lx, ly, beamIsAlongShortSpan){
 }
 
 function getTribWidth(beam){
-  // Legacy function kept for column tributary area and diagram use only
-  // Returns simple geometric half-span for display purposes
+  // Stage 2: use actual bay dimensions stored on beam object
+  // For legacy compatibility, fall back to S.spansX/Y if not stored
   if(!GRID) return (S.spansY.reduce((a,b)=>a+b,0)/S.spansY.length/2);
   let trib=0;
   function secBeamSplits(bayRow,bayCol,perpDir){
@@ -1450,23 +1479,27 @@ function getTribWidth(beam){
     const ba=getBay(beam.row-1,beam.col);
     const bb=getBay(beam.row,beam.col);
     if(ba&&ba.type==='slab'){
+      const spY=ba.spY||S.spansY[beam.row-1]||3; // Stage 2: use bay's stored spY
       const factor=secBeamSplits(beam.row-1,beam.col,'X')?0.5:1.0;
-      trib+=S.spansY[beam.row-1]/2*factor;
+      trib+=spY/2*factor;
     }
     if(bb&&bb.type==='slab'){
+      const spY=bb.spY||S.spansY[beam.row]||3;
       const factor=secBeamSplits(beam.row,beam.col,'X')?0.5:1.0;
-      trib+=S.spansY[beam.row]/2*factor;
+      trib+=spY/2*factor;
     }
   } else {
     const bl=getBay(beam.row,beam.col-1);
     const br=getBay(beam.row,beam.col);
     if(bl&&bl.type==='slab'){
+      const spX=bl.spX||S.spansX[beam.col-1]||4; // Stage 2: use bay's stored spX
       const factor=secBeamSplits(beam.row,beam.col-1,'Y')?0.5:1.0;
-      trib+=S.spansX[beam.col-1]/2*factor;
+      trib+=spX/2*factor;
     }
     if(br&&br.type==='slab'){
+      const spX=br.spX||S.spansX[beam.col]||4;
       const factor=secBeamSplits(beam.row,beam.col,'Y')?0.5:1.0;
-      trib+=S.spansX[beam.col]/2*factor;
+      trib+=spX/2*factor;
     }
   }
   return Math.max(trib,0.5);
@@ -1483,11 +1516,11 @@ function getBeamSlabLoad(beam, w_slab_per_m2){
     const bay = getBay(bayRow, bayCol);
     if(!bay || bay.type !== 'slab') return 0;
 
-    // Get slab panel dimensions
-    const lx_bay = Math.min(S.spansX[bayCol]||4, S.spansY[bayRow]||3);
-    const ly_bay = Math.max(S.spansX[bayCol]||4, S.spansY[bayRow]||3);
-    const spanX = S.spansX[bayCol]||4;
-    const spanY = S.spansY[bayRow]||3;
+    // Stage 2: use actual bay dimensions stored on bay object
+    const spanX = bay.spX || S.spansX[bayCol] || 4;
+    const spanY = bay.spY || S.spansY[bayRow] || 3;
+    const lx_bay = Math.min(spanX, spanY);
+    const ly_bay = Math.max(spanX, spanY);
 
     // Is this beam running along the short span of this bay?
     // X-beam (runs along X direction) is the SHORT-span beam if spansX < spansY
@@ -1644,20 +1677,27 @@ const CANVAS_W=760, CANVAS_H=480;
 const PAD={l:60,r:20,t:50,b:50};
 
 function getCanvasCoords(){
-  if(!GRID)return{xs:[],ys:[]};
+  if(!GRID) return {xs:[],ys:[]};
   const pw=CANVAS_W-PAD.l-PAD.r, ph=CANVAS_H-PAD.t-PAD.b;
-  const totalX=S.spansX.reduce((a,b)=>a+b,0);
-  const totalY=S.spansY.reduce((a,b)=>a+b,0);
-  let xs=[PAD.l];
-  S.spansX.forEach(s=>xs.push(xs[xs.length-1]+s/totalX*pw));
-  let ys=[PAD.t];
-  S.spansY.forEach(s=>ys.push(ys[ys.length-1]+s/totalY*ph));
+  // Stage 2: use actual stored coordinate arrays
+  const totalX=GRID.totalX||S.spansX.reduce((a,b)=>a+b,0)||1;
+  const totalY=GRID.totalY||S.spansY.reduce((a,b)=>a+b,0)||1;
+  const xPos=GRID.xPos||[0];
+  const yPos=GRID.yPos||[0];
+  const xs=xPos.map(x=>PAD.l+x/totalX*pw);
+  const ys=yPos.map(y=>PAD.t+y/totalY*ph);
   return{xs,ys,pw,ph,totalX,totalY};
 }
 
 function nodeCanvas(node){
+  // Stage 2: use node real x,y if available
+  if(GRID&&node.x!==undefined&&node.y!==undefined){
+    const pw=CANVAS_W-PAD.l-PAD.r, ph=CANVAS_H-PAD.t-PAD.b;
+    const totalX=GRID.totalX||1, totalY=GRID.totalY||1;
+    return{x:PAD.l+node.x/totalX*pw, y:PAD.t+node.y/totalY*ph};
+  }
   const{xs,ys}=getCanvasCoords();
-  return{x:xs[node.col],y:ys[node.row]};
+  return{x:xs[node.col]||PAD.l, y:ys[node.row]||PAD.t};
 }
 
 // ── BAY FILL STYLES ──────────────────────────────────────────────
@@ -2614,20 +2654,29 @@ function AstCalc(Mu,b,d,fck,fy,Mf){
 function getColTribAreaDetailed(node){
   const r=node.row, c=node.col;
   let slabArea=0, voidArea=0, perimLen=0;
+  // Stage 2: use bay's stored spX/spY instead of S.spansX[c]/S.spansY[r]
   const Q=[
-    {bay:getBay(r-1,c-1), spX:S.spansX[c-1]||0, spY:S.spansY[r-1]||0},
-    {bay:getBay(r-1,c),   spX:S.spansX[c]||0,   spY:S.spansY[r-1]||0},
-    {bay:getBay(r,  c-1), spX:S.spansX[c-1]||0, spY:S.spansY[r]||0},
-    {bay:getBay(r,  c),   spX:S.spansX[c]||0,   spY:S.spansY[r]||0},
+    {bay:getBay(r-1,c-1)},
+    {bay:getBay(r-1,c)},
+    {bay:getBay(r,  c-1)},
+    {bay:getBay(r,  c)},
   ];
-  Q.forEach(({bay,spX,spY})=>{
+  Q.forEach(({bay})=>{
+    // Use actual bay dimensions or fall back to span arrays
+    const spX = bay ? (bay.spX||S.spansX[bay.col]||0) : 0;
+    const spY = bay ? (bay.spY||S.spansY[bay.row]||0) : 0;
     const a=spX/2*spY/2;
     if(!bay||bay.type==='void'||bay.type==='opening'||bay.type==='courtyard') voidArea+=a;
     else slabArea+=a;
   });
   const isTopRow=r===0,isBotRow=r===GRID.ny,isLftCol=c===0,isRgtCol=c===GRID.nx;
-  if(isTopRow||isBotRow) perimLen+=(S.spansX[c]||0)/2+(S.spansX[c-1]||0)/2;
-  if(isLftCol||isRgtCol) perimLen+=(S.spansY[r]||0)/2+(S.spansY[r-1]||0)/2;
+  // Stage 2: use node x,y for perimeter calculation
+  const spXright = getBay(r,c) ? (getBay(r,c).spX||S.spansX[c]||0) : (S.spansX[c]||0);
+  const spXleft  = getBay(r,c-1) ? (getBay(r,c-1).spX||S.spansX[c-1]||0) : (S.spansX[c-1]||0);
+  const spYbelow = getBay(r,c) ? (getBay(r,c).spY||S.spansY[r]||0) : (S.spansY[r]||0);
+  const spYabove = getBay(r-1,c) ? (getBay(r-1,c).spY||S.spansY[r-1]||0) : (S.spansY[r-1]||0);
+  if(isTopRow||isBotRow) perimLen+=spXright/2+spXleft/2;
+  if(isLftCol||isRgtCol) perimLen+=spYbelow/2+spYabove/2;
   return{slabArea,voidArea,perimLen};
 }
 
@@ -3116,14 +3165,14 @@ function runCalcsFromGrid(){
   const slabBays   = GRID.bays.filter(b=>b.type==='slab');
   const voidBays   = GRID.bays.filter(b=>b.type!=='slab'&&b.type!=='staircase');
   const stairBays  = GRID.bays.filter(b=>b.type==='staircase');
-  const slabFloorArea = slabBays.reduce((s,b)=>(s+(S.spansX[b.col]||0)*(S.spansY[b.row]||0)),0);
+  const slabFloorArea = slabBays.reduce((s,b)=>(s+(b.spX||S.spansX[b.col]||0)*(b.spY||S.spansY[b.row]||0)),0);
 
   // ── SLAB: design EVERY slab bay individually ─────────────────
   const wu_sl_floor = 1.5*(DL_sl+floorFinish+partitions+udlLL);
   const wu_sl_roof  = 1.5*(DL_sl+floorFinish+(udlRoof||1.5));
 
   function designSlabBay(bay, isRoof){
-    const spX=S.spansX[bay.col]||3, spY=S.spansY[bay.row]||3;
+    const spX=bay.spX||S.spansX[bay.col]||3, spY=bay.spY||S.spansY[bay.row]||3; // Stage 2
     const lx=Math.min(spX,spY), ly=Math.max(spX,spY);
     const ratio=ly/lx, twoWay=ratio<2;
     // Minimum D: IS 456 Cl 23.2 l/d ≤ 26 for two-way, 20 for one-way
@@ -3180,14 +3229,14 @@ function runCalcsFromGrid(){
     const rowLbl=String.fromCharCode(65+bay.row);
     const colLbl=String(bay.col+1);
     return{bayLabel:'Stair '+rowLbl+colLbl, row:bay.row, col:bay.col, isStair:true,
-      spX:S.spansX[bay.col]||3, spY:S.spansY[bay.row]||3};
+      spX:bay.spX||S.spansX[bay.col]||3, spY:bay.spY||S.spansY[bay.row]||3};
   });
 
   // Critical bay: governs uniform slab thickness for construction
   const critBay = slabBays.length>0
     ? slabBays.reduce((a,b)=>
-        Math.min(S.spansX[b.col]||3,S.spansY[b.row]||3) >
-        Math.min(S.spansX[a.col]||3,S.spansY[a.row]||3) ? b : a)
+        Math.min(b.spX||S.spansX[b.col]||3,b.spY||S.spansY[b.row]||3) >
+        Math.min(a.spX||S.spansX[a.col]||3,a.spY||S.spansY[a.row]||3) ? b : a)
     : {row:0,col:0,type:'slab'};
   const lx   = allSlabPanels.length>0 ? allSlabPanels[0].lx : 3;
   const ly   = allSlabPanels.length>0 ? allSlabPanels[0].ly : 4;
@@ -3277,8 +3326,8 @@ function runCalcsFromGrid(){
   const theta=Math.atan(riser/tread);  // stair angle in radians
 
   function designStairBay(bay){
-    const spX=S.spansX[bay.col]||3;
-    const spY=S.spansY[bay.row]||3;
+    const spX=bay.spX||S.spansX[bay.col]||3; // Stage 2
+    const spY=bay.spY||S.spansY[bay.row]||3; // Stage 2
     // Flight span = shorter bay dimension (stair goes across shorter span)
     // Landing takes ~30% of span, flight takes ~70%
     const flightSpan=Math.min(spX,spY)*0.7;

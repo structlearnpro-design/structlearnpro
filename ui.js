@@ -975,8 +975,8 @@ function svgBeamCrossSection(b){
 
 function svgTributaryArea(b){
   const W=440, H=320, padL=55, padT=40, padR=30, padB=55;
-  const spX = S.spansX[b.col]||4;
-  const spY = S.spansY[b.row]||3;
+  const spX = b.spX||S.spansX[b.col]||4; // Stage 2: use beam stored span
+  const spY = b.spY||S.spansY[b.row]||3; // Stage 2
   const nCols = Math.min(S.spansX.length, 4);
   const nRows = Math.min(S.spansY.length, 4);
   const isX = b.dir==='X';
@@ -1190,11 +1190,11 @@ function beamDetail(b){
     ${svgTributaryArea(b)}
     ${fm('Tributary width from grid (slab bays only)',r2(b.trib)+' m','')}
     ${(()=>{
-      const lx=Math.min(S.spansX[b.col]||4, S.spansY[b.row]||3);
-      const ly=Math.max(S.spansX[b.col]||4, S.spansY[b.row]||3);
+      const lx=Math.min(b.spX||S.spansX[b.col]||4, b.spY||S.spansY[b.row]||3);
+      const ly=Math.max(b.spX||S.spansX[b.col]||4, b.spY||S.spansY[b.row]||3);
       const r=ly/lx, twoWay=r<2;
-      const beamSpan=b.dir==='X'?S.spansX[b.col]||4:S.spansY[b.row]||3;
-      const isShort=beamSpan<=Math.max(S.spansX[b.col]||4,S.spansY[b.row]||3);
+      const beamSpan=b.dir==='X'?(b.spX||S.spansX[b.col]||4):(b.spY||S.spansY[b.row]||3);
+      const isShort=beamSpan<=Math.max(b.spX||S.spansX[b.col]||4,b.spY||S.spansY[b.row]||3);
       const wBase=r2(RES.slab.DL_sl+S.floorFinish+S.partitions+(b.isRoof?S.udlRoof:S.udlLL));
       let formula='', result='';
       if(twoWay && isShort){
@@ -1481,7 +1481,7 @@ function colDetail(c){
   ${vd(ok,ok?'SAFE — Pu('+r2(c.Pu)+'kN) ≤ Pcap('+r2(c.Pcap)+'kN)':'UNSAFE — Pu('+r2(c.Pu)+'kN) > Pcap('+r2(c.Pcap)+'kN) — REVISE',c.Pu/c.Pcap)}
 
   ${sb('C-1','Tributary Area & Axial Load',`
-    ${svgTribArea(c.corner?'corner':c.edge?'edge':'interior', S.spansX[c.col]||4, S.spansY[c.row]||3, c.row, c.col, S.spansY.length, S.spansX.length)}
+    ${svgTribArea(c.corner?'corner':c.edge?'edge':'interior', S.spansX[c.col]||4, S.spansY[c.row]||3, c.row, c.col, GRID.ny, GRID.nx)}
     ${fm('Slab trib area (slab bays only, voids excluded)',r2(c.ta)+' m²','')}
     ${c.perimLen>0?fm('Perimeter beam length (wall load)',r2(c.perimLen)+' m',''):''}
     ${fm('Ps per floor = DL_tot×area + LL×area×0.25 + wallLoad×perimLen',r2(c.Ps/c.floorsAbove)+' kN/floor','')}
