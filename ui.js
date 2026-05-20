@@ -38,6 +38,8 @@ function go(n){
     },60);
     if(n===2){
       if(!GRID)initGrid();
+      // Apply any stored node choices so canvas is correct immediately
+      if(Object.keys(window._nodeChoices||{}).length>0) applyNodeChoices();
       // Multiple draws to ensure _coordMode flag is read correctly
       setTimeout(()=>{
         const cv=document.getElementById('gridCanvas');

@@ -597,9 +597,12 @@ function svgTribArea(type,spX,spY,colRow,colCol,gridNY,gridNX){
     g+=`<text x="${x0-10}" y="${(ys[i]+ys[i+1])/2+4}" fill="#f59e0b" font-size="9" text-anchor="middle" font-family="JetBrains Mono" transform="rotate(-90,${x0-10},${(ys[i]+ys[i+1])/2})">${spY}m</text>`;
   }
 
-  // All column nodes
-  xs.forEach(x=>ys.forEach(y=>{
+  // All column nodes — skip if missing in GRID
+  xs.forEach((x,ci)=>ys.forEach((y,ri)=>{
     if(x===cx&&y===cy) return; // skip design column slot
+    // Check if this node is missing/void in actual GRID
+    const gridNode = GRID && getNode(ri, ci);
+    if(gridNode && !gridNode.hasColumn) return; // skip void/removed columns
     g+=`<rect x="${x-5}" y="${y-5}" width="10" height="10" fill="#1e293b" stroke="#64748b" stroke-width="1.5" rx="1"/>`;
   }));
 
@@ -1644,21 +1647,24 @@ function runWithOverrides(label){
   const ldEl=document.getElementById('ld');
   const main=document.getElementById('main');
   if(ldEl) ldEl.style.display='block';
-  if(main) main.innerHTML='<div style="padding:40px;text-align:center;color:#64748b">Re-analysing with your changes...</div>';
+  if(main) main.innerHTML='<div style="padding:40px;text-align:center;color:#64748b;font-family:JetBrains Mono">Re-analysing with your changes...</div>';
 
   setTimeout(()=>{
     try{
       if(!GRID) initGrid();
       RES = runCalcsFromGrid();
-      pushHistory(label || 'Custom override'); // update with actual results
-      window._analysisHistory.pop(); // remove duplicate (pushed twice)
+      window._analysisHistory.pop(); // remove duplicate
+      pushHistory(label || 'Custom override');
       window._historyIdx = window._analysisHistory.length - 1;
       if(ldEl) ldEl.style.display='none';
-      showSec(RSEC);
+      // Re-render p7 FIRST (restores secBody element), then show section
+      if(main) main.innerHTML = p7();
       renderHistoryBar();
+      showSec(RSEC||'safety');
     } catch(e){
       console.error('Override re-run error:', e);
-      if(main) main.innerHTML=`<div class="card"><div class="ct" style="color:var(--red)">Error</div><div class="cp re">${e.message}</div></div>`;
+      if(ldEl) ldEl.style.display='none';
+      if(main) main.innerHTML=`<div class="card"><div class="ct" style="color:var(--red)">Re-analysis Error</div><div class="cp" style="color:#f87171;font-size:11px;line-height:1.6">${e.message}</div><button class="btn" onclick="go(2)" style="margin-top:10px">← Fix Plan & Spans</button></div>`;
     }
   }, 400);
 }
@@ -1809,6 +1815,14 @@ function drawGrid(canvas){
   GRID.beams.forEach(beam=>{
     const n1=GRID.nodes[beam.n1],n2=GRID.nodes[beam.n2];
     if(!n1||!n2)return;
+    // Skip beams whose endpoint is a void-chosen missing node
+    if(!n1.hasColumn && n1._choice==='void') return;
+    if(!n2.hasColumn && n2._choice==='void') return;
+    // Skip dead-end beams at transfer nodes (they get merged)
+    if(!beam.isTransfer && !beam._transferNode){
+      if(!n1.hasColumn && n1._choice==='transfer') return;
+      if(!n2.hasColumn && n2._choice==='transfer') return;
+    }
     const p1=nodeCanvas(n1),p2=nodeCanvas(n2);
     const isSel=GE.selected&&GE.selected.type==='beam'&&GE.selected.id===beam.id;
 
@@ -1867,7 +1881,6 @@ function drawGrid(canvas){
       // Centre dot
       ctx.fillStyle=isSel?'#38bdf8':'#34d399';
       ctx.beginPath();ctx.arc(pos.x,pos.y,3,0,Math.PI*2);ctx.fill();
-      // Node label if custom
       if(node.label){
         ctx.fillStyle='#94a3b8';ctx.font='8px JetBrains Mono';
         ctx.textAlign='center';ctx.fillText(node.label,pos.x,pos.y-13);
@@ -1879,8 +1892,17 @@ function drawGrid(canvas){
       for(let i=pos.x-8;i<pos.x+10;i+=4){
         ctx.beginPath();ctx.moveTo(i,pos.y-5);ctx.lineTo(i-4,pos.y+5);ctx.stroke();
       }
+    }else if(node._choice==='void'){
+      // Void node: show nothing — the area doesn't exist
+    }else if(node._choice==='transfer'){
+      // Transfer node: show floating column marker (amber circle with X)
+      ctx.strokeStyle='#f59e0b';ctx.lineWidth=2;
+      ctx.beginPath();ctx.arc(pos.x,pos.y,7,0,Math.PI*2);ctx.stroke();
+      ctx.strokeStyle='rgba(245,158,11,0.6)';ctx.lineWidth=1.5;
+      ctx.beginPath();ctx.moveTo(pos.x-4,pos.y-4);ctx.lineTo(pos.x+4,pos.y+4);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(pos.x+4,pos.y-4);ctx.lineTo(pos.x-4,pos.y+4);ctx.stroke();
     }else{
-      // Missing/removed column — X marker (only in legacy span mode)
+      // Missing/removed column with no choice yet — X marker (legacy span mode only)
       if(!window._coordMode){
         ctx.strokeStyle=isSel?'#0a0f1e':'#f87171';ctx.lineWidth=2.5;
         ctx.beginPath();ctx.moveTo(pos.x-6,pos.y-6);ctx.lineTo(pos.x+6,pos.y+6);ctx.stroke();
