@@ -1400,6 +1400,100 @@ function getBeamWu(beam,DL_tot,udlLL,wallLoad){
   return 1.5*(wslab+wsw+wwall);
 }
 
+// ── MEMBER OVERRIDES & HISTORY ───────────────────────────────────
+// Stores per-member size overrides. Key format:
+//   beam: "B:row:col:dir"  e.g. "B:1:2:X"
+//   col:  "C:nodeId"       e.g. "C:node_3"
+//   ftg:  "F:nodeId"       e.g. "F:node_3"
+if (!window._memberOverrides) window._memberOverrides = {};
+
+// History stack — each entry: {label, overrides, RES, S_snapshot}
+if (!window._analysisHistory) window._analysisHistory = [];
+if (window._historyIdx === undefined) window._historyIdx = -1;
+
+function beamOverrideKey(b){ return `B:${b.row}:${b.col}:${b.dir}`; }
+function colOverrideKey(c){ return `C:${c.nodeId}`; }
+function ftgOverrideKey(f){ return `F:${f.nodeId||f.baseLabel}`; }
+
+function getBeamOverride(b){ return window._memberOverrides[beamOverrideKey(b)]||null; }
+function getColOverride(c){ return window._memberOverrides[colOverrideKey(c)]||null; }
+
+function setBeamOverride(b, D, bw){
+  window._memberOverrides[beamOverrideKey(b)] = {D, b: bw};
+}
+function setColOverride(c, size){
+  window._memberOverrides[colOverrideKey(c)] = {size};
+}
+function clearOverride(key){
+  delete window._memberOverrides[key];
+}
+function clearAllOverrides(){
+  window._memberOverrides = {};
+}
+
+// Push current state to history before a re-run
+function pushHistory(label){
+  const snap = {
+    label,
+    overrides: JSON.parse(JSON.stringify(window._memberOverrides)),
+    RES: RES,
+    S_snap: JSON.parse(JSON.stringify(S)),
+    time: Date.now()
+  };
+  // If we're not at the tip, truncate forward history
+  window._analysisHistory = window._analysisHistory.slice(0, window._historyIdx + 1);
+  window._analysisHistory.push(snap);
+  if(window._analysisHistory.length > 10) window._analysisHistory.shift();
+  window._historyIdx = window._analysisHistory.length - 1;
+}
+
+// Restore a history snapshot
+function restoreHistory(idx){
+  const snap = window._analysisHistory[idx];
+  if(!snap) return;
+  window._memberOverrides = JSON.parse(JSON.stringify(snap.overrides));
+  RES = snap.RES;
+  window._historyIdx = idx;
+  showSec(RSEC);
+  renderHistoryBar();
+}
+
+function renderHistoryBar(){
+  const el = document.getElementById('_historyBar');
+  if(!el) return;
+  if(window._analysisHistory.length <= 1){ el.style.display='none'; return; }
+  el.style.display = 'flex';
+  el.innerHTML = window._analysisHistory.map((h,i) => {
+    const isActive = i === window._historyIdx;
+    return `<button onclick="restoreHistory(${i})" style="padding:3px 10px;border-radius:12px;border:1px solid ${isActive?'#38bdf8':'#334155'};background:${isActive?'rgba(56,189,248,0.15)':'transparent'};color:${isActive?'#38bdf8':'#64748b'};cursor:pointer;font-size:9px;white-space:nowrap;font-weight:${isActive?'700':'400'}">${i===0?'🔵 Original':('✏ '+h.label)}</button>`;
+  }).join('<span style="color:#334155;align-self:center">→</span>');
+}
+
+// Run full re-analysis with current member overrides applied
+function runWithOverrides(label){
+  pushHistory(label || 'Custom override');
+  const ldEl=document.getElementById('ld');
+  const main=document.getElementById('main');
+  if(ldEl) ldEl.style.display='block';
+  if(main) main.innerHTML='<div style="padding:40px;text-align:center;color:#64748b">Re-analysing with your changes...</div>';
+
+  setTimeout(()=>{
+    try{
+      if(!GRID) initGrid();
+      RES = runCalcsFromGrid();
+      pushHistory(label || 'Custom override'); // update with actual results
+      window._analysisHistory.pop(); // remove duplicate (pushed twice)
+      window._historyIdx = window._analysisHistory.length - 1;
+      if(ldEl) ldEl.style.display='none';
+      showSec(RSEC);
+      renderHistoryBar();
+    } catch(e){
+      console.error('Override re-run error:', e);
+      if(main) main.innerHTML=`<div class="card"><div class="ct" style="color:var(--red)">Error</div><div class="cp re">${e.message}</div></div>`;
+    }
+  }, 400);
+}
+
 // ── EDITOR STATE ─────────────────────────────────────────────────
 let GE = {
   mode: 'select',
@@ -2289,9 +2383,13 @@ function designOneColumn(node, floorsAbove, DL_tot, udlLL_floor, udlLL_roof,
   // is shown in the dedicated P-M Interaction page.
   let Pu = Pu_axial;
 
+  // Apply member override if student has set one
+  const _cOvr = window._memberOverrides && window._memberOverrides[colOverrideKey({nodeId:node.id})];
+
   // Size from axial capacity (accounts for emin reduction inside loop)
   const fck_eff=0.4*fck+0.008*(0.67*fy-0.4*fck);
-  let size=Math.max(300,Math.ceil(Math.sqrt(Math.max(Pu*1000/fck_eff,90000))/25)*25);
+  let size = _cOvr ? _cOvr.size :
+    Math.max(300,Math.ceil(Math.sqrt(Math.max(Pu*1000/fck_eff,90000))/25)*25);
   for(let iter=0;iter<20;iter++){
     const Ag=size*size;
     const Ar=(Pu*1000-0.4*fck*Ag)/(0.67*fy-0.4*fck);
@@ -2305,6 +2403,7 @@ function designOneColumn(node, floorsAbove, DL_tot, udlLL_floor, udlLL_roof,
     const eR=emin_i/size;
     const red=eR>0.05?Math.max(0.6,1-1.5*eR):1.0;
     if(Pcap_a*red>=Pu||size>=800) break;
+    if(_cOvr) break; // override: use student's size as-is
     size+=25;
   }
   const Ag=size*size;
@@ -2446,8 +2545,15 @@ function designOneBeam(gridBeam, floorNum, isRoof,
   // Size: start at L/12, iterate up. bW = max(200, 0.4D) updated each iteration
   let D=Math.max(200,Math.ceil(L*1000/12/25)*25);
 
+  // Apply member override if student has set one
+  const _bOvr = window._memberOverrides && window._memberOverrides[beamOverrideKey(gridBeam)];
+  if(_bOvr && _bOvr.D) {
+    D = _bOvr.D; // use student override directly
+  }
+
   for(let iter=0;iter<40;iter++){
-    const bW=Math.max(200,Math.ceil(D*0.4/25)*25); // recalculate bW as D grows
+    // If override set: use student's b, else auto from D
+    const bW = (_bOvr && _bOvr.b) ? _bOvr.b : Math.max(200,Math.ceil(D*0.4/25)*25);
     const wsw=(bW/1000)*(D/1000)*25;
     const wu_try=1.5*(wslab+wsw+wwall);
     const ws_try=(wslab+wsw+wwall);  // service load (unfactored) for deflection
@@ -2465,10 +2571,11 @@ function designOneBeam(gridBeam, floorNum, isRoof,
       :creep*5*ws_try*L**4/(384*Ec*I_try/1e12);
     const dall_try=gridBeam.isCantilever?L*1000/150:L*1000/250;
     if(Mu_try<=Mulim_try&&dfl_try<=dall_try*0.95) break;
+    if(_bOvr && _bOvr.D) break; // override: use as-is, don't iterate up
     D+=25;
   }
 
-  const bW=Math.max(200,Math.ceil(D*0.4/25)*25); // final value after loop
+  const bW=(_bOvr && _bOvr.b) ? _bOvr.b : Math.max(200,Math.ceil(D*0.4/25)*25); // final
   const wsw=(bW/1000)*(D/1000)*25;
   const wu=1.5*(wslab+wsw+wwall)+wstair; // wstair already factored
   const ws=(wslab+wsw+wwall)+wstair/1.5; // service load for deflection

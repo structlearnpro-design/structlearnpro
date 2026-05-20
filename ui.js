@@ -239,6 +239,9 @@ function p7(){
   ${['overview','seismic','wind','slab','beams','columns','footings','staircase','safety','schedule','snapshot'].map(s=>
     `<button class="tab${RSEC===s?' active':''}" onclick="showSec('${s}')">${s.toUpperCase()}</button>`).join('')}
 </div>
+<div id="_historyBar" style="display:none;align-items:center;gap:6px;flex-wrap:wrap;padding:8px 12px;background:rgba(56,189,248,0.04);border:1px solid rgba(56,189,248,0.15);border-radius:8px;margin-bottom:10px">
+  <span style="font-size:9px;color:#64748b;font-weight:700;white-space:nowrap">📋 HISTORY:</span>
+</div>
 <div id="secBody"></div>`;}
 
 function renderGridPrev(){
@@ -1299,6 +1302,61 @@ function beamDetail(b){
       '<div style="font-size:10px;color:var(--txt3);margin-bottom:6px">D×b governed by deflection — constant on all floors. Load, steel and stirrups vary.</div>'+tblHtml+note,'or');
   })()}
   ${beamFailureExplanation(b)}
+
+  ${(()=>{
+    // ── FEATURE B: Member Override Panel ──
+    const ovrKey = `B:${b.row}:${b.col}:${b.dir}`;
+    const hasOvr = window._memberOverrides && window._memberOverrides[ovrKey];
+    const recD = !b.deflOK ? Math.ceil(b.D*Math.pow(b.dfl/b.dall,1/3)/25+1)*25 : null;
+    const recB = !b.shearSafe ? Math.max(b.b+50, Math.ceil(b.b*1.25/25)*25) : null;
+    const ovr = hasOvr ? window._memberOverrides[ovrKey] : null;
+
+    return `<div style="margin-top:12px;padding:12px;background:rgba(56,189,248,0.05);border:1.5px solid rgba(56,189,248,0.2);border-radius:8px">
+      <div style="font-size:11px;font-weight:700;color:#38bdf8;margin-bottom:8px">🔧 Try Different Size — Re-analyse with Override</div>
+      <div style="font-size:10px;color:#94a3b8;margin-bottom:10px">
+        Change the size of beam <strong style="color:#f59e0b">${b.label}</strong> and see how the full building responds.
+        ${!b.deflOK||!b.shearSafe?`<span style="color:#34d399">Recommended fix: D=${recD||b.D}mm${recB?', b='+recB+'mm':''}</span>`:''}
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:10px">
+        <div>
+          <div style="font-size:9px;color:#64748b;margin-bottom:3px">Depth D (mm)</div>
+          <input id="ovr_bD_${ovrKey.replace(/:/g,'_')}" type="number" min="200" max="1000" step="25"
+            value="${ovr?ovr.D:b.D}"
+            style="width:90px;padding:6px 8px;background:#0f172a;border:1px solid ${!b.deflOK?'#f87171':'#334155'};border-radius:6px;color:#f1f5f9;font-size:11px;font-family:JetBrains Mono"/>
+          ${recD?`<div style="font-size:8px;color:#34d399;margin-top:2px">Recommended: ${recD}mm</div>`:''}
+        </div>
+        <div>
+          <div style="font-size:9px;color:#64748b;margin-bottom:3px">Width b (mm)</div>
+          <input id="ovr_bB_${ovrKey.replace(/:/g,'_')}" type="number" min="150" max="600" step="25"
+            value="${ovr?ovr.b:b.b}"
+            style="width:90px;padding:6px 8px;background:#0f172a;border:1px solid ${!b.shearSafe?'#f87171':'#334155'};border-radius:6px;color:#f1f5f9;font-size:11px;font-family:JetBrains Mono"/>
+          ${recB?`<div style="font-size:8px;color:#34d399;margin-top:2px">Recommended: ${recB}mm</div>`:''}
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          ${recD||recB?`<button onclick="
+            document.getElementById('ovr_bD_${ovrKey.replace(/:/g,'_')}').value=${recD||b.D};
+            document.getElementById('ovr_bB_${ovrKey.replace(/:/g,'_')}').value=${recB||b.b};
+          " style="padding:6px 12px;background:rgba(52,211,153,0.12);border:1px solid #34d399;border-radius:6px;color:#34d399;cursor:pointer;font-size:10px;font-weight:700">
+            ✓ Use Recommended
+          </button>`:''}
+          <button onclick="(function(){
+            const k='${ovrKey}';
+            const D=parseInt(document.getElementById('ovr_bD_${ovrKey.replace(/:/g,'_')}').value);
+            const bw=parseInt(document.getElementById('ovr_bB_${ovrKey.replace(/:/g,'_')}').value);
+            if(!window._memberOverrides) window._memberOverrides={};
+            window._memberOverrides[k]={D,b:bw};
+            runWithOverrides('Beam ${b.label}: D→'+D+'mm, b→'+bw+'mm');
+          })()" style="padding:6px 14px;background:rgba(56,189,248,0.12);border:1px solid #38bdf8;border-radius:6px;color:#38bdf8;cursor:pointer;font-size:10px;font-weight:700">
+            ⚡ Re-analyse
+          </button>
+          ${hasOvr?`<button onclick="delete window._memberOverrides['${ovrKey}'];runWithOverrides('Reset ${b.label}')" style="padding:6px 12px;background:transparent;border:1px solid #64748b;border-radius:6px;color:#64748b;cursor:pointer;font-size:10px">
+            ↺ Reset to auto
+          </button>`:''}
+        </div>
+      </div>
+      ${hasOvr?`<div style="font-size:9px;padding:4px 10px;background:rgba(249,115,22,0.1);border-radius:4px;color:#f97316">⚠ This beam is using a student override (D=${ovr.D}mm, b=${ovr.b}mm). Auto-design is disabled for this beam.</div>`:''}
+    </div>`;
+  })()}
 </div>`;
 }
 
@@ -1545,6 +1603,61 @@ function colDetail(c){
     const note='<div style="font-size:9px;color:var(--txt3);margin-top:6px">💡 Column load reduces on upper floors (fewer floors above). 300mm min size per IS 13920 for seismic zones.</div>';
     return sb('C-5','Floor-by-Floor Column Summary (cumulative load)',
       '<div style="font-size:10px;color:var(--txt3);margin-bottom:6px">Same column node — decreasing load on upper floors. Size may reduce; 300mm IS 13920 minimum governs.</div>'+tblHtml+note,'vi');
+  })()}
+
+  ${(()=>{
+    // ── FEATURE B: Column Override Panel ──
+    const ovrKey = `C:${c.nodeId}`;
+    const hasOvr = window._memberOverrides && window._memberOverrides[ovrKey];
+    const ovr = hasOvr ? window._memberOverrides[ovrKey] : null;
+    // Recommended size: iterate up by 25mm until Pcap >= Pu
+    let recSize = c.size;
+    if(!c.safe){
+      for(let sz=c.size+25;sz<=800;sz+=25){
+        const Ag2=sz*sz;
+        const Ar2=(c.Pu*1000-0.4*S.fck*Ag2)/(0.67*S.fy-0.4*S.fck);
+        const Ap2=Math.max(0.008*Ag2,Ar2)*(Math.PI*16*16/4)/(Math.PI*16*16/4);
+        const Pcap2=(0.4*S.fck*(Ag2-0.008*Ag2)+0.67*S.fy*0.008*Ag2)/1000;
+        if(Pcap2>=c.Pu){recSize=sz;break;}
+      }
+    }
+
+    return `<div style="margin-top:12px;padding:12px;background:rgba(167,139,250,0.05);border:1.5px solid rgba(167,139,250,0.2);border-radius:8px">
+      <div style="font-size:11px;font-weight:700;color:#a78bfa;margin-bottom:8px">🔧 Try Different Size — Re-analyse with Override</div>
+      <div style="font-size:10px;color:#94a3b8;margin-bottom:10px">
+        Change column <strong style="color:#a78bfa">${c.label}</strong> size. This applies to ALL floors of this column.
+        ${!c.safe?`<span style="color:#34d399"> Recommended: ${recSize}×${recSize}mm</span>`:''}
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:10px">
+        <div>
+          <div style="font-size:9px;color:#64748b;margin-bottom:3px">Column Size (mm × mm)</div>
+          <input id="ovr_cS_${ovrKey.replace(/:/g,'_')}" type="number" min="200" max="800" step="25"
+            value="${ovr?ovr.size:c.size}"
+            style="width:100px;padding:6px 8px;background:#0f172a;border:1px solid ${!c.safe?'#f87171':'#334155'};border-radius:6px;color:#f1f5f9;font-size:11px;font-family:JetBrains Mono"/>
+          ${!c.safe?`<div style="font-size:8px;color:#34d399;margin-top:2px">Recommended: ${recSize}mm</div>`:''}
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          ${!c.safe?`<button onclick="document.getElementById('ovr_cS_${ovrKey.replace(/:/g,'_')}').value=${recSize}"
+            style="padding:6px 12px;background:rgba(52,211,153,0.12);border:1px solid #34d399;border-radius:6px;color:#34d399;cursor:pointer;font-size:10px;font-weight:700">
+            ✓ Use Recommended
+          </button>`:''}
+          <button onclick="(function(){
+            const k='${ovrKey}';
+            const sz=parseInt(document.getElementById('ovr_cS_${ovrKey.replace(/:/g,'_')}').value);
+            if(!window._memberOverrides) window._memberOverrides={};
+            window._memberOverrides[k]={size:sz};
+            runWithOverrides('Col ${c.label}: size→'+sz+'mm');
+          })()" style="padding:6px 14px;background:rgba(167,139,250,0.12);border:1px solid #a78bfa;border-radius:6px;color:#a78bfa;cursor:pointer;font-size:10px;font-weight:700">
+            ⚡ Re-analyse
+          </button>
+          ${hasOvr?`<button onclick="delete window._memberOverrides['${ovrKey}'];runWithOverrides('Reset ${c.label}')"
+            style="padding:6px 12px;background:transparent;border:1px solid #64748b;border-radius:6px;color:#64748b;cursor:pointer;font-size:10px">
+            ↺ Reset to auto
+          </button>`:''}
+        </div>
+      </div>
+      ${hasOvr?`<div style="font-size:9px;padding:4px 10px;background:rgba(249,115,22,0.1);border-radius:4px;color:#f97316">⚠ This column is using a student override (${ovr.size}×${ovr.size}mm). Auto-design is disabled.</div>`:''}
+    </div>`;
   })()}
 </div>`;
 }
@@ -1922,14 +2035,14 @@ function secSafety(){
 
   const beamChecks=[];
   beams.forEach(b=>{
-    beamChecks.push({it:b.label+' Shear',ok:b.shearSafe,note:'τv='+r2(b.tv)+' vs τc,max='+r2(b.tcmax)+' N/mm²',cat:'Beam'});
-    beamChecks.push({it:b.label+' Deflection',ok:b.deflOK,note:'δ='+r2(b.dfl)+'mm, allow='+r2(b.dall)+'mm',cat:'Beam'});
+    beamChecks.push({it:b.label+' Shear',ok:b.shearSafe,note:'τv='+r2(b.tv)+' vs τc,max='+r2(b.tcmax)+' N/mm²',cat:'Beam',beam:b});
+    beamChecks.push({it:b.label+' Deflection',ok:b.deflOK,note:'δ='+r2(b.dfl)+'mm, allow='+r2(b.dall)+'mm',cat:'Beam',beam:b});
   });
 
   const colChecks=[];
   cols.filter(c=>c.floor===1).forEach(c=>{
-    colChecks.push({it:c.label+' Axial capacity',ok:c.safe,note:'Pu='+r2(c.Pu)+' vs Pcap='+r2(c.Pcap)+' kN',cat:'Column'});
-    colChecks.push({it:c.label+' Steel ratio',ok:c.pt>=0.8&&c.pt<=4,note:'pt='+r2(c.pt)+'% (0.8–4%)',cat:'Column'});
+    colChecks.push({it:c.label+' Axial capacity',ok:c.safe,note:'Pu='+r2(c.Pu)+' vs Pcap='+r2(c.Pcap)+' kN',cat:'Column',col:c});
+    colChecks.push({it:c.label+' Steel ratio',ok:c.pt>=0.8&&c.pt<=4,note:'pt='+r2(c.pt)+'% (0.8–4%)',cat:'Column',col:c});
   });
 
   const ftgChecks=[];
@@ -1981,22 +2094,58 @@ function secSafety(){
   </div>
 
   ${failChecks.length>0?`
-  <div style="margin-bottom:16px;padding:10px;background:rgba(248,113,113,0.06);border:1px solid rgba(248,113,113,0.2);border-radius:8px">
-    <div style="font-size:11px;font-weight:700;color:#f87171;margin-bottom:6px">⚠ FAILURES REQUIRING ATTENTION:</div>
-    ${failChecks.map(c=>`<div style="font-size:10px;color:#fca5a5;padding:3px 0">• <strong>${c.it}:</strong> ${c.note}</div>`).join('')}
+  <div style="margin-bottom:16px;padding:12px;background:rgba(248,113,113,0.06);border:1px solid rgba(248,113,113,0.2);border-radius:8px">
+    <div style="font-size:11px;font-weight:700;color:#f87171;margin-bottom:8px">\u26a0 FAILURES REQUIRING ATTENTION</div>
+    ${failChecks.map(c=>`<div style="font-size:10px;color:#fca5a5;padding:3px 0">\u2022 <strong>${c.it}:</strong> ${c.note}</div>`).join('')}
   </div>
-  `:''}
+  <div style="margin-bottom:16px;padding:12px;background:rgba(52,211,153,0.04);border:1.5px solid rgba(52,211,153,0.2);border-radius:8px">
+    <div style="font-size:11px;font-weight:700;color:#34d399;margin-bottom:4px">\ud83d\udd27 Quick Fix \u2014 Apply Recommended Sizes & Re-analyse</div>
+    <div style="font-size:10px;color:#94a3b8;margin-bottom:10px">One click applies the recommended fix for ALL failing members and re-runs the full analysis.</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button onclick="(function(){
+        if(!window._memberOverrides) window._memberOverrides={};
+        ${beamChecks.filter(c=>!c.ok&&c.beam).map(c=>{
+          const b=c.beam;
+          const key='B:'+b.row+':'+b.col+':'+b.dir;
+          const recD=!b.deflOK?Math.ceil(b.D*Math.pow(b.dfl/b.dall,1/3)/25+1)*25:b.D;
+          const recB=!b.shearSafe?Math.max(b.b+50,Math.ceil(b.b*1.25/25)*25):b.b;
+          return "window._memberOverrides['"+key+"']={D:"+recD+",b:"+recB+"};";
+        }).join('')}
+        ${colChecks.filter(c=>!c.ok&&c.col).map(c=>{
+          const col=c.col;
+          const key='C:'+col.nodeId;
+          let recSize=col.size;
+          for(let sz=col.size+25;sz<=800;sz+=25){
+            const Pcap2=(0.4*S.fck*(sz*sz*0.992)+0.67*S.fy*sz*sz*0.008)/1000;
+            if(Pcap2>=col.Pu){recSize=sz;break;}
+          }
+          return "window._memberOverrides['"+key+"']={size:"+recSize+"};";
+        }).join('')}
+        runWithOverrides('Quick Fix: all recommended sizes');
+      })()" style="padding:8px 16px;background:rgba(52,211,153,0.12);border:1.5px solid #34d399;border-radius:8px;color:#34d399;cursor:pointer;font-size:11px;font-weight:700">
+        \u2713 Apply All Recommended & Re-analyse
+      </button>
+      ${(window._memberOverrides&&Object.keys(window._memberOverrides).length>0)?`
+      <button onclick="window._memberOverrides={};runWithOverrides('Reset all to auto')"
+        style="padding:8px 16px;background:transparent;border:1px solid #64748b;border-radius:8px;color:#64748b;cursor:pointer;font-size:11px">
+        \u21ba Reset All Overrides
+      </button>`:''}
+    </div>
+    <div style="font-size:9px;color:#475569;margin-top:8px">\ud83d\udca1 After re-analysis, use the history bar at the top to compare before and after.</div>
+  </div>
+  `:``}
 
-  ${renderGroup('SLAB','🔲','var(--cyan)',slabChecks)}
-  ${renderGroup('BEAMS','🟧','var(--orange)',beamChecks)}
-  ${renderGroup('COLUMNS','🏛','#a78bfa',colChecks)}
-  ${renderGroup('FOOTINGS','🟨','#fbbf24',ftgChecks)}
+  ${renderGroup('SLAB','\ud83d\udd32','var(--cyan)',slabChecks)}
+  ${renderGroup('BEAMS','\ud83d\udfe7','var(--orange)',beamChecks)}
+  ${renderGroup('COLUMNS','\ud83c\udfdb','#a78bfa',colChecks)}
+  ${renderGroup('FOOTINGS','\ud83d\udfe8','#fbbf24',ftgChecks)}
 
   <div style="margin-top:10px;padding:10px;background:var(--bg1);border-radius:8px;font-size:9px;color:var(--txt3)">
-    💡 This summary checks every structural member against IS code limits. A single failure means the design is NOT safe for construction.
-    Click on individual member pages (Beam, Column, Footing) for detailed failure explanations and fix recommendations.
+    \ud83d\udca1 This summary checks every structural member. A single failure means the design is NOT safe for construction.
+    Click on individual member pages (Beam, Column, Footing) for detailed failure explanations and override controls.
   </div>
 </div>`;}
+
 
 // =======================================================
 // REFERENCE DESIGN PAGE
