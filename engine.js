@@ -1680,7 +1680,7 @@ function drawGrid(canvas){
   // Background
   ctx.fillStyle='#0a0f1e';ctx.fillRect(0,0,canvas.width,canvas.height);
 
-  if(!S.columns){
+  if(!window._coordMode){
   // ── BAY FILLS ─────────────────────────────────────────────────
   GRID.bays.forEach(bay=>{
     const x0=xs[bay.col],y0=ys[bay.row],x1=xs[bay.col+1],y1=ys[bay.row+1];
@@ -1730,7 +1730,7 @@ function drawGrid(canvas){
   });
   } // end bay fills
 
-  if(!S.columns){
+  if(!window._coordMode){
   // ── GRID LINES (faint) ────────────────────────────────────────
   ctx.strokeStyle='rgba(30,58,138,0.4)';ctx.lineWidth=0.5;ctx.setLineDash([3,4]);
   xs.forEach(x=>{ctx.beginPath();ctx.moveTo(x,PAD.t);ctx.lineTo(x,CANVAS_H-PAD.b);ctx.stroke();});
@@ -1814,7 +1814,7 @@ function drawGrid(canvas){
       }
     }else{
       // Missing/removed column — X marker (only in legacy span mode)
-      if(!S.columns){
+      if(!window._coordMode){
         ctx.strokeStyle=isSel?'#0a0f1e':'#f87171';ctx.lineWidth=2.5;
         ctx.beginPath();ctx.moveTo(pos.x-6,pos.y-6);ctx.lineTo(pos.x+6,pos.y+6);ctx.stroke();
         ctx.beginPath();ctx.moveTo(pos.x+6,pos.y-6);ctx.lineTo(pos.x-6,pos.y+6);ctx.stroke();
@@ -1823,7 +1823,7 @@ function drawGrid(canvas){
   });
 
   // ── COORDINATE LABELS (coordinate mode only) ─────────────────
-  if(S.columns && S.columns.length > 0){
+  if(window._coordMode && S.columns && S.columns.length > 0){
     // Light snap grid
     const pw2=CANVAS_W-PAD.l-PAD.r,ph2=CANVAS_H-PAD.t-PAD.b;
     const maxX=Math.max(...S.spansX.reduce((a,s,i)=>[...a,a[i]+s],[0]),1);
@@ -2377,25 +2377,25 @@ function p2(){
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;padding:8px 10px;background:#0f172a;border:1px solid #1e3a8a;border-radius:8px">
           <span style="font-size:10px;color:#64748b;font-weight:700">INPUT MODE:</span>
           <button id="btn_coord_mode" onclick="setInputMode('coord')"
-            style="padding:4px 12px;border-radius:6px;font-size:10px;font-weight:700;cursor:pointer;border:1.5px solid ${!S.columns?'#1e3a8a':'#38bdf8'};background:${!S.columns?'transparent':'rgba(56,189,248,0.12)'};color:${!S.columns?'#64748b':'#38bdf8'}">
+            style="padding:4px 12px;border-radius:6px;font-size:10px;font-weight:700;cursor:pointer;border:1.5px solid ${window._coordMode?'#38bdf8':'#1e3a8a'};background:${window._coordMode?'rgba(56,189,248,0.12)':'transparent'};color:${window._coordMode?'#38bdf8':'#64748b'}">
             📍 Coordinate (AutoCAD-style)
           </button>
           <button id="btn_span_mode" onclick="setInputMode('span')"
-            style="padding:4px 12px;border-radius:6px;font-size:10px;font-weight:700;cursor:pointer;border:1.5px solid ${S.columns?'#1e3a8a':'#38bdf8'};background:${S.columns?'transparent':'rgba(56,189,248,0.12)'};color:${S.columns?'#64748b':'#38bdf8'}">
+            style="padding:4px 12px;border-radius:6px;font-size:10px;font-weight:700;cursor:pointer;border:1.5px solid ${window._coordMode?'#1e3a8a':'#38bdf8'};background:${window._coordMode?'transparent':'rgba(56,189,248,0.12)'};color:${window._coordMode?'#64748b':'#38bdf8'}">
             📏 Span Length (classic)
           </button>
         </div>
 
         <!-- COORDINATE MODE -->
-        <div id="coord_input_panel" style="display:${S.columns?'block':'none'}">
+        <div id="coord_input_panel" style="display:${window._coordMode?'block':'none'}">
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
             <!-- Left: Coordinate table -->
             <div>
               <div style="font-size:10px;font-weight:700;color:#38bdf8;margin-bottom:6px">
                 📍 Column Coordinates (metres from origin)
-                <span style="font-size:9px;color:#64748b;font-weight:400;margin-left:6px">Origin (0,0) = bottom-left corner</span>
+                <span style="font-size:9px;color:#64748b;font-weight:400;margin-left:6px">Origin (0,0) = top-left | Y increases downward</span>
               </div>
-              <div style="max-height:220px;overflow-y:auto;padding-right:4px">
+              <div style="max-height:320px;overflow-y:auto;padding-right:4px;scroll-behavior:smooth">
                 <table style="width:100%;border-collapse:collapse;font-size:10px">
                   <tr style="background:#0f172a">
                     <th style="padding:4px 6px;border:1px solid #1e3a8a;color:#64748b;text-align:left;width:30px">#</th>
@@ -2429,7 +2429,7 @@ function p2(){
               <!-- Conversion result -->
               <div id="coord_result" style="margin-top:8px;padding:8px;background:#0a0f1e;border:1px solid #1e3a8a;border-radius:6px;font-size:9px;color:#64748b;min-height:36px">
                 ${(()=>{
-                  if(!S.columns||S.columns.length<2) return 'Add at least 2 columns to see the frame.';
+                  if(!window._coordMode||!S.columns||S.columns.length<2) return 'Add at least 2 columns to see the frame.';
                   const r=coordsToGrid();
                   return r.ok
                     ? `<span style="color:#34d399">✓ ${r.summary}</span>${r.warnings.length?'<br><span style="color:#f59e0b">⚠ '+r.warnings.join(' | ')+'</span>':''}`
@@ -2454,7 +2454,7 @@ function p2(){
                 <strong style="color:#38bdf8">How to use:</strong><br>
                 1. Type X, Y coordinates for each column<br>
                 2. Or click "Click on Canvas" then click to place<br>
-                3. Origin (0,0) = bottom-left corner<br>
+                3. Origin (0,0) = top-left corner<br>
                 4. All distances in <strong>metres</strong><br>
                 5. App auto-draws beams between aligned columns<br>
                 6. Missing intersections → auto transfer beams
@@ -2464,7 +2464,7 @@ function p2(){
         </div>
 
         <!-- LEGACY SPAN MODE -->
-        <div id="span_input_panel" style="display:${S.columns?'none':'flex'};gap:10px;flex-wrap:wrap">
+        <div id="span_input_panel" style="display:${window._coordMode?'none':'flex'};gap:10px;flex-wrap:wrap">
           <div style="flex:1;min-width:180px">
             <div style="font-size:10px;font-weight:700;color:#38bdf8;margin-bottom:5px">X Spans (m) — Columns 1→${S.spansX.length+1}</div>
             ${S.spansX.map((s,i)=>`
@@ -2934,16 +2934,18 @@ function designOneBeam(gridBeam, floorNum, isRoof,
 }
 
 // ── COORDINATE INPUT CONTROLLER ─────────────────────────────────
+// Mode flag — true = coordinate input mode, false = classic span mode
+if(typeof window._coordMode === 'undefined') window._coordMode = false;
 
 function setInputMode(mode) {
   if (mode === 'coord') {
-    // Switch to coordinate mode — initialise from current spans if no columns yet
     if (!S.columns || S.columns.length === 0) {
       S.columns = spansToColumns();
     }
+    window._coordMode = true;
   } else {
-    // Switch to legacy span mode — clear coordinate overrides
     S.columns = null;
+    window._coordMode = false;
   }
   GRID = null; initGrid(); go(2);
 }
@@ -2997,6 +2999,7 @@ function applyTemplate(name) {
   const fn=templates[name];
   if(!fn){console.error('Unknown template:',name);return;}
   S.columns=fn();
+  window._coordMode = true;
   const r=coordsToGrid();
   if(!r.ok){alert('Template error: '+r.error);return;}
   GRID=null;initGrid();go(2);
