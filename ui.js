@@ -367,6 +367,370 @@ function secOverview(){
   </table>
 </div>`;}
 
+
+// ── STAIR TYPE SELECTION + CROSS-SECTION DIAGRAM ─────────────────
+function svgStairSection(st) {
+  var spX = st.spX || 3, spY = st.spY || 4;
+  var flightSpan = st.flightSpan || spX * 0.7;
+  var riser = st.riser || 150;   // mm
+  var tread = st.tread || 270;   // mm
+  var steps = st.steps || Math.ceil(S.floorHt * 1000 / riser);
+  var wD = st.wD || 150;         // waist slab thickness mm
+  var cover = S.coverSlab || 20;
+  var Ast = st.Ast || 400;       // mm²/m
+
+  // Determine stair type from bay
+  var type = spX >= 2.5 && spY >= 5 ? 'dogleg' : spX >= 3 && spY >= 3 ? '90turn' : 'straight';
+
+  var W = 660, H = 380;
+  var lines = [];
+  lines.push('<svg viewBox="0 0 ' + W + ' ' + H + '" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block;background:#0a0f1e;border-radius:8px">');
+
+  // ── TYPE ILLUSTRATIONS (top row) ───────────────────────────────
+  var typeData = [
+    { id:'straight', label:'Straight Flight',  col:'#f59e0b', recW:'≥ 2m',   recL:'≥ 4m',  desc:'Single flight, no U-turn. Common for tight spaces.' },
+    { id:'dogleg',   label:'Dog-Leg (U-Turn)', col:'#34d399', recW:'≥ 2.5m', recL:'≥ 5m',  desc:'Two flights with mid-landing. Most common residential.' },
+    { id:'90turn',   label:'90° Quarter-Turn', col:'#38bdf8', recW:'≥ 3m',   recL:'≥ 3m',  desc:'L-shaped. Open well, elegant for corner bays.' },
+  ];
+  var cardW = 180, cardH = 100, cardGap = 16;
+  var totalTW = typeData.length * cardW + (typeData.length - 1) * cardGap;
+  var startX = (W - totalTW) / 2;
+
+  typeData.forEach(function(td, i) {
+    var tx = startX + i * (cardW + cardGap);
+    var ty = 12;
+    var isRec = td.id === type;
+    var alpha = isRec ? 1 : 0.3;
+
+    lines.push('<rect x="' + tx + '" y="' + ty + '" width="' + cardW + '" height="' + cardH + '" rx="6" fill="rgba(15,23,42,0.8)" stroke="' + td.col + '" stroke-width="' + (isRec ? 2 : 0.6) + '" opacity="' + alpha + '"/>');
+    if (isRec) lines.push('<text x="' + (tx + cardW - 8) + '" y="' + (ty + 14) + '" fill="' + td.col + '" font-size="10" text-anchor="end" font-family="JetBrains Mono">✓ Recommended</text>');
+
+    var cx = tx + cardW / 2, cy = ty + 30;
+
+    if (td.id === 'straight') {
+      // Step-up profile
+      var sx2 = tx + 16, sy2 = ty + 75, nS = 5, sw = 22, sh = 10;
+      for (var s = 0; s < nS; s++) {
+        lines.push('<rect x="' + (sx2 + s*sw) + '" y="' + (sy2 - s*sh) + '" width="' + sw + '" height="' + (H/10) + '" fill="rgba(245,158,11,0.2)" stroke="' + td.col + '" stroke-width="0.8" opacity="' + alpha + '"/>');
+      }
+      lines.push('<line x1="' + (sx2+nS*sw) + '" y1="' + (sy2-nS*sh) + '" x2="' + (sx2+nS*sw+20) + '" y2="' + (sy2-nS*sh) + '" stroke="' + td.col + '" stroke-width="1.5" opacity="' + alpha + '"/>');
+    } else if (td.id === 'dogleg') {
+      // Up-landing-down profile
+      var lx2 = tx + 10, ly2 = ty + 72, nS2 = 4, sw2 = 18, sh2 = 9;
+      for (var s2 = 0; s2 < nS2; s2++) {
+        lines.push('<rect x="' + (lx2 + s2*sw2) + '" y="' + (ly2 - s2*sh2) + '" width="' + sw2 + '" height="12" fill="rgba(52,211,153,0.2)" stroke="' + td.col + '" stroke-width="0.8" opacity="' + alpha + '"/>');
+      }
+      // Landing
+      lines.push('<rect x="' + (lx2+nS2*sw2) + '" y="' + (ly2-nS2*sh2-4) + '" width="20" height="14" fill="rgba(52,211,153,0.3)" stroke="' + td.col + '" stroke-width="1" opacity="' + alpha + '"/>');
+      // Second flight
+      var rx2 = lx2 + nS2*sw2 + 20;
+      for (var s3 = 0; s3 < nS2; s3++) {
+        lines.push('<rect x="' + (rx2 + s3*sw2) + '" y="' + (ly2 - nS2*sh2 - s3*sh2) + '" width="' + sw2 + '" height="12" fill="rgba(52,211,153,0.2)" stroke="' + td.col + '" stroke-width="0.8" opacity="' + alpha + '"/>');
+      }
+    } else {
+      // 90 degree turn
+      var qx = tx + 18, qy = ty + 72, nS4 = 3, qsw = 22, qsh = 9;
+      // First flight (horizontal in plan = vertical in elevation)
+      for (var s4 = 0; s4 < nS4; s4++) {
+        lines.push('<rect x="' + (qx + s4*qsw) + '" y="' + (qy - s4*qsh) + '" width="' + qsw + '" height="12" fill="rgba(56,189,248,0.2)" stroke="' + td.col + '" stroke-width="0.8" opacity="' + alpha + '"/>');
+      }
+      // Corner landing
+      lines.push('<rect x="' + (qx+nS4*qsw) + '" y="' + (qy-nS4*qsh-4) + '" width="18" height="18" fill="rgba(56,189,248,0.3)" stroke="' + td.col + '" stroke-width="1" opacity="' + alpha + '"/>');
+      // Second flight (90 degrees)
+      for (var s5 = 0; s5 < nS4; s5++) {
+        lines.push('<rect x="' + (qx+nS4*qsw) + '" y="' + (qy-nS4*qsh-4-s5*qsh) + '" width="12" height="' + qsh + '" fill="rgba(56,189,248,0.2)" stroke="' + td.col + '" stroke-width="0.8" opacity="' + alpha + '"/>');
+      }
+    }
+
+    lines.push('<text x="' + cx + '" y="' + (ty + cardH - 24) + '" fill="' + td.col + '" font-size="9" font-weight="700" text-anchor="middle" font-family="JetBrains Mono" opacity="' + alpha + '">' + td.label + '</text>');
+    lines.push('<text x="' + cx + '" y="' + (ty + cardH - 12) + '" fill="#64748b" font-size="7.5" text-anchor="middle" font-family="JetBrains Mono" opacity="' + alpha + '">' + td.recW + ' × ' + td.recL + ' bay</text>');
+  });
+
+  // ── STAIR CROSS-SECTION (bottom half) ──────────────────────────
+  var csY = 125, csH = H - csY - 15;
+  var csX = 40, csW = W - 80;
+  var nSteps = Math.min(steps, 12);
+  var stepW = Math.min(tread / 5, csW / (nSteps + 2));
+  var stepH = Math.min(riser / 3, csH / (nSteps + 2));
+  var waistThk = Math.max(8, wD / 20);
+
+  // Title
+  lines.push('<text x="' + (W/2) + '" y="' + (csY - 4) + '" fill="#f59e0b" font-size="10" font-weight="700" text-anchor="middle" font-family="JetBrains Mono">WAIST SLAB CROSS-SECTION — ' + steps + ' steps @ ' + riser + 'mm rise / ' + tread + 'mm tread</text>');
+
+  // Ground / landing at bottom-left
+  lines.push('<rect x="' + csX + '" y="' + (csY + csH - 20) + '" width="40" height="20" fill="rgba(71,85,105,0.6)" stroke="#475569" stroke-width="1"/>');
+  lines.push('<text x="' + (csX + 20) + '" y="' + (csY + csH + 10) + '" fill="#64748b" font-size="8" text-anchor="middle" font-family="JetBrains Mono">Ground</text>');
+
+  // Steps
+  var stairPath = 'M ' + (csX + 40) + ' ' + (csY + csH - 20);
+  var curX = csX + 40, curY = csY + csH - 20;
+  for (var s6 = 0; s6 < nSteps; s6++) {
+    // Riser (vertical)
+    stairPath += ' L ' + curX + ' ' + (curY - stepH);
+    curY -= stepH;
+    // Tread (horizontal)
+    stairPath += ' L ' + (curX + stepW) + ' ' + curY;
+    curX += stepW;
+  }
+  var topRightX = curX, topRightY = curY;
+  stairPath += ' L ' + topRightX + ' ' + (topRightY + 20);
+  stairPath += ' L ' + (csX + 40) + ' ' + (csY + csH - 20) + ' Z';
+
+  // Waist slab (parallel to flight, shifted down by waistThk)
+  var angle = Math.atan2(stepH, stepW);
+  var perpX = Math.sin(angle) * waistThk;
+  var perpY = Math.cos(angle) * waistThk;
+
+  lines.push('<path d="' + stairPath + '" fill="rgba(100,116,139,0.15)" stroke="#475569" stroke-width="1.5"/>');
+
+  // Waist slab bottom surface (parallel band)
+  var wStartX = csX + 40, wStartY = csY + csH - 20;
+  var waistPath = 'M ' + (wStartX + perpX) + ' ' + (wStartY + perpY);
+  var wx = wStartX + perpX, wy = wStartY + perpY;
+  for (var s7 = 0; s7 < nSteps; s7++) {
+    wx = wStartX + perpX + s7 * stepW;
+    wy = wStartY + perpY - s7 * stepH;
+    waistPath += ' L ' + (wStartX + perpX + (s7 + 1) * stepW) + ' ' + (wStartY + perpY - (s7 + 1) * stepH);
+  }
+  lines.push('<line x1="' + (wStartX + perpX) + '" y1="' + (wStartY + perpY) + '" x2="' + (wStartX + perpX + nSteps * stepW) + '" y2="' + (wStartY + perpY - nSteps * stepH) + '" stroke="#38bdf8" stroke-width="' + waistThk + '" stroke-linecap="round" opacity="0.3"/>');
+
+  // Reinforcement bars (along bottom of waist slab)
+  var nBars = 3;
+  for (var bi = 0; bi < nBars; bi++) {
+    var barOffset = (waistThk * 0.3 + bi * waistThk * 0.2);
+    var bpX = Math.sin(angle) * barOffset, bpY = Math.cos(angle) * barOffset;
+    lines.push('<line x1="' + (wStartX + bpX) + '" y1="' + (wStartY + bpY) + '" x2="' + (wStartX + bpX + nSteps * stepW) + '" y2="' + (wStartY + bpY - nSteps * stepH) + '" stroke="#34d399" stroke-width="2.5" stroke-linecap="round"/>');
+  }
+
+  // Top landing
+  lines.push('<rect x="' + topRightX + '" y="' + (topRightY - 5) + '" width="40" height="25" fill="rgba(71,85,105,0.5)" stroke="#475569" stroke-width="1"/>');
+  lines.push('<text x="' + (topRightX + 20) + '" y="' + (topRightY + 26) + '" fill="#64748b" font-size="8" text-anchor="middle" font-family="JetBrains Mono">Landing</text>');
+
+  // Dimension: waist slab thickness
+  var midStep = Math.floor(nSteps / 2);
+  var dimX1 = csX + 40 + midStep * stepW;
+  var dimY1 = csY + csH - 20 - midStep * stepH;
+  lines.push('<line x1="' + dimX1 + '" y1="' + dimY1 + '" x2="' + (dimX1 + perpX * 1.5) + '" y2="' + (dimY1 + perpY * 1.5) + '" stroke="#38bdf8" stroke-width="1" marker-end="url(#sArr)"/>');
+  lines.push('<text x="' + (dimX1 + perpX * 2) + '" y="' + (dimY1 + perpY * 2 + 4) + '" fill="#38bdf8" font-size="8" font-family="JetBrains Mono">wD=' + wD + 'mm</text>');
+
+  // Riser and tread labels
+  lines.push('<line x1="' + (csX + 40) + '" y1="' + (csY + csH - 20) + '" x2="' + (csX + 40) + '" y2="' + (csY + csH - 20 - stepH) + '" stroke="#f59e0b" stroke-width="0.8"/>');
+  lines.push('<text x="' + (csX + 30) + '" y="' + (csY + csH - 20 - stepH / 2) + '" fill="#f59e0b" font-size="8" text-anchor="end" font-family="JetBrains Mono">' + riser + 'mm</text>');
+  lines.push('<line x1="' + (csX + 40) + '" y1="' + (csY + csH - 20) + '" x2="' + (csX + 40 + stepW) + '" y2="' + (csY + csH - 20) + '" stroke="#f59e0b" stroke-width="0.8"/>');
+  lines.push('<text x="' + (csX + 40 + stepW / 2) + '" y="' + (csY + csH) + '" fill="#f59e0b" font-size="8" text-anchor="middle" font-family="JetBrains Mono">' + tread + 'mm</text>');
+
+  // Angle label
+  lines.push('<text x="' + (csX + 40 + 12) + '" y="' + (csY + csH - 27) + '" fill="#94a3b8" font-size="8" font-family="JetBrains Mono">θ=' + Math.round(Math.atan(riser/tread)*180/Math.PI) + '°</text>');
+
+  // Legend
+  var lgY = H - 12;
+  var lgItems = [
+    ['#34d399', 'Main bars D10@' + (st.stsp || 150) + 'mm c/c (along slope) — Ast=' + r0(Ast) + ' mm²/m'],
+    ['#38bdf8', 'Waist slab D=' + wD + 'mm (perpendicular to flight)'],
+    ['#f59e0b', 'Riser ' + riser + 'mm / Tread ' + tread + 'mm — ' + steps + ' steps per flight'],
+  ];
+  lgItems.forEach(function(item, i) {
+    lines.push('<circle cx="' + (42 + i * 220) + '" cy="' + (lgY - 3) + '" r="4" fill="' + item[0] + '"/>');
+    lines.push('<text x="' + (50 + i * 220) + '" y="' + lgY + '" fill="' + item[0] + '" font-size="8" font-family="JetBrains Mono">' + item[1] + '</text>');
+  });
+
+  lines.push('</svg>');
+  return '<div class="dg">' + lines.join('') + '<div class="dg-cap">Fig: Stair waist slab section — ' + (type === 'dogleg' ? 'Dog-leg' : type === '90turn' ? '90° Quarter-turn' : 'Straight flight') + ' type recommended for ' + r2(spX) + 'm × ' + r2(spY) + 'm bay. Waist slab designed as inclined one-way slab. IS 456 Cl 33. Minimum riser 150mm, max 200mm. Minimum tread 250mm. IS NBC 2016.</div></div>';
+}
+
+// ── SEISMIC ILLUSTRATIONS ─────────────────────────────────────────
+// 1. Building response illustration — shows deformation mode
+// 2. Sa/g spectrum curve with building's period marked
+// 3. Load path illustration — how seismic forces travel
+
+function svgSeismicBuilding(seis, numFloors, floorHt) {
+  var W = 320, H = 320;
+  var padL = 60, padR = 40, padT = 30, padB = 50;
+  var nF = numFloors, fh = floorHt || 3;
+  var bldH = H - padT - padB;
+  var fhPx = bldH / nF;
+  var bldW = 80;
+  var bx = padL, by = padT;
+  var maxQ = Math.max.apply(null, seis.floors.map(function(f) { return f.Qi; }));
+  var maxDisp = bldW * 0.35; // exaggerated lateral displacement at top
+
+  var lines = [];
+  lines.push('<svg viewBox="0 0 ' + W + ' ' + H + '" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block;background:#0a0f1e">');
+  lines.push('<text x="' + (W/2) + '" y="14" fill="#34d399" font-size="9" font-weight="700" text-anchor="middle" font-family="JetBrains Mono">BUILDING SEISMIC RESPONSE</text>');
+  lines.push('<text x="' + (W/2) + '" y="24" fill="#475569" font-size="8" text-anchor="middle" font-family="JetBrains Mono">(Inverted triangle force pattern)</text>');
+
+  // Ground
+  lines.push('<rect x="' + (bx - 20) + '" y="' + (by + bldH) + '" width="' + (bldW + 40) + '" height="12" fill="rgba(71,85,105,0.6)" stroke="#475569" stroke-width="1"/>');
+  for (var gi = 0; gi < 8; gi++) {
+    lines.push('<line x1="' + (bx - 20 + gi * 20) + '" y1="' + (by + bldH + 12) + '" x2="' + (bx - 24 + gi * 20) + '" y2="' + (by + bldH + 20) + '" stroke="#475569" stroke-width="1"/>');
+  }
+  lines.push('<text x="' + (bx + bldW / 2) + '" y="' + (by + bldH + 28) + '" fill="#64748b" font-size="8" text-anchor="middle" font-family="JetBrains Mono">Fixed base</text>');
+
+  // Deformed building shape (first mode — cantilever)
+  var dispPath = 'M ' + bx + ' ' + (by + bldH);
+  var heights = [];
+  for (var fi = 0; fi <= nF; fi++) {
+    var frac = fi / nF;
+    var disp = maxDisp * frac * frac; // parabolic approximation of first mode
+    heights.push({ x: bx + disp, y: by + bldH - fi * fhPx, disp: disp });
+  }
+  // Deformed centreline
+  lines.push('<polyline points="' + heights.map(function(h) { return r2(h.x) + ',' + r2(h.y); }).join(' ') + '" fill="none" stroke="rgba(52,211,153,0.3)" stroke-width="2" stroke-dasharray="4,3"/>');
+
+  // Original (undeformed) building
+  lines.push('<rect x="' + bx + '" y="' + by + '" width="' + bldW + '" height="' + bldH + '" fill="rgba(56,189,248,0.06)" stroke="#38bdf8" stroke-width="1"/>');
+
+  // Floor slabs
+  seis.floors.forEach(function(f, i) {
+    var fy2 = by + bldH - f.floor * fhPx;
+    lines.push('<line x1="' + bx + '" y1="' + r2(fy2) + '" x2="' + (bx + bldW) + '" y2="' + r2(fy2) + '" stroke="#334155" stroke-width="2"/>');
+
+    // Force arrow (horizontal, pointing right)
+    var arrowLen = Math.max(8, (f.Qi / maxQ) * 60);
+    var arrowX = bx + bldW;
+    lines.push('<line x1="' + arrowX + '" y1="' + r2(fy2) + '" x2="' + (arrowX + arrowLen) + '" y2="' + r2(fy2) + '" stroke="#34d399" stroke-width="2" marker-end="url(#sArr2)"/>');
+    lines.push('<text x="' + (arrowX + arrowLen + 4) + '" y="' + r2(fy2 + 4) + '" fill="#34d399" font-size="8" font-family="JetBrains Mono">F' + f.floor + '=' + r2(f.Qi) + 'kN</text>');
+  });
+
+  // Deformed shape (exaggerated) outline
+  var defLeft = heights.map(function(h) { return r2(h.x) + ',' + r2(h.y); }).join(' ');
+  var defRight = heights.slice().reverse().map(function(h) { return r2(h.x + bldW) + ',' + r2(h.y); }).join(' ');
+  lines.push('<polygon points="' + defLeft + ' ' + defRight + '" fill="rgba(52,211,153,0.04)" stroke="rgba(52,211,153,0.4)" stroke-width="1" stroke-dasharray="4,2"/>');
+
+  // Base shear arrow (at ground)
+  lines.push('<defs><marker id="sArr2" markerWidth="5" markerHeight="5" refX="4" refY="2.5" orient="auto"><polygon points="0,0 5,2.5 0,5" fill="#34d399"/></marker></defs>');
+  var baseY = by + bldH;
+  lines.push('<line x1="' + (bx - 15) + '" y1="' + baseY + '" x2="' + (bx + 30) + '" y2="' + baseY + '" stroke="#f87171" stroke-width="3" marker-end="url(#sArr2)" opacity="0.8"/>');
+  lines.push('<text x="' + (bx - 16) + '" y="' + (baseY - 4) + '" fill="#f87171" font-size="8" text-anchor="end" font-family="JetBrains Mono">Vb=' + r2(seis.Vb) + 'kN</text>');
+
+  // Labels
+  lines.push('<text x="' + bx + '" y="' + (by + bldH / 2) + '" fill="#38bdf8" font-size="8" text-anchor="end" font-family="JetBrains Mono" transform="rotate(-90,' + (bx - 10) + ',' + (by + bldH / 2) + ')">H=' + r2(nF * fh) + 'm</text>');
+
+  lines.push('</svg>');
+  return lines.join('');
+}
+
+function svgSeismicSpectrum(seis) {
+  var W = 320, H = 220;
+  var padL = 45, padR = 20, padT = 30, padB = 40;
+  var plotW = W - padL - padR, plotH = H - padT - padB;
+  var Ta = seis.Ta || 0.3;
+  var Sa = seis.Sa || 2.5;
+  var soil = S.soilType || 'II';
+
+  // IS 1893 spectrum points for different soil types
+  var spectra = {
+    'I':   [[0,1],[0.1,2.5],[0.4,2.5],[4.0,0.625]],
+    'II':  [[0,1],[0.1,2.5],[0.55,2.5],[4.0,0.455]],
+    'III': [[0,1],[0.1,2.5],[0.67,2.5],[4.0,0.373]],
+  };
+  var pts = spectra[soil] || spectra['II'];
+
+  var maxT = 2.5, maxSa = 3.0;
+  function px(T) { return padL + (T / maxT) * plotW; }
+  function py(s) { return padT + plotH - (s / maxSa) * plotH; }
+
+  var lines = [];
+  lines.push('<svg viewBox="0 0 ' + W + ' ' + H + '" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block;background:#0a0f1e">');
+  lines.push('<text x="' + (W/2) + '" y="14" fill="#f59e0b" font-size="9" font-weight="700" text-anchor="middle" font-family="JetBrains Mono">Sa/g RESPONSE SPECTRUM (IS 1893:2016)</text>');
+  lines.push('<text x="' + (W/2) + '" y="24" fill="#475569" font-size="8" text-anchor="middle" font-family="JetBrains Mono">Soil Type ' + soil + ' | Ta=' + r2(Ta) + 's | Sa/g=' + r2(Sa) + '</text>');
+
+  // Axes
+  lines.push('<line x1="' + padL + '" y1="' + padT + '" x2="' + padL + '" y2="' + (padT+plotH) + '" stroke="#334155" stroke-width="1.5"/>');
+  lines.push('<line x1="' + padL + '" y1="' + (padT+plotH) + '" x2="' + (padL+plotW) + '" y2="' + (padT+plotH) + '" stroke="#334155" stroke-width="1.5"/>');
+  lines.push('<text x="' + (W/2) + '" y="' + (H-4) + '" fill="#64748b" font-size="8" text-anchor="middle" font-family="JetBrains Mono">Time Period T (seconds)</text>');
+  lines.push('<text x="10" y="' + (padT+plotH/2) + '" fill="#64748b" font-size="8" text-anchor="middle" font-family="JetBrains Mono" transform="rotate(-90,10,' + (padT+plotH/2) + ')">Sa/g</text>');
+
+  // Grid
+  [0.5,1.0,1.5,2.0,2.5].forEach(function(T) {
+    var x2 = px(T);
+    lines.push('<line x1="' + x2 + '" y1="' + padT + '" x2="' + x2 + '" y2="' + (padT+plotH) + '" stroke="#1e293b" stroke-width="0.8"/>');
+    lines.push('<text x="' + x2 + '" y="' + (padT+plotH+12) + '" fill="#475569" font-size="7.5" text-anchor="middle" font-family="JetBrains Mono">' + T + '</text>');
+  });
+  [1.0,2.0,2.5].forEach(function(s) {
+    var y2 = py(s);
+    lines.push('<line x1="' + padL + '" y1="' + y2 + '" x2="' + (padL+plotW) + '" y2="' + y2 + '" stroke="#1e293b" stroke-width="0.8"/>');
+    lines.push('<text x="' + (padL-4) + '" y="' + (y2+3) + '" fill="#475569" font-size="7.5" text-anchor="end" font-family="JetBrains Mono">' + s + '</text>');
+  });
+
+  // Spectrum curve fill
+  var fillPts = pts.map(function(p) { return r2(px(Math.min(p[0],maxT))) + ',' + r2(py(Math.min(p[1],maxSa))); }).join(' ');
+  fillPts += ' ' + r2(px(maxT)) + ',' + r2(padT+plotH) + ' ' + r2(padL) + ',' + r2(padT+plotH);
+  lines.push('<polygon points="' + fillPts + '" fill="rgba(245,158,11,0.1)"/>');
+
+  // Spectrum curve
+  var curvePts = pts.map(function(p) { return r2(px(Math.min(p[0],maxT))) + ',' + r2(py(Math.min(p[1],maxSa))); }).join(' ');
+  lines.push('<polyline points="' + curvePts + '" fill="none" stroke="#f59e0b" stroke-width="2"/>');
+
+  // Ta marker
+  var taX = px(Math.min(Ta, maxT));
+  var saY = py(Math.min(Sa, maxSa));
+  lines.push('<line x1="' + taX + '" y1="' + padT + '" x2="' + taX + '" y2="' + (padT+plotH) + '" stroke="#34d399" stroke-width="1.5" stroke-dasharray="4,2"/>');
+  lines.push('<line x1="' + padL + '" y1="' + saY + '" x2="' + (padL+plotW) + '" y2="' + saY + '" stroke="#34d399" stroke-width="1.5" stroke-dasharray="4,2"/>');
+  lines.push('<circle cx="' + taX + '" cy="' + saY + '" r="5" fill="#34d399" stroke="#0a0f1e" stroke-width="1.5"/>');
+  lines.push('<text x="' + (taX+6) + '" y="' + (saY-6) + '" fill="#34d399" font-size="8.5" font-weight="700" font-family="JetBrains Mono">Ta=' + r2(Ta) + 's, Sa/g=' + r2(Sa) + '</text>');
+
+  // Plateau label
+  lines.push('<text x="' + px(0.3) + '" y="' + (py(2.5)-6) + '" fill="#f59e0b" font-size="8" text-anchor="middle" font-family="JetBrains Mono">Plateau Sa/g=2.5</text>');
+
+  lines.push('</svg>');
+  return lines.join('');
+}
+
+function svgSeismicLoadPath(seis, numFloors, floorHt) {
+  var W = 320, H = 260;
+  var nF = numFloors, fhPx = (H - 60) / nF;
+  var bx = 60, bW = 140;
+  var by = 20;
+
+  var lines = [];
+  lines.push('<svg viewBox="0 0 ' + W + ' ' + H + '" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block;background:#0a0f1e">');
+  lines.push('<text x="' + (W/2) + '" y="13" fill="#a78bfa" font-size="9" font-weight="700" text-anchor="middle" font-family="JetBrains Mono">SEISMIC LOAD PATH</text>');
+
+  // Columns (vertical lines)
+  [bx + 10, bx + bW - 10].forEach(function(cx2) {
+    lines.push('<rect x="' + (cx2 - 4) + '" y="' + by + '" width="8" height="' + (nF * fhPx) + '" fill="rgba(167,139,250,0.2)" stroke="#a78bfa" stroke-width="1"/>');
+  });
+
+  // Floor slabs and storey shear arrows
+  var Vi = seis.Vb;
+  seis.floors.slice().reverse().forEach(function(f, i) {
+    var fy2 = by + i * fhPx;
+    // Slab
+    lines.push('<rect x="' + (bx + 6) + '" y="' + (fy2 + fhPx - 4) + '" width="' + (bW - 12) + '" height="6" fill="rgba(56,189,248,0.3)" stroke="#38bdf8" stroke-width="0.8"/>');
+
+    // Storey shear in column (accumulates downward)
+    var shearW = Math.max(3, (f.Vi / seis.Vb) * 18);
+    lines.push('<rect x="' + (bx + 2) + '" y="' + fy2 + '" width="' + shearW + '" height="' + fhPx + '" fill="rgba(248,113,113,0.2)" stroke="none"/>');
+    lines.push('<text x="' + (bx + 2 + shearW + 2) + '" y="' + (fy2 + fhPx / 2 + 3) + '" fill="#f87171" font-size="7.5" font-family="JetBrains Mono">V' + f.floor + '=' + r2(f.Vi) + 'kN</text>');
+
+    // Floor label
+    lines.push('<text x="' + (bx - 4) + '" y="' + (fy2 + fhPx / 2 + 3) + '" fill="#64748b" font-size="7.5" text-anchor="end" font-family="JetBrains Mono">F' + f.floor + '</text>');
+
+    // Lateral force arrow
+    var flen = Math.max(6, (f.Qi / seis.Vb) * 40);
+    var ay2 = fy2 + fhPx - 4;
+    lines.push('<line x1="' + (bx + bW) + '" y1="' + ay2 + '" x2="' + (bx + bW + flen) + '" y2="' + ay2 + '" stroke="#34d399" stroke-width="1.5"/>');
+    lines.push('<polygon points="' + (bx + bW + flen) + ',' + ay2 + ' ' + (bx + bW + flen - 4) + ',' + (ay2 - 3) + ' ' + (bx + bW + flen - 4) + ',' + (ay2 + 3) + '" fill="#34d399"/>');
+  });
+
+  // Ground (base shear)
+  lines.push('<rect x="' + (bx - 20) + '" y="' + (by + nF * fhPx) + '" width="' + (bW + 40) + '" height="10" fill="rgba(71,85,105,0.7)" stroke="#475569" stroke-width="1"/>');
+  lines.push('<line x1="' + (bx - 5) + '" y1="' + (by + nF * fhPx + 5) + '" x2="' + (bx + 35) + '" y2="' + (by + nF * fhPx + 5) + '" stroke="#f87171" stroke-width="2.5"/>');
+  lines.push('<polygon points="' + (bx - 5) + ',' + (by + nF * fhPx + 5) + ' ' + (bx + 1) + ',' + (by + nF * fhPx + 2) + ' ' + (bx + 1) + ',' + (by + nF * fhPx + 8) + '" fill="#f87171"/>');
+  lines.push('<text x="' + (bx + 36) + '" y="' + (by + nF * fhPx + 9) + '" fill="#f87171" font-size="8" font-family="JetBrains Mono">Vb=' + r2(seis.Vb) + 'kN</text>');
+
+  // Legend
+  lines.push('<text x="5" y="' + (H - 28) + '" fill="#a78bfa" font-size="7.5" font-family="JetBrains Mono">█ Column carries</text>');
+  lines.push('<text x="5" y="' + (H - 16) + '" fill="#f87171" font-size="7.5" font-family="JetBrains Mono">█ Storey shear Vi</text>');
+  lines.push('<text x="5" y="' + (H - 4) + '" fill="#34d399" font-size="7.5" font-family="JetBrains Mono">→ Floor force Qi</text>');
+  lines.push('<text x="110" y="' + (H - 20) + '" fill="#38bdf8" font-size="7.5" font-family="JetBrains Mono">█ Floor slab</text>');
+  lines.push('<text x="110" y="' + (H - 8) + '" fill="#64748b" font-size="7.5" font-family="JetBrains Mono">Shear accumulates ↓</text>');
+
+  lines.push('</svg>');
+  return lines.join('');
+}
+
 function secSeismic(){
   const{seis}=RES;
   return`
@@ -394,6 +758,7 @@ function secSeismic(){
     ${fm('Sa/g per IS 1893:2016 spectrum (Type '+S.soilType+')',r2(seis.Sa),'IS 1893 Cl 6.4.5 / Fig. 2')}
     ${fmWhy(`Ah = (Z/2)x(Sa/g)/RxI = (${seis.Z}/2)x${r2(seis.Sa)}/${seis.R}x${seis.I}`,seis.Ah.toFixed(4),'IS 1893 Cl 6.4.2')}
     ${vd(true,`Ah = ${seis.Ah.toFixed(4)} -> Every kN of building weight produces ${r2(seis.Ah*1000)} N of horizontal seismic force`)}
+    ${svgSeismicSpectrum(seis)}
   `,'tl')}
   ${sb('EQ-4','Seismic Weight & Base Shear',`
     ${fm('Floor area = '+S.buildingL+'x'+S.buildingW,r2(S.buildingL*S.buildingW)+' m^2','')}
@@ -412,6 +777,10 @@ function secSeismic(){
       </div>
       <div style="flex:1;min-width:180px">${svgSeismicDist(seis.floors)}</div>
     </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px">
+        <div>${svgSeismicBuilding(seis,S.numFloors,S.floorHt)}</div>
+        <div>${svgSeismicLoadPath(seis,S.numFloors,S.floorHt)}</div>
+      </div>
   `,'tl')}
 </div>`;}
 
@@ -2629,6 +2998,9 @@ function stairSinglePanel(st, titleOverride){
     ${fm('Landing Mu = wu×L²/8',r2(1.5*(st.wD/1000*25+S.floorFinish+3.0)*(st.landingSpan||0.5)**2/8)+' kN.m/m','')}
     <div class="cp tl">Landing reinforcement same as waist slab: D10@${st.stsp}mm. Extend at least 1.2m (Ld) into wall or beam.</div>
   `,'tl')}
+
+  ${sb('ST-0','Stair Type Selection & Cross-Section',svgStairSection(st),'tl')}
+
 </div>`;
 }
 
