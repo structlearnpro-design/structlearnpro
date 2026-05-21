@@ -646,11 +646,10 @@ async function verifyOTP(){
   setMsg('o-msg','Verifying...','');
   const mob=pending.mob;
 
-  // Verify OTP via Edge Function
   try{
     const resp = await fetch(SUPA_URL+'/functions/v1/verify-otp',{
       method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+SUPA_KEY},
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+SUPA_KEY,'apikey':SUPA_KEY},
       body:JSON.stringify({mobile:mob, otp:otp})
     });
     const result = await resp.json();
@@ -659,42 +658,47 @@ async function verifyOTP(){
       btn.disabled=false;
       return;
     }
-    // OTP verified — now handle signup or login
-    if(pending.type==='signup'){
-      await doSignup(mob, result.userId, result.isNewUser);
+
+    // Save session token to localStorage
+    if(result.sessionToken){
+      localStorage.setItem('slp_session_mob', mob);
+      localStorage.setItem('slp_session_tok', result.sessionToken);
+    }
+
+    if(!result.isNewUser && result.profile){
+      // Existing user — load directly
+      P = result.profile;
+      U = {id: result.profile.id, mobile: mob};
+      plan = P?.plan || 'free';
+      await loadAndRestoreProgress();
+      updTop();
+      goTo('projects');
+      toast('Welcome back, ' + (P.full_name||mob) + '! 👋');
     } else {
-      await doLogin(mob, result.userId);
+      // New user — create profile
+      await doSignup(mob, result.sessionToken);
     }
   }catch(e){
+    console.error('verifyOTP error:', e);
     setMsg('o-msg','Network error. Please try again.','err');
     btn.disabled=false;
   }
   btn.disabled=false;
 }
 
-async function doSignup(mob, userId, isNewUser){
-  // userId comes from verify-otp Edge Function (already created auth user)
-  if(!userId){setMsg('o-msg','Verification failed. Try again.','err');return;}
-
-  if(!isNewUser){
-    // User already exists — just log them in
-    await doLogin(mob, userId);
-    return;
-  }
-
-  // Call create-profile Edge Function to create profile + generate unique ID
+async function doSignup(mob, sessionToken){
   try{
     const resp = await fetch(SUPA_URL+'/functions/v1/create-profile',{
       method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+SUPA_KEY},
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+SUPA_KEY,'apikey':SUPA_KEY},
       body:JSON.stringify({
-        userId:   userId,
-        mobile:   mob,
-        role:     pending.purpose==='lecturer'?'lecturer':pending.purpose==='engineer'?'engineer':'student',
-        fullName: pending.name || mob,
-        email:    pending.email || null,
-        city:     '',
-        state:    '',
+        mobile:       mob,
+        role:         pending.purpose==='lecturer'?'lecturer':pending.purpose==='engineer'?'engineer':'student',
+        fullName:     pending.name || mob,
+        email:        pending.email || null,
+        city:         '',
+        state:        '',
+        sessionToken: sessionToken||''
       })
     });
     const result = await resp.json();
@@ -702,31 +706,40 @@ async function doSignup(mob, userId, isNewUser){
       setMsg('o-msg', result.error||'Failed to create profile','err');
       return;
     }
-    // Store session token from localStorage for this mobile
-    localStorage.setItem('slp_uid_'+mob, userId);
-    // Load the app
-    U = {id: userId};
     P = result.profile;
+    U = {id: result.profile.id, mobile: mob};
     plan = 'free';
     updTop();
     goTo('projects');
     toast('Welcome to StructLearn Pro! Your ID: '+result.uniqueId+' 🎉');
   }catch(e){
-    setMsg('o-msg','Network error. Please try again.','err');
+    console.error('doSignup error:', e);
+    setMsg('o-msg','Network error creating profile. Please try again.','err');
   }
 }
 
-async function doLogin(mob, userId){
-  if(!userId){setMsg('o-msg','Verification failed. Try again.','err');return;}
-  let {data:prof}=await db.from('profiles').select('*').eq('mobile','+91'+mob).maybeSingle();
-  if(!prof){const {data:p2}=await db.from('profiles').select('*').eq('mobile',mob).maybeSingle();prof=p2;}
-  if(!prof){await doSignup(mob,userId,true);return;}
-  await db.from('profiles').update({last_active:new Date().toISOString()}).eq('user_id',userId);
-  U={id:userId};P=prof;plan=P?.plan||'free';
-  localStorage.setItem('slp_uid_'+mob,userId);
-  await loadAndRestoreProgress();
-  updTop();goTo('projects');
-  toast('Welcome back, '+(P.full_name||mob)+'! 👋');
+async function doLogin(mob){
+  // Load profile directly from profiles table by mobile
+  try{
+    const resp = await fetch(SUPA_URL+'/rest/v1/profiles?mobile=eq.%2B91'+mob+'&select=*',{
+      headers:{'Authorization':'Bearer '+SUPA_KEY,'apikey':SUPA_KEY}
+    });
+    const data = await resp.json();
+    const prof = data && data[0];
+    if(!prof){
+      setMsg('o-msg','Account not found. Please sign up.','err');
+      return;
+    }
+    P = prof;
+    U = {id: prof.id, mobile: mob};
+    plan = P?.plan || 'free';
+    await loadAndRestoreProgress();
+    updTop();
+    goTo('projects');
+    toast('Welcome back, '+(P.full_name||mob)+'! 👋');
+  }catch(e){
+    setMsg('o-msg','Error loading profile. Please try again.','err');
+  }
 }
 async function doLogout(){
   await db.auth.signOut();
