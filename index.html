@@ -1804,13 +1804,10 @@ async function handleSaveProject(data){
 
 
 
-  // Increment analysis_count only when RES is present (analysis was run)
+  // Increment analysis_count every time RES is present (analysis was run)
   const existingProj = projects.find(x=>x.id===pid);
   const prevAnalysisCount = existingProj?.analysis_count || 0;
-  const prevResultsJson   = existingProj?.results_json;
-  // Only count as new analysis if RES exists and wasn't there before (or changed)
-  const isNewAnalysis = RES && (!prevResultsJson || JSON.stringify(RES) !== JSON.stringify(prevResultsJson));
-  const newAnalysisCount = isNewAnalysis ? prevAnalysisCount + 1 : prevAnalysisCount;
+  const newAnalysisCount = RES ? prevAnalysisCount + 1 : prevAnalysisCount;
 
   const payload = {
     name:            S.name || 'Untitled',
