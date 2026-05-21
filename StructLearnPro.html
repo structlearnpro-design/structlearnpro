@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>StructLearn Pro v2 — Visual IS 456 Design</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet"/>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -251,7 +252,256 @@ td.ng{color:var(--red);font-weight:700}
 <div class="main" id="main"></div>
 </div>
 
-<script src="engine.js?v=1779273933"></script>
-<script src="ui.js?v=1779273933"></script>
-</body>
+<script src="engine.js"></script>
+<script src="ui.js"></script>
+<script src="supabase.js"></script>
+<script src="auth_screens.js"></script>
+<script>
+// ── AUTH GATE — runs on every page load ──────────────────────────
+(async function initApp() {
+  // Show loading screen while checking session
+  const authOverlay = document.createElement('div');
+  authOverlay.id = 'authOverlay';
+  authOverlay.style.cssText = [
+    'position:fixed;inset:0;background:#0a0f1e',
+    'display:flex;align-items:center;justify-content:center',
+    'z-index:99999;font-family:JetBrains Mono,monospace',
+    'flex-direction:column;gap:16px'
+  ].join(';');
+  authOverlay.innerHTML = `
+    <div style="font-size:40px">🏗</div>
+    <div style="font-size:18px;font-weight:700;color:#e2e8f0">StructLearn Pro</div>
+    <div style="font-size:12px;color:#475569">Checking session...</div>
+  `;
+  document.body.appendChild(authOverlay);
+
+  // Check if user is already logged in
+  const session = await checkSession();
+
+  // Remove loading overlay
+  authOverlay.remove();
+
+  if (!session) {
+    // Not logged in — show auth screen over the app
+    const authDiv = document.createElement('div');
+    authDiv.id = 'app';
+    authDiv.style.cssText = 'position:fixed;inset:0;z-index:9999;overflow-y:auto';
+    document.body.appendChild(authDiv);
+    screenLogin();
+    return;
+  }
+
+  // Logged in — start session tracking and go to app
+  await startSession();
+  updateTopBar();
+  go(0);
+})();
+
+// ── TOP BAR — add user info and save indicator ───────────────────
+function updateTopBar() {
+  const profile = getCurrentProfile();
+  if (!profile) return;
+
+  const hdr = document.querySelector('.hdr');
+  if (!hdr) return;
+
+  // Add save indicator + user avatar to header
+  const userArea = document.createElement('div');
+  userArea.style.cssText = 'display:flex;align-items:center;gap:10px;margin-left:12px;flex-shrink:0';
+  userArea.innerHTML = `
+    <span id="saveIndicator" style="font-size:10px;color:#34d399;font-family:JetBrains Mono,monospace">☁ Ready</span>
+    <div onclick="goToProfile()" style="
+      width:34px;height:34px;border-radius:50%;
+      background:linear-gradient(135deg,#1d4ed8,#3b82f6);
+      display:flex;align-items:center;justify-content:center;
+      color:#fff;font-size:13px;font-weight:700;cursor:pointer;
+      font-family:JetBrains Mono,monospace;flex-shrink:0;
+      border:2px solid #3b82f6;
+      title="${profile.full_name}"
+    ">${profile.full_name.charAt(0).toUpperCase()}</div>
+  `;
+  hdr.appendChild(userArea);
+}
+
+// ── NAVIGATION ───────────────────────────────────────────────────
+function goToDashboard() {
+  // Remove auth overlay if present
+  const authDiv = document.getElementById('app');
+  if (authDiv) authDiv.remove();
+  // Update top bar
+  updateTopBar();
+  // Go to welcome page
+  go(0);
+}
+
+function goToProfile() {
+  // Remove auth overlay if present
+  const authDiv = document.getElementById('app');
+  if (authDiv) authDiv.remove();
+  screenProfile();
+}
+
+// ── PROFILE SCREEN ───────────────────────────────────────────────
+function screenProfile() {
+  const profile = getCurrentProfile();
+  if (!profile) { screenLogin(); return; }
+
+  const roleLabel = {
+    student:  'Student',
+    lecturer: 'Lecturer / Professor',
+    engineer: 'Structural Engineer',
+    admin:    'Administrator',
+  }[profile.role] || 'User';
+
+  // Show profile as overlay
+  let overlay = document.getElementById('profileOverlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'profileOverlay';
+    overlay.style.cssText = [
+      'position:fixed;inset:0;background:rgba(0,0,0,0.8)',
+      'z-index:9998;display:flex;align-items:center;justify-content:center',
+      'padding:20px;overflow-y:auto'
+    ].join(';');
+    document.body.appendChild(overlay);
+  }
+
+  overlay.innerHTML = `
+<div style="width:100%;max-width:520px;background:#0f172a;border:1px solid #1e3a8a;border-radius:16px;padding:28px;font-family:JetBrains Mono,monospace;max-height:90vh;overflow-y:auto">
+
+  <!-- Header -->
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px">
+    <div style="font-size:16px;font-weight:700;color:#e2e8f0">My Profile</div>
+    <button onclick="document.getElementById('profileOverlay').remove()"
+      style="background:none;border:1px solid #334155;border-radius:8px;padding:6px 12px;color:#64748b;cursor:pointer;font-family:JetBrains Mono,monospace;font-size:12px">
+      ✕ Close
+    </button>
+  </div>
+
+  <!-- Name + mobile -->
+  <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px">
+    <div style="width:50px;height:50px;border-radius:50%;background:linear-gradient(135deg,#1d4ed8,#3b82f6);display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;font-weight:700;flex-shrink:0">
+      ${profile.full_name.charAt(0).toUpperCase()}
+    </div>
+    <div>
+      <div style="font-size:16px;font-weight:700;color:#e2e8f0">${profile.full_name}</div>
+      <div style="font-size:12px;color:#64748b;margin-top:2px">📱 ${profile.mobile}</div>
+      <div style="font-size:11px;color:#475569;margin-top:1px">${roleLabel}</div>
+    </div>
+  </div>
+
+  <!-- UNIQUE ID — most prominent section -->
+  <div style="background:#0a0f1e;border:2px solid #1d4ed8;border-radius:14px;padding:20px;margin-bottom:20px;position:relative;overflow:hidden">
+    <div style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#1d4ed8,#60a5fa)"></div>
+    <div style="font-size:10px;color:#64748b;font-weight:600;letter-spacing:1px;margin-bottom:10px">YOUR UNIQUE ID</div>
+    <div style="font-size:20px;font-weight:900;color:#60a5fa;letter-spacing:2px;margin-bottom:14px;word-break:break-all">
+      ${profile.unique_id}
+    </div>
+    <div style="display:flex;gap:8px">
+      <button onclick="copyUniqueId('${profile.unique_id}')"
+        style="padding:7px 14px;background:#1e3a8a;border:1px solid #3b82f6;border-radius:7px;color:#60a5fa;font-size:11px;cursor:pointer;font-family:JetBrains Mono,monospace">
+        📋 Copy
+      </button>
+      <button onclick="saveIdAsImage('${profile.unique_id}','${profile.full_name}','${roleLabel}')"
+        style="padding:7px 14px;background:#1e3a8a;border:1px solid #3b82f6;border-radius:7px;color:#60a5fa;font-size:11px;cursor:pointer;font-family:JetBrains Mono,monospace">
+        🖼 Save Image
+      </button>
+    </div>
+  </div>
+
+  <!-- Academic / Professional info -->
+  <div style="background:#0a0f1e;border:1px solid #1e3a8a;border-radius:12px;padding:16px;margin-bottom:16px">
+    <div style="font-size:11px;color:#64748b;font-weight:600;letter-spacing:1px;margin-bottom:10px">
+      ${profile.role === 'student' ? 'ACADEMIC INFO' : 'PROFESSIONAL INFO'}
+    </div>
+    ${profile.college ? `<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #1e3a8a"><span style="color:#64748b;font-size:12px">College</span><span style="color:#e2e8f0;font-size:12px">${profile.college}</span></div>` : ''}
+    ${profile.course ? `<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #1e3a8a"><span style="color:#64748b;font-size:12px">Course</span><span style="color:#e2e8f0;font-size:12px">${profile.course}</span></div>` : ''}
+    ${profile.year_of_study ? `<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #1e3a8a"><span style="color:#64748b;font-size:12px">Year</span><span style="color:#e2e8f0;font-size:12px">Year ${profile.year_of_study}</span></div>` : ''}
+    ${profile.batch ? `<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #1e3a8a"><span style="color:#64748b;font-size:12px">Batch</span><span style="color:#e2e8f0;font-size:12px">${profile.batch}</span></div>` : ''}
+    ${profile.firm_name ? `<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #1e3a8a"><span style="color:#64748b;font-size:12px">Firm</span><span style="color:#e2e8f0;font-size:12px">${profile.firm_name}</span></div>` : ''}
+    ${profile.designation ? `<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #1e3a8a"><span style="color:#64748b;font-size:12px">Designation</span><span style="color:#e2e8f0;font-size:12px">${profile.designation}</span></div>` : ''}
+    ${profile.city ? `<div style="display:flex;justify-content:space-between;padding:6px 0"><span style="color:#64748b;font-size:12px">Location</span><span style="color:#e2e8f0;font-size:12px">${profile.city}, ${profile.state || ''}</span></div>` : ''}
+  </div>
+
+  <!-- Join batch (students only) -->
+  ${profile.role === 'student' ? `
+  <div style="background:#0a0f1e;border:1px solid #1e3a8a;border-radius:12px;padding:16px;margin-bottom:16px">
+    <div style="font-size:11px;color:#64748b;font-weight:600;letter-spacing:1px;margin-bottom:10px">JOIN A BATCH</div>
+    <div style="font-size:12px;color:#64748b;margin-bottom:8px">Enter your lecturer's batch code:</div>
+    <div style="display:flex;gap:8px">
+      <input id="batchCodeInput" type="text" placeholder="e.g. MSIT-CIVIL-2026-B"
+        style="flex:1;padding:9px 12px;background:#0f172a;border:1.5px solid #1e3a8a;border-radius:8px;color:#e2e8f0;font-size:12px;font-family:JetBrains Mono,monospace;outline:none"/>
+      <button onclick="joinBatch()"
+        style="padding:9px 16px;background:#1d4ed8;border:none;border-radius:8px;color:#fff;font-size:12px;cursor:pointer;font-family:JetBrains Mono,monospace">
+        Join
+      </button>
+    </div>
+    <div id="batchMsg" style="margin-top:6px;font-size:11px;color:#64748b"></div>
+  </div>` : ''}
+
+  <!-- Optional email -->
+  <div style="background:#0a0f1e;border:1px solid #1e3a8a;border-radius:12px;padding:16px;margin-bottom:20px">
+    <div style="font-size:11px;color:#64748b;font-weight:600;letter-spacing:1px;margin-bottom:10px">EMAIL (OPTIONAL)</div>
+    <div style="font-size:11px;color:#475569;margin-bottom:8px">For receiving PDF reports and notifications</div>
+    <div style="display:flex;gap:8px">
+      <input id="emailInput" type="email" value="${profile.email || ''}" placeholder="your@email.com"
+        style="flex:1;padding:9px 12px;background:#0f172a;border:1.5px solid #1e3a8a;border-radius:8px;color:#e2e8f0;font-size:12px;font-family:JetBrains Mono,monospace;outline:none"/>
+      <button onclick="saveEmail()"
+        style="padding:9px 16px;background:#1e3a8a;border:1px solid #3b82f6;border-radius:8px;color:#60a5fa;font-size:12px;cursor:pointer;font-family:JetBrains Mono,monospace">
+        Save
+      </button>
+    </div>
+    <div id="emailMsg" style="margin-top:6px;font-size:11px;color:#64748b"></div>
+  </div>
+
+  <!-- Logout -->
+  <button onclick="handleLogout()"
+    style="width:100%;padding:12px;background:transparent;border:1px solid #334155;border-radius:10px;color:#f87171;font-size:13px;font-weight:700;cursor:pointer;font-family:JetBrains Mono,monospace">
+    🚪 Logout
+  </button>
+
+</div>`;
+}
+
+// ── PROFILE ACTIONS ───────────────────────────────────────────────
+async function joinBatch() {
+  const code = document.getElementById('batchCodeInput')?.value?.trim();
+  const msg  = document.getElementById('batchMsg');
+  if (!code) { if(msg) msg.textContent = 'Please enter a batch code'; return; }
+
+  const sb = getSB();
+  const { data: batch } = await sb.from('batches').select('id,batch_name').eq('batch_code', code).single();
+  if (!batch) { if(msg) { msg.style.color='#f87171'; msg.textContent = 'Batch code not found. Check with your lecturer.'; } return; }
+
+  const user = getCurrentUser();
+  await sb.from('batch_members').upsert({ batch_id: batch.id, student_id: user.id });
+  if(msg) { msg.style.color='#34d399'; msg.textContent = '✅ Joined: ' + batch.batch_name; }
+}
+
+async function saveEmail() {
+  const email = document.getElementById('emailInput')?.value?.trim();
+  const msg   = document.getElementById('emailMsg');
+  const sb = getSB();
+  const user = getCurrentUser();
+  await sb.from('profiles').update({ email }).eq('user_id', user.id);
+  if(msg) { msg.style.color='#34d399'; msg.textContent = '✅ Email saved'; }
+  // Refresh profile
+  await loadCurrentProfile();
+}
+
+async function handleLogout() {
+  if (!confirm('Are you sure you want to logout?')) return;
+  await cloudSignOut();
+  // Remove profile overlay
+  document.getElementById('profileOverlay')?.remove();
+  // Show login
+  const authDiv = document.createElement('div');
+  authDiv.id = 'app';
+  authDiv.style.cssText = 'position:fixed;inset:0;z-index:9999;overflow-y:auto';
+  document.body.appendChild(authDiv);
+  screenLogin();
+  // Remove top bar user area
+  document.querySelector('.hdr > div:last-child')?.remove();
+}
+</script></body>
 </html>
