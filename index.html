@@ -1096,9 +1096,12 @@ async function doLogin(mob){
   }
 }
 async function doLogout(){
-  await db.auth.signOut();
+  // Clear our custom session
+  localStorage.removeItem('slp_session_mob');
+  localStorage.removeItem('slp_session_tok');
   localStorage.removeItem('slp_session');
-  U=null;P=null;plan='free';projects=[];
+  stopAutoSave();
+  U=null; P=null; plan='free'; projects=[];
   showScreen('auth-screen');
 }
 
@@ -2029,13 +2032,41 @@ function toast(msg,err=false){const t=document.getElementById('toast');t.textCon
 // ── INIT ─────────────────────────────────────────────────────
 (async()=>{
   loadPrices();
-  const {data:{session}}=await db.auth.getSession();
-  if(session&&session.user){
-    U=session.user;
-    const {data:prof}=await db.from('profiles').select('*').eq('id',P?.id||'none').single();
-    P=prof;plan=P?.plan||'free';
-    updTop();goTo('projects');
-  } else {showScreen('auth-screen');}
+
+  // Check our custom session (mobile+token stored in localStorage)
+  const savedMob = localStorage.getItem('slp_session_mob');
+  const savedTok = localStorage.getItem('slp_session_tok');
+
+  if(savedMob && savedTok){
+    try{
+      // Load profile from Supabase by mobile number
+      const mob10 = savedMob.replace(/\D/g,'').slice(-10);
+      const resp = await fetch(
+        SUPA_URL+'/rest/v1/profiles?mobile=eq.%2B91'+mob10+'&select=*',
+        {headers:{'Authorization':'Bearer '+SUPA_KEY,'apikey':SUPA_KEY}}
+      );
+      const data = resp.ok ? await resp.json() : [];
+      if(data && data[0]){
+        P = data[0];
+        U = {id: P.id, mobile: savedMob};
+        plan = P?.plan || 'free';
+        // Update last_active silently
+        fetch(SUPA_URL+'/rest/v1/profiles?id=eq.'+P.id,{
+          method:'PATCH',
+          headers:{'Authorization':'Bearer '+SUPA_KEY,'apikey':SUPA_KEY,'Content-Type':'application/json'},
+          body:JSON.stringify({last_active:new Date().toISOString()})
+        }).catch(()=>{});
+        updTop();
+        goTo('projects');
+        return;
+      }
+    }catch(e){
+      console.warn('Session restore failed:', e);
+    }
+  }
+
+  // No valid session — show login
+  showScreen('auth-screen');
 })();
 
 // ── STUDENT ANALYTICS ────────────────────────────────────────
