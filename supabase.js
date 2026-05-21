@@ -4,7 +4,7 @@
 // ================================================================
 
 const SUPABASE_URL     = 'https://rpjdveuxxjeoeomkwrfx.supabase.co'
-const SUPABASE_ANON    = 'sb_publishable_L1RWkjtz41gT5sZKhRRnsw_BB3WfJWI'
+const SUPABASE_ANON    = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJwamR2ZXV4eGplb2VvbWt3cmZ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg5MzY3NzIsImV4cCI6MjA5NDUxMjc3Mn0.3JvvMaCFKg2fB9-l2WJ5JMX5btGIKqvpMj_ZcxSRWaQ'
 const EDGE_BASE        = SUPABASE_URL + '/functions/v1'
 
 // ── INIT ─────────────────────────────────────────────────────────
