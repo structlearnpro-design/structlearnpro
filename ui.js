@@ -84,7 +84,7 @@ function p0(){return`
 // Show last saved project info
 setTimeout(()=>{
   try{
-    const auto=localStorage.getItem('structlearn_project_v1_auto')||localStorage.getItem('structlearn_project_v1');
+    const auto=null; // Project state loaded from Supabase
     const el=document.getElementById('savedProjectInfo');
     if(auto&&el){
       const d=JSON.parse(auto);
@@ -11248,7 +11248,7 @@ const SAVE_KEY = 'structlearn_project_v1';
 function saveProject() {
   try {
     const data = JSON.stringify({ S, ts: Date.now(), ver: 1 });
-    localStorage.setItem(SAVE_KEY, data);
+    // Project state saved to Supabase instead
     showSaveToast('Project saved!', '#34d399');
   } catch(e) {
     showSaveToast('Save failed: ' + e.message, '#f87171');
@@ -11257,7 +11257,7 @@ function saveProject() {
 
 function loadProject() {
   try {
-    const raw = localStorage.getItem(SAVE_KEY);
+    const raw = null; // Project state loaded from Supabase
     if (!raw) { showSaveToast('No saved project found.', '#fbbf24'); return; }
     const data = JSON.parse(raw);
     if (!data.S) { showSaveToast('Invalid save data.', '#f87171'); return; }
@@ -11327,15 +11327,15 @@ function svWithAutoSave(id, v) {
   else { S[id] = v; }
   clearTimeout(_autoSaveTimer);
   _autoSaveTimer = setTimeout(() => {
-    try { localStorage.setItem(SAVE_KEY + '_auto', JSON.stringify({ S, ts: Date.now() })); } catch(e) {}
+    // Auto-save handled by Supabase
   }, 1500);
 }
 
 // Check for auto-save on startup and offer restore
 function checkAutoRestore() {
   try {
-    const auto = localStorage.getItem(SAVE_KEY + '_auto');
-    const manual = localStorage.getItem(SAVE_KEY);
+    const auto = null;
+    const manual = null;
     const raw = manual || auto;
     if (!raw) return;
     const data = JSON.parse(raw);
@@ -12250,14 +12250,14 @@ const _BT = {
   // Save behaviors to localStorage for hard-refresh survival
   _saveLocal() {
     try {
-      localStorage.setItem('slp_bt_behaviors', JSON.stringify(this.export()));
+      window._slpBehaviors = this.export();
     } catch(e) {}
   },
 
   // Load behaviors from localStorage on startup
   _loadLocal() {
     try {
-      var stored = JSON.parse(localStorage.getItem('slp_bt_behaviors') || '{}');
+      var stored = window._slpBehaviors || {};
       this.importFrom(stored);
     } catch(e) {}
   },
@@ -12446,14 +12446,14 @@ function getAttempts(level) {
 function setAttempts(level, n) { window._slpQuizAttempts = window._slpQuizAttempts||{}; window._slpQuizAttempts[level]=n; }
 function getMaxAttempts(level) { return level===1?3:level===2?3:2; }
 function getCooldownEnd(level) {
-  const v = localStorage.getItem(getCooldownKey(level));
+  const v = (window._slpCooldowns||{})[getCooldownKey(level)];
   return v ? parseInt(v) : 0;
 }
 function setCooldown(level) {
   const att = getAttempts(level);
   const hrs = getCooldownHours(level, att);
   const end = Date.now() + hrs*3600*1000;
-  localStorage.setItem(getCooldownKey(level), end);
+  window._slpCooldowns = window._slpCooldowns||{}; window._slpCooldowns[getCooldownKey(level)]=end;
 }
 function isCoolingDown(level) { return Date.now() < getCooldownEnd(level); }
 
@@ -13670,8 +13670,8 @@ const _EDU = {
       // Get cert quiz attempts from localStorage
       const quizAttempts = {};
       [1,2,3].forEach(function(lv){
-        const att = parseInt(localStorage.getItem('slp_quiz_att_'+lv)||'0');
-        const cd  = localStorage.getItem('slp_quiz_cd_'+lv)||'0';
+        const att = parseInt((window._slpQuizAttempts||{})[lv]||'0');
+        const cd  = ((window._slpCooldowns||{})['slp_quiz_cd_'+lv])||'0';
         quizAttempts[lv] = {attempts:att, cooldownEnd:cd};
       });
       window.parent.postMessage({
@@ -15472,7 +15472,7 @@ const _TRACK = {
 _TRACK.init();
 
 // Restore behavior tracker from localStorage (survives hard refresh / Ctrl+Shift+R)
-_BT._loadLocal();
+// _BT._loadLocal() disabled — data loaded from Supabase via RESTORE_PROGRESS
 
 // ── RESTORE PROGRESS FROM SUPABASE (cross-device) ────────────
 window.addEventListener('message', function(e) {
@@ -15543,6 +15543,7 @@ window.addEventListener('message', function(e) {
     window._slpProgress = Object.assign({}, existing, prog.lessons);
   }
   if(prog.behaviors) {
+    window._slpBehaviors = prog.behaviors;
     _BT.importFrom(prog.behaviors);
     // Update all confidence UI — retry if panel not built yet
     function applyConfidenceUI() {
