@@ -136,18 +136,55 @@ tr:hover td{background:rgba(59,130,246,0.04)}
 </head>
 <body>
 
+<!-- LOGIN SCREEN -->
+<div id="admin-login" style="display:none;position:fixed;inset:0;background:#0b0f1a;z-index:99999;
+  display:flex;align-items:center;justify-content:center;font-family:'Segoe UI',system-ui,sans-serif">
+  <div style="width:100%;max-width:380px;padding:20px">
+    <div style="text-align:center;margin-bottom:32px">
+      <div style="font-size:32px;margin-bottom:8px">🔐</div>
+      <div style="font-size:22px;font-weight:900;color:#e2e8f0">Admin Panel</div>
+      <div style="font-size:12px;color:#64748b;margin-top:4px">StructLearn Pro</div>
+    </div>
+    <div style="background:#111827;border:1px solid #1e3a8a;border-radius:16px;padding:28px">
+      <div style="margin-bottom:14px">
+        <label style="font-size:11px;color:#94a3b8;font-weight:600;display:block;margin-bottom:5px">MOBILE NUMBER</label>
+        <input id="login-mob" type="tel" maxlength="10" placeholder="10-digit mobile"
+          style="width:100%;padding:11px 14px;background:#0b0f1a;border:1.5px solid #1e3a8a;border-radius:8px;
+          color:#e2e8f0;font-size:14px;outline:none;font-family:inherit;box-sizing:border-box"
+          onkeydown="if(event.key==='Enter')document.getElementById('login-pass').focus()">
+      </div>
+      <div style="margin-bottom:20px">
+        <label style="font-size:11px;color:#94a3b8;font-weight:600;display:block;margin-bottom:5px">PASSWORD</label>
+        <input id="login-pass" type="password" placeholder="Admin password"
+          style="width:100%;padding:11px 14px;background:#0b0f1a;border:1.5px solid #1e3a8a;border-radius:8px;
+          color:#e2e8f0;font-size:14px;outline:none;font-family:inherit;box-sizing:border-box"
+          onkeydown="if(event.key==='Enter')adminLogin()">
+      </div>
+      <div id="login-err" style="display:none;margin-bottom:12px;padding:10px;background:rgba(248,113,113,0.1);
+        border:1px solid #f87171;border-radius:8px;font-size:12px;color:#f87171;text-align:center"></div>
+      <button onclick="adminLogin()" id="login-btn"
+        style="width:100%;padding:13px;background:linear-gradient(135deg,#1d4ed8,#2563eb);border:none;
+        border-radius:10px;color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">
+        Login →
+      </button>
+    </div>
+  </div>
+</div>
+
 <!-- TOP BAR -->
-<div class="topbar">
+<div class="topbar" id="admin-topbar" style="display:none">
   <div class="logo">StructLearn <span>Pro</span></div>
   <div class="admin-badge">ADMIN</div>
   <div class="topbar-right">
     <span id="admin-name">Loading...</span>
     <span id="admin-time" style="color:var(--txt3)"></span>
+    <button onclick="adminLogout()" style="background:none;border:1px solid #334155;border-radius:6px;
+      padding:4px 12px;color:#94a3b8;font-size:11px;cursor:pointer">Logout</button>
     <a href="index.html" style="color:var(--blue);text-decoration:none;font-size:12px">← Back to App</a>
   </div>
 </div>
 
-<div class="layout">
+<div class="layout" id="admin-layout" style="display:none">
 <!-- SIDEBAR -->
 <div class="sidebar">
   <div class="nav-section">Overview</div>
@@ -661,24 +698,124 @@ async function apiCount(path) {
 }
 
 // ═══════════════════════════════════════════════════════════
-// AUTH CHECK
+// ADMIN AUTH — Mobile + Password
 // ═══════════════════════════════════════════════════════════
-async function checkAdminAccess() {
-  const mob = localStorage.getItem('slp_session_mob');
-  if(!mob) { window.location.href='index.html'; return false; }
-  const mob10 = mob.replace(/\D/g,'').slice(-10);
-  const data = await api('profiles?mobile=eq.%2B91'+mob10+'&select=*');
-  if(!data || !data[0] || data[0].role !== 'admin') {
-    alert('Access denied. Admin only.');
-    window.location.href='index.html';
-    return false;
+const ADMIN_SESSION_KEY = 'slp_admin_session';
+
+// Simple hash function for password
+async function hashPassword(password) {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(password + 'slp_admin_salt_2026');
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function adminLogin() {
+  const mob  = el('login-mob')?.value?.trim();
+  const pass = el('login-pass')?.value?.trim();
+  const btn  = el('login-btn');
+  const err  = el('login-err');
+
+  if(!mob || mob.length !== 10) { showLoginErr('Enter valid 10-digit mobile'); return; }
+  if(!pass) { showLoginErr('Enter password'); return; }
+
+  btn.disabled = true;
+  btn.textContent = 'Checking...';
+
+  try {
+    const mob10 = mob.replace(/\D/g,'').slice(-10);
+    const data = await api('profiles?mobile=eq.%2B91'+mob10+'&select=*');
+    
+    if(!data || !data[0]) { showLoginErr('Mobile not found'); btn.disabled=false; btn.textContent='Login →'; return; }
+    
+    const profile = data[0];
+    
+    if(profile.role !== 'admin') { showLoginErr('Access denied. Not an admin account.'); btn.disabled=false; btn.textContent='Login →'; return; }
+
+    // Check password
+    const hashedInput = await hashPassword(pass);
+    
+    // First time login — if no password set, set it now
+    if(!profile.admin_password) {
+      // Set the password for first time
+      await api('profiles?id=eq.'+profile.id, {
+        method: 'PATCH',
+        body: JSON.stringify({ admin_password: hashedInput })
+      });
+      profile.admin_password = hashedInput;
+    }
+    
+    if(profile.admin_password !== hashedInput) {
+      showLoginErr('Wrong password');
+      btn.disabled=false; btn.textContent='Login →';
+      return;
+    }
+
+    // Success — save session
+    const sessionToken = Date.now().toString(36) + Math.random().toString(36).slice(2);
+    sessionStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify({
+      profileId: profile.id,
+      mobile: mob10,
+      token: sessionToken,
+      loginTime: Date.now()
+    }));
+
+    adminProfile = profile;
+    showAdminPanel();
+
+  } catch(e) {
+    showLoginErr('Error: ' + e.message);
+    btn.disabled=false; btn.textContent='Login →';
   }
-  adminProfile = data[0];
-  document.getElementById('admin-name').textContent = adminProfile.full_name || 'Admin';
+}
+
+function showLoginErr(msg) {
+  const err = el('login-err');
+  if(err) { err.textContent = msg; err.style.display = 'block'; }
+}
+
+function showAdminPanel() {
+  el('admin-login').style.display = 'none';
+  el('admin-topbar').style.display = 'flex';
+  el('admin-layout').style.display = 'flex';
+  el('admin-name').textContent = adminProfile.full_name || 'Admin';
   setInterval(()=>{
-    document.getElementById('admin-time').textContent = new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+    el('admin-time').textContent = new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
   }, 1000);
-  return true;
+  loadDashboard();
+}
+
+function adminLogout() {
+  sessionStorage.removeItem(ADMIN_SESSION_KEY);
+  el('admin-topbar').style.display = 'none';
+  el('admin-layout').style.display = 'none';
+  el('admin-login').style.display = 'flex';
+  el('login-mob').value = '';
+  el('login-pass').value = '';
+}
+
+async function checkAdminAccess() {
+  // Check existing session
+  const session = sessionStorage.getItem(ADMIN_SESSION_KEY);
+  if(session) {
+    try {
+      const sess = JSON.parse(session);
+      // Session valid for 8 hours
+      if(Date.now() - sess.loginTime < 8*60*60*1000) {
+        const data = await api('profiles?id=eq.'+sess.profileId+'&select=*');
+        if(data && data[0] && data[0].role === 'admin') {
+          adminProfile = data[0];
+          showAdminPanel();
+          return true;
+        }
+      }
+    } catch(e) {}
+    sessionStorage.removeItem(ADMIN_SESSION_KEY);
+  }
+  // Show login screen
+  el('admin-login').style.display = 'flex';
+  return false;
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -1520,9 +1657,7 @@ function downloadCSV(rows, filename) {
 // INIT
 // ═══════════════════════════════════════════════════════════
 (async()=>{
-  const ok = await checkAdminAccess();
-  if(!ok) return;
-  loadDashboard();
+  await checkAdminAccess();
 })();
 </script>
 </body>
