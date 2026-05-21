@@ -707,10 +707,79 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
       </div>
     </div>
 
-    <!-- Sign out -->
+    <!-- MY ACTIVITY -->
+    <div class="acc-card">
+      <div class="acc-ct">My Activity</div>
+      <div class="acc-row"><span class="acc-lbl">Member since</span><span class="acc-val" id="acc-since">—</span></div>
+      <div class="acc-row"><span class="acc-lbl">Last active</span><span class="acc-val" id="acc-lastactive">—</span></div>
+      <div class="acc-row"><span class="acc-lbl">Projects</span><span class="acc-val" id="acc-projcount">—</span></div>
+      <div class="acc-row"><span class="acc-lbl">Analyses run</span><span class="acc-val" id="acc-analyses">—</span></div>
+      <div class="acc-row"><span class="acc-lbl">Time spent</span><span class="acc-val" id="acc-time">—</span></div>
+      <div class="acc-row"><span class="acc-lbl">Snapshots saved</span><span class="acc-val" id="acc-snapshots">—</span></div>
+    </div>
+
+    <!-- BADGES -->
+    <div class="acc-card">
+      <div class="acc-ct">Badges Earned</div>
+      <div id="acc-badges" style="display:flex;flex-direction:column;gap:8px">—</div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div class="acc-card">
+      <div class="acc-ct">Settings</div>
+      <div class="acc-row">
+        <span class="acc-lbl">Default concrete</span>
+        <select id="acc-fck" onchange="saveSettings()" style="background:var(--bg1);border:1px solid var(--b1);border-radius:6px;color:var(--txt);padding:4px 8px;font-size:12px;font-family:inherit">
+          <option value="20">M20</option>
+          <option value="25" selected>M25</option>
+          <option value="30">M30</option>
+          <option value="35">M35</option>
+          <option value="40">M40</option>
+        </select>
+      </div>
+      <div class="acc-row">
+        <span class="acc-lbl">Default zone</span>
+        <select id="acc-zone" onchange="saveSettings()" style="background:var(--bg1);border:1px solid var(--b1);border-radius:6px;color:var(--txt);padding:4px 8px;font-size:12px;font-family:inherit">
+          <option value="II">Zone II</option>
+          <option value="III">Zone III</option>
+          <option value="IV" selected>Zone IV</option>
+          <option value="V">Zone V</option>
+        </select>
+      </div>
+      <div class="acc-row">
+        <span class="acc-lbl">Default city</span>
+        <input type="text" id="acc-city-default" placeholder="New Delhi" onblur="saveSettings()"
+          style="background:var(--bg1);border:1px solid var(--b1);border-radius:6px;color:var(--txt);padding:4px 8px;font-size:12px;width:120px;font-family:inherit;outline:none">
+      </div>
+      <div class="acc-row">
+        <span class="acc-lbl">Auto-save</span>
+        <select id="acc-autosave" onchange="saveSettings()" style="background:var(--bg1);border:1px solid var(--b1);border-radius:6px;color:var(--txt);padding:4px 8px;font-size:12px;font-family:inherit">
+          <option value="15">15 sec</option>
+          <option value="30" selected>30 sec</option>
+          <option value="60">60 sec</option>
+          <option value="120">2 min</option>
+        </select>
+      </div>
+      <div id="acc-settings-msg" style="margin-top:8px;font-size:11px;color:#34d399;display:none">✅ Settings saved</div>
+    </div>
+
+    <!-- ACCOUNT ACTIONS -->
     <div class="acc-card">
       <div class="acc-ct">Account</div>
-      <button class="dbtn" onclick="doLogout()">🚪 Sign Out</button>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <button onclick="exportMyData()"
+          style="width:100%;padding:11px;background:transparent;border:1px solid #334155;border-radius:8px;color:#94a3b8;font-size:12px;cursor:pointer;font-family:inherit;text-align:left">
+          📤 Export All My Data
+        </button>
+        <button onclick="confirmDeleteAccount()"
+          style="width:100%;padding:11px;background:transparent;border:1px solid #7f1d1d;border-radius:8px;color:#f87171;font-size:12px;cursor:pointer;font-family:inherit;text-align:left">
+          🗑 Delete Account
+        </button>
+        <button onclick="doLogout()"
+          style="width:100%;padding:11px;background:transparent;border:1px solid #334155;border-radius:8px;color:#64748b;font-size:12px;cursor:pointer;font-family:inherit;text-align:left">
+          🚪 Logout
+        </button>
+      </div>
     </div>
 
   </div>
@@ -1828,6 +1897,149 @@ function renderAcc(){
   } else {
     if(expiryRow) expiryRow.style.display='none';
   }
+
+  // Load activity stats and badges async
+  loadAccActivity();
+  loadAccSettings();
+}
+
+async function loadAccActivity(){
+  if(!P) return;
+  const el = id => document.getElementById(id);
+
+  // Member since
+  const since = new Date(P.created_at);
+  if(el('acc-since')) el('acc-since').textContent = since.toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'});
+
+  // Last active
+  const last = new Date(P.last_active||P.created_at);
+  const lastStr = timeAgo(P.last_active) === 'just now' ? 'Today' : timeAgo(P.last_active);
+  if(el('acc-lastactive')) el('acc-lastactive').textContent = last.toLocaleDateString('en-IN',{day:'numeric',month:'short'}) + ' ' + last.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+
+  // Projects count
+  if(el('acc-projcount')) el('acc-projcount').textContent = projects.length;
+
+  // Analyses run — sum analysis_count across all projects
+  const totalAnalyses = projects.reduce((sum,p)=>sum+(p.analysis_count||0),0);
+  if(el('acc-analyses')) el('acc-analyses').textContent = totalAnalyses;
+
+  // Time spent
+  const totalSec = P.total_time_sec || 0;
+  const hours = (totalSec/3600).toFixed(1);
+  if(el('acc-time')) el('acc-time').textContent = hours > 0 ? hours+' hours' : 'Less than 1 hour';
+
+  // Snapshots saved — count from Supabase
+  try{
+    const resp = await fetch(SUPA_URL+'/rest/v1/snapshots?profile_id=eq.'+P.id+'&select=id',{
+      headers:{'Authorization':'Bearer '+SUPA_KEY,'apikey':SUPA_KEY,'Prefer':'count=exact'}
+    });
+    const count = parseInt(resp.headers.get('content-range')?.split('/')[1]||'0');
+    if(el('acc-snapshots')) el('acc-snapshots').textContent = count;
+  }catch(e){
+    if(el('acc-snapshots')) el('acc-snapshots').textContent = '0';
+  }
+
+  // Badges
+  renderBadges(totalAnalyses, projects);
+}
+
+function renderBadges(totalAnalyses, projs){
+  const el = document.getElementById('acc-badges');
+  if(!el) return;
+
+  const hasAnalysis = totalAnalyses > 0;
+  const hasAllPass  = projs.some(p=>p.all_checks_pass);
+  const hasTransfer = false; // will be tracked later
+  const hasSeismic  = projs.some(p=>{
+    try{ return p.state_json && p.state_json.zone && ['IV','V'].includes(p.state_json.zone); }catch(e){ return false; }
+  });
+  const has5Plus = projs.some(p=>p.floors && p.floors >= 6);
+
+  const badges = [
+    { icon:'🥇', name:'First Design',           earned: hasAnalysis,  desc:'Run your first analysis' },
+    { icon:'🥇', name:'All Checks Pass',         earned: hasAllPass,   desc:'Get all safety checks to pass' },
+    { icon:'🥇', name:'Transfer Beam Explorer',  earned: hasTransfer,  desc:'Design a building with transfer beams' },
+    { icon:'🥇', name:'Seismic Master',          earned: hasSeismic,   desc:'Design for seismic Zone IV or V' },
+    { icon:'🥇', name:'High Rise',               earned: has5Plus,     desc:'Design a G+5 or taller building' },
+  ];
+
+  el.innerHTML = badges.map(b=>`
+    <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--b1)">
+      <div style="font-size:20px;flex-shrink:0">${b.earned ? b.icon : '🔒'}</div>
+      <div>
+        <div style="font-size:12px;font-weight:700;color:${b.earned?'var(--txt)':'var(--txt3)'}">${b.name}${b.earned?' ✓':' (locked)'}</div>
+        <div style="font-size:11px;color:var(--txt3)">${b.desc}</div>
+      </div>
+    </div>`).join('');
+}
+
+function loadAccSettings(){
+  if(!P || !P.settings) return;
+  const s = P.settings;
+  const fckEl  = document.getElementById('acc-fck');
+  const zoneEl = document.getElementById('acc-zone');
+  const cityEl = document.getElementById('acc-city-default');
+  const asEl   = document.getElementById('acc-autosave');
+  if(fckEl  && s.default_fck)           fckEl.value  = s.default_fck;
+  if(zoneEl && s.default_zone)          zoneEl.value = s.default_zone;
+  if(cityEl && s.default_city)          cityEl.value = s.default_city;
+  if(asEl   && s.autosave_interval)     asEl.value   = s.autosave_interval;
+}
+
+async function saveSettings(){
+  if(!P) return;
+  const settings = {
+    default_fck:        parseInt(document.getElementById('acc-fck')?.value||'25'),
+    default_zone:       document.getElementById('acc-zone')?.value||'III',
+    default_city:       document.getElementById('acc-city-default')?.value?.trim()||'',
+    autosave_interval:  parseInt(document.getElementById('acc-autosave')?.value||'30'),
+  };
+  const resp = await fetch(SUPA_URL+'/rest/v1/profiles?id=eq.'+P.id,{
+    method:'PATCH',
+    headers:{'Authorization':'Bearer '+SUPA_KEY,'apikey':SUPA_KEY,'Content-Type':'application/json'},
+    body:JSON.stringify({settings})
+  });
+  if(resp.ok){
+    P.settings = settings;
+    const msg = document.getElementById('acc-settings-msg');
+    if(msg){ msg.style.display='block'; setTimeout(()=>msg.style.display='none',2000); }
+    // Update auto-save timer if changed
+    if(_autoSaveTimer){
+      clearInterval(_autoSaveTimer);
+      _autoSaveTimer = setInterval(()=>autoSave(), settings.autosave_interval*1000);
+    }
+  }
+}
+
+async function exportMyData(){
+  if(!P) return;
+  // Gather all user data
+  const userData = {
+    profile:  P,
+    projects: projects,
+    exported_at: new Date().toISOString(),
+  };
+  const blob = new Blob([JSON.stringify(userData, null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'StructLearnPro_MyData_'+P.unique_id+'.json';
+  a.click();
+  toast('Data exported ✅');
+}
+
+async function confirmDeleteAccount(){
+  const confirm1 = confirm('Are you sure you want to delete your account? All your projects and data will be permanently lost.');
+  if(!confirm1) return;
+  const confirm2 = prompt('Type your unique ID to confirm deletion:', '');
+  if(confirm2 !== P.unique_id){ toast('Deletion cancelled — ID did not match'); return; }
+  // Soft delete — mark as inactive
+  await fetch(SUPA_URL+'/rest/v1/profiles?id=eq.'+P.id,{
+    method:'PATCH',
+    headers:{'Authorization':'Bearer '+SUPA_KEY,'apikey':SUPA_KEY,'Content-Type':'application/json'},
+    body:JSON.stringify({is_active:false})
+  });
+  toast('Account deleted. You will be logged out.');
+  setTimeout(()=>doLogout(), 2000);
 }
 
 // Copy unique ID from account page
