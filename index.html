@@ -866,6 +866,20 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
 <div id="toast"></div>
 
 <script>
+// ── COOKIE CONSENT ────────────────────────────────────────────
+function acceptCookies(){
+  localStorage.setItem('slp_cookies_accepted','1');
+  const banner = document.getElementById('cookie-banner');
+  if(banner) banner.style.display='none';
+}
+
+function checkCookieBanner(){
+  if(!localStorage.getItem('slp_cookies_accepted')){
+    const banner = document.getElementById('cookie-banner');
+    if(banner) banner.style.display='flex';
+  }
+}
+
 const SUPA_URL  = 'https://rpjdveuxxjeoeomkwrfx.supabase.co';
 const SUPA_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJwamR2ZXV4eGplb2VvbWt3cmZ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg5MzY3NzIsImV4cCI6MjA5NDUxMjc3Mn0.3JvvMaCFKg2fB9-l2WJ5JMX5btGIKqvpMj_ZcxSRWaQ';
 const SGH_KEY   = 'pHI9xQGkXEmXXmLmcGgwSQ';
