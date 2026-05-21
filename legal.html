@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Legal — StructLearn Pro</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#0b0f1a;--bg1:#111827;--bg2:#1a2236;--txt:#e2e8f0;--txt2:#94a3b8;--txt3:#64748b;--blue:#3b82f6;--b1:#1e3a8a}
+body{background:var(--bg);color:var(--txt);font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh}
+.topbar{display:flex;align-items:center;gap:16px;padding:0 24px;height:52px;background:var(--bg1);border-bottom:1px solid var(--b1);position:sticky;top:0;z-index:100}
+.logo{font-size:16px;font-weight:900;color:var(--txt)}.logo span{color:var(--blue)}
+.layout{display:flex;min-height:calc(100vh - 52px)}
+.sidebar{width:240px;background:var(--bg1);border-right:1px solid var(--b1);padding:20px 0;flex-shrink:0;position:sticky;top:52px;height:calc(100vh - 52px);overflow-y:auto}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 20px;cursor:pointer;font-size:13px;color:var(--txt2);transition:all 0.15s;border-left:3px solid transparent}
+.nav-item:hover{background:var(--bg2);color:var(--txt)}
+.nav-item.active{background:var(--bg2);color:var(--blue);border-left-color:var(--blue);font-weight:600}
+.main{flex:1;padding:40px;max-width:860px}
+.page{display:none}.page.active{display:block}
+h1{font-size:26px;font-weight:900;margin-bottom:6px}
+.meta{font-size:12px;color:var(--txt3);margin-bottom:32px;padding-bottom:16px;border-bottom:1px solid var(--b1)}
+h2{font-size:16px;font-weight:700;color:var(--blue);margin:28px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--b1)}
+h3{font-size:14px;font-weight:700;margin:18px 0 8px}
+p{font-size:13px;color:var(--txt2);line-height:1.8;margin-bottom:12px}
+ul,ol{padding-left:20px;margin-bottom:12px}
+li{font-size:13px;color:var(--txt2);line-height:1.8;margin-bottom:4px}
+.highlight{background:rgba(248,113,113,0.1);border:1px solid #f87171;border-radius:8px;padding:14px 16px;margin:16px 0}
+.highlight p{color:#fca5a5;margin:0}
+.info-box{background:rgba(59,130,246,0.08);border:1px solid #1e3a8a;border-radius:8px;padding:14px 16px;margin:16px 0}
+.info-box p{color:var(--txt2);margin:0;font-size:12px}
+strong{color:var(--txt);font-weight:700}
+a{color:var(--blue);text-decoration:none}
+a:hover{text-decoration:underline}
+.back-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:var(--bg2);border:1px solid var(--b1);border-radius:8px;color:var(--txt2);font-size:12px;cursor:pointer;margin-bottom:24px;text-decoration:none}
+.back-btn:hover{color:var(--txt);text-decoration:none}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo">StructLearn <span>Pro</span></div>
+  <span style="font-size:12px;color:var(--txt3)">Legal Documents</span>
+  <a href="index.html" class="back-btn" style="margin-left:auto">← Back to App</a>
+</div>
+
+<div class="layout">
+<div class="sidebar">
+  <div class="nav-item active" onclick="showDoc('disclaimer')">⚠️ Disclaimer</div>
+  <div class="nav-item" onclick="showDoc('terms')">📋 Terms of Service</div>
+  <div class="nav-item" onclick="showDoc('privacy')">🔒 Privacy Policy</div>
+  <div class="nav-item" onclick="showDoc('refund')">💰 Refund Policy</div>
+  <div class="nav-item" onclick="showDoc('cookie')">🍪 Cookie Policy</div>
+</div>
+
+<div class="main">
+
+<!-- ═══ DISCLAIMER ═══ -->
+<div id="doc-disclaimer" class="page active">
+  <h1>⚠️ Important Disclaimer</h1>
+  <div class="meta">Effective: 21 May 2026 · StructLearn Pro Education Services · structlearnpro@gmail.com</div>
+
+  <div class="highlight">
+    <p><strong>READ THIS CAREFULLY BEFORE USING STRUCTLEARN PRO.</strong> This software is for educational and learning purposes only. It must not be used as the sole basis for any structural design, construction decision, or engineering judgment.</p>
+  </div>
+
+  <h2>1. Educational Purpose Only</h2>
+  <p>StructLearn Pro is an <strong>educational platform</strong> designed to help students, lecturers, and engineers understand structural engineering concepts as per Indian Standards (IS 456:2000, IS 1893:2016, IS 875, IS 13920:2016).</p>
+  <p>All calculations, results, member sizes, reinforcement details, safety checks, and design outputs provided by this platform are:</p>
+  <ul>
+    <li>Intended for <strong>learning and academic reference only</strong></li>
+    <li>Simplified and may not account for all site-specific conditions</li>
+    <li>Not a substitute for professional structural engineering judgment</li>
+    <li>Not certified for use in actual construction projects</li>
+  </ul>
+
+  <h2>2. No Construction Use Without Professional Review</h2>
+  <div class="highlight">
+    <p>⚠️ <strong>Under no circumstances should the output of this software be used directly for construction without independent review and approval by a licensed Structural Engineer registered with the relevant authority in India.</strong></p>
+  </div>
+  <p>Before any construction based on designs explored on this platform:</p>
+  <ul>
+    <li>All designs must be independently verified by a qualified structural engineer</li>
+    <li>Proper site investigation, soil testing, and load assessment must be conducted</li>
+    <li>All applicable local building bylaws and municipal regulations must be followed</li>
+    <li>Necessary building permits and approvals must be obtained</li>
+  </ul>
+
+  <h2>3. Limitation of Liability</h2>
+  <p>StructLearn Pro Education Services, its founders, employees, and contributors shall not be held liable for:</p>
+  <ul>
+    <li>Any structural failure, collapse, or damage to property or person</li>
+    <li>Any direct, indirect, incidental, or consequential damages</li>
+    <li>Loss of life, injury, or financial loss resulting from use of platform outputs</li>
+    <li>Errors, omissions, or inaccuracies in calculation results</li>
+    <li>Any decisions made based on platform calculations</li>
+  </ul>
+  <p>By using this platform, you <strong>accept full responsibility</strong> for any use of the calculations and results provided.</p>
+
+  <h2>4. Calculation Accuracy</h2>
+  <p>While we strive to implement Indian Standard calculations accurately:</p>
+  <ul>
+    <li>Results are based on simplified analytical models</li>
+    <li>Real structures involve complex interactions not fully captured by any software</li>
+    <li>IS code revisions may not be immediately reflected</li>
+    <li>Special structures, irregular buildings, and unusual loading conditions require detailed analysis beyond this platform's scope</li>
+  </ul>
+
+  <h2>5. Target Audience</h2>
+  <p>This platform is designed for:</p>
+  <ul>
+    <li>Civil engineering students learning structural design concepts</li>
+    <li>Lecturers demonstrating IS code applications</li>
+    <li>Engineers refreshing knowledge and exploring design options</li>
+  </ul>
+  <p>It is <strong>not</strong> a replacement for professional structural engineering software such as STAAD.Pro, ETABS, SAP2000, or equivalent tools used for actual construction projects.</p>
+</div>
+
+<!-- ═══ TERMS OF SERVICE ═══ -->
+<div id="doc-terms" class="page">
+  <h1>📋 Terms of Service</h1>
+  <div class="meta">Effective: 21 May 2026 · StructLearn Pro Education Services · structlearnpro@gmail.com</div>
+
+  <div class="info-box">
+    <p>By registering on or using StructLearn Pro, you agree to these Terms of Service. If you do not agree, please do not use this platform.</p>
+  </div>
+
+  <h2>1. About the Platform</h2>
+  <p>StructLearn Pro is an educational platform operated by <strong>StructLearn Pro Education Services</strong>, accessible at structlearnpro.vercel.app. The platform provides structural engineering learning tools based on Indian Standards including IS 456:2000, IS 1893:2016, IS 875 Part 3, and IS 13920:2016.</p>
+
+  <h2>2. Eligibility</h2>
+  <p>You may use StructLearn Pro if you:</p>
+  <ul>
+    <li>Are at least 18 years of age, or using under supervision of an adult</li>
+    <li>Are a student, educator, or professional in civil/structural engineering or related fields</li>
+    <li>Agree to use the platform for educational purposes only</li>
+    <li>Provide accurate information during registration</li>
+  </ul>
+
+  <h2>3. User Accounts</h2>
+  <p>When you register:</p>
+  <ul>
+    <li>You receive a unique ID (e.g. SLP-STU-2026-DL-00001) that identifies your account</li>
+    <li>Your account is linked to your mobile number via OTP verification</li>
+    <li>You are responsible for keeping your mobile number accessible</li>
+    <li>You must not share your account with others</li>
+    <li>You must not create multiple accounts for the same person</li>
+  </ul>
+
+  <h2>4. Free and Pro Plans</h2>
+  <h3>Free Plan</h3>
+  <ul>
+    <li>Up to 3 projects</li>
+    <li>Full structural analysis and safety checks</li>
+    <li>View all results on screen</li>
+    <li>Design snapshots</li>
+    <li>Learning modules (Module 1)</li>
+  </ul>
+  <h3>Pro Plan</h3>
+  <ul>
+    <li>Unlimited projects</li>
+    <li>PDF report download</li>
+    <li>Construction drawing packages</li>
+    <li>All learning modules</li>
+    <li>Advanced analysis tools</li>
+    <li>Priority support</li>
+  </ul>
+  <p>Pro plan pricing is as displayed on the platform and may be updated from time to time. Current users on a plan are not affected by price changes until renewal.</p>
+
+  <h2>5. Acceptable Use</h2>
+  <p>You agree <strong>not</strong> to:</p>
+  <ul>
+    <li>Use platform outputs directly for construction without professional review</li>
+    <li>Reverse engineer, copy, or redistribute the platform's code or content</li>
+    <li>Attempt to gain unauthorised access to any part of the platform</li>
+    <li>Use automated bots or scrapers</li>
+    <li>Upload malicious code or content</li>
+    <li>Impersonate another person or entity</li>
+    <li>Use the platform for any commercial purpose without written permission</li>
+  </ul>
+
+  <h2>6. Intellectual Property</h2>
+  <p>All content on StructLearn Pro including but not limited to the design engine, user interface, learning modules, reference tables, and educational content is owned by StructLearn Pro Education Services and is protected by applicable intellectual property laws.</p>
+  <p>Your project data and designs belong to you. We claim no ownership over designs you create on the platform.</p>
+
+  <h2>7. Disclaimer of Warranties</h2>
+  <p>StructLearn Pro is provided <strong>"as is"</strong> without warranties of any kind. We do not warrant that the platform will be error-free, uninterrupted, or that calculation results will be accurate for all use cases. See our full Disclaimer for details.</p>
+
+  <h2>8. Limitation of Liability</h2>
+  <p>To the maximum extent permitted by law, StructLearn Pro Education Services shall not be liable for any indirect, incidental, special, or consequential damages arising from your use of the platform.</p>
+
+  <h2>9. Termination</h2>
+  <p>We reserve the right to suspend or terminate your account if you violate these Terms. You may delete your account at any time from your Account settings.</p>
+
+  <h2>10. Changes to Terms</h2>
+  <p>We may update these Terms from time to time. Continued use of the platform after changes constitutes acceptance of the new Terms.</p>
+
+  <h2>11. Governing Law and Jurisdiction</h2>
+  <p>These Terms are governed by the laws of India. Any disputes shall be subject to the exclusive jurisdiction of courts in <strong>Uttar Pradesh, India</strong>.</p>
+
+  <h2>12. Contact</h2>
+  <p>For questions about these Terms: <a href="mailto:structlearnpro@gmail.com">structlearnpro@gmail.com</a></p>
+</div>
+
+<!-- ═══ PRIVACY POLICY ═══ -->
+<div id="doc-privacy" class="page">
+  <h1>🔒 Privacy Policy</h1>
+  <div class="meta">Effective: 21 May 2026 · StructLearn Pro Education Services · structlearnpro@gmail.com</div>
+
+  <div class="info-box">
+    <p>This Privacy Policy explains how StructLearn Pro Education Services collects, uses, and protects your personal information in accordance with the Information Technology Act, 2000 and the Digital Personal Data Protection Act, 2023 (India).</p>
+  </div>
+
+  <h2>1. Information We Collect</h2>
+  <h3>Information you provide:</h3>
+  <ul>
+    <li><strong>Mobile number</strong> — for OTP-based login and identity verification</li>
+    <li><strong>Full name</strong> — for your profile and reports</li>
+    <li><strong>Email address</strong> — optional, for sending PDF reports and notifications</li>
+    <li><strong>Academic/Professional details</strong> — college, course, year, firm, city, state (for your unique ID and personalisation)</li>
+    <li><strong>Design projects</strong> — building parameters, analysis inputs, results you save</li>
+  </ul>
+  <h3>Information collected automatically:</h3>
+  <ul>
+    <li><strong>Usage data</strong> — pages visited, features used, analysis count, time spent</li>
+    <li><strong>Device information</strong> — browser type, device category (mobile/desktop)</li>
+    <li><strong>Session data</strong> — login timestamps, session duration</li>
+  </ul>
+  <h3>Payment information:</h3>
+  <ul>
+    <li>Payments are processed by <strong>Razorpay</strong>. We store only the Razorpay payment ID and plan details. We do not store card numbers, UPI IDs, or bank details.</li>
+  </ul>
+
+  <h2>2. How We Use Your Information</h2>
+  <ul>
+    <li>To verify your identity via OTP and manage your account</li>
+    <li>To generate and display your unique StructLearn Pro ID</li>
+    <li>To save and restore your design projects across devices</li>
+    <li>To send OTP messages and subscription renewal reminders via SMS</li>
+    <li>To process payments and maintain subscription records</li>
+    <li>To improve the platform based on usage patterns</li>
+    <li>To send platform announcements (you can opt out by contacting us)</li>
+  </ul>
+
+  <h2>3. Data Storage</h2>
+  <p>Your data is stored on <strong>Supabase</strong> (PostgreSQL database), which may be hosted on servers outside India. By using this platform, you consent to your data being stored and processed on these servers.</p>
+  <p>We implement industry-standard security measures including encrypted connections (HTTPS), row-level security policies, and hashed passwords.</p>
+
+  <h2>4. Third-Party Services</h2>
+  <p>We use the following third-party services that may process your data:</p>
+  <ul>
+    <li><strong>Supabase</strong> — database and backend (supabase.com)</li>
+    <li><strong>Razorpay</strong> — payment processing (razorpay.com)</li>
+    <li><strong>SMSGatewayHub</strong> — SMS delivery for OTP and reminders</li>
+    <li><strong>Vercel</strong> — website hosting (vercel.com)</li>
+  </ul>
+  <p>Each of these services has their own Privacy Policy governing their data practices.</p>
+
+  <h2>5. Your Rights</h2>
+  <p>Under the DPDP Act 2023, you have the right to:</p>
+  <ul>
+    <li><strong>Access</strong> — export all your data from Account → Export All My Data</li>
+    <li><strong>Correction</strong> — update your profile details in Account settings</li>
+    <li><strong>Deletion</strong> — permanently delete your account from Account settings</li>
+    <li><strong>Grievance</strong> — contact us at structlearnpro@gmail.com for any privacy concern</li>
+  </ul>
+
+  <h2>6. Data Retention</h2>
+  <ul>
+    <li>Active accounts: data retained as long as account is active</li>
+    <li>Deleted accounts: data permanently deleted within 30 days</li>
+    <li>Payment records: retained for 7 years as required by Indian financial regulations</li>
+    <li>OTP logs: deleted after 30 days</li>
+  </ul>
+
+  <h2>7. Children's Privacy</h2>
+  <p>StructLearn Pro is not intended for children under 13. We do not knowingly collect data from children under 13. If you believe a child has provided us personal data, please contact us immediately.</p>
+
+  <h2>8. Changes to This Policy</h2>
+  <p>We may update this Privacy Policy. We will notify registered users of significant changes via SMS or in-app announcement.</p>
+
+  <h2>9. Contact & Grievance Officer</h2>
+  <p>For privacy queries or grievances:<br>
+  <strong>StructLearn Pro Education Services</strong><br>
+  Email: <a href="mailto:structlearnpro@gmail.com">structlearnpro@gmail.com</a><br>
+  Jurisdiction: Uttar Pradesh, India</p>
+</div>
+
+<!-- ═══ REFUND POLICY ═══ -->
+<div id="doc-refund" class="page">
+  <h1>💰 Refund Policy</h1>
+  <div class="meta">Effective: 21 May 2026 · StructLearn Pro Education Services · structlearnpro@gmail.com</div>
+
+  <div class="info-box">
+    <p>We want you to be completely satisfied with StructLearn Pro. If you are not happy with your subscription, we offer a straightforward refund process.</p>
+  </div>
+
+  <h2>1. 3-Day Money Back Guarantee</h2>
+  <p>If you are not satisfied with your Pro subscription for any reason, you may request a full refund within <strong>3 days (72 hours)</strong> of your payment.</p>
+  <p>This applies to:</p>
+  <ul>
+    <li>Monthly Pro subscriptions</li>
+    <li>Annual Pro subscriptions</li>
+  </ul>
+
+  <h2>2. How to Request a Refund</h2>
+  <p>To request a refund:</p>
+  <ol>
+    <li>Email us at <a href="mailto:structlearnpro@gmail.com">structlearnpro@gmail.com</a> within 3 days of payment</li>
+    <li>Subject: <strong>Refund Request — [Your Unique ID]</strong></li>
+    <li>Include your registered mobile number and Razorpay payment ID (shown in your receipt)</li>
+    <li>We will process the refund within <strong>5-7 working days</strong></li>
+    <li>Refund will be credited to the original payment method</li>
+  </ol>
+
+  <h2>3. After Refund</h2>
+  <ul>
+    <li>Your account will revert to the Free plan immediately upon refund approval</li>
+    <li>Projects you created on Pro plan will remain accessible (up to the free plan limit of 3)</li>
+    <li>Downloaded PDFs and data exported remain with you</li>
+  </ul>
+
+  <h2>4. Non-Refundable Situations</h2>
+  <p>Refunds will <strong>not</strong> be issued in these cases:</p>
+  <ul>
+    <li>Request made after 3 days (72 hours) from payment</li>
+    <li>Account suspended due to Terms of Service violations</li>
+    <li>If a refund was already processed for a previous subscription from the same account</li>
+    <li>Partial month or partial year refunds after the 3-day window</li>
+  </ul>
+
+  <h2>5. Renewal Payments</h2>
+  <p>If your subscription auto-renews (you paid again), the same 3-day policy applies to each renewal payment separately.</p>
+
+  <h2>6. Payment Failures</h2>
+  <p>If your payment was deducted but Pro access was not activated, contact us immediately at structlearnpro@gmail.com with your Razorpay payment ID. We will resolve within 24 hours.</p>
+
+  <h2>7. Contact for Refunds</h2>
+  <p><strong>Email:</strong> <a href="mailto:structlearnpro@gmail.com">structlearnpro@gmail.com</a><br>
+  <strong>Response time:</strong> Within 24 hours on working days<br>
+  <strong>Refund processing:</strong> 5-7 working days via Razorpay</p>
+</div>
+
+<!-- ═══ COOKIE POLICY ═══ -->
+<div id="doc-cookie" class="page">
+  <h1>🍪 Cookie Policy</h1>
+  <div class="meta">Effective: 21 May 2026 · StructLearn Pro Education Services · structlearnpro@gmail.com</div>
+
+  <h2>1. What We Use Instead of Cookies</h2>
+  <p>StructLearn Pro uses <strong>localStorage</strong> (browser storage) rather than traditional cookies. This serves the same purpose — keeping you logged in and saving your preferences — but works slightly differently.</p>
+
+  <h2>2. What We Store in Your Browser</h2>
+  <table style="width:100%;border-collapse:collapse;font-size:12px;margin:12px 0">
+    <thead>
+      <tr style="background:var(--bg2)">
+        <th style="text-align:left;padding:8px 12px;border:1px solid var(--b1)">Key</th>
+        <th style="text-align:left;padding:8px 12px;border:1px solid var(--b1)">Purpose</th>
+        <th style="text-align:left;padding:8px 12px;border:1px solid var(--b1)">Duration</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td style="padding:8px 12px;border:1px solid var(--b1);color:var(--txt2)">slp_session_mob</td><td style="padding:8px 12px;border:1px solid var(--b1);color:var(--txt2)">Your mobile number for session</td><td style="padding:8px 12px;border:1px solid var(--b1);color:var(--txt2)">Until logout</td></tr>
+      <tr><td style="padding:8px 12px;border:1px solid var(--b1);color:var(--txt2)">slp_session_tok</td><td style="padding:8px 12px;border:1px solid var(--b1);color:var(--txt2)">Session token for authentication</td><td style="padding:8px 12px;border:1px solid var(--b1);color:var(--txt2)">Until logout</td></tr>
+      <tr><td style="padding:8px 12px;border:1px solid var(--b1);color:var(--txt2)">slp_ann_last_seen</td><td style="padding:8px 12px;border:1px solid var(--b1);color:var(--txt2)">Last seen announcement timestamp</td><td style="padding:8px 12px;border:1px solid var(--b1);color:var(--txt2)">Permanent</td></tr>
+      <tr><td style="padding:8px 12px;border:1px solid var(--b1);color:var(--txt2)">slp_renewal_warned</td><td style="padding:8px 12px;border:1px solid var(--b1);color:var(--txt2)">Renewal reminder shown today</td><td style="padding:8px 12px;border:1px solid var(--b1);color:var(--txt2)">1 day</td></tr>
+      <tr><td style="padding:8px 12px;border:1px solid var(--b1);color:var(--txt2)">slp_last_user</td><td style="padding:8px 12px;border:1px solid var(--b1);color:var(--txt2)">Last logged-in user (for cache clearing)</td><td style="padding:8px 12px;border:1px solid var(--b1);color:var(--txt2)">Until logout</td></tr>
+      <tr><td style="padding:8px 12px;border:1px solid var(--b1);color:var(--txt2)">slp_visited</td><td style="padding:8px 12px;border:1px solid var(--b1);color:var(--txt2)">First visit flag (welcome message)</td><td style="padding:8px 12px;border:1px solid var(--b1);color:var(--txt2)">Permanent</td></tr>
+    </tbody>
+  </table>
+
+  <h2>3. No Third-Party Tracking</h2>
+  <p>We do not use:</p>
+  <ul>
+    <li>Google Analytics or any analytics tracking cookies</li>
+    <li>Facebook Pixel or social media tracking</li>
+    <li>Advertising cookies</li>
+    <li>Cross-site tracking of any kind</li>
+  </ul>
+
+  <h2>4. How to Clear Your Data</h2>
+  <p>To clear all browser storage for StructLearn Pro:</p>
+  <ul>
+    <li>Go to your Account page → <strong>Logout</strong> (clears session data)</li>
+    <li>Or in your browser: Settings → Privacy → Clear browsing data → Cookies and site data</li>
+    <li>To permanently delete all your data: Account → <strong>Delete Account</strong></li>
+  </ul>
+
+  <h2>5. Contact</h2>
+  <p>For questions: <a href="mailto:structlearnpro@gmail.com">structlearnpro@gmail.com</a></p>
+</div>
+
+</div><!-- main -->
+</div><!-- layout -->
+
+<script>
+function showDoc(id) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('doc-'+id)?.classList.add('active');
+  event.target.classList.add('active');
+}
+</script>
+</body>
+</html>

@@ -14,9 +14,24 @@
 
 
 
+
+// Add disclaimer to every report page
+function addReportDisclaimer(){
+  const existing = document.getElementById('_report_disclaimer');
+  if(existing) return;
+  const div = document.createElement('div');
+  div.id = '_report_disclaimer';
+  div.style.cssText = 'margin:20px 0;padding:14px 16px;background:rgba(248,113,113,0.08);border:1px solid rgba(248,113,113,0.3);border-radius:8px;font-size:11px;color:#fca5a5;line-height:1.7';
+  div.innerHTML = '⚠️ <strong style="color:#f87171">Educational Use Only</strong> — All results are for learning purposes. Do not use for actual construction without review by a licensed Structural Engineer. <a href="legal.html" target="_blank" style="color:#f87171">Read Disclaimer</a>';
+  const main = document.getElementById('main');
+  if(main) main.appendChild(div);
+}
+
 function go(n){
   if(n===7&&!RES)return;
   PAGE=n;
+  // Add disclaimer to results pages
+  if(n>=7) setTimeout(addReportDisclaimer, 100);
   try{
     document.querySelectorAll('.nav-i').forEach((el)=>{
       const onclick=el.getAttribute('onclick')||'';

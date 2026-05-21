@@ -780,6 +780,16 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
           🚪 Logout
         </button>
       </div>
+      <!-- Legal links -->
+      <div style="margin-top:12px;display:flex;flex-wrap:wrap;gap:8px;font-size:11px">
+        <a href="legal.html" target="_blank" style="color:var(--txt3);text-decoration:none">Disclaimer</a>
+        <span style="color:var(--txt3)">·</span>
+        <a href="legal.html" target="_blank" style="color:var(--txt3);text-decoration:none">Terms</a>
+        <span style="color:var(--txt3)">·</span>
+        <a href="legal.html" target="_blank" style="color:var(--txt3);text-decoration:none">Privacy</a>
+        <span style="color:var(--txt3)">·</span>
+        <a href="legal.html" target="_blank" style="color:var(--txt3);text-decoration:none">Refund Policy</a>
+      </div>
     </div>
 
   </div>
@@ -822,7 +832,35 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
     </button>
     <button class="cancbtn" onclick="hideUp()">Maybe later</button>
     <div class="snote">🔒 Secure payment by Razorpay · Cancel anytime · Test mode active</div>
+    <div style="text-align:center;margin-top:8px;font-size:11px;color:var(--txt3)">
+      By paying you agree to our 
+      <a href="legal.html" target="_blank" style="color:var(--blue)">Terms of Service</a> · 
+      <a href="legal.html#refund" target="_blank" style="color:var(--blue)">3-Day Refund Policy</a>
+    </div>
   </div>
+</div>
+
+<!-- COOKIE CONSENT BANNER -->
+<div id="cookie-banner" style="display:none;position:fixed;bottom:0;left:0;right:0;
+  background:#0f172a;border-top:1px solid #1e3a8a;padding:14px 20px;z-index:9998;
+  display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap">
+  <div style="font-size:12px;color:#94a3b8;line-height:1.6">
+    🍪 We use browser storage to keep you logged in and save your preferences. 
+    No tracking or advertising cookies. 
+    <a href="legal.html" target="_blank" style="color:#3b82f6">Learn more</a>
+  </div>
+  <div style="display:flex;gap:8px;flex-shrink:0">
+    <a href="legal.html" target="_blank" style="padding:7px 14px;background:transparent;border:1px solid #334155;border-radius:7px;color:#64748b;font-size:12px;cursor:pointer;text-decoration:none">Legal Docs</a>
+    <button onclick="acceptCookies()" style="padding:7px 16px;background:#1d4ed8;border:none;border-radius:7px;color:#fff;font-size:12px;cursor:pointer;font-family:inherit;font-weight:600">Accept & Continue</button>
+  </div>
+</div>
+
+<!-- LEGAL FOOTER (shown on auth screen) -->
+<div id="legal-footer" style="position:fixed;bottom:0;left:0;right:0;text-align:center;padding:10px;font-size:11px;color:#334155;background:var(--bg);border-top:1px solid #1a2236;display:none">
+  <a href="legal.html" target="_blank" style="color:#475569;text-decoration:none;margin:0 8px">Terms of Service</a>·
+  <a href="legal.html" target="_blank" style="color:#475569;text-decoration:none;margin:0 8px">Privacy Policy</a>·
+  <a href="legal.html" target="_blank" style="color:#475569;text-decoration:none;margin:0 8px">Refund Policy</a>·
+  <a href="legal.html" target="_blank" style="color:#475569;text-decoration:none;margin:0 8px">Disclaimer</a>
 </div>
 
 <div id="toast"></div>
@@ -2689,6 +2727,7 @@ function toast(msg,err=false){const t=document.getElementById('toast');t.textCon
 // ── INIT ─────────────────────────────────────────────────────
 (async()=>{
   loadPrices();
+  checkCookieBanner();
 
   // Check our custom session (mobile+token stored in localStorage)
   const savedMob = localStorage.getItem('slp_session_mob');
