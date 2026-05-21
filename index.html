@@ -1494,10 +1494,13 @@ function injectSaveToParent(fr){
   try{
     const pid = _autoSaveProjId;
     if(!pid || !P) return;
+    // Set project ID flag in iframe so gated auto-save works
+    fr.contentWindow._slpProjectId = pid;
     fr.contentWindow.saveToParent = async function(status){
       try{
         const iw = fr.contentWindow;
-        if(!iw.S) return;
+        console.log('[saveToParent] called, status:', status, 'S:', !!iw.S, 'RES:', !!iw.RES, 'pid:', pid);
+        if(!iw.S) { console.warn('[saveToParent] S not found'); return; }
         const payload = {
           name:            iw.S.name || 'Untitled',
           client:          iw.S.client || null,
@@ -1544,6 +1547,11 @@ function startAutoSave(projectId){
 function stopAutoSave(){
   clearInterval(_autoSaveTimer);
   _autoSaveTimer = null;
+  // Clear project ID in iframe so auto-save stops
+  try{
+    const fr = document.getElementById('app-iframe');
+    if(fr && fr.contentWindow) fr.contentWindow._slpProjectId = null;
+  }catch(e){}
 }
 
 async function autoSave(){

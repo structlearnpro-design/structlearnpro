@@ -279,7 +279,7 @@ function p6(){return`
        ['Concrete','M'+S.fck],['Steel','Fe'+S.fy],['SBC',S.soilBearing+' kN/m^2'],
     ].map(([k,v])=>`<strong style="color:var(--txt)">${k}:</strong> ${v}`).join(' &nbsp;.&nbsp; ')}
   </div>
-  <button class="btn gr" id="rb" style="width:100%;padding:13px;font-size:14px" onclick="runNow();setTimeout(()=>saveToParent('draft'),2000)">🚀 Run Full Analysis</button>
+  <button class="btn gr" id="rb" style="width:100%;padding:13px;font-size:14px" onclick="runNow();setTimeout(()=>{if(window._slpProjectId&&typeof saveToParent==='function')saveToParent('draft');},2000)">🚀 Run Full Analysis</button>
   <div id="ld" style="display:none;margin-top:12px">
     <div class="lbar"><div class="lfill"></div></div>
     <div style="font-size:11px;color:var(--teal);line-height:2.2;text-align:center;padding:8px">
@@ -11897,7 +11897,14 @@ function p20(){return RES?secDiscussion():'<div class="card"><div class="ct">Ana
 var pages=[p0,p1,p2,p3,p4,p5,p6,p7,p8,p9,p10,p11,p12,p13,p14,p15,p16,p17,p18,p19,p20];
 go(0);
 setTimeout(()=>renderGridPrev&&renderGridPrev(),200);
-setInterval(()=>{try{saveToParent('draft');}catch(e){}},30000);
+setInterval(()=>{
+  try{
+    // Only save if a project is explicitly open (set by index.html)
+    if(window._slpProjectId && typeof saveToParent==='function'){
+      saveToParent('auto');
+    }
+  }catch(e){}
+},30000);
 
 // Auto-draw ref grid on page 8
 window.p8orig=p8;
