@@ -108,7 +108,7 @@ function screenOTP(mobile) {
     <div style="background:#0f172a;border:1px solid #1e3a8a;border-radius:16px;padding:32px">
       <div style="font-size:16px;font-weight:700;color:#e2e8f0;margin-bottom:6px">Enter OTP</div>
       <div style="font-size:12px;color:#64748b;margin-bottom:4px">OTP sent to +91 ${masked}</div>
-      <div style="font-size:11px;color:#334155;margin-bottom:24px">Valid for 10 minutes</div>
+      <div style="font-size:11px;color:#334155;margin-bottom:24px">Valid for 5 minutes</div>
 
       <!-- 6 OTP boxes -->
       <div style="display:flex;gap:10px;justify-content:center;margin-bottom:20px" id="otpBoxes">
@@ -170,7 +170,7 @@ function screenOTP(mobile) {
   setTimeout(() => document.getElementById('otp0')?.focus(), 100)
 
   // Start countdown timer (10 min)
-  let secs = 600
+  let secs = 300
   const timerEl = document.getElementById('otpTimer')
   const otpCountdown = setInterval(() => {
     secs--
