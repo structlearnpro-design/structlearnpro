@@ -954,10 +954,34 @@ function updatePriceDisplay(){
 }
 
 function updatePayButton(){
-  const baseAmt = selPlanId==='monthly' ? PRICES.monthly_display : PRICES.annual_display;
-  const discAmt = appliedCoupon ? getDiscountedDisplayAmount(baseAmt) : baseAmt;
-  const payDisplay = document.getElementById('pay-amount-display');
-  if(payDisplay) payDisplay.textContent = discAmt.toLocaleString('en-IN');
+  const basePaise   = selPlanId==='monthly' ? PRICES.monthly : PRICES.annual;
+  const finalPaise  = getDiscountedAmount(basePaise);
+  const baseDisplay = selPlanId==='monthly' ? PRICES.monthly_display : PRICES.annual_display;
+  const finalDisplay= Math.round(finalPaise/100);
+  const hasDiscount = appliedCoupon && finalPaise < basePaise;
+
+  // Update pay button text and color
+  const payBtn = document.getElementById('pay-btn');
+  if(payBtn){
+    if(hasDiscount){
+      payBtn.innerHTML = `Pay <del style="opacity:0.5;font-size:0.85em">₹${baseDisplay}</del> <strong>₹${finalDisplay.toLocaleString('en-IN')}</strong> with UPI / Card / Net Banking →`;
+      payBtn.style.background = 'linear-gradient(135deg,#065f46,#059669)';
+    } else {
+      payBtn.innerHTML = `Pay ₹${baseDisplay.toLocaleString('en-IN')} with UPI / Card / Net Banking →`;
+      payBtn.style.background = 'linear-gradient(135deg,#1d4ed8,#2563eb)';
+    }
+  }
+
+  // Update price display in plan cards with strikethrough
+  const priceEl = selPlanId==='monthly'
+    ? document.getElementById('price-monthly-display')
+    : document.getElementById('price-annual-pm-display');
+
+  if(priceEl && hasDiscount){
+    priceEl.innerHTML = `<del style="opacity:0.5;font-size:0.8em">₹${baseDisplay}</del> <span style="color:#34d399">₹${finalDisplay}</span>`;
+  } else if(priceEl) {
+    priceEl.textContent = '₹'+baseDisplay;
+  }
 }
 
 function getDiscountedDisplayAmount(baseAmt){
@@ -2250,9 +2274,11 @@ async function applyCoupon(){
   msg.textContent = 'Checking...'; msg.style.color = '#64748b';
 
   const now = new Date().toISOString();
-  const {data:coupons} = await db.from('coupons')
-    .select('*').eq('code', inputCode).eq('is_active', true)
-    .or(`valid_until.is.null,valid_until.gte.${now}`);
+  const couponResp = await fetch(
+    SUPA_URL+'/rest/v1/coupons?code=eq.'+encodeURIComponent(inputCode)+'&is_active=eq.true&select=*',
+    {headers:{'Authorization':'Bearer '+SUPA_KEY,'apikey':SUPA_KEY}}
+  );
+  const coupons = couponResp.ok ? await couponResp.json() : [];
 
   if(!coupons||!coupons.length){
     msg.textContent = '✗ Invalid or expired coupon code'; msg.style.color='#f87171';
@@ -2290,20 +2316,7 @@ function getDiscountedAmount(baseAmount){
   }
 }
 
-function updatePayButton(){
-  const baseAmt = selPlanId==='monthly'?PRICES.monthly:PRICES.annual;
-  const finalAmt = getDiscountedAmount(baseAmt);
-  const btn = document.getElementById('pay-now-btn');
-  if(!btn) return;
-  if(appliedCoupon && finalAmt < baseAmt){
-    const saved = baseAmt - finalAmt;
-    btn.textContent = `Pay ₹${finalAmt/100} (Save ₹${saved/100}) →`;
-    btn.style.background = 'linear-gradient(135deg,#065f46,#059669)';
-  } else {
-    btn.textContent = 'Pay with UPI / Card / Net Banking →';
-    btn.style.background = 'linear-gradient(135deg,#1d4ed8,#2563eb)';
-  }
-}
+// updatePayButton defined above
 
 // ── PAYMENT ───────────────────────────────────────────────────
 async function startPay(){
