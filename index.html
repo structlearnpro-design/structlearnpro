@@ -1804,6 +1804,14 @@ async function handleSaveProject(data){
 
 
 
+  // Increment analysis_count only when RES is present (analysis was run)
+  const existingProj = projects.find(x=>x.id===pid);
+  const prevAnalysisCount = existingProj?.analysis_count || 0;
+  const prevResultsJson   = existingProj?.results_json;
+  // Only count as new analysis if RES exists and wasn't there before (or changed)
+  const isNewAnalysis = RES && (!prevResultsJson || JSON.stringify(RES) !== JSON.stringify(prevResultsJson));
+  const newAnalysisCount = isNewAnalysis ? prevAnalysisCount + 1 : prevAnalysisCount;
+
   const payload = {
     name:            S.name || 'Untitled',
     client:          S.client || null,
@@ -1819,6 +1827,7 @@ async function handleSaveProject(data){
     thumbnail_svg:   generateThumb(S, GRID),
     safety_score:    RES ? calcSafetyScore(RES) : null,
     all_checks_pass: RES ? calcAllPass(RES) : false,
+    analysis_count:  newAnalysisCount,
     updated_at:      new Date().toISOString(),
   };
 
@@ -1948,7 +1957,7 @@ function renderBadges(totalAnalyses, projs){
   if(!el) return;
 
   const hasAnalysis = totalAnalyses > 0;
-  const hasAllPass  = projs.some(p=>p.all_checks_pass);
+  const hasAllPass  = projs.some(p=>p.all_checks_pass===true);
   const hasTransfer = false; // will be tracked later
   const hasSeismic  = projs.some(p=>{
     try{ return p.state_json && p.state_json.zone && ['IV','V'].includes(p.state_json.zone); }catch(e){ return false; }
