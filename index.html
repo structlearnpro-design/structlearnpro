@@ -239,6 +239,21 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
 ::-webkit-scrollbar-track{background:var(--bg);}
 ::-webkit-scrollbar-thumb{background:var(--b1);border-radius:3px;}
 ::-webkit-scrollbar-thumb:hover{background:var(--b2);}
+
+/* ── AI PANEL ── */
+.ai-tab{flex:1;padding:9px 4px;background:none;border:none;border-bottom:2px solid transparent;color:var(--txt3);font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;transition:all 0.15s;text-transform:uppercase;letter-spacing:0.5px}
+.ai-tab:hover{color:var(--txt2)}
+.ai-tab.active{color:#a78bfa;border-bottom-color:#7c3aed}
+.ai-output{background:#0f172a;border:1px solid #1e3a8a;border-radius:8px;padding:14px;font-size:12px;color:var(--txt2);line-height:1.8;min-height:40px;white-space:pre-wrap;word-break:break-word;margin-top:8px}
+.ai-output:empty{display:none}
+.ai-member-btn{display:flex;align-items:center;gap:8px;padding:8px 12px;background:#0f172a;border:1px solid #1e3a8a;border-radius:7px;color:var(--txt2);font-size:11px;cursor:pointer;font-family:inherit;text-align:left;transition:all 0.15s;width:100%}
+.ai-member-btn:hover{border-color:#7c3aed;color:var(--txt)}
+.ai-member-btn.fail{border-left:3px solid #f87171}
+.ai-member-btn.pass{border-left:3px solid #34d399}
+.ai-quick-q{padding:7px 10px;background:#0f172a;border:1px solid #1e3a8a;border-radius:6px;color:var(--txt3);font-size:11px;cursor:pointer;font-family:inherit;text-align:left;transition:all 0.15s;width:100%}
+.ai-quick-q:hover{border-color:#3b82f6;color:var(--txt2)}
+@keyframes aipulse{0%,100%{opacity:1}50%{opacity:0.4}}
+.ai-loading{color:#7c3aed;font-size:12px;padding:8px 0;animation:aipulse 1.2s infinite}
 </style>
 </head>
 <body>
@@ -639,8 +654,116 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
 </div>
 
 <!-- APP -->
-<div id="app-screen" class="screen" style="flex-direction:column">
-  <iframe id="app-iframe" src="StructLearnPro.html" onload="onIframeLoad()"></iframe>
+<div id="app-screen" class="screen" style="flex-direction:column;position:relative">
+  <div style="display:flex;flex:1;overflow:hidden;height:calc(100vh - 44px)">
+    <iframe id="app-iframe" src="StructLearnPro.html" onload="onIframeLoad()" style="flex:1;border:none;height:100%"></iframe>
+
+    <!-- AI SIDE PANEL -->
+    <div id="ai-panel" style="width:0;overflow:hidden;transition:width 0.3s ease;background:#0a0f1e;border-left:1px solid #1e3a8a;display:flex;flex-direction:column;flex-shrink:0">
+      <div style="padding:14px 16px;border-bottom:1px solid #1e3a8a;display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:18px">🤖</span>
+          <span style="font-size:13px;font-weight:700;color:#e2e8f0">AI Assistant</span>
+          <span id="ai-plan-badge" style="font-size:9px;padding:2px 6px;border-radius:8px;font-weight:700;background:rgba(59,130,246,0.2);color:#60a5fa">FREE</span>
+        </div>
+        <button onclick="toggleAI()" style="background:none;border:none;color:#475569;cursor:pointer;font-size:16px">✕</button>
+      </div>
+
+      <!-- AI Tabs -->
+      <div style="display:flex;border-bottom:1px solid #1e3a8a;flex-shrink:0">
+        <button class="ai-tab active" id="ai-tab-explain" onclick="switchAITab('explain')">Explain</button>
+        <button class="ai-tab" id="ai-tab-fix" onclick="switchAITab('fix')">Fix</button>
+        <button class="ai-tab" id="ai-tab-ask" onclick="switchAITab('ask')">Ask IS</button>
+        <button class="ai-tab" id="ai-tab-tutor" onclick="switchAITab('tutor')">Tutor</button>
+      </div>
+
+      <!-- Usage counter -->
+      <div id="ai-usage-bar" style="padding:8px 14px;background:#0f172a;border-bottom:1px solid #1e3a8a;font-size:11px;color:#64748b;flex-shrink:0">
+        <span id="ai-usage-text">10 questions remaining today</span>
+        <span id="ai-upgrade-hint" style="display:none"> · <a href="#" onclick="showUp();return false" style="color:#3b82f6">Upgrade for unlimited</a></span>
+      </div>
+
+      <!-- Tab content -->
+      <div id="ai-content" style="flex:1;overflow-y:auto;padding:14px">
+
+        <!-- EXPLAIN TAB -->
+        <div id="ai-tab-explain-content" class="ai-tab-content">
+          <div style="font-size:12px;color:#64748b;margin-bottom:12px;line-height:1.6">
+            Select any member from your analysis results and click Explain to understand why it passed or failed.
+          </div>
+          <div id="ai-member-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px"></div>
+          <button onclick="explainAll()" id="ai-explain-all-btn"
+            style="width:100%;padding:10px;background:#1e3a8a;border:1px solid #3b82f6;border-radius:8px;color:#60a5fa;font-size:12px;cursor:pointer;font-family:inherit;display:none">
+            🔍 Explain All Failures
+          </button>
+          <div id="ai-explain-output" class="ai-output"></div>
+        </div>
+
+        <!-- FIX TAB -->
+        <div id="ai-tab-fix-content" class="ai-tab-content" style="display:none">
+          <div style="font-size:12px;color:#64748b;margin-bottom:12px;line-height:1.6">
+            AI analyses all failing members and suggests the minimum changes needed to make your design pass all checks.
+          </div>
+          <button onclick="getAIFixes()"
+            style="width:100%;padding:10px;background:linear-gradient(135deg,#065f46,#059669);border:none;border-radius:8px;color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:12px">
+            🔧 Get Fix Suggestions
+          </button>
+          <div id="ai-fix-output" class="ai-output"></div>
+        </div>
+
+        <!-- ASK IS CODE TAB -->
+        <div id="ai-tab-ask-content" class="ai-tab-content" style="display:none">
+          <div style="font-size:12px;color:#64748b;margin-bottom:10px;line-height:1.6">
+            Ask anything about IS 456, IS 1893, IS 875, or IS 13920. AI answers with specific clause references.
+          </div>
+          <!-- Quick questions -->
+          <div style="margin-bottom:10px">
+            <div style="font-size:10px;color:#475569;font-weight:700;letter-spacing:0.5px;margin-bottom:6px">QUICK QUESTIONS</div>
+            <div style="display:flex;flex-direction:column;gap:5px" id="ai-quick-questions"></div>
+          </div>
+          <div style="display:flex;gap:6px;margin-bottom:10px">
+            <input id="ai-ask-input" type="text" placeholder="e.g. What is minimum cover for beams?"
+              style="flex:1;padding:9px 12px;background:#0f172a;border:1.5px solid #1e3a8a;border-radius:8px;color:#e2e8f0;font-size:12px;outline:none;font-family:inherit"
+              onkeydown="if(event.key==='Enter')askISCode()">
+            <button onclick="askISCode()"
+              style="padding:9px 14px;background:#1d4ed8;border:none;border-radius:8px;color:#fff;font-size:12px;cursor:pointer;font-family:inherit;font-weight:700">Ask</button>
+          </div>
+          <div id="ai-ask-output" class="ai-output"></div>
+        </div>
+
+        <!-- TUTOR TAB -->
+        <div id="ai-tab-tutor-content" class="ai-tab-content" style="display:none">
+          <div style="font-size:12px;color:#64748b;margin-bottom:12px;line-height:1.6">
+            AI acts as your structural engineering tutor — asks you questions about your design to test and deepen your understanding.
+          </div>
+          <button onclick="startTutorSession()"
+            style="width:100%;padding:10px;background:linear-gradient(135deg,#4c1d95,#7c3aed);border:none;border-radius:8px;color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:12px">
+            🎓 Start Tutor Session
+          </button>
+          <div id="ai-tutor-output" class="ai-output"></div>
+          <div id="ai-tutor-input-area" style="display:none;margin-top:10px">
+            <div style="display:flex;gap:6px">
+              <input id="ai-tutor-input" type="text" placeholder="Your answer..."
+                style="flex:1;padding:9px 12px;background:#0f172a;border:1.5px solid #1e3a8a;border-radius:8px;color:#e2e8f0;font-size:12px;outline:none;font-family:inherit"
+                onkeydown="if(event.key==='Enter')sendTutorAnswer()">
+              <button onclick="sendTutorAnswer()"
+                style="padding:9px 14px;background:#7c3aed;border:none;border-radius:8px;color:#fff;font-size:12px;cursor:pointer;font-family:inherit">Send</button>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- ai-content -->
+    </div><!-- ai-panel -->
+  </div>
+
+  <!-- AI TOGGLE BUTTON -->
+  <button id="ai-toggle-btn" onclick="toggleAI()"
+    style="position:fixed;bottom:20px;right:20px;z-index:9997;width:52px;height:52px;border-radius:50%;
+    background:linear-gradient(135deg,#4c1d95,#7c3aed);border:none;color:#fff;font-size:22px;cursor:pointer;
+    box-shadow:0 4px 20px rgba(124,58,237,0.4);display:none;transition:transform 0.2s"
+    onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
+    🤖
+  </button>
 </div>
 
 <!-- ACCOUNT -->
@@ -2943,6 +3066,476 @@ function sendProgressToIframe() {
 }
 
 // Progress restored via loadAndRestoreProgress() after login
+
+
+// ══════════════════════════════════════════════════════════════
+// AI INTEGRATION — StructLearn Pro
+// Uses Claude API via Anthropic messages endpoint
+// ══════════════════════════════════════════════════════════════
+
+const AI_FREE_LIMIT   = 10;
+const AI_DAILY_KEY    = 'slp_ai_daily';
+let   _aiPanelOpen    = false;
+let   _aiCurrentTab   = 'explain';
+let   _currentRES     = null;
+let   _currentS       = null;
+let   _tutorHistory   = [];
+let   _tutorActive    = false;
+
+// ── QUICK QUESTIONS for Ask IS tab ─────────────────────────────
+const AI_QUICK_QS = [
+  "What is the minimum cover for beams in IS 456?",
+  "How is base shear calculated in IS 1893?",
+  "What is the difference between M25 and M30 concrete?",
+  "When is a slab considered two-way?",
+  "What is the maximum steel ratio for columns?",
+  "How does seismic zone affect design?",
+];
+
+// ── USAGE TRACKING ─────────────────────────────────────────────
+function getAIUsage(){
+  const today = new Date().toDateString();
+  try{
+    const stored = JSON.parse(localStorage.getItem(AI_DAILY_KEY)||'{}');
+    if(stored.date !== today) return {date:today, count:0};
+    return stored;
+  }catch(e){ return {date:today, count:0}; }
+}
+
+function incrementAIUsage(){
+  const usage = getAIUsage();
+  usage.count++;
+  localStorage.setItem(AI_DAILY_KEY, JSON.stringify(usage));
+  updateAIUsageBar();
+}
+
+function canUseAI(){
+  if(plan === 'pro') return true;
+  const usage = getAIUsage();
+  return usage.count < AI_FREE_LIMIT;
+}
+
+function updateAIUsageBar(){
+  const usage   = getAIUsage();
+  const isPro   = plan === 'pro';
+  const remaining = Math.max(0, AI_FREE_LIMIT - usage.count);
+  const badge   = document.getElementById('ai-plan-badge');
+  const text    = document.getElementById('ai-usage-text');
+  const hint    = document.getElementById('ai-upgrade-hint');
+  if(badge) badge.textContent = isPro ? 'PRO' : 'FREE';
+  if(badge) badge.style.background = isPro ? 'rgba(52,211,153,0.2)' : 'rgba(59,130,246,0.2)';
+  if(badge) badge.style.color = isPro ? '#34d399' : '#60a5fa';
+  if(text)  text.textContent = isPro ? 'Unlimited questions' : remaining+' questions remaining today';
+  if(hint)  hint.style.display = (!isPro && remaining < 5) ? 'inline' : 'none';
+}
+
+// ── PANEL TOGGLE ───────────────────────────────────────────────
+function toggleAI(){
+  _aiPanelOpen = !_aiPanelOpen;
+  const panel = document.getElementById('ai-panel');
+  const btn   = document.getElementById('ai-toggle-btn');
+  if(panel){
+    panel.style.width = _aiPanelOpen ? '340px' : '0';
+  }
+  if(btn){
+    btn.style.background = _aiPanelOpen
+      ? 'linear-gradient(135deg,#1e3a8a,#1d4ed8)'
+      : 'linear-gradient(135deg,#4c1d95,#7c3aed)';
+    btn.textContent = _aiPanelOpen ? '✕' : '🤖';
+  }
+  if(_aiPanelOpen){
+    updateAIUsageBar();
+    refreshAIContext();
+    initQuickQuestions();
+  }
+}
+
+function showAIBtn(){
+  const btn = document.getElementById('ai-toggle-btn');
+  if(btn) btn.style.display = 'flex';
+}
+
+function hideAIBtn(){
+  const btn = document.getElementById('ai-toggle-btn');
+  if(btn) btn.style.display = 'none';
+  if(_aiPanelOpen) toggleAI();
+}
+
+// ── TAB SWITCHING ──────────────────────────────────────────────
+function switchAITab(tab){
+  _aiCurrentTab = tab;
+  document.querySelectorAll('.ai-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.ai-tab-content').forEach(c=>c.style.display='none');
+  document.getElementById('ai-tab-'+tab)?.classList.add('active');
+  document.getElementById('ai-tab-'+tab+'-content').style.display='block';
+  if(tab === 'explain') refreshAIContext();
+  if(tab === 'ask') initQuickQuestions();
+}
+
+// ── GET CURRENT PROJECT CONTEXT FROM IFRAME ────────────────────
+function refreshAIContext(){
+  const fr = document.getElementById('app-iframe');
+  if(!fr || !fr.contentWindow) return;
+  try{
+    _currentRES = fr.contentWindow.RES || null;
+    _currentS   = fr.contentWindow.S   || null;
+  }catch(e){}
+  buildMemberList();
+}
+
+function buildMemberList(){
+  const el = document.getElementById('ai-member-list');
+  const explainBtn = document.getElementById('ai-explain-all-btn');
+  if(!el) return;
+
+  if(!_currentRES){
+    el.innerHTML = '<div style="font-size:12px;color:#475569;padding:8px 0">Run analysis first to see members here.</div>';
+    if(explainBtn) explainBtn.style.display='none';
+    return;
+  }
+
+  const beams = (_currentRES.allBeams || _currentRES.beams || []).slice(0,8);
+  const cols  = (_currentRES.allCols  || _currentRES.cols  || []).slice(0,4);
+  const ftgs  = (_currentRES.allFtgs  || _currentRES.ftgs  || []).slice(0,4);
+
+  const failures = [
+    ...beams.filter(b=>b.shearSafe===false||b.deflOK===false),
+    ...cols.filter(c=>c.safe===false),
+    ...ftgs.filter(f=>f.punch_ok===false||f.ow_ok===false||f.Ld_ok===false)
+  ];
+
+  let html = '';
+  // Show failures first
+  if(failures.length){
+    html += '<div style="font-size:10px;color:#f87171;font-weight:700;letter-spacing:0.5px;margin-bottom:5px">FAILING MEMBERS</div>';
+    failures.slice(0,6).forEach(m=>{
+      const name = m.lbl || m.id || 'Member';
+      const reason = m.shearSafe===false ? 'Shear fail'
+                   : m.deflOK===false    ? 'Deflection fail'
+                   : m.safe===false      ? 'Column unsafe'
+                   : m.punch_ok===false  ? 'Punching fail'
+                   : m.Ld_ok===false     ? 'Dev length fail'
+                   : 'Failed';
+      html += `<button class="ai-member-btn fail" onclick="explainMember('${name}','${reason}')">
+        <span style="font-size:14px">⚠️</span>
+        <div><div style="font-weight:700">${name}</div><div style="font-size:10px;color:#f87171">${reason}</div></div>
+        <span style="margin-left:auto;font-size:10px;color:#64748b">Explain →</span>
+      </button>`;
+    });
+    if(explainBtn) explainBtn.style.display='block';
+  } else {
+    html += '<div style="font-size:12px;color:#34d399;padding:8px 0;font-weight:700">✅ All members passing!</div>';
+    if(explainBtn) explainBtn.style.display='none';
+  }
+
+  // Show a few passing members
+  const passing = [
+    ...beams.filter(b=>b.shearSafe!==false&&b.deflOK!==false),
+  ].slice(0,3);
+  if(passing.length){
+    html += '<div style="font-size:10px;color:#34d399;font-weight:700;letter-spacing:0.5px;margin:10px 0 5px">PASSING MEMBERS (sample)</div>';
+    passing.forEach(m=>{
+      const name = m.lbl || m.id || 'Beam';
+      html += `<button class="ai-member-btn pass" onclick="explainMember('${name}','passing')">
+        <span style="font-size:14px">✅</span>
+        <div><div style="font-weight:700">${name}</div><div style="font-size:10px;color:#34d399">All checks pass</div></div>
+        <span style="margin-left:auto;font-size:10px;color:#64748b">Explain →</span>
+      </button>`;
+    });
+  }
+
+  el.innerHTML = html || '<div style="font-size:12px;color:#475569">No members found.</div>';
+}
+
+// ── CORE AI CALL ────────────────────────────────────────────────
+async function callClaude(systemPrompt, userMessage, outputElId){
+  if(!canUseAI()){
+    const el = document.getElementById(outputElId);
+    if(el) el.innerHTML = '⚠️ Daily limit reached ('+AI_FREE_LIMIT+' questions). <a href="#" onclick="showUp();return false" style="color:#3b82f6">Upgrade to Pro</a> for unlimited AI assistance.';
+    return null;
+  }
+
+  const el = document.getElementById(outputElId);
+  if(el){ el.className='ai-output ai-loading'; el.textContent='AI is thinking'; }
+
+  try{
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model:      'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        system:     systemPrompt,
+        messages:   [{ role:'user', content: userMessage }]
+      })
+    });
+
+    const data = await response.json();
+    const text = data.content?.[0]?.text || 'Sorry, no response received.';
+
+    incrementAIUsage();
+
+    if(el){
+      el.className = 'ai-output';
+      el.innerHTML = formatAIResponse(text);
+    }
+
+    return text;
+  }catch(e){
+    if(el){ el.className='ai-output'; el.textContent='Error: '+e.message+'. Please try again.'; }
+    return null;
+  }
+}
+
+function formatAIResponse(text){
+  // Convert markdown-ish to HTML
+  return text
+    .replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')
+    .replace(/\*(.*?)\*/g,'<em>$1</em>')
+    .replace(/^### (.+)$/gm,'<div style="font-weight:700;color:#a78bfa;margin-top:10px">$1</div>')
+    .replace(/^## (.+)$/gm,'<div style="font-weight:700;color:#60a5fa;margin-top:10px">$1</div>')
+    .replace(/^• (.+)$/gm,'<div style="padding-left:12px">• $1</div>')
+    .replace(/^- (.+)$/gm,'<div style="padding-left:12px">• $1</div>')
+    .replace(/\n/g,'<br>')
+    .replace(/\n/g,'<br>');
+}
+
+// ── BUILD SYSTEM PROMPT ─────────────────────────────────────────
+function buildSystemPrompt(){
+  const role = P?.role || 'student';
+  const audienceNote = role === 'student'
+    ? 'Explain clearly for a civil engineering student. Use simple language, avoid jargon.'
+    : role === 'engineer'
+    ? 'Be concise and technical. The user is a practising structural engineer.'
+    : 'Balance technical accuracy with clear explanation for an educator.';
+
+  let projectContext = 'No project loaded yet.';
+  if(_currentS){
+    projectContext = `Current project:
+- Building: G+${(_currentS.numFloors||3)-1} (${_currentS.numFloors||3} storeys)
+- Spans X: ${(_currentS.spansX||[3,3]).join(', ')}m
+- Spans Y: ${(_currentS.spansY||[3,3]).join(', ')}m
+- Concrete: ${_currentS.fck||25} MPa (M${_currentS.fck||25})
+- Steel: Fe${_currentS.fy||500}
+- Seismic Zone: ${_currentS.zone||'III'}
+- City: ${_currentS.city||'Not specified'}
+- Floor Height: ${_currentS.floorHt||3}m`;
+  }
+
+  let resultsContext = '';
+  if(_currentRES){
+    const beams = _currentRES.allBeams || _currentRES.beams || [];
+    const cols  = _currentRES.allCols  || _currentRES.cols  || [];
+    const ftgs  = _currentRES.allFtgs  || _currentRES.ftgs  || [];
+    const failBeams = beams.filter(b=>b.shearSafe===false||b.deflOK===false).length;
+    const failCols  = cols.filter(c=>c.safe===false).length;
+    const failFtgs  = ftgs.filter(f=>f.punch_ok===false||f.ow_ok===false||f.Ld_ok===false).length;
+    resultsContext = `\nAnalysis results: ${beams.length} beams (${failBeams} failing), ${cols.length} columns (${failCols} failing), ${ftgs.length} footings (${failFtgs} failing)`;
+  }
+
+  return `You are an expert structural engineering AI assistant for StructLearn Pro, an Indian structural engineering education platform.
+
+${audienceNote}
+
+You help users understand IS 456:2000 (RC design), IS 1893:2016 (seismic), IS 875 Part 3 (wind), and IS 13920:2016 (ductile detailing).
+
+Always cite specific IS clauses when relevant (e.g. "IS 456:2000 Clause 26.5.1").
+Keep responses concise — under 200 words unless detailed explanation is specifically needed.
+Be encouraging and educational in tone.
+
+${projectContext}${resultsContext}`;
+}
+
+// ── TAB 1: EXPLAIN MEMBER ──────────────────────────────────────
+async function explainMember(memberName, issue){
+  refreshAIContext();
+  const fr = document.getElementById('app-iframe');
+  let memberData = '';
+  if(fr && fr.contentWindow && _currentRES){
+    const beams = _currentRES.allBeams || _currentRES.beams || [];
+    const cols  = _currentRES.allCols  || _currentRES.cols  || [];
+    const ftgs  = _currentRES.allFtgs  || _currentRES.ftgs  || [];
+    const member = [...beams,...cols,...ftgs].find(m=>(m.lbl||m.id||'').includes(memberName));
+    if(member) memberData = '\nMember data: '+JSON.stringify(member).slice(0,400);
+  }
+  const prompt = `Explain why member "${memberName}" has issue: "${issue}".${memberData}
+Give: 1) What the check means 2) Why it failed/passed 3) What to do to fix it (if failed).
+Be specific to this building's parameters.`;
+  await callClaude(buildSystemPrompt(), prompt, 'ai-explain-output');
+}
+
+async function explainAll(){
+  refreshAIContext();
+  if(!_currentRES){ return; }
+  const beams = _currentRES.allBeams || _currentRES.beams || [];
+  const cols  = _currentRES.allCols  || _currentRES.cols  || [];
+  const ftgs  = _currentRES.allFtgs  || _currentRES.ftgs  || [];
+  const fails = [
+    ...beams.filter(b=>b.shearSafe===false||b.deflOK===false).map(b=>`Beam ${b.lbl||b.id}: ${b.shearSafe===false?'shear fail':'deflection fail'}`),
+    ...cols.filter(c=>c.safe===false).map(c=>`Column ${c.id||''}: unsafe`),
+    ...ftgs.filter(f=>f.punch_ok===false||f.ow_ok===false||f.Ld_ok===false).map(f=>`Footing ${f.lbl||''}: ${f.punch_ok===false?'punching':f.ow_ok===false?'one-way shear':'dev length'} fail`),
+  ];
+  if(!fails.length){ document.getElementById('ai-explain-output').innerHTML='<span style="color:#34d399">✅ All members are passing! Nothing to explain.</span>'; return; }
+  const prompt = `Explain all these failures in my building:
+${fails.join('\n')}\n\nFor each: why it failed and the main fix. Be concise.`;
+  await callClaude(buildSystemPrompt(), prompt, 'ai-explain-output');
+}
+
+// ── TAB 2: FIX SUGGESTIONS ─────────────────────────────────────
+async function getAIFixes(){
+  refreshAIContext();
+  if(!_currentRES){
+    document.getElementById('ai-fix-output').textContent='Run analysis first.';
+    return;
+  }
+  const beams = _currentRES.allBeams || _currentRES.beams || [];
+  const cols  = _currentRES.allCols  || _currentRES.cols  || [];
+  const ftgs  = _currentRES.allFtgs  || _currentRES.ftgs  || [];
+
+  const failDetails = [];
+  beams.filter(b=>b.shearSafe===false).forEach(b=>
+    failDetails.push(`Beam ${b.lbl||b.id}: shear tv=${b.tv?.toFixed(2)} vs max ${b.tcmax?.toFixed(2)} N/mm², size ${b.b}×${b.D}mm`));
+  beams.filter(b=>b.deflOK===false).forEach(b=>
+    failDetails.push(`Beam ${b.lbl||b.id}: deflection ${b.dfl?.toFixed(1)}mm vs allow ${b.dall?.toFixed(1)}mm`));
+  cols.filter(c=>c.safe===false).forEach(c=>
+    failDetails.push(`Column ${c.id||''}: unsafe, size ${c.size}×${c.size}mm`));
+  ftgs.filter(f=>f.Ld_ok===false).forEach(f=>
+    failDetails.push(`Footing ${f.lbl||''}: development length Lda=${f.Lda}mm < Ldr=${f.Ldr}mm`));
+
+  if(!failDetails.length){
+    document.getElementById('ai-fix-output').innerHTML='<span style="color:#34d399">✅ No failures! Your design is passing all checks.</span>';
+    return;
+  }
+
+  const prompt = `My structural analysis has these failures:
+${failDetails.join('\n')}
+
+Suggest the minimum specific changes to fix all failures. Format as:
+1. [Member name]: Change [what] from [current] to [suggested]
+   Reason: [why this fixes it]
+
+Be specific with numbers. Reference IS clause where relevant.`;
+
+  await callClaude(buildSystemPrompt(), prompt, 'ai-fix-output');
+}
+
+// ── TAB 3: ASK IS CODE ─────────────────────────────────────────
+function initQuickQuestions(){
+  const el = document.getElementById('ai-quick-questions');
+  if(!el || el.children.length > 0) return;
+  el.innerHTML = AI_QUICK_QS.map(q=>
+    `<button class="ai-quick-q" onclick="askQuick('${q.replace(/'/g,"\'")}')">${q}</button>`
+  ).join('');
+}
+
+function askQuick(question){
+  const input = document.getElementById('ai-ask-input');
+  if(input) input.value = question;
+  askISCode();
+}
+
+async function askISCode(){
+  const input = document.getElementById('ai-ask-input');
+  const question = input?.value?.trim();
+  if(!question) return;
+  const prompt = `Question about Indian structural engineering codes: "${question}"
+Answer with specific IS clause references. Keep answer under 150 words. Be practical.`;
+  await callClaude(buildSystemPrompt(), prompt, 'ai-ask-output');
+  if(input) input.value = '';
+}
+
+// ── TAB 4: TUTOR MODE ──────────────────────────────────────────
+async function startTutorSession(){
+  refreshAIContext();
+  _tutorHistory = [];
+  _tutorActive  = true;
+
+  const outputEl = document.getElementById('ai-tutor-output');
+  const inputArea = document.getElementById('ai-tutor-input-area');
+  if(outputEl) outputEl.innerHTML = '';
+  if(inputArea) inputArea.style.display = 'block';
+
+  const context = _currentS
+    ? `The student has a G+${(_currentS.numFloors||3)-1} building with ${(_currentS.spansX||[3]).length}×${(_currentS.spansY||[3]).length} grid, M${_currentS.fck||25} concrete, Fe${_currentS.fy||500} steel in Zone ${_currentS.zone||'III'}.`
+    : 'No project loaded yet, ask general questions.';
+
+  const systemPrompt = buildSystemPrompt() + `\n\nYou are in TUTOR MODE. Ask the student one question at a time about their design or structural engineering concepts. After they answer, give brief feedback (right/wrong and why) then ask the next question. Keep questions relevant to their current project. Start by asking one specific question about their design choices.`;
+
+  const firstMsg = `Start a tutor session. ${context} Ask one focused question to test their understanding of a key design decision in their building.`;
+
+  try{
+    const response = await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:500,
+        system:systemPrompt,
+        messages:[{role:'user',content:firstMsg}]
+      })
+    });
+    const data = await response.json();
+    const text = data.content?.[0]?.text || '';
+    incrementAIUsage();
+    _tutorHistory.push({role:'assistant',content:text});
+    if(outputEl) outputEl.innerHTML = formatAIResponse(text);
+    updateAIUsageBar();
+  }catch(e){
+    if(outputEl) outputEl.textContent = 'Error starting session: '+e.message;
+  }
+}
+
+async function sendTutorAnswer(){
+  const input = document.getElementById('ai-tutor-input');
+  const answer = input?.value?.trim();
+  if(!answer || !_tutorActive) return;
+  if(input) input.value = '';
+
+  if(!canUseAI()){
+    document.getElementById('ai-tutor-output').innerHTML += '<br><span style="color:#f87171">Daily limit reached. Upgrade for unlimited tutoring.</span>';
+    return;
+  }
+
+  const outputEl = document.getElementById('ai-tutor-output');
+  _tutorHistory.push({role:'user',content:answer});
+
+  if(outputEl) outputEl.innerHTML += `<div style="margin:10px 0;padding:8px 12px;background:#1e3a8a33;border-radius:6px;font-size:12px"><strong>You:</strong> ${answer}</div><div class="ai-loading" style="font-size:12px">AI is responding</div>`;
+
+  try{
+    const systemPrompt = buildSystemPrompt() + '\n\nYou are in TUTOR MODE. Give brief feedback on their answer then ask the next question.';
+    const response = await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:500,
+        system:systemPrompt,
+        messages:[..._tutorHistory,{role:'user',content:answer}]
+      })
+    });
+    const data = await response.json();
+    const text = data.content?.[0]?.text || '';
+    incrementAIUsage();
+    _tutorHistory.push({role:'assistant',content:text});
+    // Remove loading indicator
+    const loading = outputEl?.querySelector('.ai-loading');
+    if(loading) loading.remove();
+    if(outputEl) outputEl.innerHTML += `<div style="margin:8px 0;font-size:12px;line-height:1.7">${formatAIResponse(text)}</div>`;
+    updateAIUsageBar();
+  }catch(e){
+    const loading = outputEl?.querySelector('.ai-loading');
+    if(loading) loading.textContent = 'Error: '+e.message;
+  }
+}
+
+// ── SHOW AI BUTTON WHEN ON APP SCREEN ─────────────────────────
+// Hook into goTo function
+const _origGoTo = goTo;
+goTo = function(tab){
+  _origGoTo(tab);
+  if(tab === 'app') { showAIBtn(); refreshAIContext(); }
+  else { hideAIBtn(); }
+};
 
 </script>
 </body>
