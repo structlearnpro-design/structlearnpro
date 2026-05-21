@@ -511,7 +511,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
     <div class="tlogo">StructLearn Pro</div>
     <div class="tnav">
       <button class="tnav-btn on" id="n-proj" onclick="goTo('projects')">My Projects</button>
-      <button class="tnav-btn" id="n-app"  onclick="goTo('app')">Design Tool</button>
+      <button class="tnav-btn" id="n-app"  onclick="_autoSaveProjId?goTo('app'):newProject()" title="Open design tool">Design Tool</button>
       <button class="tnav-btn" id="n-acc"  onclick="goTo('account')">Account</button>
     </div>
   </div>
@@ -562,7 +562,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
       <div style="background:var(--bg2);border:1px solid var(--b1);border-radius:12px;padding:18px;margin-bottom:20px">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
           <div style="font-size:13px;font-weight:800;color:var(--txt)">📚 Learning Journey</div>
-          <button onclick="goTo('app')" style="padding:5px 14px;background:var(--blue2);border:none;border-radius:6px;color:white;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">Open Design Tool →</button>
+          <button onclick="_autoSaveProjId?goTo('app'):newProject()" style="padding:5px 14px;background:var(--blue2);border:none;border-radius:6px;color:white;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">Open Design Tool →</button>
         </div>
         <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px" id="journey-modules"></div>
       </div>
@@ -600,8 +600,8 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
             </div>
           </div>
         </div>
-        <button onclick="goTo('app')" style="margin-top:16px;width:100%;padding:12px;background:linear-gradient(135deg,#2563eb,#3b82f6);border:none;border-radius:8px;color:white;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">
-          Start Your First Design →
+        <button onclick="newProject()" style="margin-top:16px;width:100%;padding:12px;background:linear-gradient(135deg,#2563eb,#3b82f6);border:none;border-radius:8px;color:white;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">
+          + New Project
         </button>
       </div>
 
@@ -1271,7 +1271,10 @@ function renderJourneyModules(){
   }).join('');
 }
 
-function goJourneyApp(){goTo('app');}
+function goJourneyApp(){
+  if(_autoSaveProjId) goTo('app');
+  else newProject();
+}
 function filterP(){
   const s=document.getElementById('f-search').value.toLowerCase();
   const st=document.getElementById('f-status').value;
@@ -1403,12 +1406,15 @@ async function openP(id, isNew){
   // Send project data after a short delay
   setTimeout(()=>{
     try{
-      document.getElementById('app-iframe').contentWindow
-        .postMessage({
-          type:    'LOAD_PROJECT',
-          project: p,
-          goStep:  isNew ? 1 : (p.results_json ? 7 : 1)
-        },'*');
+      const fr2 = document.getElementById('app-iframe');
+      if(!fr2||!fr2.contentWindow) return;
+      // Inject saveToParent again (iframe may have reloaded)
+      injectSaveToParent(fr2);
+      fr2.contentWindow.postMessage({
+        type:    'LOAD_PROJECT',
+        project: p,
+        goStep:  isNew ? 1 : (p.results_json ? 7 : 1)
+      },'*');
     }catch(e){}
   },900);
 }
@@ -1529,6 +1535,9 @@ function injectSaveToParent(fr){
 function startAutoSave(projectId){
   _autoSaveProjId = projectId;
   clearInterval(_autoSaveTimer);
+  // Inject saveToParent into iframe NOW that we have a project ID
+  const fr = document.getElementById('app-iframe');
+  if(fr && fr.contentWindow) injectSaveToParent(fr);
   _autoSaveTimer = setInterval(()=>{ autoSave(); }, 30000);
 }
 
