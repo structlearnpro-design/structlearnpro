@@ -592,36 +592,38 @@ async function sendOTP(type){
   if(!/^\d{10}$/.test(mob)){setMsg(type==='login'?'l-msg':'s-msg','Enter valid 10-digit number','err');return;}
   if(type==='signup'){
     const nm=document.getElementById('s-name').value.trim();
-    const em=document.getElementById('s-email').value.trim();
     if(!nm){setMsg('s-msg','Enter your full name','err');return;}
-    if(!em){setMsg('s-msg','Enter your email','err');return;}
-    pending.name=nm;pending.email=em;
+    pending.name=nm;
+    // Email is optional
+    const em=document.getElementById('s-email')?.value?.trim()||'';
+    pending.email=em;
   }
-  pending.mob=mob;pending.type=type;
+  pending.mob=mob; pending.type=type;
   const btn=document.getElementById(type==='login'?'l-btn':'s-btn');
-  btn.disabled=true;setMsg(type==='login'?'l-msg':'s-msg','Sending OTP...','');
+  btn.disabled=true;
+  setMsg(type==='login'?'l-msg':'s-msg','Sending OTP...','');
 
-  const otp=Math.floor(100000+Math.random()*900000).toString();
-  const exp=new Date(Date.now()+5*60*1000).toISOString();
-  await db.from('otp_tokens').insert({mobile:mob,otp,expires_at:exp,used:false,attempts:0});
-
-  // Using approved PLANZAA template — update when StructLearn template approved
-  const msg=`Dear Customer, your OTP for registration on PLANZAA is ${otp}. It is valid for 5 minutes. Please do not share it with anyone.`;
-  const url=`https://www.smsgatewayhub.com/api/mt/SendSMS?APIKey=${SGH_KEY}&senderid=${SGH_SID}&channel=Trans&DCS=0&flashsms=0&number=91${mob}&text=${encodeURIComponent(msg)}&DLTTemplateId=${SGH_TPL}`;
-  try{await fetch(url,{method:'GET',mode:'no-cors'});}catch(e){}
+  // Call our Edge Function — handles OTP generation + SMS sending securely
+  try{
+    const resp = await fetch(SUPA_URL+'/functions/v1/send-otp',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+SUPA_KEY},
+      body:JSON.stringify({mobile:mob})
+    });
+    const result = await resp.json();
+    if(!result.success){
+      btn.disabled=false;
+      setMsg(type==='login'?'l-msg':'s-msg', result.error||'Failed to send OTP','err');
+      return;
+    }
+  }catch(e){
+    btn.disabled=false;
+    setMsg(type==='login'?'l-msg':'s-msg','Network error. Please try again.','err');
+    return;
+  }
 
   btn.disabled=false;
   document.getElementById('otp-ph').textContent='+91 '+mob;
-  if(TEST_MODE){
-    var notice=document.getElementById('test-notice');
-    if(!notice){
-      notice=document.createElement('div');
-      notice.id='test-notice';
-      notice.style.cssText='margin-top:12px;padding:8px 14px;background:rgba(245,158,11,0.1);border:1px solid #f59e0b;border-radius:6px;font-size:11px;color:#fbbf24;';
-      notice.innerHTML='&#9888; Test Mode: use OTP <strong>123456</strong>';
-      document.getElementById('o-msg').after(notice);
-    }
-  }
   [0,1,2,3,4,5].forEach(i=>{document.getElementById('o'+i).value='';});
   document.getElementById('o-msg').textContent='';
   showScreen('otp-screen');
@@ -639,117 +641,93 @@ function ok(e,i){if(e.key==='Backspace'&&!document.getElementById('o'+i).value&&
 async function verifyOTP(){
   const otp=[0,1,2,3,4,5].map(i=>document.getElementById('o'+i).value).join('');
   if(otp.length!==6){setMsg('o-msg','Enter all 6 digits','err');return;}
-  document.getElementById('v-btn').disabled=true;
+  const btn=document.getElementById('v-btn');
+  btn.disabled=true;
   setMsg('o-msg','Verifying...','');
   const mob=pending.mob;
 
-  // TEST MODE: skip database check entirely
-  if(TEST_MODE && otp===TEST_OTP){
-    pending.type==='signup'?await doSignup(mob):await doLogin(mob);
-    document.getElementById('v-btn').disabled=false;
+  // Verify OTP via Edge Function
+  try{
+    const resp = await fetch(SUPA_URL+'/functions/v1/verify-otp',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+SUPA_KEY},
+      body:JSON.stringify({mobile:mob, otp:otp})
+    });
+    const result = await resp.json();
+    if(!result.success){
+      setMsg('o-msg', result.error||'Invalid OTP. Try again.','err');
+      btn.disabled=false;
+      return;
+    }
+    // OTP verified — now handle signup or login
+    if(pending.type==='signup'){
+      await doSignup(mob, result.userId, result.isNewUser);
+    } else {
+      await doLogin(mob, result.userId);
+    }
+  }catch(e){
+    setMsg('o-msg','Network error. Please try again.','err');
+    btn.disabled=false;
+  }
+  btn.disabled=false;
+}
+
+async function doSignup(mob, userId, isNewUser){
+  // userId comes from verify-otp Edge Function (already created auth user)
+  if(!userId){setMsg('o-msg','Verification failed. Try again.','err');return;}
+
+  if(!isNewUser){
+    // User already exists — just log them in
+    await doLogin(mob, userId);
     return;
   }
 
-  const {data:toks}=await db.from('otp_tokens').select('*').eq('mobile',mob).eq('used',false).gt('expires_at',new Date().toISOString()).order('created_at',{ascending:false}).limit(1);
-  if(!toks||!toks.length){setMsg('o-msg','OTP expired. Request a new one.','err');document.getElementById('v-btn').disabled=false;return;}
-  const tok=toks[0];
-  if(tok.attempts>=3){setMsg('o-msg','Too many attempts. Request new OTP.','err');document.getElementById('v-btn').disabled=false;return;}
-  if(tok.otp!==otp){
-    await db.from('otp_tokens').update({attempts:tok.attempts+1}).eq('id',tok.id);
-    setMsg('o-msg','Wrong OTP. '+(2-tok.attempts)+' attempt(s) left.','err');
-    document.getElementById('v-btn').disabled=false;return;
+  // Call create-profile Edge Function to create profile + generate unique ID
+  try{
+    const resp = await fetch(SUPA_URL+'/functions/v1/create-profile',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+SUPA_KEY},
+      body:JSON.stringify({
+        userId:   userId,
+        mobile:   mob,
+        role:     pending.purpose==='lecturer'?'lecturer':pending.purpose==='engineer'?'engineer':'student',
+        fullName: pending.name || mob,
+        email:    pending.email || null,
+        city:     '',
+        state:    '',
+      })
+    });
+    const result = await resp.json();
+    if(!result.success){
+      setMsg('o-msg', result.error||'Failed to create profile','err');
+      return;
+    }
+    // Store session token from localStorage for this mobile
+    localStorage.setItem('slp_uid_'+mob, userId);
+    // Load the app
+    U = {id: userId};
+    P = result.profile;
+    plan = 'free';
+    updTop();
+    goTo('projects');
+    toast('Welcome to StructLearn Pro! Your ID: '+result.uniqueId+' 🎉');
+  }catch(e){
+    setMsg('o-msg','Network error. Please try again.','err');
   }
-  await db.from('otp_tokens').update({used:true}).eq('id',tok.id);
-  pending.type==='signup'?await doSignup(mob):await doLogin(mob);
-  document.getElementById('v-btn').disabled=false;
 }
 
-async function doSignup(mob){
-  // Check both mobile formats
-  let {data:ex}=await db.from('profiles').select('id').eq('mobile',mob).maybeSingle();
-  if(!ex){const {data:e2}=await db.from('profiles').select('id').eq('mobile','+91'+mob).maybeSingle();ex=e2;}
-  if(ex){await doLogin(mob);return;}
-
-  const fe='u'+mob+'@structlearnpro.com';
-  const pw='SLP_v2_'+btoa(mob).replace(/=/g,'');
-
-  // Try signUp first
-  let userId = null;
-  const {data:au, error:signUpErr} = await db.auth.signUp({
-    email: fe,
-    password: pw,
-    options: { emailRedirectTo: null, data: { mobile: mob } }
-  });
-
-  if(signUpErr){
-    // If user already exists in auth, try signIn
-    const {data:si, error:siErr} = await db.auth.signInWithPassword({email:fe, password:pw});
-    if(siErr){setMsg('o-msg', signUpErr.message, 'err');return;}
-    userId = si.user.id;
-    U = si.user;
-  } else {
-    userId = au.user.id;
-    U = au.user;
-  }
-
-  // Small wait for auth to settle
-  await new Promise(r=>setTimeout(r,800));
-
-  // Generate a proper unique ID
-  const year = new Date().getFullYear();
-  const seq  = String(Math.floor(Math.random()*90000)+10000);
-  const uid  = 'SLP-STU-'+year+'-XX-'+seq;
-
-  // Insert profile
-  const {error:profErr} = await db.from('profiles').upsert({
-    user_id:    userId,
-    full_name:  pending.name || mob,
-    mobile:     '+91'+mob,
-    email:      pending.email || null,
-    role:       'student',
-    unique_id:  uid
-  }, {onConflict:'user_id'});
-
-  if(profErr){
-    console.error('Profile error:', profErr);
-    setMsg('o-msg','Account created but profile failed. Please try logging in.','err');
-    return;
-  }
-
-  localStorage.setItem('slp_'+mob, pw);
-
-  // Load profile
-  const {data:prof} = await db.from('profiles').select('*').eq('user_id',userId).single();
-  P=prof; plan=P?.plan||'free';
-  updTop(); goTo('projects');
-  toast('Welcome to StructLearn Pro! 🎉');
-}
-
-async function doLogin(mob){
-  // Try both formats: plain 10-digit and +91 prefixed
-  let {data:prof}=await db.from('profiles').select('*').eq('mobile',mob).maybeSingle();
-  if(!prof){
-    const {data:prof2}=await db.from('profiles').select('*').eq('mobile','+91'+mob).maybeSingle();
-    prof=prof2;
-  }
-  if(!prof){setMsg('o-msg','Account not found. Please sign up.','err');return;}
-  const fe='u'+mob+'@structlearnpro.com';
-  // Compute deterministic password — same on any device
-  let pw = localStorage.getItem('slp_'+mob);
-  if(!pw) pw = 'SLP_v2_'+btoa(mob).replace(/=/g,'');
-  const {data:sd,error}=await db.auth.signInWithPassword({email:fe,password:pw});
-  if(error){setMsg('o-msg',error.message,'err');return;}
-  U=sd.user;P=prof;plan=P?.plan||'free';
-  // Write session token — kicks out any other active session
-  const _tok = Date.now().toString(36)+Math.random().toString(36).slice(2);
-  localStorage.setItem('slp_tok_'+mob, _tok);
-  await db.from('profiles').update({last_active:new Date().toISOString()}).eq('user_id',U.id);
-  // Load saved progress from Supabase and restore into app
+async function doLogin(mob, userId){
+  if(!userId){setMsg('o-msg','Verification failed. Try again.','err');return;}
+  let {data:prof}=await db.from('profiles').select('*').eq('mobile','+91'+mob).maybeSingle();
+  if(!prof){const {data:p2}=await db.from('profiles').select('*').eq('mobile',mob).maybeSingle();prof=p2;}
+  if(!prof){await doSignup(mob,userId,true);return;}
+  await db.from('profiles').update({last_active:new Date().toISOString()}).eq('user_id',userId);
+  U={id:userId};P=prof;plan=P?.plan||'free';
+  localStorage.setItem('slp_uid_'+mob,userId);
   await loadAndRestoreProgress();
   updTop();goTo('projects');
   toast('Welcome back, '+(P.full_name||mob)+'! 👋');
 }
-
 async function doLogout(){
   await db.auth.signOut();
   localStorage.removeItem('slp_session');
