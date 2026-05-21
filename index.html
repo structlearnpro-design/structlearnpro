@@ -3258,9 +3258,8 @@ async function callClaude(systemPrompt, userMessage, outputElId){
   try{
     const response = await fetch(SUPA_URL+'/functions/v1/ai-chat', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer '+SUPA_KEY },
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer '+SUPA_KEY, 'apikey': SUPA_KEY },
       body: JSON.stringify({
-        model:      'claude-sonnet-4-20250514',
         max_tokens: 1000,
         system:     systemPrompt,
         messages:   [{ role:'user', content: userMessage }]
@@ -3268,18 +3267,27 @@ async function callClaude(systemPrompt, userMessage, outputElId){
     });
 
     const data = await response.json();
-    const text = data.content?.[0]?.text || 'Sorry, no response received.';
+    console.log('[AI] response status:', response.status, 'data:', JSON.stringify(data).slice(0,200));
 
-    incrementAIUsage();
-
-    if(el){
-      el.className = 'ai-output';
-      el.innerHTML = formatAIResponse(text);
+    if(!response.ok){
+      const errMsg = data.error || data.message || 'AI error ('+response.status+')';
+      if(el){ el.className='ai-output'; el.textContent='Error: '+errMsg; }
+      return null;
     }
 
+    const text = data.content?.[0]?.text;
+    if(!text){
+      if(el){ el.className='ai-output'; el.textContent='No response from AI. Check Edge Function logs.'; }
+      return null;
+    }
+
+    incrementAIUsage();
+    if(el){ el.className='ai-output'; el.innerHTML=formatAIResponse(text); }
     return text;
+
   }catch(e){
-    if(el){ el.className='ai-output'; el.textContent='Error: '+e.message+'. Please try again.'; }
+    console.error('[AI] fetch error:', e);
+    if(el){ el.className='ai-output'; el.textContent='Network error: '+e.message; }
     return null;
   }
 }
