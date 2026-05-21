@@ -177,7 +177,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
 
 /* ── APP FRAME ── */
 #app-screen{flex-direction:column;}
-#app-iframe{width:100%;flex:1;border:none;height:calc(100vh - 44px);}
+#app-iframe{flex:1;border:none;min-width:0;height:calc(100vh - 44px);}
 
 /* ── ACCOUNT ── */
 #acc-screen{flex-direction:column;}
@@ -655,8 +655,8 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
 
 <!-- APP -->
 <div id="app-screen" class="screen" style="flex-direction:column;position:relative">
-  <div style="display:flex;flex:1;overflow:hidden;height:calc(100vh - 44px)">
-    <iframe id="app-iframe" src="StructLearnPro.html" onload="onIframeLoad()" style="flex:1;border:none;height:100%"></iframe>
+  <div style="display:flex;flex:1;overflow:hidden;height:calc(100vh - 44px);width:100%">
+    <iframe id="app-iframe" src="StructLearnPro.html" onload="onIframeLoad()" style="flex:1;border:none;height:100%;min-width:0;width:0"></iframe>
 
     <!-- AI SIDE PANEL -->
     <div id="ai-panel" style="width:0;overflow:hidden;transition:width 0.3s ease;background:#0a0f1e;border-left:1px solid #1e3a8a;display:flex;flex-direction:column;flex-shrink:0">
@@ -3259,9 +3259,9 @@ async function callClaude(systemPrompt, userMessage, outputElId){
   if(el){ el.className='ai-output ai-loading'; el.textContent='AI is thinking'; }
 
   try{
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
+    const response = await fetch(SUPA_URL+'/functions/v1/ai-chat', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer '+SUPA_KEY },
       body: JSON.stringify({
         model:      'claude-sonnet-4-20250514',
         max_tokens: 1000,
@@ -3464,11 +3464,10 @@ async function startTutorSession(){
   const firstMsg = `Start a tutor session. ${context} Ask one focused question to test their understanding of a key design decision in their building.`;
 
   try{
-    const response = await fetch('https://api.anthropic.com/v1/messages',{
+    const response = await fetch(SUPA_URL+'/functions/v1/ai-chat',{
       method:'POST',
-      headers:{'Content-Type':'application/json'},
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+SUPA_KEY},
       body:JSON.stringify({
-        model:'claude-sonnet-4-20250514',
         max_tokens:500,
         system:systemPrompt,
         messages:[{role:'user',content:firstMsg}]
@@ -3503,11 +3502,10 @@ async function sendTutorAnswer(){
 
   try{
     const systemPrompt = buildSystemPrompt() + '\n\nYou are in TUTOR MODE. Give brief feedback on their answer then ask the next question.';
-    const response = await fetch('https://api.anthropic.com/v1/messages',{
+    const response = await fetch(SUPA_URL+'/functions/v1/ai-chat',{
       method:'POST',
-      headers:{'Content-Type':'application/json'},
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+SUPA_KEY},
       body:JSON.stringify({
-        model:'claude-sonnet-4-20250514',
         max_tokens:500,
         system:systemPrompt,
         messages:[..._tutorHistory,{role:'user',content:answer}]
