@@ -1401,7 +1401,7 @@ async function verifyOTP(){
       // Existing user — load directly
       P = result.profile;
       U = {id: result.profile.id, mobile: mob};
-      plan = P?.plan || 'free';
+      plan = resolvePlan();
       await loadAndRestoreProgress();
       updTop();
       goTo('projects');
@@ -1466,7 +1466,7 @@ async function doLogin(mob){
     }
     P = prof;
     U = {id: prof.id, mobile: mob};
-    plan = P?.plan || 'free';
+    plan = resolvePlan();
     await loadAndRestoreProgress();
     updTop();
     goTo('projects');
@@ -1486,7 +1486,24 @@ async function doLogout(){
 }
 
 // ── TOP BAR ──────────────────────────────────────────────────
+// ── PLAN STATUS HELPER ────────────────────────────────────────
+// Always call this to correctly determine plan from profile
+function resolvePlan(){
+  if(!P) return 'free';
+  if(P.plan !== 'pro') return 'free';
+  // Check expiry
+  if(P.plan_expires_at){
+    const yr = new Date(P.plan_expires_at).getFullYear();
+    if(yr < 2099 && new Date(P.plan_expires_at) < new Date()){
+      return 'free'; // expired
+    }
+  }
+  return 'pro';
+}
+
 function updTop(){
+  // Always resolve plan fresh from profile
+  plan = resolvePlan();
   document.getElementById('t-name').textContent=P?.full_name||P?.mobile||'';
   // Update greeting on dashboard
   setTimeout(function(){
@@ -2576,11 +2593,15 @@ async function startPay(){
         document.getElementById('coupon-msg').textContent = '';
       }
 
-      // Update local state
-      P.plan = 'pro';
-      P.plan_type = selPlanId;
-      P.plan_expires_at = exp.toISOString();
-      plan = 'pro';
+      // Reload profile from Supabase to confirm update
+      try{
+        const freshResp = await fetch(SUPA_URL+'/rest/v1/profiles?id=eq.'+P.id+'&select=*',{
+          headers:{'Authorization':'Bearer '+SUPA_KEY,'apikey':SUPA_KEY}
+        });
+        const freshData = await freshResp.json();
+        if(freshData && freshData[0]) P = freshData[0];
+      }catch(e){}
+      plan = resolvePlan();
 
       // Show receipt
       showPaymentReceipt(r.razorpay_payment_id, displayAmt, planLabel, exp);
@@ -2879,7 +2900,7 @@ function toast(msg,err=false){const t=document.getElementById('toast');t.textCon
       if(data && data[0]){
         P = data[0];
         U = {id: P.id, mobile: savedMob};
-        plan = P?.plan || 'free';
+        plan = resolvePlan();
         // Update last_active silently
         fetch(SUPA_URL+'/rest/v1/profiles?id=eq.'+P.id,{
           method:'PATCH',

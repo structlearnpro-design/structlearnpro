@@ -1206,19 +1206,27 @@ async function upgradeToPro(id, planType) {
   const months = planType==='annual'?12:planType==='lifetime'?1200:1;
   const exp = new Date();
   exp.setMonth(exp.getMonth()+months);
-  await api('profiles?id=eq.'+id, {
+  const expiry = planType==='lifetime' ? '2099-12-31T00:00:00Z' : exp.toISOString();
+  
+  const result = await api('profiles?id=eq.'+id, {
     method:'PATCH',
     body: JSON.stringify({
-      plan:'pro',
-      plan_type: planType,
-      plan_expires_at: planType==='lifetime' ? '2099-12-31T00:00:00Z' : exp.toISOString(),
+      plan:            'pro',
+      plan_type:       planType,
+      plan_expires_at: expiry,
+      payment_date:    new Date().toISOString(),
     })
   });
+
   // Update local cache
   const idx = allUsers.findIndex(u=>u.id===id);
-  if(idx>=0) { allUsers[idx].plan='pro'; allUsers[idx].plan_type=planType; }
+  if(idx>=0) {
+    allUsers[idx].plan='pro';
+    allUsers[idx].plan_type=planType;
+    allUsers[idx].plan_expires_at=expiry;
+  }
   filterUsers();
-  alert('✅ User upgraded to '+planType+' Pro');
+  alert('✅ User upgraded to '+planType+' Pro\nExpiry: '+new Date(expiry).toLocaleDateString('en-IN'));
 }
 
 async function changeRole(id) {
