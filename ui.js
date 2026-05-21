@@ -9827,32 +9827,41 @@ async function startConstructionPDF() {
     // Footing squares at each column intersection
     cxA.forEach((gx,i)=>{cyA.forEach((gy,j)=>{
       const ct=colType(i,j);
-      const f=ct==='C1'?f1:ct==='C2'?f2:f3;
-      const fw=Math.max(4,(f.Bf||1)*mmPerM);
-      // Footing outline (bold)
-      LC(0,0,0);LW(0.5);Rect(gx-fw/2,gy-fw/2,fw,fw,'D');
-      // Cross centre mark
-      LW(0.2);Line(gx-fw/2,gy,gx+fw/2,gy);Line(gx,gy-fw/2,gx,gy+fw/2);
-      // Type label above, size inside box, check status indicator
-      F(6.5,'bold',0,0,100);Txt(ct==='C1'?'CF':ct==='C2'?'EF':'IF',gx,gy-fw/2-2,{align:'center'});
-      // Size label below box
-      FC(255,255,255);Rect(gx-fw/2+2,gy-2.5,fw-4,5,'F');F(5,'normal',0,0,0);Txt(ftin(f.Bf||1)+'x'+ftin(f.Bf||1),gx,gy+1,{align:'center'});
-      // D= inside box
-      F(5,'italic',60,80,120);Txt('D='+r0(f.D||300),gx+fw/2+4,gy+1.5,{align:'left'});
+      const f=getFtgAt(j,i); // use actual footing by row/col
+      const fw=Math.max(5,(f.Bf||1)*mmPerM);
+      // Footing outline (bold solid)
+      LC(0,0,0);LW(0.6);Rect(gx-fw/2,gy-fw/2,fw,fw,'D');
+      // Small centre cross (not full width)
+      LW(0.25);
+      const cxLen=Math.min(fw*0.3,5);
+      Line(gx-cxLen,gy,gx+cxLen,gy);Line(gx,gy-cxLen,gx,gy+cxLen);
+      // Footing TYPE label — clearly above the box, no overlap
+      F(6.5,'bold',0,0,140);Txt(ct==='C1'?'CF':ct==='C2'?'EF':'IF',gx,gy-fw/2-4,{align:'center'});
+      // SIZE label — BELOW the box, not inside, with gap
+      F(5.5,'normal',0,0,0);Txt(ftin(f.Bf||1)+'x'+ftin(f.Bf||1),gx,gy+fw/2+5,{align:'center'});
+      // D= label — to the RIGHT, offset so it doesn't sit on the grid line
+      F(5,'italic',60,80,120);Txt('D='+r0(f.D||300)+'mm',gx+fw/2+5,gy-fw/4,{align:'left'});
     });});
 
-    // Plot line dashed border
-    LC(100,100,100);LW(0.4);doc.setLineDashPattern([5,3],0);
-    Rect(fpX-16,fpY-16,planW+32,planH+32,'D');
+    // Plot line dashed border — well clear of footings
+    LC(120,120,120);LW(0.5);doc.setLineDashPattern([6,3],0);
+    Rect(fpX-24,fpY-24,planW+48,planH+48,'D');
     doc.setLineDashPattern([],0);
-    F(6.5,'normal',80,80,80);Txt('PLOT LINE',fpX-14,fpY-12);Txt('PLOT LINE',fpX+planW+2,fpY+planH/2);
+    // PLOT LINE text at top-left corner only, not overlapping
+    F(6,'normal',100,100,100);Txt('PLOT LINE',fpX-22,fpY-20);
 
-    // Horizontal dim chains (below plan)
-    S.spansX.slice(0,nBX).forEach((sp,i)=>DH(cxA[i],cxA[i+1],fpY+planH+14,ftin(sp),false));
-    DH(fpX,fpX+planW,fpY+planH+22,ftin(totX)+' (Total)',false);
-    // Vertical dim chains (left of plan)
+    // Grid column numbers ABOVE plan
+    cxA.forEach((gx,i)=>{ F(7,'bold',0,0,0);Txt(String(i+1),gx,fpY-28,{align:'center'}); });
+    // Grid row letters LEFT of plan
+    cyA.forEach((gy,j)=>{ F(7,'bold',0,0,0);Txt(String.fromCharCode(65+j),fpX-32,gy+2.5,{align:'right'}); });
+
+    // Horizontal dim chains ABOVE plan (issue 4 fix — was only below)
+    S.spansX.slice(0,nBX).forEach((sp,i)=>DH(cxA[i],cxA[i+1],fpY-14,ftin(sp),false));
+    // Horizontal dim chains BELOW plan (total)
+    DH(fpX,fpX+planW,fpY+planH+14,ftin(totX)+' TOTAL',false);
+    // Vertical dim chains LEFT of plan
     S.spansY.slice(0,nBY).forEach((sp,j)=>DV(fpX-22,cyA[j],cyA[j+1],ftin(sp),true));
-    DV(fpX-30,fpY,fpY+planH,ftin(totY)+' (Total)',true);
+    DV(fpX-32,fpY,fpY+planH,ftin(totY)+' TOTAL',true);
 
     // Footing schedule summary
     const schY=fpY+planH+34;
@@ -9900,13 +9909,13 @@ async function startConstructionPDF() {
       FC(100,100,130);Rect(fcx-colPW/2,planFy+planSz/2-colPW/2,colPW,colPW,'F');
       LC(0,0,0);LW(0.4);Rect(fcx-colPW/2,planFy+planSz/2-colPW/2,colPW,colPW,'D');
       // Plan dims
-      DH(planFx,planFx+planSz,planFy+planSz+3,ftin(f.Bf||1)+' x '+ftin(f.Bf||1),false);
-      F(6,'italic',80,80,80);Txt('SCALE 1:25',fcx,planFy+planSz+10,{align:'center'});
-      F(6.5,'normal',0,0,0);Txt('Bars both ways: Y'+f.dBf+'@'+f.spf+' c/c',fcx,planFy+planSz+15,{align:'center'});
+      DH(planFx,planFx+planSz,planFy+planSz+4,ftin(f.Bf||1)+' x '+ftin(f.Bf||1),false);
+      F(6,'italic',80,80,80);Txt('SCALE 1:25',fcx,planFy+planSz+12,{align:'center'});
+      F(6.5,'bold',0,0,100);Txt('Bars both ways: Y'+f.dBf+'@'+f.spf+' c/c',fcx,planFy+planSz+18,{align:'center'});
 
       // ── SECTION ────────────────────────────────────────────────
-      const secTopY=planFy+planSz+24;
-      F(7,'bold',0,0,0);Txt('TYPICAL SECTION',fcx,secTopY-2,{align:'center'});
+      const secTopY=planFy+planSz+32;  // extra gap: plan → section
+      F(7,'bold',0,0,0);Txt('TYPICAL SECTION',fcx,secTopY-4,{align:'center'});
       const ftSW=Math.min(fzW-8,(f.Bf||1)*1000/25);
       const ftSH=Math.max(10,Math.min(25,(f.D||300)/25));
       const ssx=fcx-ftSW/2;
@@ -9928,7 +9937,7 @@ async function startConstructionPDF() {
       LC(150,100,0);LW(0.25);doc.setLineDashPattern([2,1.5],0);
       Line(ssx,secTopY+ftSH-cvB,ssx+ftSW,secTopY+ftSH-cvB);
       doc.setLineDashPattern([],0);
-      F(6,'normal',80,60,0);Txt('75mm cover',ssx+ftSW+2,secTopY+ftSH-cvB+1);
+      F(6,'bold',80,60,0);Txt('cover=75mm',ssx+ftSW+3,secTopY+ftSH-cvB+1);
       // Bottom bars
       const barR=Math.max(0.9,f.dBf/2/25);
       const nBS=Math.min(6,Math.floor(ftSW/5)+1);
@@ -9955,14 +9964,12 @@ async function startConstructionPDF() {
       Line(fcx-dOff,secTopY-colH2-dowelDraw,fcx-dOff-2,secTopY-colH2-dowelDraw);
       Line(fcx+dOff,secTopY-colH2-dowelDraw,fcx+dOff+2,secTopY-colH2-dowelDraw);
       // Lap length annotation
-      F(5,'bold',0,0,150);
-      Txt('Lap='+dowelLap+'mm',fcx+dOff+3,secTopY-colH2-dowelDraw/2);
-      // Starter bar label
-      LC(0,0,0);LW(0.2);doc.setLineDashPattern([1,1],0);
-      Line(fcx+colSW2/2+1,secTopY-colH2-dowelDraw/2,fcx+colSW2/2+8,secTopY-colH2-dowelDraw/2);
-      doc.setLineDashPattern([],0);
-      F(5,'normal',0,0,150);Txt('Starter bars',fcx+colSW2/2+9,secTopY-colH2-dowelDraw/2+1);
-      F(5,'normal',0,0,0);Txt('('+( c1?.nb||4)+'-D'+(c1?.dB||16)+' dowels)',fcx+colSW2/2+9,secTopY-colH2-dowelDraw/2+4.5);
+      // Lap annotation — above the dowels, right side
+      const lapLblY=secTopY-colH2-dowelDraw-2;
+      LC(0,0,100);LW(0.3);Line(fcx+dOff,lapLblY+1,fcx+dOff+12,lapLblY+1);
+      F(5.5,'bold',0,0,180);Txt('Lap='+dowelLap+'mm',fcx+dOff+14,lapLblY+2);
+      // Starter bar label — one line below
+      F(5.5,'normal',0,0,0);Txt('Starter bars ('+( c1?.nb||4)+'-D'+(c1?.dB||16)+' dowels)',fcx+dOff+14,lapLblY+7);
       // Punching perimeter (red dashed)
       const pOff=Math.max(2,(f.d||150)/25/2);
       LC(180,0,0);LW(0.3);doc.setLineDashPattern([2,1.5],0);
@@ -10182,7 +10189,7 @@ async function startConstructionPDF() {
     drawGrid(bpX0,bpY0,planW,planH,cxA,cyA,nBX,nBY);
 
     // X-beams (horizontal)
-    const bThick=Math.max(2,(beams[0]?.b||230)/100/2);
+    const bThick=Math.max(1.2,Math.min(2,(beams[0]?.b||230)/150));  // thinner for clarity
     let bIdx=0;
     cyA.forEach((gy,j)=>{
       cxA.forEach((gx,i)=>{
@@ -10212,23 +10219,25 @@ async function startConstructionPDF() {
       const ct=colType(i,j);
       const cw3=(ct==='C1'?c1:ct==='C2'?c2:c3)?.size||300;
       const csd=cw3/100/2;
-      FC(100,100,160);LC(0,0,0);LW(0.5);Rect(gx-csd,gy-csd,csd*2,csd*2,'FD');
-      F(6,'bold',255,255,255);Txt(ct,gx,gy+2,{align:'center'});
+      FC(60,60,100);LC(0,0,0);LW(0.5);Rect(gx-csd,gy-csd,csd*2,csd*2,'FD');
+      // Column type label ABOVE the box, dark blue text, outside box
+      F(5.5,'bold',40,40,140);Txt(ct,gx,gy-csd-2,{align:'center'});
     });});
-    // Slab panel labels — in the CENTRE of each bay, boxed
+    // Slab panel labels — plain text in centre of each bay (no box border)
     cxA.forEach((gx,i)=>{if(i<cxA.length-1)cyA.forEach((gy,j)=>{
       if(j<cyA.length-1){
         const mx=(gx+cxA[i+1])/2, my=(gy+cyA[j+1])/2;
-        FC(240,245,255);LC(0,0,180);LW(0.2);Rect(mx-7,my-4,14,7,'FD');
-        F(6.5,'bold',0,0,150);Txt('S'+(j*nBX+i+1),mx,my+2,{align:'center'});
+        F(8,'bold',0,0,150);Txt('S'+(j*nBX+i+1),mx,my+3,{align:'center'});
       }
     });});
 
-    // Dims
-    S.spansX.slice(0,nBX).forEach((sp,i)=>DH(cxA[i],cxA[i+1],bpY0+planH+14,ftin(sp),false));
-    DH(bpX0,bpX0+planW,bpY0+planH+22,ftin(totX)+' TOTAL',false);
+    // X-direction dims ABOVE plan
+    S.spansX.slice(0,nBX).forEach((sp,i)=>DH(cxA[i],cxA[i+1],bpY0-14,ftin(sp),false));
+    // X-direction total BELOW plan
+    DH(bpX0,bpX0+planW,bpY0+planH+14,ftin(totX)+' TOTAL',false);
+    // Y-direction dims LEFT of plan
     S.spansY.slice(0,nBY).forEach((sp,j)=>DV(bpX0-22,cyA[j],cyA[j+1],ftin(sp),true));
-    DV(bpX0-30,bpY0,bpY0+planH,ftin(totY)+' TOTAL',true);
+    DV(bpX0-32,bpY0,bpY0+planH,ftin(totY)+' TOTAL',true);
 
     // Legend
     const lgY4=bpY0+planH+34;
@@ -10407,14 +10416,19 @@ async function startConstructionPDF() {
     const slH=18, beamW2=Math.max(8,(beams[0]?.b||230)/50);
     const midX3=DX+diagW/2;
 
+    // Left support wall (column stub)
+    const leftSuppW=8;
+    FC(160,162,180);LC(0,0,0);LW(0.4);Rect(DX,isy-6,leftSuppW,slH+6,'FD');
+    F(5.5,'bold',0,0,100);Txt('COL',DX+leftSuppW/2,isy-8,{align:'center'});
     // Left slab
-    FC(232,235,242);LC(0,0,0);LW(0.5);Rect(DX+4,isy,diagW/2-beamW2/2-4,slH,'FD');Hatch(DX+4,isy,diagW/2-beamW2/2-4,slH);
+    FC(232,235,242);LC(0,0,0);LW(0.5);Rect(DX+leftSuppW,isy,diagW/2-beamW2/2-leftSuppW,slH,'FD');Hatch(DX+leftSuppW,isy,diagW/2-beamW2/2-leftSuppW,slH);
     // Right slab
     Rect(midX3+beamW2/2,isy,diagW/2-beamW2/2-4,slH,'FD');Hatch(midX3+beamW2/2,isy,diagW/2-beamW2/2-4,slH);
     // Beam
     FC(195,198,215);LC(0,0,0);LW(0.5);Rect(midX3-beamW2/2,isy-8,beamW2,slH+8,'FD');
-    F(6.5,'bold',0,0,100);Txt('BEAM',midX3,isy-4.5,{align:'center'});
-    F(6,'normal',0,0,0);Txt(r0(beams[0]?.b||230)+'x'+r0(beams[0]?.D||350),midX3,isy-1,{align:'center'});
+    // Beam label clearly above the beam stub, not overlapping
+    F(6.5,'bold',0,0,100);Txt('BEAM',midX3,isy-12,{align:'center'});
+    F(6,'normal',0,0,0);Txt(r0(beams[0]?.b||230)+'x'+r0(beams[0]?.D||350),midX3,isy-7,{align:'center'});
 
     // Bottom bar (continuous)
     const barDia=10; // T10 main bar
@@ -10425,9 +10439,11 @@ async function startConstructionPDF() {
     // Top bar over support — correct extent = lx/5 or 0.3L
     const topEx=Math.min(sl.lx/5*1000/50,diagW/2-beamW2/2-2); // at 1:50
     LW(1.2);Line(midX3-beamW2/2-topEx,isy+2,midX3+beamW2/2+topEx,isy+2);
-    F(6.5,'bold',0,0,0);Txt('D8@'+sl.spx_n+' TOP',midX3,isy+1,{align:'center'});
+    // Top bar callout — above the slab, not overlapping bars
+    F(6.5,'bold',200,0,0);Txt('D8@'+sl.spx_n+' TOP',midX3,isy-2,{align:'center'});
     // Extent dim
-    DH(midX3-beamW2/2-topEx,midX3-beamW2/2,isy-7,'0.3L = '+r0(sl.lx*0.3*1000)+'mm',true);
+    // 0.3L dim from face of support outward
+    DH(midX3+beamW2/2,midX3+beamW2/2+topEx,isy-7,'0.3L = '+r0(sl.lx*0.3*1000)+'mm',false);
     // Slab thickness dim
     DV(DX+2,isy,isy+slH,r0(sl.slabD)+'mm',true);
     // L labels
@@ -10518,8 +10534,8 @@ async function startConstructionPDF() {
 
     // Title and notes
     F(8,'bold',0,0,100);Txt('SLAB REINFORCEMENT PLAN  -  TYPICAL FLOOR ('+ftin(sl.slabD/1000)+' THICK)',DR_X+DR_W/2,y,{align:'center'});
-    F(6.5,'italic',80,80,80);Txt('Note: Short-span bars (Y) shown horizontal. Long-span bars (X) shown vertical. Arrows indicate span direction.',DR_X+DR_W/2,y+6,{align:'center'});
-    F(6.5,'bold',180,0,0);Txt('TOP BARS shown as dashed lines at supports. BOTTOM BARS shown as solid lines.',DR_X+DR_W/2,y+12,{align:'center'});
+    F(6.5,'italic',80,80,80);Txt('Note: Short-span (Y10) bars shown as solid blue horizontal lines. Long-span (D8) shown as dashed orange vertical. Top bars shown as red dashed at supports.',DR_X+DR_W/2,y+6,{align:'center'});
+    F(6,'bold',0,0,140);Txt('Row A = TOP of plan. Row labels left & right. Column numbers top & bottom.',DR_X+DR_W/2,y+12,{align:'center'});
 
     // Floor plan outline
     FC(245,247,252);LC(0,0,0);LW(0.8);Rect(slPX,slPY,slPW,slPH,'FD');
@@ -10613,9 +10629,8 @@ async function startConstructionPDF() {
 
         // Bay grid reference label (bottom-right, small)
         F(6,'bold',0,60,120);Txt(String.fromCharCode(65+ri)+(ci+1),bxL+2,byT+6);
-        // Span labels (bottom-left, tiny)
-        F(4.5,'normal',100,100,100);Txt(ftin(lx),bxL+2,byB-4);
-        Txt('x'+ftin(ly),bxL+2,byB-1);
+        // Span label — very small, bottom-left of bay
+        F(5,'normal',120,120,120);Txt(ftin(lx)+'x'+ftin(ly),bxL+2,byB-2);
       }
     }
 
@@ -10627,20 +10642,22 @@ async function startConstructionPDF() {
       FC(80,80,120);LC(0,0,0);LW(0.3);Rect(gx2-cSzP/2,gy2-cSzP/2,cSzP,cSzP,'FD');
     }));
 
-    // Gridlines and column labels
-    LC(0,0,0);LW(0.3);
+    // Grid column numbers ABOVE and BELOW plan
     cxA.forEach((gx2,i)=>{
-      Line(gx2,slPY-8,gx2,slPY);
-      F(6.5,'bold',0,0,0);Txt(String(i+1),gx2,slPY-10,{align:'center'});
+      F(7,'bold',0,0,0);Txt(String(i+1),gx2,slPY-10,{align:'center'});  // above
+      Txt(String(i+1),gx2,slPY+slPH+10,{align:'center'});               // below
     });
+    // Grid row letters LEFT and RIGHT (A at top = j=0)
     cyA.forEach((gy2,j)=>{
-      Line(slPX-8,gy2,slPX,gy2);
-      F(6.5,'bold',0,0,0);Txt(String.fromCharCode(65+j),slPX-10,gy2+2,{align:'right'});
+      F(7,'bold',0,0,0);Txt(String.fromCharCode(65+j),slPX-12,gy2+2.5,{align:'right'}); // left
+      Txt(String.fromCharCode(65+j),slPX+slPW+12,gy2+2.5);                              // right
     });
 
-    // Dimension chains
+    // Dimension chains — X below plan, Y left of plan
     S.spansX.slice(0,nBX).forEach((sp,i)=>DH(cxA[i],cxA[i+1],slPY+slPH+14,ftin(sp),false));
     DH(slPX,slPX+slPW,slPY+slPH+22,ftin(totX)+' TOTAL',false);
+    S.spansY.slice(0,nBY).forEach((sp,j)=>DV(slPX-22,cyA[j],cyA[j+1],ftin(sp),true));
+    DV(slPX-32,slPY,slPY+slPH,ftin(totY)+' TOTAL',true);
     S.spansY.slice(0,nBY).forEach((sp,j)=>DV(slPX-22,cyA[j],cyA[j+1],ftin(sp),true));
     DV(slPX-30,slPY,slPY+slPH,ftin(totY)+' TOTAL',true);
 
@@ -10674,23 +10691,38 @@ async function startConstructionPDF() {
     F(8,'bold',0,0,100);Txt('CENTRE LINE PLAN  (SETTING OUT DRAWING)',DR_X+DR_W/2,y,{align:'center'});
     y+=16;
 
-    const clPX=DR_X+(DR_W-planW)/2, clPY=y+16;
-    const clPlanScale=mmPerM/1000; // same as plan scale (1mm on paper per mm real = 1:100 → mmPerM=10, /1000 = 0.01)
+    // Constrain plan so notes box fits inside drawing frame
+    const clMaxH=DR_H-90; // leave room for notes inside frame
+    const clScale2=Math.min(mmPerM,clMaxH/planH);
+    const clPlanW2=totX*clScale2, clPlanH2=totY*clScale2;
+    // Recompute column/row positions at constrained scale
+    const clCxA=S.spansX.reduce((a,sp,i)=>{a.push((i===0?DR_X+(DR_W-clPlanW2)/2:a[a.length-1])+sp*clScale2);return a;},[DR_X+(DR_W-clPlanW2)/2]);
+    const clCyA=S.spansY.reduce((a,sp,j)=>{a.push((j===0?DR_Y+y+10:a[a.length-1])+sp*clScale2);return a;},[DR_Y+y+10]);
+    const clPX=clCxA[0], clPY=clCyA[0];
+    const clPW=clPlanW2, clPH=clPlanH2;
+    const clPlanScale=clScale2/1000; // same as plan scale (1mm on paper per mm real = 1:100 → mmPerM=10, /1000 = 0.01)
 
     // Note below title, above plan
     F(6.5,'italic',80,80,80);Txt('This drawing is for setting out of columns and footings on site. All dimensions are in mm unless noted.',DR_X+DR_W/2,y-8,{align:'center'});
 
     // Plot boundary (dashed, clear outside plan)
     LC(100,100,100);LW(0.4);doc.setLineDashPattern([6,3],0);
-    Rect(clPX-20,clPY-20,planW+40,planH+40,'D');
+    Rect(clPX-20,clPY-20,clPW+40,clPH+40,'D');
     doc.setLineDashPattern([],0);
-    F(6,'normal',80,80,80);Txt('PLOT BOUNDARY',clPX-18,clPY-12);
+    F(6,'normal',80,80,80);Txt('PLOT BOUNDARY',clPX-18,clPY-28);
 
     // Centre lines — dash-dot through entire plan and beyond
     LC(0,100,180);LW(0.3);doc.setLineDashPattern([8,3,2,3],0);
     cxA.forEach(gx2=>Line(gx2,clPY-16,gx2,clPY+planH+16));
     cyA.forEach(gy2=>Line(clPX-16,gy2,clPX+planW+16,gy2));
     doc.setLineDashPattern([],0);
+
+    // Diagonal check line (grey, to illustrate the measurement)
+    LC(160,160,160);LW(0.3);doc.setLineDashPattern([3,3],0);
+    Line(clPX,clPY,clPX+clPlanW2,clPY+clPlanH2);
+    Line(clPX+clPlanW2,clPY,clPX,clPY+clPlanH2);
+    doc.setLineDashPattern([],0);
+    F(5.5,'italic',120,120,120);Txt('diag='+r0(Math.sqrt(totX*totX+totY*totY)*1000)+'mm',clPX+clPlanW2/2+4,clPY+clPlanH2/2);
 
     // Column squares (outline only, no fill — keep centre lines visible)
     cxA.forEach((gx2,i)=>cyA.forEach((gy2,j)=>{
@@ -10703,29 +10735,29 @@ async function startConstructionPDF() {
       Line(gx2,gy2-cSzP2*0.7,gx2,gy2+cSzP2*0.7);
     }));
 
-    // Grid column numbers ABOVE plan (outside plot boundary)
-    cxA.forEach((gx2,i)=>{
-      F(7,'bold',0,0,0);Txt(String(i+1),gx2,clPY-24,{align:'center'});
-      Txt(String(i+1),gx2,clPY+planH+28,{align:'center'});
+    // Grid column numbers ABOVE and BELOW plan
+    clCxA.forEach((gx2,i)=>{
+      F(7,'bold',0,0,0);Txt(String(i+1),gx2,clPY-28,{align:'center'});
+      Txt(String(i+1),gx2,clPY+clPH+14,{align:'center'});
     });
     // Grid row letters LEFT and RIGHT of plan
-    cyA.forEach((gy2,j)=>{
-      F(7,'bold',0,0,0);Txt(String.fromCharCode(65+j),clPX-28,gy2+2.5,{align:'right'});
-      Txt(String.fromCharCode(65+j),clPX+planW+28,gy2+2.5);
+    clCyA.forEach((gy2,j)=>{
+      F(7,'bold',0,0,0);Txt(String.fromCharCode(65+j),clPX-32,gy2+2.5,{align:'right'});
+      Txt(String.fromCharCode(65+j),clPX+clPW+32,gy2+2.5);
     });
 
-    // Dimension chains — individual span
+    // Dimension chains
     S.spansX.slice(0,nBX).forEach((sp,i)=>{
-      DH(cxA[i],cxA[i+1],clPY+planH+18,r0(sp*1000)+'mm',false);
+      DH(clCxA[i],clCxA[i+1],clPY+clPH+18,r0(sp*1000)+'mm',false);
     });
-    DH(clPX,clPX+planW,clPY+planH+26,r0(totX*1000)+'mm (TOTAL)',false);
+    DH(clPX,clPX+clPW,clPY+clPH+26,r0(totX*1000)+'mm (TOTAL)',false);
     S.spansY.slice(0,nBY).forEach((sp,j)=>{
-      DV(clPX-26,cyA[j],cyA[j+1],r0(sp*1000)+'mm',true);
+      DV(clPX-26,clCyA[j],clCyA[j+1],r0(sp*1000)+'mm',true);
     });
-    DV(clPX-34,clPY,clPY+planH,r0(totY*1000)+'mm (TOTAL)',true);
+    DV(clPX-36,clPY,clPY+clPH,r0(totY*1000)+'mm (TOTAL)',true);
 
-    // Setting-out notes box
-    const soY=clPY+planH+38;
+    // Setting-out notes box — INSIDE drawing frame
+    const soY=clPY+clPH+38;
     LC(0,0,100);LW(0.4);FC(240,244,255);Rect(DR_X,soY,DR_W,32,'FD');
     F(7,'bold',0,0,100);Txt('SETTING OUT NOTES:',DR_X+3,soY+6);
     F(6.5,'normal',0,0,0);
@@ -10748,7 +10780,7 @@ async function startConstructionPDF() {
     doc.addPage();drawPage('ST/EX01/R0','EXCAVATION & FOOTING LAYOUT PLAN','1:100');
     y=DR_Y+14;
 
-    F(8,'bold',0,0,100);Txt('EXCAVATION PLAN  +  FOOTING LAYOUT',DR_X+DR_W/2,y,{align:'center'});
+    F(8,'bold',0,0,100);Txt('EXCAVATION & FOOTING LAYOUT PLAN',DR_X+DR_W/2,y,{align:'center'});
     F(6.5,'italic',80,80,80);Txt('Excavation dimensions include 300mm working space all around footing. All dimensions in mm unless noted.',DR_X+DR_W/2,y+7,{align:'center'});
     y+=16;
 
@@ -10767,7 +10799,7 @@ async function startConstructionPDF() {
     cxA.forEach((gx2,i)=>cyA.forEach((gy2,j)=>{
       const ftg2 = getFtgAt(j,i); // row=j, col=i
       const fSz=Math.max(5,(ftg2.Bf||1)*mmPerM);
-      const excSz=fSz+8; // 400mm working space at scale
+      const excSz=fSz+4; // 200mm working space at scale (reduced to prevent overlap)
 
       // Excavation pit (light soil colour, dashed)
       LC(120,80,30);LW(0.3);doc.setLineDashPattern([4,2],0);
@@ -10785,17 +10817,19 @@ async function startConstructionPDF() {
       const cSzP2=Math.max(2,cSz2*mmPerM/1000);
       FC(80,80,130);LC(0,0,0);LW(0.4);Rect(gx2-cSzP2/2,gy2-cSzP2/2,cSzP2,cSzP2,'FD');
 
-      // Grid reference label above
-      F(5.5,'bold',0,0,100);Txt(String(i+1)+String.fromCharCode(65+j),gx2,gy2-fSz/2-2,{align:'center'});
-      // Size label below
-      F(5,'normal',0,0,0);Txt(ftin(ftg2.Bf||1)+'x'+ftin(ftg2.Bf||1),gx2,gy2+fSz/2+4,{align:'center'});
+      // Grid reference — Row letter + Col number (e.g. A1, B2) — matches other sheets
+      F(6,'bold',0,0,100);Txt(String.fromCharCode(65+j)+String(i+1),gx2,gy2-fSz/2-4,{align:'center'});
+      // Size label below footing — short format to avoid truncation
+      F(5.5,'normal',0,0,0);Txt(r0((ftg2.Bf||1)*1000)+'x'+r0((ftg2.Bf||1)*1000),gx2,gy2+fSz/2+5,{align:'center'});
       // Depth inside
       F(5,'italic',80,0,0);Txt('D='+r0(ftg2.D||300),gx2,gy2+1.5,{align:'center'});
     }));
 
-    // Dims
-    S.spansX.slice(0,nBX).forEach((sp,i)=>DH(cxA[i],cxA[i+1],exPY+planH+18,ftin(sp),false));
-    DH(exPX,exPX+planW,exPY+planH+26,ftin(totX)+' TOTAL',false);
+    // Dims — X below plan, Y left of plan
+    S.spansX.slice(0,nBX).forEach((sp,i)=>DH(cxA[i],cxA[i+1],exPY+planH+14,ftin(sp),false));
+    DH(exPX,exPX+planW,exPY+planH+22,ftin(totX)+' TOTAL',false);
+    S.spansY.slice(0,nBY).forEach((sp,j)=>DV(exPX-22,cyA[j],cyA[j+1],ftin(sp),true));
+    DV(exPX-32,exPY,exPY+planH,ftin(totY)+' TOTAL',true);
     S.spansY.slice(0,nBY).forEach((sp,j)=>DV(exPX-26,cyA[j],cyA[j+1],ftin(sp),true));
     DV(exPX-34,exPY,exPY+planH,ftin(totY)+' TOTAL',true);
 
