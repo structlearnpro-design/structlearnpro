@@ -516,6 +516,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
     </div>
   </div>
   <div class="tact">
+    <span id="save-indicator" style="font-size:10px;color:#34d399;font-family:monospace">☁ Ready</span>
     <span id="t-name" style="font-size:11px;color:#8891b0"></span>
     <span id="t-plan" class="chip free">FREE</span>
     <button class="tbtn up" id="t-up" onclick="showUp()">⚡ Upgrade</button>
@@ -1133,10 +1134,12 @@ function tellIframe(){
 
 // ── PROJECTS ─────────────────────────────────────────────────
 async function loadProjects(){
-  if(!U)return;
+  if(!P)return;
   document.getElementById('pgrid').innerHTML='<div style="color:#8891b0;font-size:13px;padding:20px;grid-column:1/-1">Loading...</div>';
-  const {data:ps}=await db.from('projects').select('*').eq('user_id',U.id).order('updated_at',{ascending:false});
-  projects=ps||[];
+  const resp = await fetch(SUPA_URL+'/rest/v1/projects?profile_id=eq.'+P.id+'&deleted_at=is.null&order=updated_at.desc&select=*',{
+    headers:{'Authorization':'Bearer '+SUPA_KEY,'apikey':SUPA_KEY}
+  });
+  projects = resp.ok ? (await resp.json()) : [];
   updLbar();renderP(projects);
   updDashStats();
   renderJourneyModules();
@@ -1153,21 +1156,48 @@ function updLbar(){
 }
 function renderP(ps){
   const g=document.getElementById('pgrid');
-  if(!ps.length){g.innerHTML='<div class="empty"><div style="font-size:40px;margin-bottom:10px">📐</div><div style="font-size:15px;font-weight:700;color:#4a5270;margin-bottom:6px">No projects yet</div><div style="font-size:13px">Click "+ New Project" to start</div></div>';return;}
+  if(!ps||!ps.length){
+    g.innerHTML='<div class="empty"><div style="font-size:40px;margin-bottom:10px">📐</div><div style="font-size:15px;font-weight:700;color:#4a5270;margin-bottom:6px">No projects yet</div><div style="font-size:13px">Click "+ New Project" to start your first design</div></div>';
+    return;
+  }
   g.innerHTML=ps.map(p=>{
-    const dt=new Date(p.updated_at).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'});
-    const sc=p.status==='pass'?'st-pass':p.status==='fail'?'st-fail':'st-draft';
-    const sl=p.status==='pass'?'✓ All Pass':p.status==='fail'?'⚠ Has Failures':'Draft';
-    return`<div class="pcard">
-      <div class="pcard-name">${p.name}</div>
-      <div class="pcard-meta">${p.floors?p.floors+' floors':'—'} · ${p.spans_x&&p.spans_y?p.spans_x+'×'+p.spans_y+' grid':'—'}<br>Last edited: ${dt}</div>
-      <div class="pcard-status ${sc}">${sl}</div>
-      <div class="pcard-acts">
+    const dt = timeAgo(p.updated_at);
+    const safeOk = p.all_checks_pass;
+    const hasResults = p.safety_score !== null && p.safety_score !== undefined;
+    const safetyColor = safeOk ? '#34d399' : hasResults ? '#f87171' : '#64748b';
+    const safetyText  = safeOk ? '✅ All checks pass'
+                      : hasResults ? '⚠️ '+Math.round(p.safety_score)+'% safety'
+                      : '📝 Not analysed yet';
+    const thumb = p.thumbnail_svg
+      ? `<div style="border-radius:8px;overflow:hidden;margin-bottom:10px;background:#0a0f1e;height:70px;display:flex;align-items:center;justify-content:center">${p.thumbnail_svg}</div>`
+      : `<div style="border-radius:8px;margin-bottom:10px;background:#0a0f1e;height:70px;display:flex;align-items:center;justify-content:center;color:#334155;font-size:28px">🏗</div>`;
+    const meta = [
+      p.floors ? 'G+'+(p.floors-1) : null,
+      p.grid_x && p.grid_y ? p.grid_x+'×'+p.grid_y+' grid' : null,
+      p.location || null
+    ].filter(Boolean).join(' · ') || 'New project';
+    return `<div class="pcard" onclick="openP('${p.id}')" style="cursor:pointer">
+      ${thumb}
+      <div class="pcard-name" style="font-size:13px;font-weight:700;margin-bottom:4px">${p.name||'Untitled'}</div>
+      <div class="pcard-meta" style="font-size:11px;margin-bottom:6px">${meta}</div>
+      <div style="font-size:11px;color:${safetyColor};margin-bottom:8px;font-weight:600">${safetyText}</div>
+      <div style="font-size:10px;color:var(--txt3);margin-bottom:10px">Edited ${dt}</div>
+      <div class="pcard-acts" onclick="event.stopPropagation()">
         <button class="cbtn op" onclick="openP('${p.id}')">Open</button>
-        <button class="cbtn dl" onclick="delP('${p.id}',event)">Delete</button>
+        <button class="cbtn dl" onclick="delP('${p.id}',event)">🗑 Delete</button>
       </div>
     </div>`;
   }).join('');
+}
+
+function timeAgo(ts){
+  if(!ts) return '—';
+  const secs = Math.floor((Date.now()-new Date(ts))/1000);
+  if(secs<60) return 'just now';
+  if(secs<3600) return Math.floor(secs/60)+'m ago';
+  if(secs<86400) return Math.floor(secs/3600)+'h ago';
+  if(secs<604800) return Math.floor(secs/86400)+'d ago';
+  return new Date(ts).toLocaleDateString('en-IN',{day:'numeric',month:'short'});
 }
 function updDashStats(){
   // Update greeting
@@ -1197,11 +1227,9 @@ function updDashStats(){
       if(el_l) el_l.textContent = lessonCount;
     }catch(e){}
   }
-  // Certs from Supabase
-  db.from('certificates').select('id').eq('user_id',U.id).then(({data})=>{
-    const el_c = document.getElementById('stat-certs');
-    if(el_c) el_c.textContent = (data||[]).length;
-  });
+  // Certs — from profiles badges (future)
+  const el_c = document.getElementById('stat-certs');
+  if(el_c) el_c.textContent = '0';
 }
 
 function renderJourneyModules(){
@@ -1255,25 +1283,126 @@ function filterP(){
 }
 async function newProject(){
   if(plan==='free'&&projects.length>=FREE_LIM){showUp();return;}
-  const nm='Project '+(projects.length+1);
-  const {data:p}=await db.from('projects').insert({user_id:U.id,name:nm,data:{},status:'draft'}).select().single();
-  if(p){projects.unshift(p);openP(p.id);}
+  const nm = prompt('Project name:','Project '+(projects.length+1));
+  if(!nm) return;
+  const resp = await fetch(SUPA_URL+'/rest/v1/projects',{
+    method:'POST',
+    headers:{'Authorization':'Bearer '+SUPA_KEY,'apikey':SUPA_KEY,'Content-Type':'application/json','Prefer':'return=representation'},
+    body:JSON.stringify({profile_id:P.id, name:nm, analysis_count:0, time_spent_sec:0})
+  });
+  if(resp.ok){
+    const data = await resp.json();
+    const p = Array.isArray(data)?data[0]:data;
+    if(p){projects.unshift(p); renderP(projects); openP(p.id);}
+  } else {
+    toast('Failed to create project. Please try again.');
+  }
 }
 async function openP(id){
-  const p=projects.find(x=>x.id===id);
-  if(!p)return;
-  pending.projId=id;
+  // Load full project data from Supabase
+  const resp = await fetch(SUPA_URL+'/rest/v1/projects?id=eq.'+id+'&select=*',{
+    headers:{'Authorization':'Bearer '+SUPA_KEY,'apikey':SUPA_KEY}
+  });
+  const data = resp.ok ? await resp.json() : [];
+  const p = data[0] || projects.find(x=>x.id===id);
+  if(!p) return;
+  pending.projId = id;
+  // Start auto-save for this project
+  startAutoSave(id);
   goTo('app');
-  setTimeout(()=>{try{document.getElementById('app-iframe').contentWindow.postMessage({type:'LOAD_PROJECT',project:p},'*');}catch(e){}},700);
+  setTimeout(()=>{
+    try{
+      document.getElementById('app-iframe').contentWindow
+        .postMessage({type:'LOAD_PROJECT', project:p},'*');
+    }catch(e){}
+  },700);
 }
 async function delP(id,e){
   e.stopPropagation();
-  if(!confirm('Delete this project? Cannot be undone.'))return;
-  await db.from('projects').delete().eq('id',id);
-  projects=projects.filter(p=>p.id!==id);
-  updLbar();renderP(projects);
+  if(!confirm('Delete this project? This cannot be undone.'))return;
+  await fetch(SUPA_URL+'/rest/v1/projects?id=eq.'+id+'&profile_id=eq.'+P.id,{
+    method:'PATCH',
+    headers:{'Authorization':'Bearer '+SUPA_KEY,'apikey':SUPA_KEY,'Content-Type':'application/json'},
+    body:JSON.stringify({deleted_at:new Date().toISOString()})
+  });
+  projects = projects.filter(p=>p.id!==id);
+  updLbar(); renderP(projects); updDashStats();
   toast('Project deleted');
 }
+
+// ── AUTO-SAVE ─────────────────────────────────────────────────
+let _autoSaveTimer = null;
+let _autoSaveProjId = null;
+let _sessionStartTime = Date.now();
+
+function startAutoSave(projectId){
+  _autoSaveProjId = projectId;
+  clearInterval(_autoSaveTimer);
+  _autoSaveTimer = setInterval(()=>{ autoSave(); }, 30000);
+}
+
+function stopAutoSave(){
+  clearInterval(_autoSaveTimer);
+  _autoSaveTimer = null;
+}
+
+async function autoSave(){
+  if(!_autoSaveProjId || !P) return;
+  // Request current state from iframe
+  try{
+    document.getElementById('app-iframe')?.contentWindow
+      ?.postMessage({type:'REQUEST_SAVE', projectId:_autoSaveProjId},'*');
+  }catch(e){}
+}
+
+async function saveProjectData(projectId, saveData){
+  if(!projectId || !P) return;
+  const payload = {
+    updated_at:      new Date().toISOString(),
+    name:            saveData.name || 'Untitled',
+    client:          saveData.client || null,
+    location:        saveData.location || null,
+    floors:          saveData.numFloors || null,
+    fck:             saveData.fck || null,
+    fy:              saveData.fy || null,
+    grid_x:          saveData.spansX ? saveData.spansX.length : null,
+    grid_y:          saveData.spansY ? saveData.spansY.length : null,
+    state_json:      saveData.S || null,
+    grid_json:       saveData.grid || null,
+    results_json:    saveData.RES || null,
+    thumbnail_svg:   saveData.thumbnail || null,
+    safety_score:    saveData.safetyScore || null,
+    all_checks_pass: saveData.allPass || false,
+    analysis_count:  saveData.analysisCount || 0,
+    time_spent_sec:  Math.round((Date.now()-_sessionStartTime)/1000),
+  };
+  await fetch(SUPA_URL+'/rest/v1/projects?id=eq.'+projectId+'&profile_id=eq.'+P.id,{
+    method:'PATCH',
+    headers:{'Authorization':'Bearer '+SUPA_KEY,'apikey':SUPA_KEY,'Content-Type':'application/json'},
+    body:JSON.stringify(payload)
+  });
+  updateSaveIndicator('just now');
+  // Refresh project in local list
+  const idx = projects.findIndex(p=>p.id===projectId);
+  if(idx>=0) projects[idx] = {...projects[idx], ...payload};
+}
+
+function updateSaveIndicator(when){
+  const el = document.getElementById('save-indicator');
+  if(el) el.textContent = '☁ Saved '+when;
+}
+
+// Listen for save data from iframe
+window.addEventListener('message', function(ev){
+  if(ev.data?.type==='SAVE_DATA' && ev.data?.projectId){
+    saveProjectData(ev.data.projectId, ev.data);
+    return;
+  }
+  if(ev.data?.type==='ANALYSIS_COMPLETE'){
+    autoSave();
+    return;
+  }
+});
 
 // ── ACCOUNT ──────────────────────────────────────────────────
 function renderAcc(){
@@ -1562,12 +1691,12 @@ window.addEventListener('message',async(e)=>{
     if(!U)return;
     const pid=pending.projId;
     if(pid){
-      await db.from('projects').update({name,data,floors,spans_x:spansX?.length,spans_y:spansY?.length,status,updated_at:new Date().toISOString()}).eq('id',pid);
+      await fetch(SUPA_URL+'/rest/v1/projects?id=eq.'+pid+'&profile_id=eq.'+P.id,{method:'PATCH',headers:{'Authorization':'Bearer '+SUPA_KEY,'apikey':SUPA_KEY,'Content-Type':'application/json'},body:JSON.stringify({name,state_json:data,floors,grid_x:spansX?.length,grid_y:spansY?.length,updated_at:new Date().toISOString()})});
       const i=projects.findIndex(p=>p.id===pid);
       if(i>=0)projects[i]={...projects[i],name,floors,spans_x:spansX?.length,spans_y:spansY?.length,status};
     } else {
       if(plan==='free'&&projects.length>=FREE_LIM)return;
-      const {data:np}=await db.from('projects').insert({user_id:U.id,name,data,floors,spans_x:spansX?.length,spans_y:spansY?.length,status}).select().single();
+      const _ir=await fetch(SUPA_URL+'/rest/v1/projects',{method:'POST',headers:{'Authorization':'Bearer '+SUPA_KEY,'apikey':SUPA_KEY,'Content-Type':'application/json','Prefer':'return=representation'},body:JSON.stringify({profile_id:P.id,name,state_json:data,floors,grid_x:spansX?.length,grid_y:spansY?.length})});const _id=await _ir.json();const np=Array.isArray(_id)?_id[0]:_id;
       if(np){projects.unshift(np);pending.projId=np.id;e.source.postMessage({type:'PROJECT_ID',id:np.id},'*');}
     }
     toast('Project saved ✓');
@@ -1597,7 +1726,7 @@ function toast(msg,err=false){const t=document.getElementById('toast');t.textCon
   const {data:{session}}=await db.auth.getSession();
   if(session&&session.user){
     U=session.user;
-    const {data:prof}=await db.from('profiles').select('*').eq('user_id',U.id).single();
+    const {data:prof}=await db.from('profiles').select('*').eq('id',P?.id||'none').single();
     P=prof;plan=P?.plan||'free';
     updTop();goTo('projects');
   } else {showScreen('auth-screen');}
