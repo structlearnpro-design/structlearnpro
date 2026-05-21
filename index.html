@@ -1499,8 +1499,7 @@ function injectSaveToParent(fr){
     fr.contentWindow.saveToParent = async function(status){
       try{
         const iw = fr.contentWindow;
-        console.log('[saveToParent] called, status:', status, 'S:', !!iw.S, 'RES:', !!iw.RES, 'pid:', pid);
-        if(!iw.S) { console.warn('[saveToParent] S not found'); return; }
+        if(!iw.S) return;
         const payload = {
           name:            iw.S.name || 'Untitled',
           client:          iw.S.client || null,
@@ -1627,22 +1626,43 @@ function calcSafetyScore(RES){
     const cols  = RES.allCols  || RES.cols  || [];
     const ftgs  = RES.allFtgs  || RES.ftgs  || [];
     let pass=0, total=0;
-    beams.forEach(b=>{ total+=2; if(b.shearSafe!==false)pass++; if(b.deflOK!==false)pass++; });
-    cols.forEach(c=>{  total++; if(c.safe!==false)pass++; });
-    ftgs.forEach(f=>{  total+=2; if(f.punch_ok!==false)pass++; if(f.ow_ok!==false)pass++; });
+    // Beams: shear + deflection
+    beams.forEach(b=>{
+      total+=2;
+      if(b.shearSafe!==false) pass++;
+      if(b.deflOK!==false)    pass++;
+    });
+    // Columns: overall safe flag
+    cols.forEach(c=>{
+      total++;
+      if(c.safe!==false) pass++;
+    });
+    // Footings: punching + one-way shear + dev length + transfer
+    ftgs.forEach(f=>{
+      total+=4;
+      if(f.punch_ok!==false) pass++;
+      if(f.ow_ok!==false)    pass++;
+      if(f.Ld_ok!==false)    pass++;
+      if(f.tr_ok!==false)    pass++;
+    });
     return total>0 ? Math.round((pass/total)*100) : 0;
   }catch(e){ return 0; }
 }
 
 function calcAllPass(RES){
   try{
+    if(!RES) return false;
     const beams = RES.allBeams || RES.beams || [];
     const cols  = RES.allCols  || RES.cols  || [];
     const ftgs  = RES.allFtgs  || RES.ftgs  || [];
+    if(!beams.length && !cols.length && !ftgs.length) return false;
     const beamOk = beams.every(b=>b.shearSafe!==false && b.deflOK!==false);
     const colOk  = cols.every(c=>c.safe!==false);
-    const ftgOk  = ftgs.every(f=>f.punch_ok!==false && f.ow_ok!==false);
-    return beamOk && colOk && ftgOk;
+    const ftgOk  = ftgs.every(f=>
+      f.punch_ok!==false && f.ow_ok!==false &&
+      f.Ld_ok!==false    && f.tr_ok!==false
+    );
+    return !!(beamOk && colOk && ftgOk);
   }catch(e){ return false; }
 }
 
@@ -1654,7 +1674,7 @@ async function handleSaveProject(data){
   const GRID = data.GRID;
   if(!S) { console.warn('[handleSaveProject] no S data'); return; }
 
-  console.log('[handleSaveProject] saving pid:', pid, 'RES:', !!RES);
+
 
   const payload = {
     name:            S.name || 'Untitled',
