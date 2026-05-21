@@ -643,29 +643,75 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
 </div>
 
 <!-- ACCOUNT -->
-<div id="acc-screen" class="screen" style="flex-direction:column">
-  <div class="acc-body">
-    <div style="font-size:18px;font-weight:800;margin-bottom:16px">My Account</div>
-    <div class="acc-card">
-      <div class="acc-ct">Profile</div>
-      <div class="acc-row"><span class="acc-lbl">Full Name</span><span class="acc-val" id="a-name">—</span></div>
-      <div class="acc-row"><span class="acc-lbl">Mobile</span><span class="acc-val" id="a-mob">—</span></div>
-      <div class="acc-row"><span class="acc-lbl">Email</span><span class="acc-val" id="a-email">—</span></div>
-      <div class="acc-row"><span class="acc-lbl">I am a</span><span class="acc-val" id="a-pur">—</span></div>
+<div id="acc-screen" class="screen" style="flex-direction:column;overflow-y:auto">
+  <div class="acc-body" style="max-width:600px;width:100%;margin:0 auto;padding:24px 16px">
+
+    <!-- Header -->
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:24px">
+      <div id="acc-avatar" style="width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#1d4ed8,#3b82f6);display:flex;align-items:center;justify-content:center;color:#fff;font-size:22px;font-weight:800;flex-shrink:0">?</div>
+      <div>
+        <div id="acc-name" style="font-size:18px;font-weight:800;color:var(--txt)">—</div>
+        <div id="acc-role-lbl" style="font-size:12px;color:var(--txt3);margin-top:2px">—</div>
+        <div id="acc-mob-lbl" style="font-size:12px;color:var(--txt3)">—</div>
+      </div>
     </div>
+
+    <!-- UNIQUE ID — most prominent -->
+    <div style="background:var(--bg1);border:2px solid #1d4ed8;border-radius:14px;padding:20px;margin-bottom:16px;position:relative;overflow:hidden">
+      <div style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#1d4ed8,#60a5fa)"></div>
+      <div style="font-size:10px;color:var(--txt3);font-weight:700;letter-spacing:1px;margin-bottom:8px">YOUR UNIQUE ID</div>
+      <div id="acc-uid" style="font-size:20px;font-weight:900;color:#60a5fa;letter-spacing:2px;margin-bottom:12px;word-break:break-all">—</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button onclick="copyAccUID()" style="padding:7px 14px;background:#1e3a8a;border:1px solid #3b82f6;border-radius:7px;color:#60a5fa;font-size:11px;cursor:pointer;font-family:inherit">📋 Copy ID</button>
+        <button onclick="saveAccUIDImage()" style="padding:7px 14px;background:#1e3a8a;border:1px solid #3b82f6;border-radius:7px;color:#60a5fa;font-size:11px;cursor:pointer;font-family:inherit">🖼 Save as Image</button>
+      </div>
+    </div>
+
+    <!-- Academic / Professional Info -->
+    <div class="acc-card" id="acc-info-card">
+      <div class="acc-ct" id="acc-info-title">Academic Info</div>
+      <div id="acc-info-rows">—</div>
+    </div>
+
+    <!-- Join Batch (students) -->
+    <div class="acc-card" id="acc-batch-card" style="display:none">
+      <div class="acc-ct">Join a Batch</div>
+      <div style="font-size:12px;color:var(--txt3);margin-bottom:10px">Enter your lecturer's batch code to appear in their admin panel</div>
+      <div style="display:flex;gap:8px">
+        <input type="text" id="acc-batch-input" placeholder="e.g. MSIT-CIVIL-2026-B" style="flex:1;padding:9px 12px;background:var(--bg2);border:1px solid var(--b1);border-radius:8px;color:var(--txt);font-size:12px;outline:none;font-family:inherit">
+        <button onclick="joinBatchAcc()" style="padding:9px 16px;background:#1d4ed8;border:none;border-radius:8px;color:#fff;font-size:12px;cursor:pointer;font-family:inherit">Join</button>
+      </div>
+      <div id="acc-batch-msg" style="margin-top:6px;font-size:11px;color:var(--txt3)"></div>
+    </div>
+
+    <!-- Optional email -->
+    <div class="acc-card">
+      <div class="acc-ct">Email (Optional)</div>
+      <div style="font-size:12px;color:var(--txt3);margin-bottom:10px">For receiving PDF reports and notifications</div>
+      <div style="display:flex;gap:8px">
+        <input type="email" id="acc-email-input" placeholder="your@email.com" style="flex:1;padding:9px 12px;background:var(--bg2);border:1px solid var(--b1);border-radius:8px;color:var(--txt);font-size:12px;outline:none;font-family:inherit">
+        <button onclick="saveAccEmail()" style="padding:9px 16px;background:#1e3a8a;border:1px solid #3b82f6;border-radius:8px;color:#60a5fa;font-size:12px;cursor:pointer;font-family:inherit">Save</button>
+      </div>
+      <div id="acc-email-msg" style="margin-top:6px;font-size:11px;color:var(--txt3)"></div>
+    </div>
+
+    <!-- Subscription -->
     <div class="acc-card">
       <div class="acc-ct">Subscription</div>
       <div class="acc-row"><span class="acc-lbl">Plan</span><span class="acc-val" id="a-plan">Free</span></div>
       <div class="acc-row" id="a-expiry-row" style="display:none"><span class="acc-lbl">Valid Until</span><span class="acc-val" id="a-expiry-val">—</span></div>
-      <div class="acc-row"><span class="acc-lbl">Projects</span><span class="acc-val" id="a-proj">0 used</span></div>
+      <div class="acc-row"><span class="acc-lbl">Projects</span><span class="acc-val" id="a-proj">—</span></div>
       <div style="margin-top:14px">
         <button class="np-btn" id="a-up-btn" onclick="showUp()">⚡ Upgrade to Pro — ₹299/month</button>
       </div>
     </div>
+
+    <!-- Sign out -->
     <div class="acc-card">
-      <div class="acc-ct">Danger Zone</div>
-      <button class="dbtn" onclick="doLogout()">Sign Out</button>
+      <div class="acc-ct">Account</div>
+      <button class="dbtn" onclick="doLogout()">🚪 Sign Out</button>
     </div>
+
   </div>
 </div>
 
@@ -1231,16 +1277,52 @@ async function delP(id,e){
 
 // ── ACCOUNT ──────────────────────────────────────────────────
 function renderAcc(){
-  if(!P)return;
-  const pmap={student:'Student',professional:'Working Professional',professor:'Professor / Educator',business:'Business / Firm'};
-  document.getElementById('a-name').textContent=P.full_name||'—';
-  document.getElementById('a-mob').textContent=P.mobile?'+91 '+P.mobile:'—';
-  document.getElementById('a-email').textContent=P.email||'—';
-  document.getElementById('a-pur').textContent=pmap[P.purpose]||'—';
-  document.getElementById('a-plan').textContent=plan==='free'?'Free':'Pro ✓';
-  // Show expiry date
-  const expiryRow = document.getElementById('a-expiry-row');
-  const expiryVal = document.getElementById('a-expiry-val');
+  if(!P) return;
+
+  // Avatar + name
+  const initials = (P.full_name||'?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+  const el = id => document.getElementById(id);
+  if(el('acc-avatar')) el('acc-avatar').textContent = initials;
+  if(el('acc-name'))   el('acc-name').textContent   = P.full_name || '—';
+
+  // Role label
+  const roleLabels = {student:'Student',lecturer:'Lecturer / Professor',engineer:'Structural Engineer',admin:'Administrator'};
+  if(el('acc-role-lbl')) el('acc-role-lbl').textContent = roleLabels[P.role] || P.role || '—';
+  if(el('acc-mob-lbl'))  el('acc-mob-lbl').textContent  = '📱 ' + (P.mobile || '—');
+
+  // Unique ID
+  if(el('acc-uid')) el('acc-uid').textContent = P.unique_id || '—';
+
+  // Academic / professional info rows
+  const infoRows = {
+    student:  [['College', P.college], ['Course', P.course], ['Year', P.year_of_study ? 'Year '+P.year_of_study : null], ['Batch', P.batch], ['City', P.city], ['State', P.state]],
+    lecturer: [['Institution', P.college], ['Department', P.department], ['Designation', P.designation], ['City', P.city], ['State', P.state]],
+    engineer: [['Firm', P.firm_name], ['Role', P.role_title], ['Experience', P.experience], ['City', P.city], ['State', P.state]],
+    admin:    [['City', P.city], ['State', P.state]],
+  }[P.role] || [];
+
+  const infoTitles = {student:'Academic Info', lecturer:'Professional Info', engineer:'Professional Info', admin:'Admin Info'};
+  if(el('acc-info-title')) el('acc-info-title').textContent = infoTitles[P.role] || 'Info';
+
+  const rowsHTML = infoRows.filter(([,v])=>v).map(([l,v])=>
+    `<div class="acc-row"><span class="acc-lbl">${l}</span><span class="acc-val">${v}</span></div>`
+  ).join('');
+  if(el('acc-info-rows')) el('acc-info-rows').innerHTML = rowsHTML || '<div style="color:var(--txt3);font-size:12px">No details saved yet</div>';
+
+  // Show batch card for students
+  if(el('acc-batch-card')) el('acc-batch-card').style.display = P.role==='student' ? '' : 'none';
+
+  // Pre-fill email
+  if(el('acc-email-input')) el('acc-email-input').value = P.email || '';
+
+  // Subscription
+  if(el('a-plan')) el('a-plan').textContent = plan==='free' ? 'Free' : 'Pro ✓';
+  if(el('a-proj')) el('a-proj').textContent = projects.length + ' project' + (projects.length!==1?'s':'');
+  if(el('a-up-btn')) el('a-up-btn').style.display = plan==='free' ? '' : 'none';
+
+  // Expiry
+  const expiryRow = el('a-expiry-row');
+  const expiryVal = el('a-expiry-val');
   if(P?.plan_expires_at && plan==='pro'){
     const expDate = new Date(P.plan_expires_at);
     const daysLeft = Math.ceil((expDate-new Date())/(1000*60*60*24));
@@ -1252,8 +1334,73 @@ function renderAcc(){
   } else {
     if(expiryRow) expiryRow.style.display='none';
   }
-  document.getElementById('a-proj').textContent=projects.length+(plan==='free'?' / 3 used':' projects');
-  document.getElementById('a-up-btn').style.display=plan==='free'?'':'none';
+}
+
+// Copy unique ID from account page
+function copyAccUID(){
+  const uid = document.getElementById('acc-uid')?.textContent;
+  if(uid && uid!=='—') navigator.clipboard.writeText(uid).then(()=>toast('ID copied! ✅'));
+}
+
+// Save unique ID as image from account page
+function saveAccUIDImage(){
+  const uid = P?.unique_id;
+  const name = P?.full_name || 'User';
+  const roleLabels = {student:'Student',lecturer:'Lecturer',engineer:'Structural Engineer',admin:'Admin'};
+  const role = roleLabels[P?.role] || 'User';
+  const canvas = document.createElement('canvas');
+  canvas.width=800; canvas.height=400;
+  const ctx=canvas.getContext('2d');
+  ctx.fillStyle='#0a0f1e'; ctx.fillRect(0,0,800,400);
+  ctx.strokeStyle='#1d4ed8'; ctx.lineWidth=3; ctx.strokeRect(20,20,760,360);
+  const grad=ctx.createLinearGradient(20,20,780,20);
+  grad.addColorStop(0,'#1d4ed8'); grad.addColorStop(1,'#60a5fa');
+  ctx.fillStyle=grad; ctx.fillRect(20,20,760,5);
+  ctx.fillStyle='#60a5fa'; ctx.font='bold 26px monospace'; ctx.fillText('🏗 StructLearn Pro',50,90);
+  ctx.fillStyle='#e2e8f0'; ctx.font='bold 34px monospace'; ctx.fillText(name,50,145);
+  ctx.fillStyle='#64748b'; ctx.font='20px monospace'; ctx.fillText(role,50,180);
+  ctx.fillStyle='#475569'; ctx.font='16px monospace'; ctx.fillText('UNIQUE ID',50,245);
+  ctx.fillStyle='#60a5fa'; ctx.font='bold 38px monospace'; ctx.fillText(uid||'—',50,305);
+  ctx.fillStyle='#334155'; ctx.font='14px monospace'; ctx.fillText('structlearnpro.vercel.app',50,360);
+  const a=document.createElement('a');
+  a.download=(uid||'id')+'_StructLearnPro.png';
+  a.href=canvas.toDataURL(); a.click();
+}
+
+// Join batch from account page
+async function joinBatchAcc(){
+  const code = document.getElementById('acc-batch-input')?.value?.trim();
+  const msg  = document.getElementById('acc-batch-msg');
+  if(!code){ if(msg){msg.style.color='#f87171';msg.textContent='Enter a batch code';} return; }
+  const resp = await fetch(SUPA_URL+'/rest/v1/batches?batch_code=eq.'+encodeURIComponent(code)+'&select=id,batch_name',{
+    headers:{'Authorization':'Bearer '+SUPA_KEY,'apikey':SUPA_KEY}
+  });
+  const data = await resp.json();
+  if(!data||!data[0]){ if(msg){msg.style.color='#f87171';msg.textContent='Batch code not found. Check with your lecturer.';} return; }
+  const batch = data[0];
+  await fetch(SUPA_URL+'/rest/v1/batch_members',{
+    method:'POST',
+    headers:{'Authorization':'Bearer '+SUPA_KEY,'apikey':SUPA_KEY,'Content-Type':'application/json','Prefer':'resolution=ignore-duplicates'},
+    body:JSON.stringify({batch_id:batch.id, profile_id:P.id})
+  });
+  if(msg){msg.style.color='#34d399';msg.textContent='✅ Joined: '+batch.batch_name;}
+}
+
+// Save email from account page
+async function saveAccEmail(){
+  const email = document.getElementById('acc-email-input')?.value?.trim();
+  const msg   = document.getElementById('acc-email-msg');
+  const resp = await fetch(SUPA_URL+'/rest/v1/profiles?id=eq.'+P.id,{
+    method:'PATCH',
+    headers:{'Authorization':'Bearer '+SUPA_KEY,'apikey':SUPA_KEY,'Content-Type':'application/json'},
+    body:JSON.stringify({email: email||null})
+  });
+  if(resp.ok){
+    P.email = email;
+    if(msg){msg.style.color='#34d399';msg.textContent='✅ Email saved';}
+  } else {
+    if(msg){msg.style.color='#f87171';msg.textContent='Failed to save. Try again.';}
+  }
 }
 
 // ── UPGRADE ──────────────────────────────────────────────────
