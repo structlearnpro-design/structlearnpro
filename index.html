@@ -640,7 +640,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
 
 <!-- APP -->
 <div id="app-screen" class="screen" style="flex-direction:column">
-  <iframe id="app-iframe" src="StructLearnPro.html"></iframe>
+  <iframe id="app-iframe" src="StructLearnPro.html" onload="onIframeLoad()"></iframe>
 </div>
 
 <!-- ACCOUNT -->
@@ -1285,8 +1285,8 @@ function filterP(){
 }
 async function newProject(){
   if(plan==='free'&&projects.length>=FREE_LIM){showUp();return;}
-  const nm = prompt('Project name:','Project '+(projects.length+1));
-  if(!nm) return;
+  const nm = prompt('Enter project name:','My Project');
+  if(!nm||!nm.trim()) return;
   const resp = await fetch(SUPA_URL+'/rest/v1/projects',{
     method:'POST',
     headers:{'Authorization':'Bearer '+SUPA_KEY,'apikey':SUPA_KEY,'Content-Type':'application/json','Prefer':'return=representation'},
@@ -1399,6 +1399,13 @@ function generateThumb(S, GRID) {
     svg+='</svg>';
     return svg;
   } catch(e){ return ''; }
+}
+
+function onIframeLoad(){
+  // Called every time StructLearnPro.html finishes loading
+  // Inject saveToParent so ui.js auto-save can write to Supabase
+  const fr = document.getElementById('app-iframe');
+  if(fr && fr.contentWindow) injectSaveToParent(fr);
 }
 
 function injectSaveToParent(fr){
