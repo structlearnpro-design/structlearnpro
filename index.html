@@ -828,18 +828,87 @@ let PRICES = { monthly: 29900, annual: 299000, monthly_display: 299, annual_disp
 
 async function loadPrices(){
   try {
-    const {data} = await db.from('settings').select('*');
-    if(data) {
+    const resp = await fetch(SUPA_URL+'/rest/v1/platform_settings?select=key,value', {
+      headers:{'Authorization':'Bearer '+SUPA_KEY,'apikey':SUPA_KEY}
+    });
+    if(!resp.ok) return;
+    const data = await resp.json();
+    if(data && data.length) {
       data.forEach(row => {
         if(row.key==='price_monthly')         PRICES.monthly         = parseInt(row.value)||29900;
         if(row.key==='price_annual')           PRICES.annual          = parseInt(row.value)||299000;
         if(row.key==='price_monthly_display')  PRICES.monthly_display = parseInt(row.value)||299;
         if(row.key==='price_annual_display')   PRICES.annual_display  = parseInt(row.value)||2990;
+        if(row.key==='announcements')          checkAnnouncements(row.value);
       });
-      // Update displayed prices in upgrade modal
       updatePriceDisplay();
     }
   } catch(e){}
+}
+
+function checkAnnouncements(jsonStr) {
+  if(!P) return; // not logged in yet
+  try {
+    const anns = JSON.parse(jsonStr || '[]');
+    if(!anns.length) return;
+
+    // Get last seen announcement timestamp from localStorage
+    const lastSeen = localStorage.getItem('slp_ann_last_seen') || '0';
+    const lastSeenTime = parseInt(lastSeen);
+
+    // Filter announcements user hasn't seen yet
+    const unseen = anns.filter(a => {
+      // Check if sent after last seen
+      if(new Date(a.sent_at).getTime() <= lastSeenTime) return false;
+      // Check if matches target audience
+      const target = a.target || 'all';
+      if(target === 'all') return true;
+      if(target === 'free' && P.plan !== 'pro') return true;
+      if(target === 'pro'  && P.plan === 'pro') return true;
+      if(target === P.role) return true;
+      return false;
+    });
+
+    if(unseen.length > 0) showAnnouncement(unseen[0]);
+  } catch(e) {}
+}
+
+function showAnnouncement(ann) {
+  // Remove existing if any
+  document.getElementById('ann-popup')?.remove();
+
+  const popup = document.createElement('div');
+  popup.id = 'ann-popup';
+  popup.style.cssText = [
+    'position:fixed;bottom:80px;right:20px;z-index:9999',
+    'width:320px;background:#0f172a;border:1px solid #1d4ed8',
+    'border-radius:14px;padding:18px;box-shadow:0 8px 32px rgba(0,0,0,0.5)',
+    'animation:slideIn 0.3s ease'
+  ].join(';');
+  popup.innerHTML = `
+    <style>@keyframes slideIn{from{transform:translateX(340px);opacity:0}to{transform:translateX(0);opacity:1}}</style>
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:18px">📢</span>
+        <span style="font-size:12px;font-weight:700;color:#60a5fa;text-transform:uppercase;letter-spacing:0.5px">Announcement</span>
+      </div>
+      <button onclick="dismissAnnouncement()" style="background:none;border:none;color:#475569;cursor:pointer;font-size:16px;padding:0">✕</button>
+    </div>
+    <div style="font-size:14px;font-weight:700;color:#e2e8f0;margin-bottom:6px">${ann.title}</div>
+    <div style="font-size:12px;color:#94a3b8;line-height:1.6">${ann.message}</div>
+    <div style="margin-top:12px;font-size:10px;color:#334155">${new Date(ann.sent_at).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})}</div>
+    <button onclick="dismissAnnouncement()" style="margin-top:12px;width:100%;padding:8px;background:#1d4ed8;border:none;border-radius:8px;color:#fff;font-size:12px;cursor:pointer;font-family:inherit">Got it ✓</button>
+  `;
+  document.body.appendChild(popup);
+
+  // Auto-dismiss after 30 seconds
+  setTimeout(()=>dismissAnnouncement(), 30000);
+}
+
+function dismissAnnouncement() {
+  document.getElementById('ann-popup')?.remove();
+  // Mark as seen
+  localStorage.setItem('slp_ann_last_seen', Date.now().toString());
 }
 
 function updatePriceDisplay(){
@@ -2332,6 +2401,8 @@ function toast(msg,err=false){const t=document.getElementById('toast');t.textCon
         }).catch(()=>{});
         updTop();
         goTo('projects');
+        // Check for unseen announcements after profile loaded
+        setTimeout(()=>loadPrices(), 1000);
         return;
       }
     }catch(e){
