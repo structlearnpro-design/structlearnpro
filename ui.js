@@ -15491,6 +15491,18 @@ _TRACK.init();
 
 // ── RESTORE PROGRESS FROM SUPABASE (cross-device) ────────────
 window.addEventListener('message', function(e) {
+  // ── GET_AI_CONTEXT: AI panel requests current S and RES ───────
+  if(e.data && e.data.type === 'GET_AI_CONTEXT') {
+    try{
+      window.parent.postMessage({
+        type: 'AI_CONTEXT',
+        S:    typeof S !== 'undefined' ? JSON.parse(JSON.stringify(S)) : null,
+        RES:  typeof RES !== 'undefined' && RES ? JSON.parse(JSON.stringify(RES)) : null,
+      }, '*');
+    }catch(err){ console.warn('AI context send error:', err); }
+    return;
+  }
+
   // ── LOAD_PROJECT: restore state from Supabase ────────────────
   if(e.data && e.data.type === 'LOAD_SNAPSHOTS') {
     // Restore snapshots from Supabase

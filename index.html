@@ -2013,17 +2013,33 @@ window.addEventListener('message', function(ev){
   // Main project save — sent by ui.js after analysis or every 30s
   if(ev.data.type==='SAVE_PROJECT' && ev.data.projectId){
     handleSaveProject(ev.data);
+    // Store S and RES for AI access — this is how AI gets project context
+    if(ev.data.S)   _currentS   = ev.data.S;
+    if(ev.data.RES) _currentRES = ev.data.RES;
+    // If AI panel is open, refresh member list
+    if(_aiPanelOpen && _aiCurrentTab==='explain') buildMemberList();
     return;
   }
   // Legacy handlers
   if(ev.data.type==='SAVE_DATA' && ev.data.projectId){
     handleSaveProject(ev.data);
+    if(ev.data.S)   _currentS   = ev.data.S;
+    if(ev.data.RES) _currentRES = ev.data.RES;
     return;
   }
 
   // Save snapshot to Supabase
   if(ev.data.type==='SAVE_SNAPSHOT' && ev.data.projectId){
     saveSnapshot(ev.data);
+    return;
+  }
+
+  // AI_CONTEXT — response from iframe with current S and RES
+  if(ev.data.type==='AI_CONTEXT'){
+    if(ev.data.S)   _currentS   = ev.data.S;
+    if(ev.data.RES) _currentRES = ev.data.RES;
+    // Rebuild member list with fresh data
+    if(_aiPanelOpen) buildMemberList();
     return;
   }
 });
@@ -3163,7 +3179,8 @@ function toggleAI(){
   }
   if(_aiPanelOpen){
     updateAIUsageBar();
-    refreshAIContext();
+    requestAIContext(); // ask iframe for latest S and RES
+    refreshAIContext(); // build member list with what we have
     initQuickQuestions();
   }
 }
@@ -3192,13 +3209,16 @@ function switchAITab(tab){
 
 // ── GET CURRENT PROJECT CONTEXT FROM IFRAME ────────────────────
 function refreshAIContext(){
+  // _currentS and _currentRES are captured via postMessage from iframe
+  // No direct contentWindow access needed (would fail cross-origin)
+  buildMemberList();
+}
+
+// Request fresh context from iframe via postMessage
+function requestAIContext(){
   const fr = document.getElementById('app-iframe');
   if(!fr || !fr.contentWindow) return;
-  try{
-    _currentRES = fr.contentWindow.RES || null;
-    _currentS   = fr.contentWindow.S   || null;
-  }catch(e){}
-  buildMemberList();
+  fr.contentWindow.postMessage({type:'GET_AI_CONTEXT'}, '*');
 }
 
 function buildMemberList(){
