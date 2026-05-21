@@ -519,10 +519,10 @@ const SUPA_URL  = 'https://rpjdveuxxjeoeomkwrfx.supabase.co';
 const SUPA_KEY  = 'sb_publishable_L1RWkjtz41gT5sZKhRRnsw_BB3WfJWI';
 const SGH_KEY   = 'pHI9xQGkXEmXXmLmcGgwSQ';
 const SGH_SID   = 'PLNZOT';
-const SGH_TPL   = ''; // ← paste DLT Template ID here when approved
+const SGH_TPL   = '1007725697928317760'; // ← PLANZAA approved template
 const RZP_KEY   = 'rzp_test_SqMUESMbiO37mb'; // ← paste Razorpay Key ID here when sister sets up
 const FREE_LIM  = 3;
-const TEST_MODE = true;  // ← set to false when DLT template is approved
+const TEST_MODE = false; // ← DLT template now active (PLANZAA template)
 const TEST_OTP  = '123456'; // ← test OTP code
 
 // Dynamic prices — loaded from Supabase settings table
@@ -602,11 +602,12 @@ async function sendOTP(type){
   btn.disabled=true;setMsg(type==='login'?'l-msg':'s-msg','Sending OTP...','');
 
   const otp=Math.floor(100000+Math.random()*900000).toString();
-  const exp=new Date(Date.now()+10*60*1000).toISOString();
+  const exp=new Date(Date.now()+5*60*1000).toISOString();
   await db.from('otp_tokens').insert({mobile:mob,otp,expires_at:exp,used:false,attempts:0});
 
-  const msg=`Your StructLearn Pro OTP is ${otp}. Valid for 10 minutes. Do not share with anyone.`;
-  const url=`https://www.smsgatewayhub.com/api/mt/SendSMS?APIKey=${SGH_KEY}&senderid=${SGH_SID}&channel=Trans&DCS=0&flashsms=0&number=91${mob}&text=${encodeURIComponent(msg)}&route=1${SGH_TPL?'&DLTTemplateId='+SGH_TPL:''}`;
+  // Using approved PLANZAA template — update when StructLearn template approved
+  const msg=`Dear Customer, your OTP for registration on PLANZAA is ${otp}. It is valid for 5 minutes. Please do not share it with anyone.`;
+  const url=`https://www.smsgatewayhub.com/api/mt/SendSMS?APIKey=${SGH_KEY}&senderid=${SGH_SID}&channel=Trans&DCS=0&flashsms=0&number=91${mob}&text=${encodeURIComponent(msg)}&DLTTemplateId=${SGH_TPL}`;
   try{await fetch(url,{method:'GET',mode:'no-cors'});}catch(e){}
 
   btn.disabled=false;
@@ -714,7 +715,6 @@ async function doLogin(mob){
 async function doLogout(){
   await db.auth.signOut();
   localStorage.removeItem('slp_session');
-  sessionStorage.removeItem('slp_restore_progress');
   U=null;P=null;plan='free';projects=[];
   showScreen('auth-screen');
 }
@@ -1117,9 +1117,6 @@ function toast(msg,err=false){const t=document.getElementById('toast');t.textCon
     const {data:prof}=await db.from('profiles').select('*').eq('id',U.id).single();
     P=prof;plan=P?.plan||'free';
     updTop();goTo('projects');
-    // Always restore progress from Supabase — works on new device or hard refresh
-    await loadAndRestoreProgress();
-    tellIframe();
   } else {showScreen('auth-screen');}
 })();
 
@@ -1260,25 +1257,19 @@ async function loadAndRestoreProgress() {
   } catch(e) { console.log('Load progress error', e); }
 }
 
-function sendProgressToIframe(attempt) {
-  attempt = attempt || 1;
+function sendProgressToIframe() {
   const raw = sessionStorage.getItem('slp_restore_progress');
   if(!raw) return;
   if(!U) return;
   try {
     const iframe = document.getElementById('app-iframe');
-    if(!iframe || !iframe.contentWindow) {
-      if(attempt < 10) setTimeout(()=>sendProgressToIframe(attempt+1), 800);
-      return;
-    }
+    if(!iframe || !iframe.contentWindow) return;
     iframe.contentWindow.postMessage({
       type: 'RESTORE_PROGRESS',
       progress: JSON.parse(raw)
     }, '*');
-    console.log('Progress sent to iframe ✓ (attempt '+attempt+')');
-  } catch(e) {
-    if(attempt < 10) setTimeout(()=>sendProgressToIframe(attempt+1), 800);
-  }
+    console.log('Progress sent to iframe ✓');
+  } catch(e) {}
 }
 
 // Progress restored via loadAndRestoreProgress() after login
