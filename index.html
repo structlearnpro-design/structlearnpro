@@ -1283,25 +1283,111 @@ function filterP(){
   else if(so==='name')r.sort((a,b)=>a.name.localeCompare(b.name));
   renderP(r);
 }
-async function newProject(){
+function newProject(){
   if(plan==='free'&&projects.length>=FREE_LIM){showUp();return;}
-  const nm = prompt('Enter project name:','My Project');
-  if(!nm||!nm.trim()) return;
+  showNewProjectModal();
+}
+
+function showNewProjectModal(){
+  // Remove any existing modal
+  document.getElementById('np-modal')?.remove();
+  const modal = document.createElement('div');
+  modal.id = 'np-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;font-family:inherit';
+  modal.innerHTML = `
+    <div style="background:#0f172a;border:1px solid #1e3a8a;border-radius:16px;padding:28px;width:100%;max-width:420px">
+      <div style="font-size:16px;font-weight:800;color:#e2e8f0;margin-bottom:4px">New Project</div>
+      <div style="font-size:12px;color:#64748b;margin-bottom:20px">Fill in basic details to get started</div>
+
+      <div style="margin-bottom:14px">
+        <label style="font-size:11px;color:#94a3b8;font-weight:600;display:block;margin-bottom:5px">PROJECT NAME *</label>
+        <input id="np-name" type="text" placeholder="e.g. Sharma Residence" autofocus
+          style="width:100%;padding:10px 12px;background:#0a0f1e;border:1.5px solid #1e3a8a;border-radius:8px;color:#e2e8f0;font-size:13px;font-family:inherit;outline:none;box-sizing:border-box"
+          onkeydown="if(event.key==='Enter')document.getElementById('np-client').focus()">
+      </div>
+
+      <div style="margin-bottom:14px">
+        <label style="font-size:11px;color:#94a3b8;font-weight:600;display:block;margin-bottom:5px">CLIENT NAME <span style="color:#475569;font-weight:400">(optional)</span></label>
+        <input id="np-client" type="text" placeholder="e.g. Mr. Arun Sharma"
+          style="width:100%;padding:10px 12px;background:#0a0f1e;border:1.5px solid #1e3a8a;border-radius:8px;color:#e2e8f0;font-size:13px;font-family:inherit;outline:none;box-sizing:border-box"
+          onkeydown="if(event.key==='Enter')document.getElementById('np-city').focus()">
+      </div>
+
+      <div style="margin-bottom:20px">
+        <label style="font-size:11px;color:#94a3b8;font-weight:600;display:block;margin-bottom:5px">CITY <span style="color:#475569;font-weight:400">(optional)</span></label>
+        <input id="np-city" type="text" placeholder="e.g. New Delhi"
+          style="width:100%;padding:10px 12px;background:#0a0f1e;border:1.5px solid #1e3a8a;border-radius:8px;color:#e2e8f0;font-size:13px;font-family:inherit;outline:none;box-sizing:border-box"
+          onkeydown="if(event.key==='Enter')createNewProject()">
+      </div>
+
+      <div id="np-err" style="color:#f87171;font-size:12px;margin-bottom:10px;display:none"></div>
+
+      <div style="display:flex;gap:10px">
+        <button onclick="document.getElementById('np-modal').remove()"
+          style="flex:1;padding:11px;background:transparent;border:1px solid #334155;border-radius:8px;color:#64748b;font-size:13px;cursor:pointer;font-family:inherit">
+          Cancel
+        </button>
+        <button onclick="createNewProject()" id="np-create-btn"
+          style="flex:2;padding:11px;background:linear-gradient(135deg,#1d4ed8,#2563eb);border:none;border-radius:8px;color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">
+          Start Design →
+        </button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+  // Focus name input
+  setTimeout(()=>document.getElementById('np-name')?.focus(), 100);
+}
+
+async function createNewProject(){
+  const nm     = document.getElementById('np-name')?.value?.trim();
+  const client = document.getElementById('np-client')?.value?.trim();
+  const city   = document.getElementById('np-city')?.value?.trim();
+  const errEl  = document.getElementById('np-err');
+  const btn    = document.getElementById('np-create-btn');
+
+  if(!nm){
+    if(errEl){errEl.textContent='Project name is required';errEl.style.display='block';}
+    document.getElementById('np-name')?.focus();
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Creating...';
+
   const resp = await fetch(SUPA_URL+'/rest/v1/projects',{
     method:'POST',
     headers:{'Authorization':'Bearer '+SUPA_KEY,'apikey':SUPA_KEY,'Content-Type':'application/json','Prefer':'return=representation'},
-    body:JSON.stringify({profile_id:P.id, name:nm, analysis_count:0, time_spent_sec:0})
+    body:JSON.stringify({
+      profile_id:    P.id,
+      name:          nm,
+      client:        client||null,
+      location:      city||null,
+      analysis_count:0,
+      time_spent_sec:0,
+      // Pre-fill state_json with name/client/city so Step 1 is pre-filled
+      state_json:    {name:nm, client:client||'', location:city||''}
+    })
   });
-  if(resp.ok){
-    const data = await resp.json();
-    const p = Array.isArray(data)?data[0]:data;
-    if(p){projects.unshift(p); renderP(projects); openP(p.id);}
-  } else {
-    toast('Failed to create project. Please try again.');
+
+  if(!resp.ok){
+    btn.disabled=false; btn.textContent='Start Design →';
+    if(errEl){errEl.textContent='Failed to create. Please try again.';errEl.style.display='block';}
+    return;
+  }
+
+  const data = await resp.json();
+  const p = Array.isArray(data)?data[0]:data;
+  document.getElementById('np-modal').remove();
+
+  if(p){
+    projects.unshift(p);
+    renderP(projects);
+    updDashStats();
+    // Open project — goes straight to Step 1 (not welcome)
+    openP(p.id, true);
   }
 }
-async function openP(id){
-  // Load full project data from Supabase
+async function openP(id, isNew){
   const resp = await fetch(SUPA_URL+'/rest/v1/projects?id=eq.'+id+'&select=*',{
     headers:{'Authorization':'Bearer '+SUPA_KEY,'apikey':SUPA_KEY}
   });
@@ -1309,58 +1395,48 @@ async function openP(id){
   const p = data[0] || projects.find(x=>x.id===id);
   if(!p) return;
   pending.projId = id;
-  // Start auto-save for this project
+  _currentProject = p;
   startAutoSave(id);
+  showBackBtn(p.name);
   goTo('app');
+  // onIframeLoad() will inject saveToParent after iframe loads
+  // Send project data after a short delay
   setTimeout(()=>{
     try{
-      const iframeWin = document.getElementById('app-iframe').contentWindow;
-      // Inject saveToParent into iframe so ui.js can call it
-      iframeWin.saveToParent = async function(status) {
-        if(!_autoSaveProjId || !P) return;
-        try {
-          const S   = iframeWin.S;
-          const RES = iframeWin.RES;
-          const GRID = iframeWin.GRID;
-          if(!S) return;
-          // Generate thumbnail
-          const thumbSvg = generateThumb(S, GRID);
-          const payload = {
-            name:            S.name || p.name || 'Untitled',
-            client:          S.client || null,
-            location:        S.location || null,
-            floors:          S.numFloors || null,
-            fck:             S.fck || null,
-            fy:              S.fy || null,
-            grid_x:          S.spansX ? S.spansX.length : null,
-            grid_y:          S.spansY ? S.spansY.length : null,
-            state_json:      JSON.parse(JSON.stringify(S)),
-            grid_json:       GRID ? {
-              bays: GRID.bays, nodes: GRID.nodes,
-              nodeChoices: iframeWin._nodeChoices||{}
-            } : null,
-            results_json:    RES ? JSON.parse(JSON.stringify(RES)) : null,
-            thumbnail_svg:   thumbSvg,
-            safety_score:    RES ? (RES.safetyScore||0) : null,
-            all_checks_pass: RES ? (RES.allPass||false) : false,
-            analysis_count:  RES ? ((p.analysis_count||0)+1) : (p.analysis_count||0),
-            updated_at:      new Date().toISOString(),
-          };
-          await fetch(SUPA_URL+'/rest/v1/projects?id=eq.'+_autoSaveProjId+'&profile_id=eq.'+P.id,{
-            method:'PATCH',
-            headers:{'Authorization':'Bearer '+SUPA_KEY,'apikey':SUPA_KEY,'Content-Type':'application/json'},
-            body:JSON.stringify(payload)
-          });
-          // Update local cache
-          const idx = projects.findIndex(x=>x.id===_autoSaveProjId);
-          if(idx>=0) projects[idx]={...projects[idx],...payload};
-          updateSaveIndicator('just now');
-        } catch(e){ console.warn('saveToParent error:',e); }
-      };
-      // Load project data into iframe
-      iframeWin.postMessage({type:'LOAD_PROJECT', project:p},'*');
+      document.getElementById('app-iframe').contentWindow
+        .postMessage({
+          type:    'LOAD_PROJECT',
+          project: p,
+          goStep:  isNew ? 1 : (p.results_json ? 7 : 1)
+        },'*');
     }catch(e){}
-  },800);
+  },900);
+}
+
+let _currentProject = null;
+
+function showBackBtn(name){
+  let btn = document.getElementById('back-to-proj');
+  if(!btn){
+    btn = document.createElement('button');
+    btn.id = 'back-to-proj';
+    btn.style.cssText = 'padding:5px 12px;background:transparent;border:1px solid #334155;border-radius:6px;color:#94a3b8;font-size:11px;cursor:pointer;font-family:inherit;margin-right:8px;white-space:nowrap';
+    btn.onclick = backToProjects;
+    const tact = document.querySelector('.tact');
+    if(tact) tact.insertBefore(btn, tact.firstChild);
+  }
+  btn.textContent = '← Projects';
+  btn.style.display = '';
+}
+
+async function backToProjects(){
+  await autoSave();
+  stopAutoSave();
+  _currentProject = null;
+  const btn = document.getElementById('back-to-proj');
+  if(btn) btn.style.display = 'none';
+  await loadProjects();
+  goTo('projects');
 }
 async function delP(id,e){
   e.stopPropagation();

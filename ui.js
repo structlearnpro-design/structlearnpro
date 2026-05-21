@@ -15440,6 +15440,45 @@ _BT._loadLocal();
 
 // ── RESTORE PROGRESS FROM SUPABASE (cross-device) ────────────
 window.addEventListener('message', function(e) {
+  // ── LOAD_PROJECT: restore state from Supabase ────────────────
+  if(e.data && e.data.type === 'LOAD_PROJECT') {
+    var proj = e.data.project;
+    var goStep = e.data.goStep || 1;
+    if(proj) {
+      // Restore S object from state_json
+      if(proj.state_json && typeof proj.state_json === 'object') {
+        Object.assign(S, proj.state_json);
+      }
+      // Restore GRID from grid_json
+      if(proj.grid_json && typeof proj.grid_json === 'object') {
+        try {
+          if(proj.grid_json.bays || proj.grid_json.nodes) {
+            GRID = proj.grid_json;
+          }
+          if(proj.grid_json.nodeChoices) {
+            window._nodeChoices = proj.grid_json.nodeChoices;
+          }
+        } catch(err) {}
+      }
+      // Restore RES from results_json
+      if(proj.results_json && typeof proj.results_json === 'object') {
+        RES = proj.results_json;
+      }
+      // Update project name in S
+      if(proj.name) S.name = S.name || proj.name;
+      if(proj.client) S.client = S.client || proj.client;
+      if(proj.location) S.location = S.location || proj.location;
+    }
+    // Navigate to correct step
+    go(goStep);
+    // Refresh grid if on plan page
+    if(goStep === 2) {
+      setTimeout(function(){ try{ renderGridPrev && renderGridPrev(); }catch(er){} }, 300);
+    }
+    return;
+  }
+
+  // ── RESTORE_PROGRESS ─────────────────────────────────────────
   if(!e.data || e.data.type !== 'RESTORE_PROGRESS') return;
   var prog = e.data.progress;
   if(!prog) return;
