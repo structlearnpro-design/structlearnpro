@@ -1607,15 +1607,63 @@ function updateSaveIndicator(when){
 
 // Listen for save data from iframe
 window.addEventListener('message', function(ev){
-  if(ev.data?.type==='SAVE_DATA' && ev.data?.projectId){
-    saveProjectData(ev.data.projectId, ev.data);
+  if(!ev.data) return;
+
+  // Main project save — sent by ui.js after analysis or every 30s
+  if(ev.data.type==='SAVE_PROJECT' && ev.data.projectId){
+    handleSaveProject(ev.data);
     return;
   }
-  if(ev.data?.type==='ANALYSIS_COMPLETE'){
-    autoSave();
+  // Legacy handlers
+  if(ev.data.type==='SAVE_DATA' && ev.data.projectId){
+    handleSaveProject(ev.data);
     return;
   }
 });
+
+async function handleSaveProject(data){
+  const pid = data.projectId || _autoSaveProjId;
+  if(!pid || !P) return;
+  const S    = data.S;
+  const RES  = data.RES;
+  const GRID = data.GRID;
+  if(!S) { console.warn('[handleSaveProject] no S data'); return; }
+
+  console.log('[handleSaveProject] saving pid:', pid, 'RES:', !!RES);
+
+  const payload = {
+    name:            S.name || 'Untitled',
+    client:          S.client || null,
+    location:        S.location || null,
+    floors:          S.numFloors || null,
+    fck:             S.fck || null,
+    fy:              S.fy || null,
+    grid_x:          S.spansX ? S.spansX.length : null,
+    grid_y:          S.spansY ? S.spansY.length : null,
+    state_json:      S,
+    grid_json:       GRID || null,
+    results_json:    RES || null,
+    thumbnail_svg:   generateThumb(S, GRID),
+    safety_score:    RES ? (RES.safetyScore || 0) : null,
+    all_checks_pass: RES ? (RES.allPass || false) : false,
+    updated_at:      new Date().toISOString(),
+  };
+
+  const resp = await fetch(SUPA_URL+'/rest/v1/projects?id=eq.'+pid+'&profile_id=eq.'+P.id, {
+    method: 'PATCH',
+    headers: {'Authorization':'Bearer '+SUPA_KEY,'apikey':SUPA_KEY,'Content-Type':'application/json'},
+    body: JSON.stringify(payload)
+  });
+
+  if(resp.ok){
+    const idx = projects.findIndex(x=>x.id===pid);
+    if(idx>=0) projects[idx] = {...projects[idx], ...payload};
+    updateSaveIndicator('just now');
+    console.log('[handleSaveProject] saved ✅ allPass:', RES?.allPass);
+  } else {
+    console.error('[handleSaveProject] failed:', resp.status);
+  }
+}
 
 // ── ACCOUNT ──────────────────────────────────────────────────
 function renderAcc(){

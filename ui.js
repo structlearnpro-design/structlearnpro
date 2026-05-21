@@ -279,7 +279,7 @@ function p6(){return`
        ['Concrete','M'+S.fck],['Steel','Fe'+S.fy],['SBC',S.soilBearing+' kN/m^2'],
     ].map(([k,v])=>`<strong style="color:var(--txt)">${k}:</strong> ${v}`).join(' &nbsp;.&nbsp; ')}
   </div>
-  <button class="btn gr" id="rb" style="width:100%;padding:13px;font-size:14px" onclick="runNow();setTimeout(()=>{if(window._slpProjectId&&typeof saveToParent==='function')saveToParent('draft');},2000)">🚀 Run Full Analysis</button>
+  <button class="btn gr" id="rb" style="width:100%;padding:13px;font-size:14px" onclick="runNow();setTimeout(()=>{ try{ if(window._slpProjectId){ window.parent.postMessage({type:'SAVE_PROJECT',projectId:window._slpProjectId,S:JSON.parse(JSON.stringify(S)),RES:RES?JSON.parse(JSON.stringify(RES)):null,GRID:GRID?{bays:GRID.bays,nodes:GRID.nodes}:null},'*'); } }catch(e){console.warn('save err',e);} },2500)">🚀 Run Full Analysis</button>
   <div id="ld" style="display:none;margin-top:12px">
     <div class="lbar"><div class="lfill"></div></div>
     <div style="font-size:11px;color:var(--teal);line-height:2.2;text-align:center;padding:8px">
@@ -11899,9 +11899,14 @@ go(0);
 setTimeout(()=>renderGridPrev&&renderGridPrev(),200);
 setInterval(()=>{
   try{
-    // Only save if a project is explicitly open (set by index.html)
-    if(window._slpProjectId && typeof saveToParent==='function'){
-      saveToParent('auto');
+    if(window._slpProjectId && S){
+      window.parent.postMessage({
+        type:'SAVE_PROJECT',
+        projectId:window._slpProjectId,
+        S:JSON.parse(JSON.stringify(S)),
+        RES:RES?JSON.parse(JSON.stringify(RES)):null,
+        GRID:GRID?{bays:GRID.bays,nodes:GRID.nodes}:null
+      },'*');
     }
   }catch(e){}
 },30000);
