@@ -1621,6 +1621,31 @@ window.addEventListener('message', function(ev){
   }
 });
 
+function calcSafetyScore(RES){
+  try{
+    const beams = RES.allBeams || RES.beams || [];
+    const cols  = RES.allCols  || RES.cols  || [];
+    const ftgs  = RES.allFtgs  || RES.ftgs  || [];
+    let pass=0, total=0;
+    beams.forEach(b=>{ total+=2; if(b.shearSafe!==false)pass++; if(b.deflOK!==false)pass++; });
+    cols.forEach(c=>{  total++; if(c.safe!==false)pass++; });
+    ftgs.forEach(f=>{  total+=2; if(f.punch_ok!==false)pass++; if(f.ow_ok!==false)pass++; });
+    return total>0 ? Math.round((pass/total)*100) : 0;
+  }catch(e){ return 0; }
+}
+
+function calcAllPass(RES){
+  try{
+    const beams = RES.allBeams || RES.beams || [];
+    const cols  = RES.allCols  || RES.cols  || [];
+    const ftgs  = RES.allFtgs  || RES.ftgs  || [];
+    const beamOk = beams.every(b=>b.shearSafe!==false && b.deflOK!==false);
+    const colOk  = cols.every(c=>c.safe!==false);
+    const ftgOk  = ftgs.every(f=>f.punch_ok!==false && f.ow_ok!==false);
+    return beamOk && colOk && ftgOk;
+  }catch(e){ return false; }
+}
+
 async function handleSaveProject(data){
   const pid = data.projectId || _autoSaveProjId;
   if(!pid || !P) return;
@@ -1644,8 +1669,8 @@ async function handleSaveProject(data){
     grid_json:       GRID || null,
     results_json:    RES || null,
     thumbnail_svg:   generateThumb(S, GRID),
-    safety_score:    RES ? (RES.safetyScore || 0) : null,
-    all_checks_pass: RES ? (RES.allPass || false) : false,
+    safety_score:    RES ? calcSafetyScore(RES) : null,
+    all_checks_pass: RES ? calcAllPass(RES) : false,
     updated_at:      new Date().toISOString(),
   };
 
