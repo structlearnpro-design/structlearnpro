@@ -323,6 +323,188 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
   </div>
 </div>
 
+<!-- REGISTRATION: ROLE SELECTION -->
+<div id="reg-role-screen" class="screen" style="align-items:center;justify-content:center;padding:20px">
+  <div class="otp-box" style="max-width:440px;width:100%">
+    <div class="otp-title" style="font-size:18px">Who are you?</div>
+    <div class="otp-sub">Help us personalise your experience</div>
+    <div style="display:flex;flex-direction:column;gap:10px;margin-top:16px">
+      <button onclick="selectRole('student')" class="role-btn" style="display:flex;align-items:center;gap:14px;padding:16px;background:#111827;border:1.5px solid #1e3a8a;border-radius:12px;cursor:pointer;text-align:left;width:100%;color:#e2e8f0;font-family:inherit;transition:all 0.2s" onmouseover="this.style.borderColor='#3b82f6'" onmouseout="this.style.borderColor='#1e3a8a'">
+        <span style="font-size:26px">🎓</span>
+        <div><div style="font-weight:700;font-size:14px">Student</div><div style="font-size:11px;color:#64748b;margin-top:2px">B.Tech / M.Tech / Diploma Civil Engineering</div></div>
+      </button>
+      <button onclick="selectRole('lecturer')" class="role-btn" style="display:flex;align-items:center;gap:14px;padding:16px;background:#111827;border:1.5px solid #1e3a8a;border-radius:12px;cursor:pointer;text-align:left;width:100%;color:#e2e8f0;font-family:inherit;transition:all 0.2s" onmouseover="this.style.borderColor='#8b5cf6'" onmouseout="this.style.borderColor='#1e3a8a'">
+        <span style="font-size:26px">👨‍🏫</span>
+        <div><div style="font-weight:700;font-size:14px">Lecturer / Professor</div><div style="font-size:11px;color:#64748b;margin-top:2px">Teaching civil or structural engineering</div></div>
+      </button>
+      <button onclick="selectRole('engineer')" class="role-btn" style="display:flex;align-items:center;gap:14px;padding:16px;background:#111827;border:1.5px solid #1e3a8a;border-radius:12px;cursor:pointer;text-align:left;width:100%;color:#e2e8f0;font-family:inherit;transition:all 0.2s" onmouseover="this.style.borderColor='#f59e0b'" onmouseout="this.style.borderColor='#1e3a8a'">
+        <span style="font-size:26px">🏗</span>
+        <div><div style="font-weight:700;font-size:14px">Structural Engineer</div><div style="font-size:11px;color:#64748b;margin-top:2px">Working in practice, consultancy or government</div></div>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- REGISTRATION: DETAILS FORM -->
+<div id="reg-details-screen" class="screen" style="align-items:center;justify-content:center;padding:20px;overflow-y:auto">
+  <div class="otp-box" style="max-width:480px;width:100%">
+    <div class="otp-title" style="font-size:18px" id="reg-title">Your Details</div>
+    <div class="otp-sub">Step 2 of 2 — takes 30 seconds</div>
+    <div style="display:flex;flex-direction:column;gap:12px;margin-top:16px">
+
+      <div class="field">
+        <label>Full Name *</label>
+        <input type="text" id="reg-name" placeholder="Rohan Kumar Sharma" class="ainp">
+      </div>
+
+      <!-- Student fields -->
+      <div id="reg-student-fields">
+        <div class="field" style="margin-bottom:10px">
+          <label>College / University *</label>
+          <input type="text" id="reg-college" placeholder="MSIT Delhi" class="ainp">
+        </div>
+        <div class="field" style="margin-bottom:10px">
+          <label>Course *</label>
+          <select id="reg-course" class="ainp" style="background:#1e293b;color:#e2e8f0">
+            <option value="">Select course...</option>
+            <option>B.Tech Civil Engineering</option>
+            <option>B.Tech Structural Engineering</option>
+            <option>M.Tech Structural Engineering</option>
+            <option>M.Tech Geotechnical Engineering</option>
+            <option>Diploma Civil Engineering</option>
+            <option>Other Civil / Construction Course</option>
+          </select>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+          <div class="field">
+            <label>Year *</label>
+            <select id="reg-year" class="ainp" style="background:#1e293b;color:#e2e8f0">
+              <option value="">Year...</option>
+              <option value="1">1st Year</option>
+              <option value="2">2nd Year</option>
+              <option value="3">3rd Year</option>
+              <option value="4">4th Year</option>
+              <option value="5">PG / 5th Year</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Batch (optional)</label>
+            <input type="text" id="reg-batch" placeholder="2022-26" class="ainp">
+          </div>
+        </div>
+      </div>
+
+      <!-- Lecturer fields -->
+      <div id="reg-lecturer-fields" style="display:none">
+        <div class="field" style="margin-bottom:10px">
+          <label>College / Institution *</label>
+          <input type="text" id="reg-inst" placeholder="MSIT Delhi" class="ainp">
+        </div>
+        <div class="field" style="margin-bottom:10px">
+          <label>Department *</label>
+          <input type="text" id="reg-dept" placeholder="Civil Engineering" class="ainp">
+        </div>
+        <div class="field" style="margin-bottom:10px">
+          <label>Designation *</label>
+          <select id="reg-desig" class="ainp" style="background:#1e293b;color:#e2e8f0">
+            <option value="">Select...</option>
+            <option>Assistant Professor</option>
+            <option>Associate Professor</option>
+            <option>Professor</option>
+            <option>HOD</option>
+            <option>Lab Instructor</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Engineer fields -->
+      <div id="reg-engineer-fields" style="display:none">
+        <div class="field" style="margin-bottom:10px">
+          <label>Firm / Company *</label>
+          <input type="text" id="reg-firm" placeholder="M-Structures Consultants" class="ainp">
+        </div>
+        <div class="field" style="margin-bottom:10px">
+          <label>Your Role *</label>
+          <select id="reg-role-title" class="ainp" style="background:#1e293b;color:#e2e8f0">
+            <option value="">Select...</option>
+            <option>Junior Structural Engineer</option>
+            <option>Senior Structural Engineer</option>
+            <option>Principal / Partner</option>
+            <option>Site Engineer</option>
+            <option>Project Manager</option>
+            <option>Consultant (Self-employed / Freelance)</option>
+          </select>
+        </div>
+        <div class="field" style="margin-bottom:10px">
+          <label>Experience *</label>
+          <select id="reg-exp" class="ainp" style="background:#1e293b;color:#e2e8f0">
+            <option value="">Select...</option>
+            <option>0-2 years (Fresher)</option>
+            <option>3-5 years</option>
+            <option>6-10 years</option>
+            <option>10+ years</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Common fields -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="field">
+          <label>City *</label>
+          <input type="text" id="reg-city" placeholder="New Delhi" class="ainp">
+        </div>
+        <div class="field">
+          <label>State *</label>
+          <select id="reg-state" class="ainp" style="background:#1e293b;color:#e2e8f0">
+            <option value="">Select...</option>
+            <option>Andhra Pradesh</option><option>Assam</option><option>Bihar</option>
+            <option>Chhattisgarh</option><option>Delhi</option><option>Goa</option>
+            <option>Gujarat</option><option>Haryana</option><option>Himachal Pradesh</option>
+            <option>Jharkhand</option><option>Karnataka</option><option>Kerala</option>
+            <option>Madhya Pradesh</option><option>Maharashtra</option><option>Manipur</option>
+            <option>Odisha</option><option>Punjab</option><option>Rajasthan</option>
+            <option>Tamil Nadu</option><option>Telangana</option><option>Uttar Pradesh</option>
+            <option>Uttarakhand</option><option>West Bengal</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Email (optional — for receiving reports)</label>
+        <input type="email" id="reg-email" placeholder="rohan@msit.edu.in" class="ainp">
+      </div>
+
+      <div id="reg-msg" class="amsg"></div>
+      <button class="abtn" onclick="submitRegistration()" id="reg-btn">Create My Account →</button>
+      <div onclick="showScreen('reg-role-screen')" style="text-align:center;font-size:12px;color:#64748b;cursor:pointer;margin-top:6px">← Change role</div>
+    </div>
+  </div>
+</div>
+
+<!-- WELCOME SCREEN (shows unique ID) -->
+<div id="welcome-screen" class="screen" style="align-items:center;justify-content:center;padding:20px">
+  <div class="otp-box" style="max-width:440px;width:100%;text-align:center">
+    <div style="font-size:48px;margin-bottom:12px">✅</div>
+    <div style="font-size:20px;font-weight:800;color:#34d399;margin-bottom:4px">Welcome!</div>
+    <div style="font-size:13px;color:#64748b;margin-bottom:24px" id="welcome-name">Your account is ready</div>
+    <div style="background:#0a0f1e;border:2px solid #1d4ed8;border-radius:14px;padding:24px;margin-bottom:20px;position:relative;overflow:hidden">
+      <div style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#1d4ed8,#60a5fa)"></div>
+      <div style="font-size:11px;color:#64748b;letter-spacing:1px;margin-bottom:10px">YOUR UNIQUE ID</div>
+      <div id="welcome-uid" style="font-size:22px;font-weight:900;color:#60a5fa;letter-spacing:2px;margin-bottom:14px;word-break:break-all"></div>
+      <div style="display:flex;gap:8px;justify-content:center">
+        <button onclick="copyUID()" style="padding:7px 14px;background:#1e3a8a;border:1px solid #3b82f6;border-radius:7px;color:#60a5fa;font-size:11px;cursor:pointer;font-family:inherit">📋 Copy</button>
+        <button onclick="saveUIDImage()" style="padding:7px 14px;background:#1e3a8a;border:1px solid #3b82f6;border-radius:7px;color:#60a5fa;font-size:11px;cursor:pointer;font-family:inherit">🖼 Save Image</button>
+      </div>
+    </div>
+    <div style="background:#0f172a;border:1px solid #1e3a8a;border-radius:10px;padding:14px;margin-bottom:20px;text-align:left;font-size:12px;color:#64748b;line-height:2">
+      <div>📌 This ID appears on all your reports</div>
+      <div>👨‍🏫 Share with lecturer to join their batch</div>
+      <div>🔒 Always visible in your Profile</div>
+    </div>
+    <button class="abtn" onclick="goTo('projects')">Go to My Dashboard →</button>
+  </div>
+</div>
+
 <!-- TOP BAR -->
 <div id="top-bar" style="display:none">
   <div style="display:flex;align-items:center;gap:12px">
@@ -638,6 +820,129 @@ function oi(i){
 }
 function ok(e,i){if(e.key==='Backspace'&&!document.getElementById('o'+i).value&&i>0)document.getElementById('o'+(i-1)).focus();}
 
+// ── REGISTRATION FLOW ────────────────────────────────────────────
+let regRole = 'student';
+let regSessionToken = '';
+let regMobile = '';
+
+function selectRole(role) {
+  regRole = role;
+  // Show correct fields
+  document.getElementById('reg-student-fields').style.display  = role==='student'  ? '' : 'none';
+  document.getElementById('reg-lecturer-fields').style.display = role==='lecturer' ? '' : 'none';
+  document.getElementById('reg-engineer-fields').style.display = role==='engineer' ? '' : 'none';
+  // Update title
+  const titles = {student:'🎓 Student Details', lecturer:'👨‍🏫 Lecturer Details', engineer:'🏗 Engineer Details'};
+  document.getElementById('reg-title').textContent = titles[role] || 'Your Details';
+  // Pre-fill name from pending
+  if(pending.name) document.getElementById('reg-name').value = pending.name;
+  showScreen('reg-details-screen');
+}
+
+async function submitRegistration() {
+  const btn = document.getElementById('reg-btn');
+  const name = document.getElementById('reg-name').value.trim();
+  const city = document.getElementById('reg-city').value.trim();
+  const state = document.getElementById('reg-state').value;
+
+  if(!name){ setMsg2('reg-msg','Full name is required','err'); return; }
+  if(!city){ setMsg2('reg-msg','City is required','err'); return; }
+  if(!state){ setMsg2('reg-msg','State is required','err'); return; }
+
+  btn.disabled = true;
+  btn.textContent = 'Creating account...';
+
+  const payload = {
+    mobile:       regMobile,
+    role:         regRole,
+    fullName:     name,
+    email:        document.getElementById('reg-email')?.value?.trim() || null,
+    college:      document.getElementById('reg-college')?.value?.trim() || document.getElementById('reg-inst')?.value?.trim() || null,
+    course:       document.getElementById('reg-course')?.value || null,
+    yearOfStudy:  parseInt(document.getElementById('reg-year')?.value) || null,
+    batch:        document.getElementById('reg-batch')?.value?.trim() || null,
+    department:   document.getElementById('reg-dept')?.value?.trim() || null,
+    designation:  document.getElementById('reg-desig')?.value || null,
+    firmName:     document.getElementById('reg-firm')?.value?.trim() || null,
+    roleTitle:    document.getElementById('reg-role-title')?.value || null,
+    experience:   document.getElementById('reg-exp')?.value || null,
+    city,
+    state,
+    sessionToken: regSessionToken
+  };
+
+  try {
+    const resp = await fetch(SUPA_URL+'/functions/v1/create-profile', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json','Authorization':'Bearer '+SUPA_KEY,'apikey':SUPA_KEY},
+      body: JSON.stringify(payload)
+    });
+    const result = await resp.json();
+
+    if(!result.success) {
+      setMsg2('reg-msg', result.error||'Failed to create account','err');
+      btn.disabled = false;
+      btn.textContent = 'Create My Account →';
+      return;
+    }
+
+    // Success — set global state
+    P = result.profile;
+    U = {id: result.profile.id, mobile: regMobile};
+    plan = 'free';
+
+    // Show welcome screen with unique ID
+    document.getElementById('welcome-name').textContent = 'Hi ' + name.split(' ')[0] + ' 👋  Your account is ready';
+    document.getElementById('welcome-uid').textContent = result.uniqueId;
+    showScreen('welcome-screen');
+
+  } catch(e) {
+    console.error('Registration error:', e);
+    setMsg2('reg-msg','Network error. Please try again.','err');
+    btn.disabled = false;
+    btn.textContent = 'Create My Account →';
+  }
+}
+
+function setMsg2(id, msg, type) {
+  const el = document.getElementById(id);
+  if(el) { el.textContent = msg; el.style.color = type==='err' ? '#f87171' : '#34d399'; }
+}
+
+function copyUID() {
+  const uid = document.getElementById('welcome-uid')?.textContent;
+  if(uid) navigator.clipboard.writeText(uid).then(()=>toast('ID copied! ✅'));
+}
+
+function saveUIDImage() {
+  const uid = document.getElementById('welcome-uid')?.textContent;
+  const name = P?.full_name || 'User';
+  const role = P?.role || 'student';
+  const canvas = document.createElement('canvas');
+  canvas.width = 800; canvas.height = 400;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#0a0f1e'; ctx.fillRect(0,0,800,400);
+  ctx.strokeStyle = '#1d4ed8'; ctx.lineWidth = 3; ctx.strokeRect(20,20,760,360);
+  const grad = ctx.createLinearGradient(20,20,780,20);
+  grad.addColorStop(0,'#1d4ed8'); grad.addColorStop(1,'#60a5fa');
+  ctx.fillStyle = grad; ctx.fillRect(20,20,760,5);
+  ctx.fillStyle = '#60a5fa'; ctx.font = 'bold 26px monospace';
+  ctx.fillText('🏗 StructLearn Pro', 50, 90);
+  ctx.fillStyle = '#e2e8f0'; ctx.font = 'bold 34px monospace';
+  ctx.fillText(name, 50, 145);
+  ctx.fillStyle = '#64748b'; ctx.font = '20px monospace';
+  ctx.fillText(role.charAt(0).toUpperCase()+role.slice(1), 50, 180);
+  ctx.fillStyle = '#475569'; ctx.font = '16px monospace';
+  ctx.fillText('UNIQUE ID', 50, 245);
+  ctx.fillStyle = '#60a5fa'; ctx.font = 'bold 38px monospace';
+  ctx.fillText(uid||'', 50, 305);
+  ctx.fillStyle = '#334155'; ctx.font = '14px monospace';
+  ctx.fillText('structlearnpro.vercel.app', 50, 360);
+  const a = document.createElement('a');
+  a.download = (uid||'id') + '_StructLearnPro.png';
+  a.href = canvas.toDataURL(); a.click();
+}
+
 async function verifyOTP(){
   const otp=[0,1,2,3,4,5].map(i=>document.getElementById('o'+i).value).join('');
   if(otp.length!==6){setMsg('o-msg','Enter all 6 digits','err');return;}
@@ -675,8 +980,10 @@ async function verifyOTP(){
       goTo('projects');
       toast('Welcome back, ' + (P.full_name||mob) + '! 👋');
     } else {
-      // New user — create profile
-      await doSignup(mob, result.sessionToken);
+      // New user — go to role selection screen
+      regMobile = mob;
+      regSessionToken = result.sessionToken || '';
+      showScreen('reg-role-screen');
     }
   }catch(e){
     console.error('verifyOTP error:', e);
