@@ -1418,6 +1418,8 @@ async function openP(id, isNew){
         project: p,
         goStep:  isNew ? 1 : (p.results_json ? 7 : 1)
       },'*');
+      // Load snapshots for this project
+      setTimeout(()=>loadSnapshots(id), 1500);
     }catch(e){}
   },900);
 }
@@ -1621,7 +1623,61 @@ window.addEventListener('message', function(ev){
     handleSaveProject(ev.data);
     return;
   }
+
+  // Save snapshot to Supabase
+  if(ev.data.type==='SAVE_SNAPSHOT' && ev.data.projectId){
+    saveSnapshot(ev.data);
+    return;
+  }
 });
+
+async function saveSnapshot(data){
+  if(!P) return;
+  const pid = data.projectId;
+  const label = data.label || ('Snapshot ' + new Date().toLocaleTimeString('en-IN'));
+  const resp = await fetch(SUPA_URL+'/rest/v1/snapshots',{
+    method: 'POST',
+    headers: {
+      'Authorization':'Bearer '+SUPA_KEY,
+      'apikey':SUPA_KEY,
+      'Content-Type':'application/json',
+      'Prefer':'return=representation'
+    },
+    body: JSON.stringify({
+      profile_id:   P.id,
+      project_id:   pid,
+      label:        label,
+      state_json:   data.stateJson   || null,
+      results_json: data.resultsJson || null,
+      safety_score: data.summary?.allSafe ? 100 : (data.summary ? 
+        Math.round(((data.summary.beamCount||0)*2)/((data.summary.beamCount||0)*2+6)*100) : 0),
+      all_pass:     data.allPass || false,
+      summary:      data.summary || {},
+    })
+  });
+  if(resp.ok){
+    toast('📸 Snapshot saved to cloud ✅');
+  }
+}
+
+async function loadSnapshots(projectId){
+  if(!P || !projectId) return;
+  const resp = await fetch(
+    SUPA_URL+'/rest/v1/snapshots?project_id=eq.'+projectId+'&profile_id=eq.'+P.id+'&order=created_at.desc&limit=10',
+    {headers:{'Authorization':'Bearer '+SUPA_KEY,'apikey':SUPA_KEY}}
+  );
+  if(!resp.ok) return;
+  const snaps = await resp.json();
+  if(!snaps || !snaps.length) return;
+  // Send to iframe
+  const fr = document.getElementById('app-iframe');
+  if(fr && fr.contentWindow){
+    fr.contentWindow.postMessage({
+      type: 'LOAD_SNAPSHOTS',
+      snapshots: snaps
+    }, '*');
+  }
+}
 
 function calcSafetyScore(RES){
   try{

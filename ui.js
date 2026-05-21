@@ -311,7 +311,7 @@ function p7(){
   <button class="btn" onclick="if(requirePro('Export Project')) exportProject()" style="background:linear-gradient(135deg,#1e3a5f,#1e40af);border:1px solid #2563eb" title="Export as JSON file">📤 Export <span style="font-size:9px;background:#f59e0b;color:#1a1208;padding:1px 5px;border-radius:3px;font-weight:700">PRO</span></button>
   <button class="btn se" onclick="importProject()" title="Import from JSON file">📥 Import</button>
       <button class="btn" onclick="if(requirePro('Construction Drawings')) showConstructionPDFDialog()" style="background:linear-gradient(135deg,#1e3a8a,#1d4ed8);border:1px solid #3b82f6;margin-left:8px">📐 Construction Drawing Package <span style="font-size:9px;background:#f59e0b;color:#1a1208;padding:1px 5px;border-radius:3px;font-weight:700">PRO</span></button>
-  <button class="btn" onclick="if(requirePro('Snapshot')) takeSnapshot()" title="Save current design for comparison" style="background:linear-gradient(135deg,#1e3a8a,#312e81);border:1px solid #6366f1">📸 Snapshot <span style="font-size:9px;background:#f59e0b;color:#1a1208;padding:1px 5px;border-radius:3px;font-weight:700">PRO</span></button>
+  <button class="btn" onclick="takeSnapshot()" title="Save current design for comparison" style="background:linear-gradient(135deg,#1e3a8a,#312e81);border:1px solid #6366f1">📸 Snapshot <span style="font-size:9px;background:#f59e0b;color:#1a1208;padding:1px 5px;border-radius:3px;font-weight:700">PRO</span></button>
   <button class="btn se" onclick="go(2)"><- Edit Inputs</button>
   <button class="btn se" onclick="RES=null;go(0)">🔄 New</button>
 </div>
@@ -11368,27 +11368,49 @@ let _snapshots = [];
 
 function takeSnapshot(label) {
   if (!RES) { alert('Run analysis first to take a snapshot.'); return; }
+  const snapLabel = label || ('Snapshot ' + (_snapshots.length + 1));
+  const beams = RES.allBeams || RES.beams || [];
+  const cols  = RES.allCols  || RES.cols  || [];
+  const ftgs  = RES.allFtgs  || RES.ftgs  || [];
+  const allSafe = beams.every(b=>b.deflOK!==false&&b.shearSafe!==false) &&
+                  cols.every(c=>c.safe!==false) &&
+                  ftgs.every(f=>f.punch_ok!==false&&f.ow_ok!==false&&f.Ld_ok!==false&&f.tr_ok!==false);
   const snap = {
-    label: label || ('Snapshot ' + (_snapshots.length + 1)),
+    id: Date.now().toString(36),
+    label: snapLabel,
     ts: new Date().toLocaleTimeString('en-IN'),
+    created_at: new Date().toISOString(),
     S: JSON.parse(JSON.stringify(S)),
+    RES: JSON.parse(JSON.stringify(RES)),
     summary: {
-      totalSteel: RES.beams.reduce((a,b)=>a+(b.Am||0),0),
-      beamCount: RES.beams.length,
-      maxDefl: Math.max(...RES.beams.map(b=>b.dfl||0)),
-      allSafe: RES.beams.every(b=>b.deflOK&&b.shearSafe) &&
-               RES.cols.filter(c=>c.floor===1).every(c=>c.safe) &&
-               RES.ftgs.every(f=>f.punch_ok&&f.ow_ok),
-      colSize: RES.cols[0]&&RES.cols[0].size||0,
-      slabD: RES.slab&&RES.slab.slabD||0,
-      beamD: RES.beams[0]&&RES.beams[0].D||0,
-      beamB: RES.beams[0]&&RES.beams[0].b||0,
+      totalSteel: beams.reduce((a,b)=>a+(b.Am||0),0),
+      beamCount:  beams.length,
+      maxDefl:    beams.length ? Math.max(...beams.map(b=>b.dfl||0)) : 0,
+      allSafe,
+      colSize:    cols[0] ? cols[0].size : 0,
+      slabD:      RES.slab ? RES.slab.slabD : 0,
+      beamD:      beams[0] ? beams[0].D : 0,
+      beamB:      beams[0] ? beams[0].b : 0,
       fck: S.fck, fy: S.fy,
       numFloors: S.numFloors, floorHt: S.floorHt,
     }
   };
   _snapshots.push(snap);
   showSaveToast('Snapshot saved: ' + snap.label, '#38bdf8');
+  // Send to Supabase via parent
+  if(window._slpProjectId){
+    try{
+      window.parent.postMessage({
+        type:      'SAVE_SNAPSHOT',
+        projectId: window._slpProjectId,
+        label:     snapLabel,
+        stateJson: snap.S,
+        resultsJson: snap.RES,
+        summary:   snap.summary,
+        allPass:   allSafe,
+      }, '*');
+    }catch(e){}
+  }
   // Refresh snapshot panel if open
   const panel = document.getElementById('snapshotPanel');
   if (panel) panel.innerHTML = renderSnapshotPanel();
@@ -11470,9 +11492,8 @@ function secSnapshot() {
     Take snapshots of your current design at different stages. Compare parameters and results side-by-side to understand the effect of your design decisions.
   </div>
   <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
-    <button class="btn" onclick="if(requirePro('Snapshot')) takeSnapshot()" style="background:linear-gradient(135deg,#1e40af,#1d4ed8);border:1px solid #3b82f6">
-      📸 Take Snapshot ${RES?'':'(run analysis first)'}
-     <span style="font-size:9px;background:#f59e0b;color:#1a1208;padding:1px 5px;border-radius:3px;font-weight:700">PRO</span></button>
+    <button class="btn" onclick="takeSnapshot()" style="background:linear-gradient(135deg,#1e40af,#1d4ed8);border:1px solid #3b82f6">
+      📸 Take Snapshot ${RES?'':'(run analysis first)'}</button>
     <button class="btn se" onclick="
       if(requirePro('Snapshot')){
         const lbl=prompt('Snapshot label:','Design v'+(_snapshots.length+1));
@@ -15453,6 +15474,25 @@ _BT._loadLocal();
 // ── RESTORE PROGRESS FROM SUPABASE (cross-device) ────────────
 window.addEventListener('message', function(e) {
   // ── LOAD_PROJECT: restore state from Supabase ────────────────
+  if(e.data && e.data.type === 'LOAD_SNAPSHOTS') {
+    // Restore snapshots from Supabase
+    var loaded = e.data.snapshots || [];
+    _snapshots = loaded.map(function(s){
+      return {
+        id:      s.id,
+        label:   s.label,
+        ts:      s.ts || new Date(s.created_at).toLocaleTimeString('en-IN'),
+        created_at: s.created_at,
+        S:       s.state_json   || {},
+        RES:     s.results_json || null,
+        summary: s.summary      || {},
+      };
+    });
+    var panel = document.getElementById('snapshotPanel');
+    if(panel) panel.innerHTML = renderSnapshotPanel();
+    return;
+  }
+
   if(e.data && e.data.type === 'LOAD_PROJECT') {
     var proj = e.data.project;
     var goStep = e.data.goStep || 1;
