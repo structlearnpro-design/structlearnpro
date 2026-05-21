@@ -2447,37 +2447,43 @@ function showToast(msg, type) {
 
 // ── STUDENT PROGRESS (cross-device sync) ─────────────────────
 async function saveProgressToSupabase(progress) {
-  if(!U || !U.id || !progress) return;
+  if(!P || !progress) return;
   try {
-    await db.from('student_progress').upsert({
-      user_id: U.id,
-      lessons_passed: progress.lessons || {},
-      behaviors_done: progress.behaviors || {},
-      quiz_attempts:  progress.quizAttempts || {},
-      confidence:     progress.confidence || 0,
-      updated_at:     new Date().toISOString()
-    }, { onConflict: 'user_id' });
-  } catch(e) { console.log('Save progress error', e); }
+    // Save to our progress table using profile_id
+    await fetch(SUPA_URL+'/rest/v1/progress?profile_id=eq.'+P.id, {
+      method: 'PATCH',
+      headers: {'Authorization':'Bearer '+SUPA_KEY,'apikey':SUPA_KEY,'Content-Type':'application/json'},
+      body: JSON.stringify({
+        quiz_scores:      progress.quizAttempts || {},
+        topics_completed: progress.lessons      || {},
+        badges:           progress.behaviors    || {},
+        updated_at:       new Date().toISOString()
+      })
+    });
+  } catch(e) { console.warn('Save progress error', e); }
 }
 
 async function loadAndRestoreProgress() {
-  if(!U || !U.id) return;
+  if(!P) return;
   try {
-    const {data} = await db.from('student_progress')
-      .select('*').eq('user_id', U.id).maybeSingle();
-    if(!data) return; // first time — no saved progress
+    const resp = await fetch(
+      SUPA_URL+'/rest/v1/progress?profile_id=eq.'+P.id+'&select=*',
+      {headers:{'Authorization':'Bearer '+SUPA_KEY,'apikey':SUPA_KEY}}
+    );
+    const data = resp.ok ? await resp.json() : [];
+    const prog = data && data[0];
+    if(!prog) return; // first time — no saved progress
 
-    // Store in sessionStorage so iframe can access after load
-    sessionStorage.setItem('slp_restore_progress', JSON.stringify({
-      lessons:      data.lessons_passed  || {},
-      behaviors:    data.behaviors_done  || {},
-      quizAttempts: data.quiz_attempts   || {},
-      confidence:   data.confidence      || 0
-    }));
-
-    // Send to iframe if already loaded
+    // Send directly to iframe (no sessionStorage needed)
+    const progressData = {
+      lessons:      prog.topics_completed || {},
+      behaviors:    prog.badges           || {},
+      quizAttempts: prog.quiz_scores      || {},
+      confidence:   0
+    };
+    sessionStorage.setItem('slp_restore_progress', JSON.stringify(progressData));
     sendProgressToIframe();
-  } catch(e) { console.log('Load progress error', e); }
+  } catch(e) { console.warn('Load progress error', e); }
 }
 
 function sendProgressToIframe() {

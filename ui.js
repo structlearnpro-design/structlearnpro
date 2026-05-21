@@ -12441,9 +12441,9 @@ function getCooldownHours(level, attempt) {
   return 72;
 }
 function getAttempts(level) {
-  return parseInt(localStorage.getItem(`slp_quiz_att_${level}`)||'0');
+  return parseInt((window._slpQuizAttempts||{})[level]||'0');
 }
-function setAttempts(level, n) { localStorage.setItem(`slp_quiz_att_${level}`, n); }
+function setAttempts(level, n) { window._slpQuizAttempts = window._slpQuizAttempts||{}; window._slpQuizAttempts[level]=n; }
 function getMaxAttempts(level) { return level===1?3:level===2?3:2; }
 function getCooldownEnd(level) {
   const v = localStorage.getItem(getCooldownKey(level));
@@ -12467,7 +12467,7 @@ function generateCertId(level) {
 
 function saveCertificate(level, certId, userName) {
   // Save to localStorage (would go to Supabase in full version)
-  const certs = JSON.parse(localStorage.getItem('slp_certs')||'[]');
+  const certs = window._slpCerts || [];
   const cert = {
     id: certId,
     level,
@@ -12476,7 +12476,8 @@ function saveCertificate(level, certId, userName) {
     valid: true,
   };
   certs.push(cert);
-  localStorage.setItem('slp_certs', JSON.stringify(certs));
+  window._slpCerts = certs;
+  try{ window.parent.postMessage({type:'SAVE_CERTS',certs},'*'); }catch(e){}
 
   // Save to Supabase if available
   if(typeof db !== 'undefined' && typeof U !== 'undefined' && U) {
@@ -12815,7 +12816,7 @@ function openCertHub() {
   hub.id = '_cert_hub';
   hub.style.cssText = 'position:fixed;inset:0;background:rgba(0,5,20,0.92);z-index:99990;display:flex;align-items:center;justify-content:center;padding:20px;overflow-y:auto;font-family:sans-serif;';
 
-  const certs = JSON.parse(localStorage.getItem('slp_certs')||'[]');
+  const certs = window._slpCerts || [];
   const earnedLevels = certs.map(c=>c.level);
 
   // Check lesson completion for each level
@@ -12936,7 +12937,7 @@ function openCertHub() {
 
 // ── SHOW CERTIFICATE ─────────────────────────────────────────
 function showCertificate(level) {
-  const certs = JSON.parse(localStorage.getItem('slp_certs')||'[]');
+  const certs = window._slpCerts || [];
   const cert = certs.filter(c=>c.level===level).pop();
   if(!cert) return;
 
@@ -13261,7 +13262,7 @@ function showQuizResult(score, total, pass, level, attempts) {
 
 // ── DOWNLOAD CERT AS PNG ─────────────────────────────────────
 function downloadCert(level) {
-  const certs = JSON.parse(localStorage.getItem('slp_certs')||'[]');
+  const certs = window._slpCerts || [];
   const cert = certs.filter(c=>c.level===level).pop();
   if(!cert) return;
   const dateStr = new Date(cert.date).toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'});
@@ -13653,11 +13654,13 @@ Zone II: Z=0.10 | Zone III: Z=0.16 | Zone IV: Z=0.24 | Zone V: Z=0.36</p>
 // ── MODULE PROGRESS TRACKING ──────────────────────────────────
 const _EDU = {
   getProgress() {
-    try { return JSON.parse(localStorage.getItem('slp_edu_progress')||'{}'); } catch(e){ return {}; }
+    return window._slpProgress || {};
   },
   saveProgress(data) {
     const merged = {...this.getProgress(),...data};
-    localStorage.setItem('slp_edu_progress', JSON.stringify(merged));
+    window._slpProgress = merged;
+    // Send to parent (Supabase) every save
+    try{ window.parent.postMessage({type:'SAVE_PROGRESS',progress:{lessons:merged,quizAttempts:{},behaviors:{},confidence:0}},'*'); }catch(e){}
     // Sync to Supabase via parent (cross-device persistence)
     _EDU._syncToCloud();
   },
@@ -15535,10 +15538,9 @@ window.addEventListener('message', function(e) {
   var prog = e.data.progress;
   if(!prog) return;
   if(prog.lessons && Object.keys(prog.lessons).length > 0) {
-    var existing = _EDU.getProgress();
+    var existing = window._slpProgress || {};
     // Supabase is authoritative — it wins over local cache
-    var merged = Object.assign({}, existing, prog.lessons);
-    localStorage.setItem('slp_edu_progress', JSON.stringify(merged));
+    window._slpProgress = Object.assign({}, existing, prog.lessons);
   }
   if(prog.behaviors) {
     _BT.importFrom(prog.behaviors);
@@ -15565,18 +15567,14 @@ window.addEventListener('message', function(e) {
     setTimeout(applyConfidenceUI, 5000);
   }
   if(prog.quizAttempts) {
+    window._slpQuizAttempts = window._slpQuizAttempts || {};
     Object.keys(prog.quizAttempts).forEach(function(lv) {
       var data = prog.quizAttempts[lv];
-      if(data.attempts > 0) {
-        var stored = parseInt(localStorage.getItem('slp_quiz_att_'+lv)||'0');
-        if(data.attempts > stored) localStorage.setItem('slp_quiz_att_'+lv, data.attempts);
-      }
-      if(data.cooldownEnd && parseInt(data.cooldownEnd) > Date.now()) {
-        var stored2 = parseInt(localStorage.getItem('slp_quiz_cd_'+lv)||'0');
-        if(parseInt(data.cooldownEnd) > stored2) localStorage.setItem('slp_quiz_cd_'+lv, data.cooldownEnd);
-      }
+      if(data.attempts > 0) window._slpQuizAttempts[lv] = data.attempts;
     });
   }
+  // Restore certificates if included
+  if(prog.certs) window._slpCerts = prog.certs;
 });
 
 // ── GAME CHALLENGE SYSTEM ─────────────────────────────────────
