@@ -665,35 +665,73 @@ async function verifyOTP(){
 }
 
 async function doSignup(mob){
-  const {data:ex}=await db.from('profiles').select('id').eq('mobile',mob).maybeSingle();
+  // Check both mobile formats
+  let {data:ex}=await db.from('profiles').select('id').eq('mobile',mob).maybeSingle();
+  if(!ex){const {data:e2}=await db.from('profiles').select('id').eq('mobile','+91'+mob).maybeSingle();ex=e2;}
   if(ex){await doLogin(mob);return;}
+
   const fe='u'+mob+'@structlearnpro.com';
   const pw='SLP_v2_'+btoa(mob).replace(/=/g,'');
-  // Store pw in profiles so login can use it
-  const {data:au,error}=await db.auth.signUp({email:fe,password:pw,options:{emailRedirectTo:null,data:{mobile:mob}}});
-  if(error){setMsg('o-msg',error.message,'err');return;}
-  // Store the password hash reference in profiles for future login
-  // Wait for trigger to create profile row
-  await new Promise(r=>setTimeout(r,1500));
-  // Upsert profile with all details
-  await db.from('profiles').upsert({
-    id:au.user.id,
-    full_name:pending.name,
-    mobile:mob,
-    email:pending.email,
-    purpose:pending.purpose,
-    plan:'free'
-  },{onConflict:'id'});
-  localStorage.setItem('slp_'+mob, pw); // cached for speed
-  U=au.user;
-  const {data:prof}=await db.from('profiles').select('*').eq('id',U.id).single();
-  P=prof;plan=P?.plan||'free';
-  updTop();goTo('projects');
+
+  // Try signUp first
+  let userId = null;
+  const {data:au, error:signUpErr} = await db.auth.signUp({
+    email: fe,
+    password: pw,
+    options: { emailRedirectTo: null, data: { mobile: mob } }
+  });
+
+  if(signUpErr){
+    // If user already exists in auth, try signIn
+    const {data:si, error:siErr} = await db.auth.signInWithPassword({email:fe, password:pw});
+    if(siErr){setMsg('o-msg', signUpErr.message, 'err');return;}
+    userId = si.user.id;
+    U = si.user;
+  } else {
+    userId = au.user.id;
+    U = au.user;
+  }
+
+  // Small wait for auth to settle
+  await new Promise(r=>setTimeout(r,800));
+
+  // Generate a proper unique ID
+  const year = new Date().getFullYear();
+  const seq  = String(Math.floor(Math.random()*90000)+10000);
+  const uid  = 'SLP-STU-'+year+'-XX-'+seq;
+
+  // Insert profile
+  const {error:profErr} = await db.from('profiles').upsert({
+    user_id:    userId,
+    full_name:  pending.name || mob,
+    mobile:     '+91'+mob,
+    email:      pending.email || null,
+    role:       'student',
+    unique_id:  uid
+  }, {onConflict:'user_id'});
+
+  if(profErr){
+    console.error('Profile error:', profErr);
+    setMsg('o-msg','Account created but profile failed. Please try logging in.','err');
+    return;
+  }
+
+  localStorage.setItem('slp_'+mob, pw);
+
+  // Load profile
+  const {data:prof} = await db.from('profiles').select('*').eq('user_id',userId).single();
+  P=prof; plan=P?.plan||'free';
+  updTop(); goTo('projects');
   toast('Welcome to StructLearn Pro! 🎉');
 }
 
 async function doLogin(mob){
-  const {data:prof}=await db.from('profiles').select('*').eq('mobile',mob).maybeSingle();
+  // Try both formats: plain 10-digit and +91 prefixed
+  let {data:prof}=await db.from('profiles').select('*').eq('mobile',mob).maybeSingle();
+  if(!prof){
+    const {data:prof2}=await db.from('profiles').select('*').eq('mobile','+91'+mob).maybeSingle();
+    prof=prof2;
+  }
   if(!prof){setMsg('o-msg','Account not found. Please sign up.','err');return;}
   const fe='u'+mob+'@structlearnpro.com';
   // Compute deterministic password — same on any device
@@ -705,7 +743,7 @@ async function doLogin(mob){
   // Write session token — kicks out any other active session
   const _tok = Date.now().toString(36)+Math.random().toString(36).slice(2);
   localStorage.setItem('slp_tok_'+mob, _tok);
-  await db.from('profiles').update({session_token:_tok, last_login:new Date().toISOString()}).eq('id',U.id);
+  await db.from('profiles').update({last_active:new Date().toISOString()}).eq('user_id',U.id);
   // Load saved progress from Supabase and restore into app
   await loadAndRestoreProgress();
   updTop();goTo('projects');
@@ -1114,7 +1152,7 @@ function toast(msg,err=false){const t=document.getElementById('toast');t.textCon
   const {data:{session}}=await db.auth.getSession();
   if(session&&session.user){
     U=session.user;
-    const {data:prof}=await db.from('profiles').select('*').eq('id',U.id).single();
+    const {data:prof}=await db.from('profiles').select('*').eq('user_id',U.id).single();
     P=prof;plan=P?.plan||'free';
     updTop();goTo('projects');
   } else {showScreen('auth-screen');}
