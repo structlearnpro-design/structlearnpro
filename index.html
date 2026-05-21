@@ -793,20 +793,35 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
     <div class="plan-opts">
       <div class="plan-opt on" id="po-m" onclick="selPlan('monthly')">
         <div class="plan-nm">Monthly</div>
-        <div class="plan-price">₹299</div>
+        <div class="plan-price" id="price-monthly-display">₹299</div>
         <div class="plan-per">per month · cancel anytime</div>
         <div class="plan-feats">✓ PDF Report download<br>✓ Construction drawings<br>✓ Unlimited projects<br>✓ All report tabs</div>
       </div>
       <div class="plan-opt" id="po-a" onclick="selPlan('annual')">
-        <div class="plan-nm">Annual <span style="background:#f59e0b;color:#000;padding:1px 5px;border-radius:3px;font-size:9px">SAVE ₹600</span></div>
-        <div class="plan-price">₹249</div>
-        <div class="plan-per">per month · ₹2,990/year</div>
+        <div class="plan-nm">Annual <span style="background:#f59e0b;color:#000;padding:1px 5px;border-radius:3px;font-size:9px" id="annual-save-badge">SAVE ₹600</span></div>
+        <div class="plan-price" id="price-annual-pm-display">₹249</div>
+        <div class="plan-per">per month · <span id="price-annual-display">₹2,990</span>/year</div>
         <div class="plan-feats">✓ Everything in Monthly<br>✓ 2 months free<br>✓ Priority support<br>✓ Advanced tools</div>
       </div>
     </div>
-    <button class="paybtn" onclick="startPay()">Pay with UPI / Card / Net Banking →</button>
+
+    <!-- Coupon -->
+    <div style="margin:10px 0;display:flex;gap:8px">
+      <input type="text" id="coupon-input" placeholder="Coupon code (optional)"
+        style="flex:1;padding:8px 12px;background:var(--bg2);border:1px solid var(--b1);border-radius:7px;
+        color:var(--txt);font-size:12px;outline:none;font-family:inherit;text-transform:uppercase"
+        oninput="this.value=this.value.toUpperCase()">
+      <button onclick="applyCoupon()" style="padding:8px 14px;background:var(--bg2);border:1px solid var(--b1);
+        border-radius:7px;color:var(--txt2);font-size:12px;cursor:pointer;font-family:inherit">Apply</button>
+    </div>
+    <div id="coupon-msg" style="font-size:12px;margin-bottom:8px;min-height:16px"></div>
+
+    <!-- Pay button with dynamic amount -->
+    <button class="paybtn" id="pay-btn" onclick="startPay()">
+      Pay ₹<span id="pay-amount-display">299</span> with UPI / Card / Net Banking →
+    </button>
     <button class="cancbtn" onclick="hideUp()">Maybe later</button>
-    <div class="snote">🔒 Secure payment by Razorpay · Cancel anytime</div>
+    <div class="snote">🔒 Secure payment by Razorpay · Cancel anytime · Test mode active</div>
   </div>
 </div>
 
@@ -912,13 +927,44 @@ function dismissAnnouncement() {
 }
 
 function updatePriceDisplay(){
-  const pm = document.querySelector('.plan-price');
-  const pa = document.querySelectorAll('.plan-price')[1];
+  // Monthly price
+  const pm = document.getElementById('price-monthly-display');
   if(pm) pm.textContent = '₹'+PRICES.monthly_display;
-  if(pa) pa.textContent = '₹'+Math.round(PRICES.annual_display/12);
-  // Update upgrade button text
+
+  // Annual price per month
+  const annualPerMonth = Math.round(PRICES.annual_display/12);
+  const pa = document.getElementById('price-annual-pm-display');
+  if(pa) pa.textContent = '₹'+annualPerMonth;
+
+  // Annual total
+  const pat = document.getElementById('price-annual-display');
+  if(pat) pat.textContent = '₹'+PRICES.annual_display;
+
+  // Annual savings badge
+  const savedAmt = (PRICES.monthly_display*12) - PRICES.annual_display;
+  const badge = document.getElementById('annual-save-badge');
+  if(badge && savedAmt>0) badge.textContent = 'SAVE ₹'+savedAmt;
+
+  // Upgrade buttons
   const upBtn = document.getElementById('acc-up-btn');
   if(upBtn) upBtn.textContent = '⚡ Upgrade to Pro — ₹'+PRICES.monthly_display+'/month';
+
+  // Pay button
+  updatePayButton();
+}
+
+function updatePayButton(){
+  const baseAmt = selPlanId==='monthly' ? PRICES.monthly_display : PRICES.annual_display;
+  const discAmt = appliedCoupon ? getDiscountedDisplayAmount(baseAmt) : baseAmt;
+  const payDisplay = document.getElementById('pay-amount-display');
+  if(payDisplay) payDisplay.textContent = discAmt.toLocaleString('en-IN');
+}
+
+function getDiscountedDisplayAmount(baseAmt){
+  if(!appliedCoupon) return baseAmt;
+  if(appliedCoupon.discount_type==='percentage')
+    return Math.round(baseAmt*(1-appliedCoupon.discount_value/100));
+  return Math.max(0, baseAmt-appliedCoupon.discount_value);
 }
 
 const {createClient} = supabase;
@@ -2191,6 +2237,7 @@ function selPlan(p){
   selPlanId=p;
   document.getElementById('po-m').classList.toggle('on',p==='monthly');
   document.getElementById('po-a').classList.toggle('on',p==='annual');
+  updatePayButton();
 }
 // ── COUPON SYSTEM ────────────────────────────────────────────
 let appliedCoupon = null;
@@ -2260,70 +2307,324 @@ function updatePayButton(){
 
 // ── PAYMENT ───────────────────────────────────────────────────
 async function startPay(){
-  if(!RZP_KEY){toast('Payment not yet configured. Coming soon!',true);return;}
-  // Load Razorpay script dynamically if not already loaded
+  if(!RZP_KEY){ toast('Payment not configured yet.'); return; }
+  if(!P){ toast('Please log in first.'); return; }
+
+  // Load Razorpay script
   if(!window.Razorpay){
     await new Promise((resolve,reject)=>{
       const s=document.createElement('script');
       s.src='https://checkout.razorpay.com/v1/checkout.js';
-      s.onload=resolve;
-      s.onerror=reject;
+      s.onload=resolve; s.onerror=reject;
       document.head.appendChild(s);
     });
   }
-  const baseAmt = selPlanId==='monthly'?PRICES.monthly:PRICES.annual;
-  const amt = getDiscountedAmount(baseAmt);
-  const desc = selPlanId==='monthly'?'Monthly Subscription':'Annual Subscription';
-  const opts={key:RZP_KEY,amount:amt,currency:'INR',name:'StructLearn Pro',
-    description:selPlanId==='monthly'?'Monthly Subscription':'Annual Subscription',
-    prefill:{contact:P?.mobile?'91'+P.mobile:''},theme:{color:'#1d4ed8'},
-    handler:async(r)=>{
-      const exp=new Date();exp.setMonth(exp.getMonth()+(selPlanId==='monthly'?1:12));
-      await db.from('profiles').update({
-        plan:'pro',
-        plan_expires_at:exp.toISOString(),
-        razorpay_payment_id:r.razorpay_payment_id
-      }).eq('id',U.id);
-      // Record payment history
-      await db.from('payment_history').insert({
-        user_id:U.id,
-        razorpay_payment_id:r.razorpay_payment_id,
-        amount:amt,
-        plan:selPlanId,
-        status:'success',
-        coupon_used:appliedCoupon?appliedCoupon.code:null,
+
+  // Always use latest prices from Supabase
+  const baseAmt     = selPlanId==='monthly' ? PRICES.monthly : PRICES.annual;
+  const amt         = getDiscountedAmount(baseAmt); // in paise
+  const displayAmt  = Math.round(amt/100);
+  const planLabel   = selPlanId==='monthly' ? 'Monthly Pro' : 'Annual Pro';
+  const months      = selPlanId==='monthly' ? 1 : 12;
+
+  const opts = {
+    key:         RZP_KEY,
+    amount:      amt,
+    currency:    'INR',
+    name:        'StructLearn Pro',
+    description: planLabel + ' Subscription',
+    image:       'https://structlearnpro.vercel.app/favicon.ico',
+    prefill: {
+      contact: P.mobile ? P.mobile.replace('+91','') : '',
+      email:   P.email || '',
+      name:    P.full_name || '',
+    },
+    notes: {
+      profile_id: P.id,
+      unique_id:  P.unique_id,
+      plan:       selPlanId,
+    },
+    theme: { color: '#1d4ed8' },
+
+    handler: async function(r) {
+      // Payment successful
+      const exp = new Date();
+      exp.setMonth(exp.getMonth() + months);
+
+      // Update profile
+      await fetch(SUPA_URL+'/rest/v1/profiles?id=eq.'+P.id, {
+        method: 'PATCH',
+        headers: {'Authorization':'Bearer '+SUPA_KEY,'apikey':SUPA_KEY,'Content-Type':'application/json'},
+        body: JSON.stringify({
+          plan:                'pro',
+          plan_type:           selPlanId,
+          plan_expires_at:     exp.toISOString(),
+          razorpay_payment_id: r.razorpay_payment_id,
+          amount_paid:         displayAmt,
+          payment_date:        new Date().toISOString(),
+        })
       });
-      // Update coupon usage count
+
+      // Record in payment_history
+      await fetch(SUPA_URL+'/rest/v1/payment_history', {
+        method: 'POST',
+        headers: {'Authorization':'Bearer '+SUPA_KEY,'apikey':SUPA_KEY,'Content-Type':'application/json'},
+        body: JSON.stringify({
+          profile_id:          P.id,
+          razorpay_payment_id: r.razorpay_payment_id,
+          amount:              amt,
+          plan:                selPlanId,
+          status:              'success',
+          coupon_used:         appliedCoupon ? appliedCoupon.code : null,
+        })
+      });
+
+      // Update coupon usage
       if(appliedCoupon){
-        await db.from('coupons').update({used_count:appliedCoupon.used_count+1}).eq('id',appliedCoupon.id);
-        await db.from('coupon_uses').insert({coupon_id:appliedCoupon.id,user_id:U.id,discount_amount:baseAmt-amt,plan:selPlanId});
-        appliedCoupon=null;
+        await fetch(SUPA_URL+'/rest/v1/coupons?id=eq.'+appliedCoupon.id, {
+          method: 'PATCH',
+          headers: {'Authorization':'Bearer '+SUPA_KEY,'apikey':SUPA_KEY,'Content-Type':'application/json'},
+          body: JSON.stringify({used_count: (appliedCoupon.used_count||0)+1})
+        });
+        appliedCoupon = null;
+        document.getElementById('coupon-input').value = '';
+        document.getElementById('coupon-msg').textContent = '';
       }
-      // Refresh profile from DB to confirm update
-      const {data:updProf}=await db.from('profiles').select('*').eq('id',U.id).single();
-      if(updProf){P=updProf;plan=updProf.plan||'pro';}
-      else{plan='pro';P.plan='pro';}
-      updTop();hideUp();
-      toast('🎉 Welcome to Pro! All features unlocked.');
+
+      // Update local state
+      P.plan = 'pro';
+      P.plan_type = selPlanId;
+      P.plan_expires_at = exp.toISOString();
+      plan = 'pro';
+
+      // Show receipt
+      showPaymentReceipt(r.razorpay_payment_id, displayAmt, planLabel, exp);
+
+      // Update UI
+      updTop();
+      hideUp();
+      renderAcc();
       tellIframe();
-    }};
-  opts.modal = {
-    ondismiss: function(){
-      toast('Payment cancelled. Click Upgrade to try again.', true);
+      toast('🎉 Welcome to Pro! All features unlocked.');
+
+      // Schedule renewal reminder
+      scheduleRenewalReminder(exp, selPlanId);
     }
   };
-  const rzp=new window.Razorpay(opts);
-  rzp.on('payment.failed', function(response){
-    toast('Payment failed: '+response.error.description+'. Please try again.', true);
+
+  opts.modal = {
+    ondismiss: function(){
+      toast('Payment cancelled. Your free account is still active.');
+    }
+  };
+
+  const rzp = new window.Razorpay(opts);
+
+  rzp.on('payment.failed', async function(response){
+    toast('Payment failed: '+(response.error.description||'Please try again.'));
     // Record failed payment
-    db.from('payment_history').insert({
-      user_id:U.id,
-      amount:amt,
-      plan:selPlanId,
-      status:'failed',
-    }).then(()=>{}).catch(()=>{});
+    await fetch(SUPA_URL+'/rest/v1/payment_history', {
+      method: 'POST',
+      headers: {'Authorization':'Bearer '+SUPA_KEY,'apikey':SUPA_KEY,'Content-Type':'application/json'},
+      body: JSON.stringify({
+        profile_id:     P.id,
+        amount:         amt,
+        plan:           selPlanId,
+        status:         'failed',
+        failure_reason: response.error.description || 'Unknown',
+      })
+    });
   });
+
   rzp.open();
+}
+
+// ── PAYMENT RECEIPT ───────────────────────────────────────────
+function showPaymentReceipt(paymentId, amount, planLabel, expiryDate) {
+  // Remove existing
+  document.getElementById('receipt-modal')?.remove();
+
+  const modal = document.createElement('div');
+  modal.id = 'receipt-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;font-family:inherit';
+  modal.innerHTML = `
+    <div style="background:#0f172a;border:1px solid #1e3a8a;border-radius:16px;padding:28px;width:100%;max-width:440px;text-align:center">
+      <div style="font-size:48px;margin-bottom:12px">🎉</div>
+      <div style="font-size:20px;font-weight:800;color:#34d399;margin-bottom:4px">Payment Successful!</div>
+      <div style="font-size:13px;color:#64748b;margin-bottom:24px">Thank you for subscribing to StructLearn Pro</div>
+
+      <div style="background:#0a0f1e;border:1px solid #1e3a8a;border-radius:12px;padding:18px;text-align:left;margin-bottom:20px">
+        <div style="font-size:11px;color:#475569;font-weight:700;letter-spacing:1px;margin-bottom:12px">PAYMENT RECEIPT</div>
+        <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #1e3a8a;font-size:13px">
+          <span style="color:#64748b">Plan</span><span style="font-weight:700;color:#e2e8f0">${planLabel}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #1e3a8a;font-size:13px">
+          <span style="color:#64748b">Amount Paid</span><span style="font-weight:700;color:#34d399">₹${amount.toLocaleString('en-IN')}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #1e3a8a;font-size:13px">
+          <span style="color:#64748b">Valid Until</span><span style="font-weight:700;color:#e2e8f0">${expiryDate.toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'})}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #1e3a8a;font-size:13px">
+          <span style="color:#64748b">Payment ID</span><span style="font-size:10px;color:#64748b;font-family:monospace">${paymentId}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:6px 0;font-size:13px">
+          <span style="color:#64748b">Account</span><span style="color:#e2e8f0">${P.full_name||P.mobile}</span>
+        </div>
+      </div>
+
+      <div style="font-size:12px;color:#475569;margin-bottom:20px">
+        📱 You will receive an SMS reminder 7 days before your subscription expires.
+      </div>
+
+      <div style="display:flex;gap:10px">
+        <button onclick="downloadReceipt('${paymentId}',${amount},'${planLabel}','${expiryDate.toISOString()}')"
+          style="flex:1;padding:11px;background:#1e3a8a;border:1px solid #3b82f6;border-radius:8px;color:#60a5fa;font-size:12px;cursor:pointer;font-family:inherit">
+          📥 Download Receipt
+        </button>
+        <button onclick="document.getElementById('receipt-modal').remove()"
+          style="flex:1;padding:11px;background:linear-gradient(135deg,#1d4ed8,#2563eb);border:none;border-radius:8px;color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">
+          Start Using Pro →
+        </button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+}
+
+function downloadReceipt(paymentId, amount, planLabel, expiryISO) {
+  const expDate = new Date(expiryISO).toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'});
+  const today   = new Date().toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'});
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
+<title>StructLearn Pro — Receipt</title>
+<style>
+  body{font-family:Arial,sans-serif;max-width:600px;margin:40px auto;padding:20px;color:#1e293b}
+  .header{text-align:center;border-bottom:2px solid #1d4ed8;padding-bottom:20px;margin-bottom:24px}
+  .logo{font-size:24px;font-weight:900;color:#1d4ed8}
+  .title{font-size:18px;color:#475569;margin-top:4px}
+  .receipt-box{border:1px solid #e2e8f0;border-radius:8px;padding:20px}
+  .row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f1f5f9;font-size:14px}
+  .row:last-child{border:none}
+  .label{color:#64748b}
+  .value{font-weight:600}
+  .amount{font-size:20px;font-weight:900;color:#059669}
+  .footer{text-align:center;margin-top:24px;font-size:12px;color:#94a3b8}
+  .note{background:#f0f9ff;border:1px solid #bae6fd;border-radius:6px;padding:12px;font-size:12px;color:#0369a1;margin-top:16px}
+</style></head><body>
+<div class="header">
+  <div class="logo">🏗 StructLearn Pro</div>
+  <div class="title">Payment Receipt</div>
+</div>
+<div class="receipt-box">
+  <div class="row"><span class="label">Receipt Date</span><span class="value">${today}</span></div>
+  <div class="row"><span class="label">Payment ID</span><span class="value" style="font-family:monospace;font-size:12px">${paymentId}</span></div>
+  <div class="row"><span class="label">Account Name</span><span class="value">${P.full_name||'—'}</span></div>
+  <div class="row"><span class="label">Mobile</span><span class="value">${P.mobile||'—'}</span></div>
+  <div class="row"><span class="label">Unique ID</span><span class="value">${P.unique_id||'—'}</span></div>
+  <div class="row"><span class="label">Plan</span><span class="value">${planLabel}</span></div>
+  <div class="row"><span class="label">Amount Paid</span><span class="amount">₹${amount.toLocaleString('en-IN')}</span></div>
+  <div class="row"><span class="label">Valid Until</span><span class="value">${expDate}</span></div>
+</div>
+<div class="note">
+  ℹ️ This is a payment confirmation receipt. For any queries, contact structlearnpro@gmail.com<br>
+  Payment processed securely by Razorpay.
+</div>
+<div class="footer">structlearnpro.vercel.app · Thank you for your subscription!</div>
+</body></html>`;
+
+  const blob = new Blob([html], {type:'text/html'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'StructLearnPro_Receipt_'+paymentId+'.html';
+  a.click();
+}
+
+// ── RENEWAL REMINDER ──────────────────────────────────────────
+async function scheduleRenewalReminder(expiryDate, planType) {
+  // Store renewal date for checking on each login
+  localStorage.setItem('slp_renewal_date', expiryDate.toISOString());
+  localStorage.setItem('slp_renewal_plan', planType);
+}
+
+async function checkRenewalReminder() {
+  if(!P || P.plan !== 'pro') return;
+  const renewalDate = P.plan_expires_at;
+  if(!renewalDate) return;
+
+  const exp = new Date(renewalDate);
+  const yr  = exp.getFullYear();
+  if(yr >= 2099) return; // lifetime
+
+  const daysLeft = Math.ceil((exp - new Date()) / 86400000);
+
+  // Already expired
+  if(daysLeft < 0) {
+    P.plan = 'free';
+    plan   = 'free';
+    updTop();
+    toast('⚠️ Your Pro subscription has expired. Upgrade to continue using Pro features.');
+    return;
+  }
+
+  // 7 days warning — show banner once per day
+  if(daysLeft <= 7) {
+    const lastWarn = localStorage.getItem('slp_renewal_warned');
+    const today    = new Date().toDateString();
+    if(lastWarn === today) return;
+    localStorage.setItem('slp_renewal_warned', today);
+
+    // Send SMS reminder via Edge Function
+    if(daysLeft === 7 || daysLeft === 3 || daysLeft === 1) {
+      sendRenewalSMS(daysLeft, exp, P.plan_type || 'monthly');
+    }
+
+    // Show in-app banner
+    showRenewalBanner(daysLeft, exp);
+  }
+}
+
+function showRenewalBanner(daysLeft, expiryDate) {
+  document.getElementById('renewal-banner')?.remove();
+  const banner = document.createElement('div');
+  banner.id = 'renewal-banner';
+  banner.style.cssText = [
+    'position:fixed;top:52px;left:0;right:0;z-index:999',
+    'background:linear-gradient(135deg,#92400e,#b45309)',
+    'padding:10px 20px;display:flex;align-items:center;justify-content:space-between',
+    'font-size:13px;font-family:inherit'
+  ].join(';');
+  banner.innerHTML = `
+    <span style="color:#fef3c7">
+      ⚠️ Your Pro subscription expires in <strong>${daysLeft} day${daysLeft!==1?'s':''}</strong>
+      (${expiryDate.toLocaleDateString('en-IN',{day:'numeric',month:'short'})}).
+      Renew now to avoid losing access.
+    </span>
+    <div style="display:flex;gap:8px;flex-shrink:0">
+      <button onclick="showUp()" style="padding:5px 14px;background:#fbbf24;border:none;border-radius:6px;color:#1a1208;font-size:12px;font-weight:700;cursor:pointer">Renew Now</button>
+      <button onclick="document.getElementById('renewal-banner').remove()" style="padding:5px 10px;background:transparent;border:1px solid #fbbf24;border-radius:6px;color:#fef3c7;font-size:12px;cursor:pointer">✕</button>
+    </div>`;
+  document.body.appendChild(banner);
+}
+
+async function sendRenewalSMS(daysLeft, expiryDate, planType) {
+  if(!P || !P.mobile) return;
+  const mob10 = P.mobile.replace('+91','').replace(/\D/g,'').slice(-10);
+  const expStr = expiryDate.toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'});
+  const price  = planType==='annual' ? PRICES.annual_display : PRICES.monthly_display;
+
+  // Use send-otp Edge Function URL pattern for SMS
+  try {
+    await fetch(SUPA_URL+'/functions/v1/send-renewal-sms', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json','Authorization':'Bearer '+SUPA_KEY},
+      body: JSON.stringify({
+        mobile:  mob10,
+        name:    P.full_name?.split(' ')[0] || 'User',
+        days:    daysLeft,
+        expiry:  expStr,
+        plan:    planType,
+        price:   price,
+      })
+    });
+  } catch(e) { /* fail silently */ }
 }
 
 // ── RESEND ───────────────────────────────────────────────────
@@ -2401,8 +2702,11 @@ function toast(msg,err=false){const t=document.getElementById('toast');t.textCon
         }).catch(()=>{});
         updTop();
         goTo('projects');
-        // Check for unseen announcements after profile loaded
-        setTimeout(()=>loadPrices(), 1000);
+        // Check for unseen announcements and renewal reminders
+        setTimeout(()=>{
+          loadPrices();
+          checkRenewalReminder();
+        }, 1000);
         return;
       }
     }catch(e){
