@@ -122,7 +122,6 @@ const S={
 const r2=v=>String(isNaN(v)?0:Math.round(v*100)/100);
 const r1=v=>String(isNaN(v)?0:Math.round(v*10)/10);
 const r0=v=>String(isNaN(v)?0:Math.round(v));
-const r1=v=>String(isNaN(v)?0:Math.round(v*10)/10);
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const PI=Math.PI;
 
