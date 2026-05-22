@@ -52,16 +52,31 @@ window.addEventListener('message',(e)=>{
         GRID = null; // will be reinitialised when user visits Plan & Spans
       }
 
-      // Restore nodeChoices and coordMode from savedS
-      if(savedS && savedS._nodeChoices && Object.keys(savedS._nodeChoices).length > 0){
-        window._nodeChoices = savedS._nodeChoices;
-      }
+      // Restore coordMode
       if(savedS && typeof savedS._coordMode !== 'undefined'){
         window._coordMode = !!savedS._coordMode;
         localStorage.setItem('_coordMode', String(window._coordMode));
       }
-      // Apply node choices to the restored GRID immediately
-      if(typeof applyNodeChoices === 'function') applyNodeChoices();
+      // Restore nodeChoices — if saved, use them; if not, infer from restored GRID
+      if(savedS && savedS._nodeChoices && Object.keys(savedS._nodeChoices).length > 0){
+        window._nodeChoices = savedS._nodeChoices;
+        if(typeof applyNodeChoices === 'function') applyNodeChoices();
+      } else if(GRID && GRID.nodes){
+        // Infer choices from the restored GRID so AUTO-VOID doesn't override saved bay types
+        // Missing node next to at least one slab bay → transfer; else → void
+        GRID.nodes.filter(n=>!n.hasColumn&&!n.isWall).forEach(n=>{
+          const key = n.row+':'+n.col;
+          if(window._nodeChoices[key]) return; // already set
+          // Check adjacent bays - if any were saved as 'slab', this was a transfer node
+          const adjBays = GRID.bays.filter(b=>
+            (b.row===n.row||b.row===n.row-1) && (b.col===n.col||b.col===n.col-1)
+          );
+          const hasSlabAdj = adjBays.some(b=>b.type==='slab');
+          window._nodeChoices[key] = hasSlabAdj ? 'transfer' : 'void';
+          n._choice = window._nodeChoices[key];
+        });
+        // DO NOT call applyNodeChoices — the GRID bay types are already correct from saved data
+      }
       if(typeof renderAll==='function') renderAll();
       if(typeof go==='function') go(1);
     }catch(err){ console.error('Load error:',err); }
@@ -1405,12 +1420,11 @@ function initGrid() {
       ];
       const colCount = corners.filter(n=>n&&n.hasColumn).length;
       const spX=S.spansX[c], spY=S.spansY[r];
-      // In coordinate mode: void if any corner column missing (IS 456 has no method for 3-sided slabs)
-      // In legacy span mode: always slab by default (user can manually set void)
-      const autoVoid = coordResult && colCount < 4;
+      // Default all bays to 'slab' — applyNodeChoices() will void bays adjacent to void nodes
+      // Never auto-void here: let the user choose via the missing node dialog
       bays.push({
         row:r, col:c,
-        type: autoVoid ? 'void' : 'slab',
+        type: 'slab',
         lx: Math.min(spX,spY), ly: Math.max(spX,spY),
         spX, spY,
         x: xPos[c], y: yPos[r],
