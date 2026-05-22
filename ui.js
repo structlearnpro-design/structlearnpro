@@ -3299,19 +3299,17 @@ function secStair(){
 
   // If no stair bays marked → show clear message, do NOT design a phantom stair
   if(!stairDesigns||stairDesigns.length===0){
-    return \`<div class="card">
-      <div class="ct tl">🪜 Staircase Design</div>
-      <div style="padding:20px;text-align:center">
-        <div style="font-size:32px;margin-bottom:10px">🏗</div>
-        <div style="font-size:13px;font-weight:700;color:#f59e0b;margin-bottom:8px">No Staircase Bay Marked</div>
-        <div style="font-size:11px;color:#94a3b8;line-height:1.8;max-width:400px;margin:0 auto">
-          To design a staircase, go to <strong>Plan & Spans</strong> and right-click on a bay in the grid.<br>
-          Select <strong>"Staircase"</strong> from the bay type menu.<br>
-          Then re-run analysis to get a full stair design.
-        </div>
-        <button class="btn" onclick="go(2)" style="margin-top:16px">← Go to Plan & Spans</button>
-      </div>
-    </div>\`;
+    return '<div class="card"><div class="ct tl">\ud83e\udeb5 Staircase Design</div>'
+      + '<div style="padding:20px;text-align:center">'
+      + '<div style="font-size:32px;margin-bottom:10px">\ud83c\udfd7</div>'
+      + '<div style="font-size:13px;font-weight:700;color:#f59e0b;margin-bottom:8px">No Staircase Bay Marked</div>'
+      + '<div style="font-size:11px;color:#94a3b8;line-height:1.8;max-width:400px;margin:0 auto">'
+      + 'To design a staircase, go to <strong>Plan &amp; Spans</strong> and right-click on a bay in the grid.'
+      + '<br>Select <strong>Staircase</strong> from the bay type menu.'
+      + '<br>Then re-run analysis to get a full stair design.'
+      + '</div>'
+      + '<button class="btn" onclick="go(2)" style="margin-top:16px">&larr; Go to Plan &amp; Spans</button>'
+      + '</div></div>';
   }
 
   // Multiple stair bays: tab per bay
