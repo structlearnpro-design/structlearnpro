@@ -1027,6 +1027,7 @@ const TEST_OTP  = '123456'; // ← test OTP code
 
 // Dynamic prices — loaded from Supabase settings table
 let PRICES = { monthly: 29900, annual: 299000, monthly_display: 299, annual_display: 2990 };
+let _disabledTabs = []; // loaded from Supabase platform_settings
 
 async function loadPrices(){
   try {
@@ -1042,6 +1043,9 @@ async function loadPrices(){
         if(row.key==='price_monthly_display')  PRICES.monthly_display = parseInt(row.value)||299;
         if(row.key==='price_annual_display')   PRICES.annual_display  = parseInt(row.value)||2990;
         if(row.key==='announcements')          checkAnnouncements(row.value);
+        if(row.key==='disabled_tabs'){
+          try{ _disabledTabs = JSON.parse(row.value||'[]'); }catch(e){ _disabledTabs=[]; }
+        }
       });
       updatePriceDisplay();
     }
@@ -1536,16 +1540,18 @@ function updTop(){
   document.getElementById('t-up').style.display=plan==='free'?'':'none';
 }
 function tellIframe(){
-  setTimeout(()=>{
-    try{
-      const fr=document.getElementById('app-iframe');
-      if(!fr||!fr.contentWindow)return;
-      fr.contentWindow.postMessage({type:'USER_PLAN',plan,user:P},'*');
-      // Inject saveToParent so ui.js auto-save works
-      injectSaveToParent(fr);
-    }catch(e){}
-  },800);
-  // Also restore progress — user may have just logged in
+  [300, 800, 2000].forEach(function(delay){
+    setTimeout(function(){
+      try{
+        var fr=document.getElementById('app-iframe');
+        if(!fr||!fr.contentWindow)return;
+        fr.contentWindow.postMessage({type:'USER_PLAN',plan:plan,user:P},'*');
+        // Also send disabled tabs on every plan message
+        fr.contentWindow.postMessage({type:'DISABLED_TABS',tabs:_disabledTabs},'*');
+        if(delay===800) injectSaveToParent(fr);
+      }catch(e){}
+    }, delay);
+  });
   setTimeout(sendProgressToIframe, 1000);
 }
 
@@ -1902,9 +1908,20 @@ function generateThumb(S, GRID) {
 
 function onIframeLoad(){
   // Called every time StructLearnPro.html finishes loading
-  // Inject saveToParent so ui.js auto-save can write to Supabase
   const fr = document.getElementById('app-iframe');
   if(fr && fr.contentWindow) injectSaveToParent(fr);
+  // Send plan + disabled tabs if user already logged in (handles page refresh)
+  if(P && plan){
+    setTimeout(function(){
+      try{
+        var fr2=document.getElementById('app-iframe');
+        if(fr2&&fr2.contentWindow){
+          fr2.contentWindow.postMessage({type:'USER_PLAN',plan:plan,user:P},'*');
+          fr2.contentWindow.postMessage({type:'DISABLED_TABS',tabs:_disabledTabs},'*');
+        }
+      }catch(e){}
+    },200);
+  }
 }
 
 function injectSaveToParent(fr){
@@ -2024,6 +2041,20 @@ function updateSaveIndicator(when){
 // Listen for save data from iframe
 window.addEventListener('message', function(ev){
   if(!ev.data) return;
+
+  // When iframe is ready, send plan + disabled tabs immediately
+  if(ev.data.type==='IFRAME_READY'){
+    if(P && plan){
+      try{
+        var fr=document.getElementById('app-iframe');
+        if(fr&&fr.contentWindow){
+          fr.contentWindow.postMessage({type:'USER_PLAN',plan:plan,user:P},'*');
+          fr.contentWindow.postMessage({type:'DISABLED_TABS',tabs:_disabledTabs},'*');
+        }
+      }catch(err){}
+    }
+    return;
+  }
 
   // Main project save — sent by ui.js after analysis or every 30s
   if(ev.data.type==='SAVE_PROJECT' && ev.data.projectId){

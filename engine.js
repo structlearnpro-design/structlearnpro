@@ -5,7 +5,7 @@
 // ═══════════════════════════════════════════════════════════════════
 
 // ── PLATFORM INTEGRATION  ──────────────────────────────────────
-let _userPlan='free', _currentProjectId=null, _platformSaveTimer=null;
+let _userPlan='free', _currentProjectId=null, _platformSaveTimer=null, _disabledTabs=[];
 
 window.addEventListener('message',(e)=>{
   if(e.data?.type==='USER_PLAN'){
@@ -23,6 +23,10 @@ window.addEventListener('message',(e)=>{
         badge.style.color = _userPlan==='pro'?'#38bdf8':'#64748b';
       }
     } catch(e2){}
+  }
+  if(e.data?.type==='DISABLED_TABS'){
+    _disabledTabs = Array.isArray(e.data.tabs) ? e.data.tabs : [];
+    applyDisabledTabs(_disabledTabs);
   }
   if(e.data?.type==='LOAD_PROJECT'){
     const proj=e.data.project;
@@ -52,6 +56,31 @@ function requirePro(feat){
   if(_userPlan==='pro')return true;
   window.parent.postMessage({type:'REQUEST_UPGRADE',feature:feat},'*');
   return false;
+}
+
+// ── DISABLED TABS — Admin can hide/show any tab ───────────────
+function applyDisabledTabs(disabled){
+  // Tabs that can NEVER be hidden (core design workflow)
+  const CORE = new Set(['n0','n1','n2','n3','n4','n5','n6','n7']);
+  // All known nav item IDs
+  const ALL_NAV = ['n0','n1','n2','n3','n4','n5','n6','n7','n8',
+                   'n9','n10','n11','n12','n13','n14','n15','n16',
+                   'n17','n18','n19','n20',
+                   'n_certs','n_guide'];
+  ALL_NAV.forEach(function(nid){
+    const el = document.getElementById(nid);
+    if(!el) return;
+    if(CORE.has(nid)){ el.style.display=''; return; } // core always visible
+    if(disabled.includes(nid)){
+      el.style.display='none';
+      // If currently on this page, redirect to overview
+      if(typeof PAGE!=='undefined' && PAGE===parseInt(nid.replace('n',''))){
+        if(typeof go==='function') go(7); // go to Full Report
+      }
+    } else {
+      el.style.display='';
+    }
+  });
 }
 
 function saveToParent(status){
