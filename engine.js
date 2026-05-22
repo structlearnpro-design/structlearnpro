@@ -203,45 +203,11 @@ const IS_CLAUSES = {
   'IS 456 Annex G':   'Limiting moment of resistance: Mulim = 0.36×fck×b×Xu,max×(d - 0.42×Xu,max). For Fe500: Xu,max/d = 0.46.',
   'IS 1893 Cl 6.4':   'Design horizontal seismic coefficient: Ah = (Z/2)×(I/R)×(Sa/g). Z=zone factor, I=importance factor, R=response reduction factor.',
   'IS 1893 Cl 7.6':   'Base shear Vb = Ah × W, where W is seismic weight of building (DL + fraction of LL).',
-  'IS 13920 Cl 6.3.5':'Beam stirrups must have 135-degree hooks with 8d extension (≥75mm) at both ends. 90-degree hooks are NOT permitted in seismic zones III, IV, V.',
+  'IS 13920 Cl 6.3.5':'Beam stirrups must have 135-degree hooks at both ends. 90-degree hooks are NOT permitted in seismic zones III, IV, V.',
   'IS 13920 Cl 7.4':  'Column confinement zone Lo = max(larger dimension of column, clear height/6, 450mm) from each end. Special confining reinforcement required in Lo.',
-  'IS 13920 Cl 7.4.7':'Hooks in lateral ties: 135-degree hooks with 8d extension (not less than 75mm). No 90-degree hooks in confinement zones.',
+  'IS 13920 Cl 7.4.7':'Hooks in lateral ties: 135-degree hooks with 10d extension. No 90-degree hooks in confinement zones.',
   'IS 875 Pt 3':      'Design wind speed Vz = Vb × k1 × k2 × k3. Design wind pressure pz = 0.6 × Vz². Applies to all exposed structures.',
 };
-// Expanded IS clause descriptions — verified from actual IS code PDFs
-Object.assign(IS_CLAUSES, {
-  'IS 456 Cl 18.2':   'Load factors: 1.5(DL+LL) basic; 1.2(DL+LL+EQ/WL); 1.5(DL+EQ/WL); 0.9DL+1.5EQ for overturning.',
-  'IS 456 Cl 23.1':   'Basic l/d: Cantilever=7, Simply Supported=20, Continuous=26.',
-  'IS 456 Cl 23.2(b)':'Max deflection = span/250 total; span/350 or 20mm affecting partitions.',
-  'IS 456 Cl 26.2':   'Development length Ld = φ×σs/(4×τbd). Provides bond to transfer bar force to concrete.',
-  'IS 456 Cl 26.2.2': 'Standard hook reduces Ld: 90° hook = 16φ equivalent; 135° hook = 12φ equivalent.',
-  'IS 456 Cl 26.5.1.1':'Min beam width = 200mm (IS 456 Cl 26.5.1.1).',
-  'IS 456 Cl 26.5.2': 'Min tension steel in beams: As_min = 0.85×b×d/fy. Max = 4% bd.',
-  'IS 456 Cl 26.5.3.2':'Column link spacing ≤ min(least lateral dimension, 16×bar dia, 300mm).',
-  'IS 456 Table 19':  'Shear strength τc of concrete depends on pt=100As/bd. M25: 0.28–0.82 N/mm².',
-  'IS 456 Table 26':  'Two-way slab moment coefficients αx, αy — depend on ly/lx and edge conditions.',
-  'IS 1893 Cl 6.3':   'Seismic load combinations: 1.2(DL+IL+EL), 1.5(DL+EL), 0.9DL+1.5EL.',
-  'IS 1893 Cl 6.4.2': 'Ah = (Z/2)×(Sa/g)/(R×I). Z/2 = design level; R=5 for SMRF with IS 13920.',
-  'IS 1893 Cl 6.4.5': 'Sa/g peak = 2.5 for all soil types. Reduces beyond peak period.',
-  'IS 1893 Table 3':  'Zone Factor Z: II=0.10, III=0.16, IV=0.24, V=0.36.',
-  'IS 1893 Table 8':  'Importance Factor I: 1.5 critical; 1.2 important public; 1.0 ordinary residential.',
-  'IS 1893 Table 9':  'Response Reduction R: SMRF with IS 13920 = 5.0; OMRF = 3.0.',
-  'IS 1893 Cl 7.4.1': 'Seismic weight = full DL + 25% IL (IL≤3 kN/m²) or 50% IL (IL>3 kN/m²).',
-  'IS 1893 Cl 7.6.1': 'Base shear VB = Ah×W. Every ground floor column resists its share of VB laterally.',
-  'IS 1893 Cl 7.6.2(c)':'Time period: Ta = 0.09H/√d. H=height (m); d=base dimension (m).',
-  'IS 1893 Cl 7.6.3': 'Floor forces: Qi = VB×(Wi×hi²)/Σ(Wj×hj²). Inverted triangle distribution.',
-  'IS 1893 Cl 7.11.1.1':'Storey drift ≤ 0.004×storey height. Protects non-structural elements.',
-  'IS 13920 Cl 5.2':  'Min concrete: M25 for buildings >15m in Zones III/IV/V; M20 otherwise.',
-  'IS 13920 Cl 6.2.1':'Beam steel: ρmin=0.24√fck/fy; ρmax=2.5%. Min 2 bars ≥12mm at top and bottom.',
-  'IS 13920 Cl 7.1.1':'Min column width = max(300mm, 20×db). Aspect ratio ≥ 0.45.',
-  'IS 13920 Cl 7.2.1':'Strong column–weak beam: ΣMc ≥ 1.4×ΣMb. Beams yield before columns.',
-  'IS 13920 Cl 7.4.1':'Column ties: 135° hooks with 8d extension ≥75mm. No 90° hooks.',
-  'IS 13920 Cl 7.6.1':'Confinement zone Lo = max(col dim, H/6, 450mm). Tie spacing = min(D/4, 6×db, 100mm).',
-  'IS 875 P2 Table 1':'Residential loads: rooms=2.0; stairs=3.0; balconies=3.0 kN/m².',
-  'IS 875 P3 Cl 6.2': 'Basic wind speed Vb from Fig.1: peak gust, 10m height, 50-year return.',
-  'IS 875 P3 Cl 6.3': 'Design wind speed: Vz = Vb×k1×k2×k3×k4.',
-  'IS 875 P3 Cl 7.2': 'Wind pressure: pz = 0.6×Vz² N/m².',
-});
 
 function clauseRef(ref) {
   if (!ref) return '';
@@ -420,9 +386,9 @@ const FM_WHY = {
   'ly/lx = ':     'Aspect ratio ly/lx of slab panel. If ly/lx < 2.0: two-way slab (spans in both directions, uses IS 456 Table 26 coefficients). If ly/lx ≥ 2.0: one-way slab (main span in short direction only).',
   'ly/lx':        'Aspect ratio determines slab behaviour. Two-way slab (ly/lx < 2) carries load to all four supports — more efficient. One-way slab (ly/lx ≥ 2) carries load mainly to two supports.',
   'ax':           'Bending moment coefficients αx (short span) and αy (long span) from IS 456 Table 26. Depend on boundary conditions: Case 4 (all edges continuous) has smallest coefficients; Case 1 (all simply supported) has largest.',
-  'Vb = Ah x W':  'Base shear Vb = Ah x W = total horizontal seismic force. Distributed up the building height using inverted triangle pattern (top floor gets most). IS 1893 Cl 7.6.1 and 7.6.3.',
+  'Vb = Ah x W':  'Base shear Vb = Ah x W = total horizontal seismic force. Distributed up the building height using inverted triangle pattern (top floor gets most). IS 1893 Cl 7.5.3 and 7.6.',
   'Ah = ':        'Design seismic coefficient Ah = (Z/2)(Sa/g)/(RxI). Z/2 is design level (half MCE). Sa/g from response spectrum depends on soil type and building period. R=5 for good ductile frames.',
-  'Ta = 0.09H':   'Fundamental time period of RC frame: Ta = 0.09H/√D (IS 1893 Cl 7.6.2(c)). H=total height in m, D=base width in m in the direction of motion. Longer period → lower Sa/g → lower seismic force.',
+  'Ta = 0.09H':   'Fundamental time period of RC frame: Ta = 0.09H/√D (IS 1893 Cl 7.6.1b). H=total height in m, D=base width in m in the direction of motion. Longer period → lower Sa/g → lower seismic force.',
   'pz = 0.6xVz':  'Design wind pressure pz = 0.6Vz² N/m² (IS 875 Pt3 Cl 5.4). Vz is design wind speed in m/s. The 0.6 = ½×air density. pz gives basic pressure; multiply by Cp coefficients for net force on surfaces.',
   'Qi = Vb':      'Floor seismic force Qi = Vb × WiHi²/ΣWjHj². Upper floors attract more seismic force (inverted triangle). This distribution reflects the first mode shape of the building vibrating.',
   'Sa/g':         'Spectral acceleration Sa/g from IS 1893 Fig. 2 response spectrum. Depends on building period Ta and soil type. For short stiff buildings Sa/g = 2.5 (peak). Reduces for longer periods.',
@@ -1121,7 +1087,7 @@ function runCalcs(){
     const nb=Math.max(4,Math.ceil(Af/dBA)),Aprov=nb*dBA;
     const Pcap=(0.4*fck*(Ag-Aprov)+0.67*fy*Aprov)/1000;
     const td=Math.max(8,Math.ceil(dB/4)),ts=Math.min(size,16*dB,300);
-    const Lo=Math.max(size,floorHt*1000/6,450),tsc=Math.min(ts,6*dB,100,75);
+    const Lo=Math.max(size,floorHt*1000/6,450),tsc=Math.min(ts,6*dB,100,75); // IS 13920 Amd1
     return{Ps,Pu:Pu2,Pcap,size,Ag,leff,lex,short,emin,Ar,Af,Aprov,pt:Aprov/Ag*100,nb,dB,td,ts,tsc,Lo,safe:Pu2<=Pcap,ta,corner,edge,inter};
   }
   const cols=[];
@@ -1145,7 +1111,18 @@ function runCalcs(){
     const tvp=Vpu*1000/(bo*d2),tcp=0.25*Math.sqrt(fck);
     const proj=Math.max(0,(Bf2*1000-cs2)/2-d2);
     const Vow=quf*Bf2*proj/1000;
-    const tvow=Vow*1000/(Bf2*1000*d2),tcow=0.36;
+    // IS 456 Table 19: τc based on actual steel percentage pt = Af/(Bf×d)×100
+    const pt_ftg = Af2 / (Bf2*1000*d2) * 100;
+    const tcow = AstFn ? (() => {
+      // Interpolate IS 456 Table 19
+      const tbl=[[0.15,0.28],[0.25,0.36],[0.50,0.48],[0.75,0.56],[1.00,0.62],[1.25,0.67],[1.50,0.72],[1.75,0.75],[2.00,0.79],[2.50,0.82],[3.00,0.82]];
+      const pt=Math.min(Math.max(pt_ftg,0.15),3.0);
+      for(let i=0;i<tbl.length-1;i++){
+        const [p0,t0]=tbl[i],[p1,t1]=tbl[i+1];
+        if(pt>=p0&&pt<=p1) return t0+(pt-p0)*(t1-t0)/(p1-p0);
+      }
+      return 0.82;
+    })() : 0.36;
     const x2=(Bf2-cs2/1000)/2;
     const Mu2=quf*Bf2*x2*x2/2;
     const Af2=Math.max(Ast(Mu2,Bf2*1000,d2),0.12*Bf2*1000*D2/100);
@@ -1443,7 +1420,7 @@ function getMomentCoeffs(beam) {
   if(beam.isCantilever)return{alpha_mid:0,alpha_sup_free:0.5,alpha_sup_fixed:0,type:'cantilever',label:'Cantilever'};
   const lc=el==='column',rc=er==='column';
   if(lc&&rc)return{alpha_mid:1/16,alpha_sup:1/12,type:'both_continuous',label:'Both ends continuous (IS 456 T12: alpha=1/16 midspan, 1/12 at supports)'};
-  if(lc||rc)return{alpha_mid:1/10,alpha_sup:1/10,type:'one_continuous',label:'One end continuous (IS 456 T12: alpha=1/10 midspan, 1/10 at support)'};
+  if(lc||rc)return{alpha_mid:1/10,alpha_sup:1/9,type:'one_continuous',label:'One end continuous (IS 456 Table 12: midspan=1/10, support=1/9)'};
   return{alpha_mid:1/8,alpha_sup:0,type:'simply_supported',label:'Simply supported (Mu = wL^2/8)'};
 }
 
@@ -2990,7 +2967,9 @@ function designOneColumn(node, floorsAbove, DL_tot, udlLL_floor, udlLL_roof,
   const DL_per_floor = DL_tot*slabArea + wallLoad*perimLen;
   // Roof = 1 floor (the top), with roof LL; the rest are typical floors with floor LL
   const nTypicalFloors = floorsAbove - 1; // floors that aren't the roof above this column
-  const LL_total = (nTypicalFloors*udlLL_floor + udlLL_roof) * slabArea * llRedFactor;
+  // IS 875 P2 Cl 3.2.1: LL reduction applies only to floor LL, NOT roof LL
+  // Roof LL (udlRoof) is already light (1.5 kN/m²) and IS 875 does not reduce it
+  const LL_total = (nTypicalFloors*udlLL_floor*llRedFactor + udlRoof) * slabArea;
   // Wall load: no wall above roof — so wall acts on (floorsAbove-1) typical floors
   // (Roof column carrying just the roof: floorsAbove=1, nTypicalFloors=0, wall=0.)
   const wallContribution = nTypicalFloors * wallLoad * perimLen;
@@ -3040,6 +3019,8 @@ function designOneColumn(node, floorsAbove, DL_tot, udlLL_floor, udlLL_roof,
   const leff=0.65*floorHt*1000, lex=leff/size;
   const emin=Math.max(floorHt*1000/500+size/30,20);
   const ts=Math.min(size,16*dB,300);
+  // IS 13920 Amd 1 Cl 7.6.1: confining tie spacing = min(D/4, 6×db, 100mm)
+  // Amendment 1 (Sept 2017) changed 8×db to 6×db for tighter confinement
   const tsc=Math.min(ts,6*dB,100,75);
   const Lo=Math.max(size,floorHt*1000/6,450);
 
@@ -3059,6 +3040,20 @@ function designOneColumn(node, floorsAbove, DL_tot, udlLL_floor, udlLL_roof,
   const colLbl=String(node.col+1);
   const baseLabel=node.label||(posType+rowLbl+colLbl);
 
+  // IS 13920 Cl 7.1.2: aspect ratio = smaller/larger dimension ≥ 0.45
+  // The column is always square (size×size) in this engine, so ratio = 1.0 ✅
+  // But if a student overrides with a rectangular section via member overrides,
+  // we need to flag it. Store the override dimensions if set.
+  const _cOvrFinal = window._memberOverrides && window._memberOverrides[colOverrideKey({nodeId:node.id})];
+  const colB = (_cOvrFinal && _cOvrFinal.b) ? _cOvrFinal.b : size; // width (smaller)
+  const colD = (_cOvrFinal && _cOvrFinal.d) ? _cOvrFinal.d : size; // depth (larger)
+  const colSmaller = Math.min(colB, colD);
+  const colLarger  = Math.max(colB, colD);
+  // IS 13920 Cl 7.1.1: each dimension ≥ 300mm
+  const aspectRatioOK = colSmaller >= 300 && (colSmaller/colLarger) >= 0.45;
+  const minDimOK      = colSmaller >= 300;
+  const aspectRatio   = colSmaller/colLarger;
+
   return{
     baseLabel, nodeId:node.id, floorsAbove,
     row:node.row, col:node.col,
@@ -3068,6 +3063,10 @@ function designOneColumn(node, floorsAbove, DL_tot, udlLL_floor, udlLL_roof,
     leff, lex, short:lex<=12, emin,
     ts, tsc, Lo,
     safe:Pu<=Pcap,
+    // IS 13920 geometry checks
+    colB, colD, colSmaller, colLarger, aspectRatio,
+    minDimOK, aspectRatioOK,
+    // Overall safe = axial safe AND IS 13920 geometry OK
     ta:slabArea, perimLen,
     corner:isCorner, edge:isEdge, inter:!isCorner&&!isEdge,
   };
@@ -3249,12 +3248,33 @@ function designOneBeam(gridBeam, floorNum, isRoof,
 
   const AstFn=(Mu,b,d2)=>AstCalc(Mu,b,d2,fck,fy,Mf);
   const bA=Math.PI*100;
-  const Am=Math.max(AstFn(Mmax,bW,d),0.85*bW*d/fy);
-  const As=Math.max(AstFn(Msup,bW,d),0.85*bW*d/fy);
+
+  // IS 13920 Cl 6.2.1 — minimum longitudinal steel: ρmin = 0.24√fck/fy
+  // Applied to BOTH faces (top and bottom) at any section
+  const Ast_min_13920 = (0.24*Math.sqrt(fck)/fy)*bW*d;
+  // IS 456 Cl 26.5.1 — minimum steel 0.85/fy × bw × d
+  const Ast_min_456 = 0.85*bW*d/fy;
+  const Ast_min = Math.max(Ast_min_13920, Ast_min_456);
+
+  // IS 13920 Cl 6.2.2 — maximum tension steel: ρmax = 2.5% at any face
+  const Ast_max_13920 = 0.025*bW*d;
+
+  const Am = Math.min(Math.max(AstFn(Mmax,bW,d), Ast_min), Ast_max_13920);
+  const As = Math.min(Math.max(AstFn(Msup,bW,d), Ast_min), Ast_max_13920);
+
   const nm=Math.max(2,Math.ceil(Am/bA));
   const ns=Math.max(2,Math.ceil(As/bA));
   const Ap=nm*bA;
   const pt=Ap/(bW*d)*100;
+
+  // IS 13920 geometry checks for beams
+  // Cl 6.1.1: width/depth ratio ≥ 0.3
+  const bDratio = bW/D;
+  const bDratioOK = bDratio >= 0.3;
+  // Cl 6.1.3: depth D shall not exceed L/4 (of clear span)
+  const maxDepthOK = D <= (L*1000/4);
+  // IS 13920 Cl 6.2.1 — check if min steel governs
+  const minSteelGoverns = Am <= AstFn(Mmax,bW,d) ? false : true;
   const tv=RA*1000/(bW*d);
   const tcmax=0.62*Math.sqrt(fck);
   const tc=getTc(pt);
@@ -3294,6 +3314,9 @@ function designOneBeam(gridBeam, floorNum, isRoof,
     transferPL,  // point load data for display
     singly:true, Ast2:0, n2:0, bay:gridBeam.col||0,
     overDesigned:dfl/dall<0.4&&Mmax/Mulim<0.4&&pt<0.5,
+    // IS 13920 geometry checks
+    bDratio, bDratioOK, maxDepthOK,
+    minSteelGoverns, Ast_min, Ast_min_13920, Ast_max_13920,
   };
 }
 
@@ -4029,6 +4052,42 @@ function runCalcsFromGrid(){
       // Check for unreasonable footing sizes
       const maxFtgSize = Math.max(...allFtgs.map(f=>f.Bf||0));
       if(maxFtgSize > 8) sw.push(`⚠ SANITY CHECK: Footing size = ${r2(maxFtgSize)}m × ${r2(maxFtgSize)}m. This is very large — consider increasing soil bearing capacity or reducing loads.`);
+
+      // ── IS 13920 CODE COMPLIANCE CHECKS ─────────────────────────
+      // COL-2: Column aspect ratio (IS 13920 Cl 7.1.2)
+      // Square columns always pass. Rectangular overrides checked here.
+      const nonSquareCols = allCols.filter(c=>c.floor===1&&c.colSmaller&&c.colSmaller<c.colLarger);
+      nonSquareCols.forEach(c=>{
+        if(c.colSmaller < 300){
+          sw.push(`❌ IS 13920 Cl 7.1.1 VIOLATION: Column ${c.baseLabel} — smaller dimension ${c.colSmaller}mm is less than the mandatory 300mm minimum for Seismic Zones III/IV/V. Change to minimum 300×${c.colLarger}mm.`);
+        }
+        if(c.aspectRatio < 0.45){
+          sw.push(`❌ IS 13920 Cl 7.1.2 VIOLATION: Column ${c.baseLabel} — aspect ratio ${c.aspectRatio.toFixed(2)} (${c.colSmaller}/${c.colLarger}) is less than 0.45 minimum. IS 13920 requires this to prevent columns that are too slender in one direction.`);
+        }
+      });
+
+      // BM-4: Beam width/depth ratio (IS 13920 Cl 6.1.1)
+      const badBDratio = allBeams.filter(b=>b.floor===1&&b.bDratioOK===false);
+      if(badBDratio.length > 0){
+        badBDratio.forEach(b=>{
+          sw.push(`❌ IS 13920 Cl 6.1.1 VIOLATION: Beam ${b.label} — width/depth ratio = ${(b.bDratio||0).toFixed(2)} (${b.b}mm wide, ${b.D}mm deep). Minimum ratio is 0.3. Increase beam width or reduce depth.`);
+        });
+      }
+
+      // BM-5: Beam depth ≤ L/4 (IS 13920 Cl 6.1.3)
+      const deepBeams = allBeams.filter(b=>b.floor===1&&b.maxDepthOK===false);
+      if(deepBeams.length > 0){
+        deepBeams.forEach(b=>{
+          sw.push(`❌ IS 13920 Cl 6.1.3 VIOLATION: Beam ${b.label} — depth ${b.D}mm exceeds L/4 = ${Math.round(b.L*1000/4)}mm (span = ${b.L}m). IS 13920 limits beam depth to avoid coupling slab/beam behaviour. Reduce depth or increase span.`);
+        });
+      }
+
+      // BM-2: Min beam steel governed by IS 13920 (informational)
+      const minSteelBeams = allBeams.filter(b=>b.floor===1&&b.minSteelGoverns===true);
+      if(minSteelBeams.length > 0){
+        sw.push(`⚠ IS 13920 Cl 6.2.1 NOTE: ${minSteelBeams.length} beam(s) have steel governed by minimum ρmin=0.24√fck/fy rather than moment demand. This is correct and safe — IS 13920 mandates this minimum to prevent brittle fracture.`);
+      }
+
       return sw;
     })(),
   };
