@@ -3559,6 +3559,7 @@ function secSafety(){
     </div>
     <div style="font-size:9px;color:#475569;margin-top:8px">💡 After re-analysis, history bar shows before/after comparison.</div>
   </div>
+  `:``}
 
   ${renderGroup('SLAB','\ud83d\udd32','var(--cyan)',slabChecks)}
   ${renderGroup('BEAMS','\ud83d\udfe7','var(--orange)',beamChecks)}

@@ -15,7 +15,7 @@ window.addEventListener('message',(e)=>{
       window.U = e.data.user;
       window.P = e.data.user;
     }
-    updateSidebarForPlan(_userPlan);
+    if(typeof updateSidebarForPlan==='function') updateSidebarForPlan(_userPlan);
     try {
       const badge = document.querySelector('.plan-indicator');
       if(badge) {
