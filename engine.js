@@ -3103,22 +3103,27 @@ function designOneFooting(col, soilBearing, ftgDepth, coverFtg, fck, fy, ftgMinD
   const x=(Bf-colSz/1000)/2;
   const Mu=quf*Bf*x*x/2;
   const Af=Math.max(AstFn(Mu,Bf*1000,d),0.12*Bf*1000*D/100);
-  const dBf=12, dBfA=Math.PI*36;
-  // Spacing of bars across the footing width Bf [m]:
-  // Steel per metre strip = Af / Bf [mm²/m]
-  // Spacing [mm] = 1000 × area_per_bar / (steel per metre) = 1000·dBfA·Bf / Af
-  // Previous version dropped Bf — gave over-tight spacing (extra steel).
-  const spf=clamp(Math.floor(1000*dBfA*Bf/Af),75,300);
-  const Ldr=devLength(dBf, fy, fck, {hook:true});
-  const Lda=(Bf*1000-colSz)/2-coverFtg;
-  const Pa=0.45*fck*colSz*colSz/1000;
+  // Bar diameter: use override if set (e.g. student chose T10 or T8 to fix dev length)
+  const dBf = (_ftgOvr && _ftgOvr.dBf) ? _ftgOvr.dBf : 12;
+  const dBfA = Math.PI*(dBf/2)*(dBf/2);
+  // Recalculate Ast with chosen bar size
+  const Af2 = Math.max(AstFn(Mu,Bf*1000,d), 0.12*Bf*1000*D/100);
+  // Spacing: bars across Bf
+  const spf = clamp(Math.floor(1000*dBfA*Bf/Af2), 75, 300);
+  const useHook = (_ftgOvr && _ftgOvr.hook) ? true : false;
+  // Dev length: Ldr with hook = 0.7 × Ldr_straight (IS 456 Cl 26.2.2.1)
+  const Ldr_straight = devLength(dBf, fy, fck, {hook:false});
+  const Ldr = useHook ? Ldr_straight * 0.7 : Ldr_straight;
+  const Lda = (Bf*1000-colSz)/2 - coverFtg;
+  const Pa = 0.45*fck*colSz*colSz/1000;
   return{
     nodeId:col.nodeId, row:col.row, col:col.col,
     baseLabel:col.baseLabel,
     Ps,qu,quf,Bf,D,d,bo,Pu,
     Vpu,tvp,tcp,punch_ok:tvp<=tcp,
     Vow,tvow,tcow,ow_ok:tvow<=tcow,
-    Mu,Af,dBf,spf,Ldr,Lda,Ld_ok:Lda>=Ldr,
+    Mu,Af:Af2,dBf,spf,Ldr,Ldr_straight,Lda,Ld_ok:Lda>=Ldr,
+    useHook,
     Pa,tr_ok:Ps<=Pa,colSize:colSz,
   };
 }

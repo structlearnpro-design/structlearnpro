@@ -3115,77 +3115,116 @@ function ftgDetail(f){
 
 
   ${!f.Ld_ok?`
-  <div style="margin-top:10px;padding:12px;background:rgba(248,113,113,0.06);border:1.5px solid rgba(248,113,113,0.3);border-radius:8px">
-    <div style="font-size:12px;font-weight:700;color:#f87171;margin-bottom:8px">⚠ DEVELOPMENT LENGTH FAILURE</div>
-    <div style="font-size:10.5px;line-height:1.8;color:#fca5a5;margin-bottom:12px">
-      <strong>What is development length?</strong> For a bar to carry its full tensile force, it must be embedded in concrete for a minimum length (Ld). If shorter, the bar <strong>pulls out</strong> — a brittle failure.<br><br>
-      <strong>Your footing:</strong> Ld_avail = ${r0(f.Lda)}mm but Ld_req = ${r0(f.Ldr)}mm — short by <strong style="color:#f87171">${r0(f.Ldr-f.Lda)}mm</strong>.
+  <div style="margin-top:10px;padding:14px;background:rgba(248,113,113,0.06);border:1.5px solid rgba(248,113,113,0.3);border-radius:8px">
+    <div style="font-size:12px;font-weight:700;color:#f87171;margin-bottom:6px">⚠ DEVELOPMENT LENGTH FAILURE — 4 Ways to Fix</div>
+    <div style="font-size:10.5px;line-height:1.8;color:#fca5a5;margin-bottom:14px">
+      Bar needs <strong>${r0(f.Ldr_straight||f.Ldr/0.7)}mm</strong> to anchor (IS 456 Cl 26.2.2).
+      Available = <strong>${r0(f.Lda)}mm</strong> — short by <strong style="color:#f87171">${r0((f.Ldr_straight||f.Ldr/0.7)-f.Lda)}mm</strong>.
+      Pick any fix below — they all re-run the full analysis instantly.
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:10px">
-      <div style="padding:10px;background:rgba(52,211,153,0.06);border:1px solid rgba(52,211,153,0.3);border-radius:8px">
-        <div style="font-size:11px;font-weight:700;color:#34d399;margin-bottom:6px">✅ Option A: 90° Hook</div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+
+      <!-- OPTION A: 90° Hook -->
+      <div style="padding:10px;background:rgba(52,211,153,0.06);border:1.5px solid ${f.Lda>=(f.Ldr_straight||f.Ldr/0.7)*0.7?'#34d399':'rgba(52,211,153,0.3)'};border-radius:8px">
+        <div style="font-size:11px;font-weight:700;color:#34d399;margin-bottom:4px">Option A: 90° Hook</div>
         <div style="font-size:10px;color:var(--txt2);line-height:1.7">
-          IS 456 Cl 26.2.2.1 allows <strong>0.7×</strong> reduction with hook.<br>
-          Ld with hook = 0.7 × ${r0(f.Ldr)} = <strong style="color:#34d399">${r0(Math.ceil(f.Ldr*0.7))}mm</strong><br>
-          ${f.Lda>=f.Ldr*0.7?'<span style="color:#34d399;font-weight:700">✔ HOOK FIXES IT</span>':'<span style="color:#f87171">Still not enough</span>'}
+          Reduces required Ld by <strong>30%</strong> (IS 456 Cl 26.2.2.1).<br>
+          Ld needed with hook = 0.7 × ${r0(f.Ldr_straight||f.Ldr/0.7)} = <strong style="color:#34d399">${r0(Math.ceil((f.Ldr_straight||f.Ldr/0.7)*0.7))}mm</strong><br>
+          Available = ${r0(f.Lda)}mm →
+          ${f.Lda>=(f.Ldr_straight||f.Ldr/0.7)*0.7
+            ?'<strong style="color:#34d399">✔ HOOK ALONE FIXES IT</strong>'
+            :'<span style="color:#f87171">Still short by '+r0(Math.ceil((f.Ldr_straight||f.Ldr/0.7)*0.7)-f.Lda)+'mm</span>'}
         </div>
-        <svg viewBox="0 0 180 80" style="width:100%;max-width:180px;margin-top:6px">
-          <rect width="180" height="80" fill="#0a0f1e" rx="4"/>
-          <rect x="10" y="30" width="160" height="40" fill="rgba(71,85,105,0.3)" stroke="#475569" rx="2"/>
-          <text x="90" y="25" fill="#94a3b8" font-size="7" text-anchor="middle">FOOTING SECTION</text>
-          <line x1="30" y1="60" x2="130" y2="60" stroke="#f59e0b" stroke-width="2"/>
-          <line x1="130" y1="60" x2="130" y2="40" stroke="#f59e0b" stroke-width="2"/>
-          <text x="140" y="52" fill="#34d399" font-size="6">hook</text>
-        </svg>
+        <button onclick="(function(){
+          var key='F:${f.nodeId}';
+          if(!window._memberOverrides) window._memberOverrides={};
+          window._memberOverrides[key]=Object.assign(window._memberOverrides[key]||{},{hook:true,dBf:${f.dBf}});
+          runWithOverrides('Footing ${f.baseLabel||f.label}: 90° hook');
+        })()" style="margin-top:8px;width:100%;padding:6px;background:rgba(52,211,153,0.15);border:1.5px solid #34d399;border-radius:6px;color:#34d399;cursor:pointer;font-size:10px;font-weight:700">
+          ✅ Apply 90° Hook & Re-analyse
+        </button>
       </div>
+
+      <!-- OPTION B: Wider Footing -->
       <div style="padding:10px;background:rgba(56,189,248,0.06);border:1px solid rgba(56,189,248,0.3);border-radius:8px">
-        <div style="font-size:11px;font-weight:700;color:#38bdf8;margin-bottom:6px">Option B: Increase Footing Size</div>
+        <div style="font-size:11px;font-weight:700;color:#38bdf8;margin-bottom:4px">Option B: Widen Footing</div>
         <div style="font-size:10px;color:var(--txt2);line-height:1.7">
-          Make footing wider for more grip length.<br>
-          Bf needed ≥ (2×Ld+col+2×cover)/1000<br>
-          = <strong style="color:#38bdf8">${r2((2*f.Ldr+f.colSize+2*S.coverFtg)/1000)}m</strong> (now: ${r2(f.Bf)}m)
+          Wider footing → longer bar → more grip length.<br>
+          Bf needed = <strong style="color:#38bdf8">${r2(Math.ceil(((f.Ldr_straight||f.Ldr/0.7)*0.7*2+f.colSize+2*S.coverFtg)/1000*100)/100)}m</strong> (now ${r2(f.Bf)}m)<br>
+          <span style="color:#64748b">Note: only widens THIS footing, not combined footing.</span>
         </div>
-        <svg viewBox="0 0 180 80" style="width:100%;max-width:180px;margin-top:6px">
-          <rect width="180" height="80" fill="#0a0f1e" rx="4"/>
-          <rect x="5" y="30" width="170" height="40" fill="rgba(71,85,105,0.3)" stroke="#475569" rx="2"/>
-          <text x="90" y="25" fill="#94a3b8" font-size="7" text-anchor="middle">WIDER FOOTING</text>
-          <line x1="15" y1="60" x2="165" y2="60" stroke="#f59e0b" stroke-width="2"/>
-          <text x="90" y="57" fill="#38bdf8" font-size="6" text-anchor="middle">longer bar = more grip</text>
-        </svg>
+        <button onclick="(function(){
+          var key='F:${f.nodeId}';
+          var bfNeed=Math.ceil(${Math.ceil(((f.Ldr_straight||f.Ldr/0.7)*0.7*2+f.colSize+2*S.coverFtg)/1000*100)/100}*100)/100;
+          if(!window._memberOverrides) window._memberOverrides={};
+          window._memberOverrides[key]=Object.assign(window._memberOverrides[key]||{},{Bf:bfNeed,dBf:${f.dBf}});
+          runWithOverrides('Footing ${f.baseLabel||f.label}: Bf→'+bfNeed+'m');
+        })()" style="margin-top:8px;width:100%;padding:6px;background:rgba(56,189,248,0.12);border:1.5px solid #38bdf8;border-radius:6px;color:#38bdf8;cursor:pointer;font-size:10px;font-weight:700">
+          ⚡ Widen Footing & Re-analyse
+        </button>
+      </div>
+
+      <!-- OPTION C: Reduce bar diameter -->
+      <div style="padding:10px;background:rgba(251,191,36,0.06);border:1px solid rgba(251,191,36,0.3);border-radius:8px">
+        <div style="font-size:11px;font-weight:700;color:#fbbf24;margin-bottom:4px">Option C: Smaller Bar Diameter</div>
+        <div style="font-size:10px;color:var(--txt2);line-height:1.7">
+          Smaller bars need shorter development length (Ld ∝ φ).<br>
+          T12→T10: Ld = ${r0(Math.ceil((f.Ldr_straight||f.Ldr/0.7)*10/12))}mm
+          ${f.Lda>=Math.ceil((f.Ldr_straight||f.Ldr/0.7)*10/12)?'<strong style="color:#34d399"> ✔ FIXES IT</strong>':'<span style="color:#f87171"> still short</span>'}<br>
+          T12→T8:  Ld = ${r0(Math.ceil((f.Ldr_straight||f.Ldr/0.7)*8/12))}mm
+          ${f.Lda>=Math.ceil((f.Ldr_straight||f.Ldr/0.7)*8/12)?'<strong style="color:#34d399"> ✔ FIXES IT</strong>':''}
+        </div>
+        <div style="display:flex;gap:6px;margin-top:8px">
+          <button onclick="(function(){
+            var key='F:${f.nodeId}';
+            if(!window._memberOverrides) window._memberOverrides={};
+            window._memberOverrides[key]=Object.assign(window._memberOverrides[key]||{},{dBf:10});
+            runWithOverrides('Footing ${f.baseLabel||f.label}: T10 bars');
+          })()" style="flex:1;padding:5px;background:rgba(251,191,36,0.12);border:1.5px solid #fbbf24;border-radius:6px;color:#fbbf24;cursor:pointer;font-size:10px;font-weight:700">
+            Use T10 & Re-analyse
+          </button>
+          <button onclick="(function(){
+            var key='F:${f.nodeId}';
+            if(!window._memberOverrides) window._memberOverrides={};
+            window._memberOverrides[key]=Object.assign(window._memberOverrides[key]||{},{dBf:8});
+            runWithOverrides('Footing ${f.baseLabel||f.label}: T8 bars');
+          })()" style="flex:1;padding:5px;background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.5);border-radius:6px;color:#d97706;cursor:pointer;font-size:10px;font-weight:700">
+            Use T8 & Re-analyse
+          </button>
+        </div>
+      </div>
+
+      <!-- OPTION D: Hook + Smaller bar (combined) -->
+      <div style="padding:10px;background:rgba(167,139,250,0.06);border:1px solid rgba(167,139,250,0.3);border-radius:8px">
+        <div style="font-size:11px;font-weight:700;color:#a78bfa;margin-bottom:4px">Option D: Hook + T10 (Best Practice)</div>
+        <div style="font-size:10px;color:var(--txt2);line-height:1.7">
+          Combine both — hook reduces Ld 30%, smaller bar reduces Ld another 17%.<br>
+          T10 + hook: Ld = ${r0(Math.ceil((f.Ldr_straight||f.Ldr/0.7)*10/12*0.7))}mm
+          ${f.Lda>=Math.ceil((f.Ldr_straight||f.Ldr/0.7)*10/12*0.7)?'<strong style="color:#34d399"> ✔ FIXES IT</strong>':'<span style="color:#f87171"> still short</span>'}<br>
+          <span style="color:#64748b">Most economical — no size change needed.</span>
+        </div>
+        <button onclick="(function(){
+          var key='F:${f.nodeId}';
+          if(!window._memberOverrides) window._memberOverrides={};
+          window._memberOverrides[key]=Object.assign(window._memberOverrides[key]||{},{hook:true,dBf:10});
+          runWithOverrides('Footing ${f.baseLabel||f.label}: hook+T10');
+        })()" style="margin-top:8px;width:100%;padding:6px;background:rgba(167,139,250,0.12);border:1.5px solid #a78bfa;border-radius:6px;color:#a78bfa;cursor:pointer;font-size:10px;font-weight:700">
+          🔧 Hook + T10 & Re-analyse
+        </button>
       </div>
     </div>
-    <div style="font-size:9px;color:var(--txt3);margin-bottom:10px">
-      <strong>Recommendation:</strong> ${f.Lda>=f.Ldr*0.7?'Use 90° hook — simplest fix, no size change needed.':'Use BOTH hooks AND increase footing.'}
+
+    <div style="padding:10px;background:#0a1628;border:1px solid #1e3a8a;border-radius:6px;font-size:10px;color:#64748b">
+      <strong style="color:#38bdf8">💡 Which to use?</strong>
+      ${f.Lda>=(f.Ldr_straight||f.Ldr/0.7)*0.7
+        ?'Hook alone fixes it (Option A) — cheapest, no concrete change. Just bend the bar tip.'
+        :f.Lda>=Math.ceil((f.Ldr_straight||f.Ldr/0.7)*10/12*0.7)
+          ?'Option D (Hook + T10) is the most economical — no footing size change.'
+          :'Widen the footing (Option B). Smaller footings often can\'t fit enough bar length regardless of hooks.'}
+      Depth increase alone (Option E below) does NOT fix dev length — depth is vertical, dev length is horizontal.
     </div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap">
-      ${f.Lda>=f.Ldr*0.7?`
-      <button onclick="(function(){
-        var key='F:'+${JSON.stringify(f.nodeId||'')};
-        if(!window._memberOverrides) window._memberOverrides={};
-        window._memberOverrides[key]={hook:true};
-        alert('✅ 90° hook noted. Re-run analysis — dev length check with hook factor 0.7 now applied.');
-      })()" style="padding:6px 12px;background:rgba(52,211,153,0.12);border:1.5px solid #34d399;border-radius:6px;color:#34d399;cursor:pointer;font-size:10px;font-weight:700">
-        ✅ Apply 90° Hook & Re-analyse
-      </button>`:`
-      <button onclick="(function(){
-        var key='F:${f.nodeId}';
-        var bfNeeded=Math.ceil(${(2*f.Ldr+f.colSize+2*(typeof S !== 'undefined' ? S.coverFtg : 50))/1000}*100)/100;
-        if(!window._memberOverrides) window._memberOverrides={};
-        window._memberOverrides[key]={Bf:bfNeeded};
-        runWithOverrides('Footing ${f.baseLabel||f.label}: Bf→'+bfNeeded+'m');
-      })()" style="padding:6px 12px;background:rgba(56,189,248,0.12);border:1.5px solid #38bdf8;border-radius:6px;color:#38bdf8;cursor:pointer;font-size:10px;font-weight:700">
-        ⚡ Apply Wider Footing & Re-analyse
-      </button>`}
-      <button onclick="(function(){
-        var key='F:${f.nodeId}';
-        var newD=Math.ceil(${Math.ceil(f.D*1.25/25)*25}/25)*25;
-        if(!window._memberOverrides) window._memberOverrides={};
-        window._memberOverrides[key]=Object.assign(window._memberOverrides[key]||{},{D:newD});
-        runWithOverrides('Footing ${f.baseLabel||f.label}: D→'+newD+'mm');
-      })()" style="padding:6px 12px;background:rgba(167,139,250,0.12);border:1.5px solid #a78bfa;border-radius:6px;color:#a78bfa;cursor:pointer;font-size:10px;font-weight:700">
-        🔧 Increase Depth +25% & Re-analyse
-      </button>
-    </div>
+
   </div>
   `:''}
 </div>`;
