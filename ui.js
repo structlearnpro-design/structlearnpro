@@ -52,12 +52,7 @@ function go(n){
       },300);
     },60);
     if(n===2){
-      // Validate GRID structure — reinit if missing or corrupted
-      if(!GRID || !GRID.nodes || !GRID.beams || !GRID.bays ||
-         !Array.isArray(GRID.nodes) || !Array.isArray(GRID.beams) || !Array.isArray(GRID.bays)) {
-        GRID = null;
-        if(typeof initGrid === 'function') initGrid();
-      }
+      if(!GRID)initGrid();
       // Apply any stored node choices so canvas is correct immediately
       if(Object.keys(window._nodeChoices||{}).length>0) applyNodeChoices();
       // Multiple draws to ensure _coordMode flag is read correctly
@@ -2541,9 +2536,7 @@ function beamDetail(b){
     ${fm('No. of T20 bars = Ast/π×100 = '+r0(b.Am)+'/314',b.nm+' bars (Ap='+r0(b.Ap)+' mm²)','IS 456 Cl 26.5.1.2')}
     ${b.ns>0?fm('Top bars (at support — compression/hogging)',b.ns+' bars',''):''}
     ${fm('pt = Ap/(b×d) × 100 = '+r0(b.Ap)+'/('+b.b+'×'+b.d+')×100',r2(b.pt)+'%','')}
-    ${fm('Ld = φ×0.87fy/(4τbd) where τbd=τbd_plain×1.6 (HYSD, IS 456 Cl 26.2.1.1)',r0(b.Ld)+' mm','IS 456 Cl 26.2.1')}
-    ${fm('τbd_plain (M'+S.fck+') = '+r2(S.fck<=20?1.2:S.fck<=25?1.4:S.fck<=30?1.5:S.fck<=35?1.7:1.9)+' N/mm² (IS 456 Table 26) → τbd = ×1.6 = '+r2((S.fck<=20?1.2:S.fck<=25?1.4:S.fck<=30?1.5:S.fck<=35?1.7:1.9)*1.6)+' N/mm²','IS 456 Table 26')}
-    ${fm('Ld = 20×0.87×'+S.fy+'/(4×'+r2((S.fck<=20?1.2:S.fck<=25?1.4:S.fck<=30?1.5:S.fck<=35?1.7:1.9)*1.6)+')',r0(b.Ld)+' mm','')}
+    ${fm('Ld = 0.87fy×φ/(4τbd) = 0.87×'+S.fy+'×20/(4×1.6×1.25×√'+S.fck+')',r0(b.Ld)+' mm','IS 456 Cl 26.2')}
   `,'or')}
 
   ${sb('B-5','Shear Design',`
@@ -2567,51 +2560,6 @@ function beamDetail(b){
     ${fm('δallow = L/'+( b.isCantilever?'150':'250')+' = '+b.L*1000+'/'+(b.isCantilever?'150':'250'),r2(b.dall)+' mm','IS 456 Cl 23.2')}
     ${vd(b.deflOK,'δ ('+r2(b.dfl)+') '+(b.deflOK?'≤':'>')+' δallow ('+r2(b.dall)+') → '+(b.deflOK?'OK':'FAIL — increase D'),b.deflUtil)}
   `,'or')}
-
-  ${b.bf ? sb('B-7','T-Beam / L-Beam Analysis (IS 456 Cl 23.1.2)',`
-    <div class="cp bl" style="font-size:10px;line-height:1.9;margin-bottom:10px">
-      In a real building, the slab is cast monolithically with the beam. Under sagging (positive) moment,
-      the slab flange acts in compression — the beam behaves as a <strong>T-beam</strong> (interior) or
-      <strong>L-beam</strong> (edge). This significantly increases moment capacity and reduces required steel.
-    </div>
-    ${fm('Beam type',b.beamType||'T-beam','IS 456 Cl 23.1.2')}
-    ${fm('Web width bw (rectangular section)',b.bw+'mm','')}
-    ${fm('Flange thickness Df = slab depth',(b.Df||150)+'mm','')}
-    ${fm('lo = dist between zero-moment points = '+(b.endCond==='simply_supported'?'L':'0.7L')+' = '+(b.endCond==='simply_supported'?r0(b.L*1000):r0(0.7*b.L*1000))+'mm',r0(b.endCond==='simply_supported'?b.L*1000:0.7*b.L*1000)+' mm','IS 456 Cl 23.1.2')}
-    ${fm('Effective flange width bf = min(lo/6+bw+6Df, c/c span)',b.bf+'mm','IS 456 Cl 23.1.2')}
-    ${fm('NA in flange (xu,lim='+(b.d?r0(0.46*b.d):'-')+'mm '+(b.NA_in_flange?'≤':'>')+' Df='+b.Df+'mm)?',b.NA_in_flange?'YES — rectangular formula with bf applies':'NO — flanged section formula applies','')}
-    ${fm('T-beam Mulim (flanged section)',r2(b.Mulim_T||0)+' kN.m','IS 456 Annex G.2')}
-    ${fm('Rectangular Mulim (for comparison)',r2(b.Mulim||0)+' kN.m','')}
-    <div class="cp bl" style="font-size:10px;margin-top:6px">
-      <strong>T-beam advantage:</strong> Mulim increases from ${r2(b.Mulim||0)} kN.m (rectangular) to
-      ${r2(b.Mulim_T||0)} kN.m (T-beam) — a ${r0(((b.Mulim_T||0)/(b.Mulim||1)-1)*100)}% gain.
-      Steel required reduces from ${b.nm}T20 to <strong style="color:#38bdf8">${b.nm_T||b.nm}T20</strong>.
-    </div>
-    ${fm('T-beam tension steel (bottom bars)',( b.nm_T||b.nm)+'T20 (Ap='+r0(b.Ap_T||b.Ap)+' mm²)','IS 456 Annex G.2')}
-    ${vd((b.Mmax||0)<=(b.Mulim_T||b.Mulim),'Mmax ('+r2(b.Mmax||0)+') '+(( b.Mmax||0)<=(b.Mulim_T||b.Mulim)?'≤':'>')+' T-beam Mulim ('+r2(b.Mulim_T||b.Mulim||0)+') → '+((b.Mmax||0)<=(b.Mulim_T||b.Mulim)?'Singly reinforced T-beam OK':'Increase depth'))}
-  `,'bl') : ''}
-
-  ${b.wcr!==undefined ? sb('B-8','Crack Width Check (IS 456 Annex F)',`
-    <div class="cp" style="font-size:10px;line-height:1.9;margin-bottom:10px;background:rgba(148,163,184,0.05);border-left:2px solid #64748b;padding:8px 12px;border-radius:0 6px 6px 0">
-      Cracks in RC beams are inevitable — the goal is to limit them to acceptable widths so reinforcement
-      is protected from corrosion and the structure looks acceptable. IS 456 Annex F gives the crack width
-      formula based on steel strain, bar spacing and cover.
-    </div>
-    ${fm('Service moment Ms = α×ws×L² (unfactored)',r2(b.Ms||0)+' kN.m','')}
-    ${fm('Modular ratio m = 280/(3×0.33×fck) = 280/(3×0.33×'+S.fck+')',r2(280/(3*0.33*S.fck)),'IS 456 Cl B-1.3')}
-    ${fm('Neutral axis depth x (elastic, service load)',r1(b.x_na||0)+' mm','IS 456 Annex F')}
-    ${fm('Steel stress under service load fs',r1(b.fs_s||0)+' N/mm² (limit 0.58fy='+(0.58*S.fy)+')','IS 456 Annex F')}
-    ${fm('Average strain εm at tension face',((b.em||0)*1000).toFixed(4)+'×10⁻³','IS 456 Annex F Cl F-2')}
-    ${fm('acr = dist from point to nearest bar surface',r1(b.acr||0)+' mm','IS 456 Annex F')}
-    <div class="cp" style="font-size:10px;line-height:1.9;margin:8px 0;background:rgba(96,165,250,0.06);border-radius:6px;padding:8px 12px">
-      <strong>Formula: wcr = 3×acr×εm / (1 + 2×(acr−cmin)/(h−x))</strong><br>
-      = 3×${r1(b.acr||0)}×${((b.em||0)*1000).toFixed(4)}×10⁻³ / (1 + 2×(${r1(b.acr||0)}−${S.coverBeam})/(${b.D}−${r1(b.x_na||0)}))<br>
-      = <strong style="color:${(b.crackOK)?'#34d399':'#f87171'}">${(b.wcr||0).toFixed(4)} mm</strong>
-    </div>
-    ${fm('Permissible crack width (IS 456 Cl 35.3.2)',b.wcr_allow+' mm ('+( b.wcr_allow>=0.3?'mild':b.wcr_allow>=0.2?'moderate':'severe')+' exposure)','IS 456 Cl 35.3.2')}
-    ${vd(b.crackOK,'wcr ('+((b.wcr||0)).toFixed(4)+'mm) '+(b.crackOK?'≤':'>')+' wcr_allow ('+b.wcr_allow+'mm) → '+(b.crackOK?'Crack width OK':'Crack width EXCEEDS limit — reduce bar spacing or increase cover'),0)}
-    ${!b.crackOK ? '<div class="cp" style="font-size:10px;color:#f87171;margin-top:6px">To reduce crack width: use more bars of smaller diameter (reduces bar spacing), increase concrete cover, or use M30 concrete (higher modular ratio = lower steel stress).</div>' : ''}
-  `,'') : ''}
 
   ${(()=>{
     if(!RES.allBeams) return '';
@@ -2820,10 +2768,8 @@ function colDetail(c){
     ${svgTribArea(c.corner?'corner':c.edge?'edge':'interior', S.spansX[c.col]||4, S.spansY[c.row]||3, c.row, c.col, GRID.ny, GRID.nx)}
     ${fm('Slab trib area (slab bays only, voids excluded)',r2(c.ta)+' m²','')}
     ${c.perimLen>0?fm('Perimeter beam length (wall load)',r2(c.perimLen)+' m',''):''}
-    ${fm('DL contribution = '+c.floorsAbove+' floors × DL_tot × area = '+c.floorsAbove+'×'+r2(S.DL_tot||6.25)+'×'+r2(c.ta),r2(c.floorsAbove*(S.DL_tot||6.25)*c.ta)+' kN','')}
-    ${fm('LL (IS 875 P2): ('+Math.max(0,c.floorsAbove-1)+'×floor_LL + roof_LL)×area×llRedFactor',r2(c.Ps-(c.floorsAbove*(S.DL_tot||6.25)*c.ta)-(c.perimLen>0?(c.floorsAbove-1)*S.wallLoad*c.perimLen:0))+' kN','IS 875 P2 Cl 3.2.1')}
-    ${c.perimLen>0?fm('Wall load = '+(c.floorsAbove-1)+' typical floors × wallLoad × perimLen = '+(c.floorsAbove-1)+'×'+S.wallLoad+'×'+r2(c.perimLen),r2((c.floorsAbove-1)*S.wallLoad*c.perimLen)+' kN',''):''}
-    ${fm('Ps (service load, total)',r2(c.Ps)+' kN','')}
+    ${fm('Ps per floor = DL_tot×area + LL×area×0.25 + wallLoad×perimLen',r2(c.Ps/c.floorsAbove)+' kN/floor','')}
+    ${fm('Ps = Ps_per_floor × '+c.floorsAbove+' floors above',r2(c.Ps)+' kN','')}
     ${fm('Pu = 1.5 × Ps',r2(c.Pu)+' kN','IS 456 Cl 18.2')}
   `,'vi')}
 
@@ -11444,6 +11390,12 @@ function takeSnapshot(label) {
   const allSafe = beams.every(b=>b.deflOK!==false&&b.shearSafe!==false) &&
                   cols.every(c=>c.safe!==false) &&
                   ftgs.every(f=>f.punch_ok!==false&&f.ow_ok!==false&&f.Ld_ok!==false&&f.tr_ok!==false);
+  // Compute richer summary values
+  const gndCols = cols.filter(c=>c.floor===1);
+  const failBeams = beams.filter(b=>b.deflOK===false||b.shearSafe===false);
+  const failCols  = gndCols.filter(c=>c.safe===false);
+  const failFtgs  = ftgs.filter(f=>f.punch_ok===false||f.ow_ok===false||f.Ld_ok===false);
+  const totalSteelKg = beams.reduce((a,b)=>a+(b.Ap||0)*b.L*7850/1e6,0); // approx kg
   const snap = {
     id: Date.now().toString(36),
     label: snapLabel,
@@ -11452,16 +11404,33 @@ function takeSnapshot(label) {
     S: JSON.parse(JSON.stringify(S)),
     RES: JSON.parse(JSON.stringify(RES)),
     summary: {
-      totalSteel: beams.reduce((a,b)=>a+(b.Am||0),0),
-      beamCount:  beams.length,
-      maxDefl:    beams.length ? Math.max(...beams.map(b=>b.dfl||0)) : 0,
-      allSafe,
-      colSize:    cols[0] ? cols[0].size : 0,
-      slabD:      RES.slab ? RES.slab.slabD : 0,
-      beamD:      beams[0] ? beams[0].D : 0,
-      beamB:      beams[0] ? beams[0].b : 0,
+      // Inputs
       fck: S.fck, fy: S.fy,
       numFloors: S.numFloors, floorHt: S.floorHt,
+      zone: S.zone,
+      spansX: (S.spansX||[]).join('×'), spansY: (S.spansY||[]).join('×'),
+      udlLL: S.udlLL,
+      // Structure sizes
+      slabD:   RES.slab ? RES.slab.slabD : 0,
+      beamD:   beams[0] ? beams[0].D : 0,
+      beamB:   beams[0] ? beams[0].b : 0,
+      colSize: gndCols[0] ? gndCols[0].size : 0,
+      ftgSize: ftgs[0] ? Math.round((ftgs[0].Bf||0)*100)/100 : 0,
+      // Results
+      maxDefl:    beams.length ? Math.max(...beams.map(b=>b.dfl||0)) : 0,
+      maxDeflAllow: beams.length ? beams[0].dall||0 : 0,
+      maxShear:   beams.length ? Math.max(...beams.map(b=>b.tv||0)) : 0,
+      baseShear:  RES.seis ? RES.seis.Vb : 0,
+      Ah:         RES.seis ? RES.seis.Ah : 0,
+      colPs:      gndCols[0] ? gndCols[0].Ps : 0,
+      colPcap:    gndCols[0] ? gndCols[0].Pcap : 0,
+      beamSteel:  beams[0] ? beams[0].nm : 0,
+      colSteel:   gndCols[0] ? gndCols[0].pt : 0,
+      totalSteelKg: Math.round(totalSteelKg),
+      // Checks
+      failBeams: failBeams.length, failCols: failCols.length, failFtgs: failFtgs.length,
+      allSafe,
+      beamCount: beams.length, colCount: gndCols.length,
     }
   };
   _snapshots.push(snap);
@@ -11490,15 +11459,37 @@ function renderSnapshotPanel() {
   
   const cols = _snapshots.slice(-3); // show last 3
   const fields = [
+    // ── INPUTS ──
+    {h:'INPUTS'},
     ['Concrete Grade','fck','M',''],
     ['Steel Grade','fy','Fe',''],
     ['Floors','numFloors','G+',''],
     ['Floor Height','floorHt','','m'],
+    ['Seismic Zone','zone','Zone ',''],
+    ['Live Load','udlLL','','kN/m²'],
+    // ── MEMBER SIZES ──
+    {h:'MEMBER SIZES'},
     ['Slab Thickness','slabD','','mm'],
-    ['Beam Size','beamD','','mm D'],
+    ['Beam Size (D)','beamD','','mm'],
+    ['Beam Width (b)','beamB','','mm'],
     ['Column Size','colSize','','mm sq'],
-    ['Max Deflection','maxDefl','','mm'],
-    ['Status','allSafe','',''],
+    ['Footing Size','ftgSize','','m sq'],
+    // ── STRUCTURAL RESULTS ──
+    {h:'RESULTS'},
+    ['Max Beam Deflection','maxDefl','','mm'],
+    ['Max Shear Stress','maxShear','','N/mm²'],
+    ['Base Shear Vb','baseShear','','kN'],
+    ['Seismic Coeff Ah','Ah','',''],
+    ['Corner Col Service','colPs','','kN'],
+    ['Corner Col Capacity','colPcap','','kN'],
+    ['Beam Tension Steel','beamSteel','','×T20'],
+    ['Column Steel %','colSteel','','%'],
+    // ── SAFETY ──
+    {h:'SAFETY'},
+    ['Failing Beams','failBeams','',''],
+    ['Failing Columns','failCols','',''],
+    ['Failing Footings','failFtgs','',''],
+    ['Overall Status','allSafe','',''],
   ];
   
   let html = '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:11px">';
@@ -11511,29 +11502,46 @@ function renderSnapshotPanel() {
   html += '</tr>';
   
   // Data rows
-  fields.forEach(([label, key, prefix, suffix]) => {
-    html += `<tr><td style="padding:5px 8px;border:1px solid var(--b1);color:var(--txt3);font-weight:bold">${label}</td>`;
+  fields.forEach(f => {
+    // Section header row
+    if(f.h !== undefined){
+      html += `<tr><td colspan="${cols.length+1}" style="padding:4px 8px;background:#0a1628;border:1px solid var(--b1);font-size:9px;font-weight:800;color:#38bdf8;letter-spacing:1px;text-transform:uppercase">${f.h}</td></tr>`;
+      return;
+    }
+    const [label, key, prefix, suffix] = f;
+    html += `<tr><td style="padding:5px 8px;border:1px solid var(--b1);color:var(--txt3);font-size:11px">${label}</td>`;
     const vals = cols.map(s => s.summary[key]);
     cols.forEach((s, i) => {
       const v = s.summary[key];
+      if(v===undefined||v===null){ html+=`<td style="text-align:center;border:1px solid var(--b1);padding:5px 8px;color:#475569">—</td>`; return; }
       let display = '';
-      let style = 'text-align:center;border:1px solid var(--b1);padding:5px 8px;';
-      
+      let style = 'text-align:center;border:1px solid var(--b1);padding:5px 8px;font-size:11px;';
       if (key === 'allSafe') {
-        display = v ? '<span style="color:#34d399;font-weight:bold">✓ SAFE</span>' : '<span style="color:#f87171;font-weight:bold">✗ FAIL</span>';
-      } else if (key === 'maxDefl') {
+        display = v ? '<span style="color:#34d399;font-weight:700">✓ SAFE</span>' : '<span style="color:#f87171;font-weight:700">✗ FAIL</span>';
+      } else if (key === 'failBeams'||key==='failCols'||key==='failFtgs') {
+        const n = parseInt(v)||0;
+        display = n===0 ? '<span style="color:#34d399">0 ✓</span>' : `<span style="color:#f87171;font-weight:700">${n} ✗</span>`;
+      } else if (key === 'Ah') {
+        display = parseFloat(v).toFixed(4);
+      } else if (key === 'colSteel') {
+        display = parseFloat(v).toFixed(2) + suffix;
+      } else if (typeof v === 'number' && !Number.isInteger(v)) {
         display = parseFloat(v).toFixed(1) + suffix;
-        // Highlight worst
-        const maxVal = Math.max(...vals.map(x=>parseFloat(x)||0));
-        if (parseFloat(v) === maxVal && vals.length > 1) style += 'background:rgba(251,191,36,0.15);color:#fbbf24;';
+        const numVals = vals.map(x=>parseFloat(x)||0).filter(x=>x>0);
+        const myNum = parseFloat(v)||0;
+        if(numVals.length>1){
+          const isWorst = ['maxDefl','maxShear','failBeams','failCols','failFtgs'].includes(key);
+          if (isWorst && myNum === Math.max(...numVals)) style += 'background:rgba(248,113,113,0.12);color:#f87171;';
+          else if (!isWorst && myNum === Math.max(...numVals)) style += 'background:rgba(59,130,246,0.1);color:#60a5fa;font-weight:700;';
+          if (myNum === Math.min(...numVals)) style += 'background:rgba(16,185,129,0.1);color:#34d399;font-weight:700;';
+        }
       } else {
         display = prefix + v + suffix;
-        // Highlight differences
         if (vals.length > 1 && vals.some(x => x !== vals[0])) {
           const numVals = vals.map(x=>parseFloat(x)||0);
           const myNum = parseFloat(v)||0;
-          if (myNum === Math.max(...numVals)) style += 'background:rgba(59,130,246,0.1);color:#60a5fa;font-weight:bold;';
-          if (myNum === Math.min(...numVals)) style += 'background:rgba(16,185,129,0.1);color:#34d399;font-weight:bold;';
+          if (myNum === Math.max(...numVals)) style += 'background:rgba(59,130,246,0.1);color:#60a5fa;font-weight:700;';
+          if (myNum === Math.min(...numVals)) style += 'background:rgba(16,185,129,0.1);color:#34d399;font-weight:700;';
         }
       }
       html += `<td style="${style}">${display}</td>`;

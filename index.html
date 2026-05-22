@@ -754,13 +754,22 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
       </div><!-- ai-content -->
     </div><!-- ai-panel -->
   <!-- AI TOGGLE BUTTON -->
-  <button id="ai-toggle-btn" onclick="toggleAI()"
-    style="position:fixed;bottom:20px;right:252px;z-index:9997;width:52px;height:52px;border-radius:50%;
-    background:linear-gradient(135deg,#4c1d95,#7c3aed);border:none;color:#fff;font-size:22px;cursor:pointer;
-    box-shadow:0 4px 20px rgba(124,58,237,0.4);display:none;transition:transform 0.2s"
-    onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
-    🤖
-  </button>
+  <!-- Draggable AI button -->
+  <div id="ai-toggle-btn"
+    style="position:fixed;bottom:80px;left:16px;z-index:9997;display:none;
+           user-select:none;touch-action:none;">
+    <button onclick="toggleAI()"
+      style="width:48px;height:48px;border-radius:12px;cursor:pointer;
+             background:linear-gradient(135deg,#4c1d95,#7c3aed);border:none;
+             color:#fff;font-size:18px;box-shadow:0 4px 16px rgba(124,58,237,0.5);
+             display:flex;align-items:center;justify-content:center;
+             transition:transform 0.15s;font-family:inherit"
+      onmouseover="this.style.transform='scale(1.08)'"
+      onmouseout="this.style.transform='scale(1)'">
+      🤖
+    </button>
+    <div style="font-size:8px;color:#a78bfa;text-align:center;margin-top:2px;font-weight:600">AI</div>
+  </div>
 </div>
 
 <!-- ACCOUNT -->
@@ -3164,6 +3173,38 @@ function updateAIUsageBar(){
 }
 
 // ── PANEL TOGGLE ───────────────────────────────────────────────
+// ── DRAGGABLE AI BUTTON ─────────────────────────────────────────
+function initDraggableAIBtn(){
+  const wrap = document.getElementById('ai-toggle-btn');
+  if(!wrap || wrap._dragInit) return;
+  wrap._dragInit = true;
+  let isDragging=false, startX, startY, origLeft, origTop;
+  function getPos(e){ return e.touches ? {x:e.touches[0].clientX,y:e.touches[0].clientY} : {x:e.clientX,y:e.clientY}; }
+  wrap.addEventListener('mousedown', function(e){
+    if(e.target.tagName==='BUTTON') return; // let button click through
+    const r=wrap.getBoundingClientRect();
+    isDragging=true; origLeft=r.left; origTop=r.top;
+    const p=getPos(e); startX=p.x; startY=p.y;
+    wrap.style.transition='none'; e.preventDefault();
+  });
+  wrap.addEventListener('touchstart', function(e){
+    const r=wrap.getBoundingClientRect();
+    isDragging=true; origLeft=r.left; origTop=r.top;
+    const p=getPos(e); startX=p.x; startY=p.y;
+    wrap.style.transition='none';
+  },{passive:true});
+  window.addEventListener('mousemove', function(e){
+    if(!isDragging) return;
+    const p=getPos(e);
+    const nx=Math.max(0,Math.min(window.innerWidth-64,origLeft+(p.x-startX)));
+    const ny=Math.max(0,Math.min(window.innerHeight-80,origTop+(p.y-startY)));
+    wrap.style.left=nx+'px'; wrap.style.top=ny+'px';
+    wrap.style.bottom='auto'; wrap.style.right='auto';
+  });
+  window.addEventListener('mouseup', function(){ isDragging=false; });
+  window.addEventListener('touchend', function(){ isDragging=false; });
+}
+
 function toggleAI(){
   _aiPanelOpen = !_aiPanelOpen;
   const panel = document.getElementById('ai-panel');
@@ -3186,11 +3227,13 @@ function toggleAI(){
     if(ljBody) ljBody.style.display = '';
     if(ljToggle) ljToggle.textContent = '−';
   }
-  if(btn){
-    btn.style.background = _aiPanelOpen
+  // Update inner button appearance
+  const innerBtn = btn ? btn.querySelector('button') : null;
+  if(innerBtn){
+    innerBtn.style.background = _aiPanelOpen
       ? 'linear-gradient(135deg,#1e3a8a,#1d4ed8)'
       : 'linear-gradient(135deg,#4c1d95,#7c3aed)';
-    btn.textContent = _aiPanelOpen ? '✕' : '🤖';
+    innerBtn.textContent = _aiPanelOpen ? '✕' : '🤖';
   }
   if(_aiPanelOpen){
     updateAIUsageBar();
@@ -3202,7 +3245,7 @@ function toggleAI(){
 
 function showAIBtn(){
   const btn = document.getElementById('ai-toggle-btn');
-  if(btn) btn.style.display = 'flex';
+  if(btn){ btn.style.display = 'block'; initDraggableAIBtn(); }
 }
 
 function hideAIBtn(){
@@ -3314,28 +3357,48 @@ async function callClaude(systemPrompt, userMessage, outputElId){
   if(el){ el.className='ai-output ai-loading'; el.textContent='AI is thinking'; }
 
   try{
-    const response = await fetch(SUPA_URL+'/functions/v1/ai-chat', {
+    // Try Anthropic API directly first
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer '+SUPA_KEY, 'apikey': SUPA_KEY },
+      headers: {
+        'Content-Type': 'application/json',
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
       body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
         max_tokens: 1000,
-        system:     systemPrompt,
-        messages:   [{ role:'user', content: userMessage }]
+        system: systemPrompt,
+        messages: [{ role:'user', content: userMessage }]
       })
     });
 
     const data = await response.json();
-    console.log('[AI] response status:', response.status, 'data:', JSON.stringify(data).slice(0,200));
+    console.log('[AI] response status:', response.status);
 
     if(!response.ok){
-      const errMsg = data.error || data.message || 'AI error ('+response.status+')';
-      if(el){ el.className='ai-output'; el.textContent='Error: '+errMsg; }
-      return null;
+      // Fallback to Supabase edge function
+      const resp2 = await fetch(SUPA_URL+'/functions/v1/ai-chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer '+SUPA_KEY, 'apikey': SUPA_KEY },
+        body: JSON.stringify({ max_tokens: 1000, system: systemPrompt, messages: [{ role:'user', content: userMessage }] })
+      });
+      const data2 = await resp2.json();
+      if(!resp2.ok){
+        const errMsg = data2.error || data2.message || 'AI service unavailable ('+resp2.status+')';
+        if(el){ el.className='ai-output'; el.textContent='Error: '+errMsg; }
+        return null;
+      }
+      const text2 = data2.content?.[0]?.text;
+      if(!text2){ if(el){ el.className='ai-output'; el.textContent='No response from AI.'; } return null; }
+      incrementAIUsage();
+      if(el){ el.className='ai-output'; el.innerHTML=formatAIResponse(text2); }
+      return text2;
     }
 
     const text = data.content?.[0]?.text;
     if(!text){
-      if(el){ el.className='ai-output'; el.textContent='No response from AI. Check Edge Function logs.'; }
+      if(el){ el.className='ai-output'; el.textContent='No response from AI.'; }
       return null;
     }
 
@@ -3345,7 +3408,7 @@ async function callClaude(systemPrompt, userMessage, outputElId){
 
   }catch(e){
     console.error('[AI] fetch error:', e);
-    if(el){ el.className='ai-output'; el.textContent='Network error: '+e.message; }
+    if(el){ el.className='ai-output'; el.textContent='Network error: '+e.message+'. Check console.'; }
     return null;
   }
 }
