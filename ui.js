@@ -422,7 +422,9 @@ function secOverview(){
   const allB=allBeamsArr.every(b=>b.deflOK&&b.shearSafe);
   const allC=allColsArr.filter(c=>c.floor===1).every(c=>c.safe);
   const allF=allFtgsArr.every(f=>f.punch_ok&&f.ow_ok);
-  return`
+  // Show guided improvement if there are failures
+  const guidedHtml = (typeof secGuidedImprovement === 'function') ? secGuidedImprovement() : '';
+  return guidedHtml + `
 <div class="card bl">
   <div class="ct">Design Summary  -  ${S.name}</div>
   ${RES.sanityWarnings&&RES.sanityWarnings.length>0?`
@@ -840,7 +842,7 @@ function secSeismic(){
     </div>
   `,'tl')}
   ${sb('EQ-2','Natural Time Period Ta',`
-    ${fm(`Ta = 0.09H/sqrtd = 0.09x${r2(S.numFloors*S.floorHt)}/sqrt${S.buildingW}`,r2(seis.Ta)+' s','IS 1893 Cl 7.6.2(c)')}
+    ${fm(`Ta = 0.09H/sqrtd = 0.09x${r2(S.numFloors*S.floorHt)}/sqrt${S.buildingW}`,r2(seis.Ta)+' s','IS 1893 Cl 7.6.3.2(c)')}
     <div class="cp tl">H = ${r2(S.numFloors*S.floorHt)}m total height | d = ${S.buildingW}m width in direction of motion (governing direction shown)<br>
     Ta = ${r2(seis.Ta)}s — Sa/g curve chosen per IS 1893:2016 for Type ${S.soilType} soil</div>
   `,'tl')}
@@ -852,14 +854,14 @@ function secSeismic(){
   `,'tl')}
   ${sb('EQ-4','Seismic Weight & Base Shear',`
     ${fm('Floor area = '+S.buildingL+'x'+S.buildingW,r2(S.buildingL*S.buildingW)+' m^2','')}
-    ${fm('W_total = (DL+0.25LL)xarea x floors + walls',r0(seis.Wt)+' kN','IS 1893 Cl 7.3.1')}
-    ${fmWhy('Vb = Ah x W = '+seis.Ah.toFixed(4)+'x'+r0(seis.Wt),r2(seis.Vb)+' kN','IS 1893 Cl 7.5.3')}
+    ${fm('W_total = (DL+0.25LL)xarea x floors + walls',r0(seis.Wt)+' kN','IS 1893 Cl 7.4.1')}
+    ${fmWhy('Vb = Ah x W = '+seis.Ah.toFixed(4)+'x'+r0(seis.Wt),r2(seis.Vb)+' kN','IS 1893 Cl 7.6.3.1')}
     ${vd(true,'Base Shear Vb = '+r2(seis.Vb)+' kN  -  this horizontal force acts at the building base during design earthquake')}
   `,'tl')}
   ${sb('EQ-5','Distribution Over Building Height',`
     <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start">
       <div style="flex:2;min-width:220px">
-        ${fm('Qi = Vb x WiHi^2 / SumWjHj^2','(inverted triangle pattern)','IS 1893 Cl 7.6')}
+        ${fm('Qi = Vb x WiHi^2 / SumWjHj^2','(inverted triangle pattern)','IS 1893 Cl 7.6.3')}
         <table>
           <tr><th>Floor</th><th>Hi (m)</th><th>WiHi^2 (kN.m^2)</th><th>Qi (kN)</th><th>Vi (kN)</th></tr>
           ${seis.floors.map(f=>`<tr><td>${f.floor}</td><td>${f.h}</td><td>${r0(f.Wh2)}</td><td class="val">${r2(f.Qi)}</td><td class="val">${r2(f.Vi)}</td></tr>`).join('')}
@@ -1145,7 +1147,7 @@ function secWind(){
   <div class="cd">Wind analysis determines horizontal force on the building from wind. For low-rise residential in seismic zones III-V, seismic usually governs \u2014 but wind MUST be checked independently.</div>
 
   ${sb('W-1','Basic Wind Speed (Vb)',`
-    ${fm('Vb (Zone '+S.windZone+')',wind.VbW+' m/s','IS 875 P3 Cl 5.2 / Fig. 1')}
+    ${fm('Vb (Zone '+S.windZone+')',wind.VbW+' m/s','IS 875 P3 Cl 6.2 / Fig. 1')}
     <div class="cp or">
       <strong>Wind zone map (IS 875 P3 Fig. 1):</strong><br>
       Zone I: 33 m/s (Himalayan foothills) | Zone II: 39 m/s (Central India) |
@@ -1176,19 +1178,19 @@ function secWind(){
         </span>
       </div>
       <div class="cp or">
-        <strong>k3 = Topography Factor</strong> (IS 875 P3 Cl 5.3.3)<br>
+        <strong>k3 = Topography Factor</strong> (IS 875 P3 Cl 6.3.3)<br>
         For flat ground or gentle slopes (<3\u00b0): <strong>k3 = 1.0</strong><br>
         <span style="font-size:10px;color:var(--txt3)">k3 > 1.0 for buildings on hilltops, ridges, or escarpments where wind accelerates. Can reach 1.36 for steep cliffs.</span>
       </div>
       <div class="cp or">
-        <strong>k4 = Importance Factor for Cyclonic Region</strong> (IS 875 P3 Cl 5.3.4)<br>
+        <strong>k4 = Importance Factor for Cyclonic Region</strong> (IS 875 P3 Cl 6.3.4)<br>
         For non-cyclonic regions: <strong>k4 = 1.0</strong><br>
         <span style="font-size:10px;color:var(--txt3)">k4 = 1.15 for buildings within 60km of coast in cyclone-prone areas (Gujarat, Odisha, AP, TN coast).</span>
       </div>
     </div>
-    ${fm('Design wind speed: Vz = Vb \u00d7 k1 \u00d7 k2 \u00d7 k3 \u00d7 k4','','IS 875 P3 Cl 5.3')}
+    ${fm('Design wind speed: Vz = Vb \u00d7 k1 \u00d7 k2 \u00d7 k3 \u00d7 k4','','IS 875 P3 Cl 6.3')}
     ${fm('Vz = '+wind.VbW+' \u00d7 1.0 \u00d7 '+wind.k2+' \u00d7 1.0 \u00d7 1.0',r2(wind.Vz)+' m/s','')}
-    ${fmWhy('Design wind pressure: pz = 0.6 \u00d7 Vz\u00b2 / 1000',r2(wind.pz)+' kN/m\u00b2','IS 875 P3 Cl 5.4',
+    ${fmWhy('Design wind pressure: pz = 0.6 \u00d7 Vz\u00b2 / 1000',r2(wind.pz)+' kN/m\u00b2','IS 875 P3 Cl 7.2',
       'The 0.6 factor comes from \u00bd\u03c1 where \u03c1 = air density = 1.2 kg/m\u00b3. So \u00bd\u00d71.2 = 0.6. The formula gives pressure in N/m\u00b2 when Vz is in m/s; divide by 1000 for kN/m\u00b2.')}
   `,'or')}
 
@@ -2857,7 +2859,7 @@ function colDetail(c){
   ${sb('C-4','Lateral Ties + IS 13920 Confinement',`
     ${fm('General tie spacing = min('+c.size+', 16×'+c.dB+', 300)',c.ts+'mm','IS 456 Cl 26.5.3.2')}
     ${fm('Confinement zone Lo = max('+c.size+', H/6, 450)',r0(c.Lo)+' mm','IS 13920 Cl 7.4.1')}
-    ${fm('Confining tie spacing = min(ts, 8×'+c.dB+', 100, 75)',c.tsc+'mm','IS 13920 Cl 7.4.6')}
+    ${fm('Confining tie spacing = min(ts, 6×'+c.dB+', 100, 75)',c.tsc+'mm','IS 13920 Cl 7.4.6')}
     <div class="cp vi" style="margin-top:8px">
       <strong>Provide:</strong> D8 ties @ ${c.ts}mm (general) | D8 ties @ ${c.tsc}mm (Lo=${r0(c.Lo)}mm each end) | All hooks: 135° mandatory (IS 13920 Cl 7.4.7)
     </div>
@@ -3504,11 +3506,11 @@ function refData(){
 </div>
 <div class="card" style="border-color:rgba(45,212,191,.3)">
   <div class="ct tl">3. Seismic Analysis  -  Full Calculation</div>
-  ${fm('Ta = 0.09x12.8/sqrt9','= 0.384s','IS 1893 Cl 7.6.1b')}
+  ${fm('Ta = 0.09x12.8/sqrt9','= 0.384s','IS 1893 Cl 7.6.3.1b')}
   ${fm('Sa/g = 2.5 x 1.2 (Type II soil)','= 3.0','IS 1893 Fig. 2')}
   ${fm('Ah = (0.24/2) x 3.0 / 5 x 1.0','= 0.072','IS 1893 Cl 6.4.2')}
   ${fm('W_total ~ 4x(5.75+0.5)x108 + walls','~ 3484 kN','')}
-  ${fm('Vb = 0.072 x 3484','= 250.8 kN','IS 1893 Cl 7.5.3')}
+  ${fm('Vb = 0.072 x 3484','= 250.8 kN','IS 1893 Cl 7.6.3.1')}
   ${svgSeismicDist([{floor:4,Qi:121.5,Vi:121.5},{floor:3,Qi:68.4,Vi:189.9},{floor:2,Qi:30.4,Vi:220.3},{floor:1,Qi:7.6,Vi:227.9}])}
 </div>
 <div class="card">
@@ -4275,11 +4277,11 @@ async function startPDF(){
     kv('Response R',se.R+' (SMRF + IS 13920)','IS 1893 T9');
     kv('Soil Type','Type '+S.soilType+' (IS 1893:2016 per-type spectrum)','IS 1893 Cl 6.4.5');
     skip(2);
-    fmRow('Ta = 0.09 x H / sqrt(d) = 0.09 x '+(S.numFloors*S.floorHt)+' / sqrt('+S.buildingW+')',r2(se.Ta)+' s','IS 1893 Cl 7.6.2(c)');
+    fmRow('Ta = 0.09 x H / sqrt(d) = 0.09 x '+(S.numFloors*S.floorHt)+' / sqrt('+S.buildingW+')',r2(se.Ta)+' s','IS 1893 Cl 7.6.3.2(c)');
     fmRow('Sa/g (IS 1893:2016 Type '+S.soilType+' spectrum)',r2(se.Sa),'IS 1893 Cl 6.4.5');
     fmRow('Ah = (Z/2) x (Sa/g) / R x I',se.Ah.toFixed(4),'IS 1893 Cl 6.4.2');
-    fmRow('Seismic Weight W',r0(se.Wt)+' kN','IS 1893 Cl 7.3.1');
-    fmRow('Base Shear Vb = Ah x W',r2(se.Vb)+' kN','IS 1893 Cl 7.5.3',true);
+    fmRow('Seismic Weight W',r0(se.Wt)+' kN','IS 1893 Cl 7.4.1');
+    fmRow('Base Shear Vb = Ah x W',r2(se.Vb)+' kN','IS 1893 Cl 7.6.3.1',true);
     skip(3);F(7.5,'bold',80,80,100);Txt('STOREY SHEAR DISTRIBUTION',ML,y);y+=5;
     tblHdr(['Floor','Hi(m)','Wi(kN)','WixHi2','Qi(kN)','Vi(kN)'],[16,24,28,36,30,LW-134]);tblReset();
     se.floors.slice().reverse().forEach(f=>tblRow([f.floor,r2(f.h),r0(f.W),r0(f.Wh2),r2(f.Qi),r2(f.Vi)],[16,24,28,36,30,LW-134]));
@@ -4290,8 +4292,8 @@ async function startPDF(){
     secTitle('5','WIND ANALYSIS  -  IS 875 PART 3',160,70,10);
     const wi=RES.wind;kvReset();
     kv('Basic Vb (Zone '+S.windZone+')',wi.VbW+' m/s','IS 875 P3');
-    fmRow('Vz = Vb x k2 = '+wi.VbW+' x '+wi.k2,r2(wi.Vz)+' m/s','IS 875 P3 Cl 5.3');
-    fmRow('pz = 0.6 x Vz2 / 1000',r2(wi.pz)+' kN/m2','IS 875 P3 Cl 5.4');
+    fmRow('Vz = Vb x k2 = '+wi.VbW+' x '+wi.k2,r2(wi.Vz)+' m/s','IS 875 P3 Cl 6.3');
+    fmRow('pz = 0.6 x Vz2 / 1000',r2(wi.pz)+' kN/m2','IS 875 P3 Cl 7.2');
     fmRow('Net pressure = (0.8+0.5) x pz',r2(wi.Fw)+' kN/m2','IS 875 P3');
     const wTot=wi.Fw*S.buildingW*S.numFloors*S.floorHt/2;
     verdictBox(parseFloat(r2(se.Vb))>wTot,'Seismic Vb='+r2(se.Vb)+'kN > Wind='+r2(wTot)+'kN  -  SEISMIC GOVERNS',null,null);
@@ -4789,7 +4791,7 @@ function secPMInteraction() {
 
   ${sb('PM-1','Design Loads on Column',`
     ${fm('Axial load Pu (gravity cumulative, all floors)',r2(Pu_d)+' kN','IS 456 Cl 18.2')}
-    ${fm('Seismic storey shear V1 (ground floor)',r2(Vi)+' kN','IS 1893 Cl 7.6')}
+    ${fm('Seismic storey shear V1 (ground floor)',r2(Vi)+' kN','IS 1893 Cl 7.6.3')}
     ${fm('No. of columns per floor = ('+( S.spansX.length+1)+'+1) x ('+(S.spansY.length+1)+'+1)',numCols,'Grid method')}
     ${fm('Seismic moment per col = Vi x floorHt / (numCols x 2) = '+r2(Vi)+' x '+S.floorHt+' / ('+numCols+' x 2)',r2(M_seis)+' kN.m','Simplified distribution')}
     ${fm('Min eccentricity moment = Pu x emin = '+r2(Pu_d)+' x '+r2(c.emin)+'/1000',r2(Pu_d*c.emin/1000)+' kN.m','IS 456 Cl 25.4')}
@@ -5110,7 +5112,7 @@ function secContinuousBeam() {
 
 
 // =======================================================
-// FEATURE 3: SEISMIC DRIFT CHECK  -  IS 1893:2016 Cl 7.11
+// FEATURE 3: SEISMIC DRIFT CHECK  -  IS 1893:2016 Cl 7.11.1.1
 // =======================================================
 
 
@@ -5122,7 +5124,7 @@ function secContinuousBeam() {
 // ================================================================
 
 function calcSeismicDrift(floors, floorHt, numFloors, buildingW, fck, spansX, spansY, beams, cols) {
-  // IS 1893:2016 Cl 7.11.1: Storey drift limit = 0.004 x storey height
+  // IS 1893:2016 Cl 7.11.1.1.1: Storey drift limit = 0.004 x storey height
   // Approximate lateral stiffness using Kani's method or simplified frame
   // Simplified: K_storey = Sum(12EI/h^3) for columns + factor for beams
   const Ec = 5000 * Math.sqrt(fck);
@@ -5230,11 +5232,11 @@ function secSeismicDrift() {
 
   return `
 <div class="card" style="border-color:rgba(45,212,191,.3)">
-  <div class="ct tl">Seismic Drift Check  -  IS 1893:2016 Cl 7.11</div>
+  <div class="ct tl">Seismic Drift Check  -  IS 1893:2016 Cl 7.11.1.1</div>
   <div class="cd">Drift = the horizontal displacement of one floor relative to the floor below during an earthquake. Too much drift damages non-structural elements (walls, windows, pipes) even if the structure itself doesn't collapse.</div>
 
   <div class="cp tl">
-    <strong>IS 1893:2016 Cl 7.11.1 limit:</strong> Storey drift <= 0.004 x storey height<br>
+    <strong>IS 1893:2016 Cl 7.11.1.1.1 limit:</strong> Storey drift <= 0.004 x storey height<br>
     For this building: 0.004 x ${S.floorHt*1000}mm = <strong>${r2(0.004*S.floorHt*1000)}mm</strong> per floor<br><br>
     <strong>Why drift matters even if structure is safe:</strong> A building can be structurally intact but drift so much that all the brick infill walls crack, windows shatter, and pipework breaks. The drift limit protects these non-structural elements and ensures the building remains functional after a moderate earthquake (not just that it doesn't collapse).
   </div>
@@ -7332,6 +7334,124 @@ function ftgStepByStep(f) {
 // and suggests specific changes with reasoning
 // ================================================================
 
+
+// ── GUIDED IMPROVEMENT MODE — Teaching Feature ───────────────────
+// Shows step-by-step fix order after failed analysis
+function secGuidedImprovement() {
+  if (!RES) return '';
+
+  // Collect all failures in priority order
+  const steps = [];
+
+  // 1. Column failures (critical — structural safety)
+  const failCols = (RES.cols || []).filter(c => c.floor === 1 && !c.safe);
+  failCols.forEach(c => {
+    const label = c.corner ? 'Corner' : c.edge ? 'Edge' : 'Interior';
+    const needed = Math.ceil(Math.sqrt(c.Pu / (0.4 * S.fck * (1 - 0.01) + 0.67 * S.fy * 0.01)) / 25) * 25;
+    steps.push({
+      priority: 'critical',
+      icon: '🏛',
+      member: label + ' Column (Floor 1)',
+      problem: 'Column capacity ' + (c.Pcap||0).toFixed(0) + ' kN < factored load ' + (c.Pu||0).toFixed(0) + ' kN',
+      fix: 'Increase column size from ' + c.size + 'mm to ' + Math.max(c.size + 25, needed) + 'mm, or increase concrete grade',
+      why: 'Columns carry the entire load of all floors above. A failed column means structural collapse — fix this before anything else.',
+      clause: 'IS 456 Cl 39.3',
+    });
+  });
+
+  // 2. Beam shear failures
+  const failShear = (RES.beams || []).filter(b => !b.shearSafe);
+  failShear.forEach(b => {
+    steps.push({
+      priority: 'critical',
+      icon: '⚡',
+      member: b.label || 'Beam',
+      problem: 'Shear stress τv=' + (b.tv||0).toFixed(2) + ' N/mm² exceeds τc,max=' + (b.tcmax||0).toFixed(2) + ' N/mm²',
+      fix: 'Increase beam width from ' + b.b + 'mm to ' + Math.min(b.b + 50, 400) + 'mm, or increase concrete grade to reduce τc,max limit',
+      why: 'Shear failure is sudden and brittle — no warning, no gradual deflection. Fix shear failures before checking deflection.',
+      clause: 'IS 456 Cl 40.2',
+    });
+  });
+
+  // 3. Beam deflection failures
+  const failDefl = (RES.beams || []).filter(b => !b.deflOK && b.shearSafe);
+  failDefl.forEach(b => {
+    const newD = Math.ceil((b.D + 50) / 25) * 25;
+    steps.push({
+      priority: 'high',
+      icon: '📉',
+      member: b.label || 'Beam',
+      problem: 'Deflection δ=' + (b.dfl||0).toFixed(1) + 'mm exceeds limit δ_allow=' + (b.dall||0).toFixed(1) + 'mm (L/' + (b.isCantilever?'150':'250') + ')',
+      fix: 'Increase beam depth from ' + b.D + 'mm to ' + newD + 'mm. Deeper beam → much less deflection (δ ∝ 1/D³)',
+      why: 'Excessive deflection cracks plaster, causes doors to stick, and makes the floor feel springy. Deflection limit is a serviceability check.',
+      clause: 'IS 456 Cl 23.2(b)',
+    });
+  });
+
+  // 4. Footing failures
+  const failFtg = (RES.ftgs || []).filter(f => !f.punch_ok || !f.ow_ok);
+  failFtg.forEach(f => {
+    steps.push({
+      priority: 'high',
+      icon: '🏗',
+      member: f.lbl || 'Footing',
+      problem: !f.punch_ok ? 'Punching shear fails (τv=' + (f.Vpunch||0).toFixed(2) + ' > τc=' + (f.tc_punch||0).toFixed(2) + ' N/mm²)'
+                           : 'One-way shear fails',
+      fix: 'Increase footing depth D from ' + Math.round(f.D) + 'mm to ' + (Math.round(f.D) + 75) + 'mm',
+      why: 'Punching shear is like the column punching through the footing slab — sudden failure. Must be fixed before the footing can safely transfer load to soil.',
+      clause: 'IS 456 Cl 31.6',
+    });
+  });
+
+  // 5. Slab failures
+  if (RES.slab && !RES.slab.ld_ok) {
+    steps.push({
+      priority: 'medium',
+      icon: '🟦',
+      member: 'Slab',
+      problem: 'l/d ratio=' + (RES.slab.lx*1000/(RES.slab.slabd||1)).toFixed(1) + ' exceeds limit of 26 (slab depth insufficient for span)',
+      fix: 'Increase slab thickness from ' + RES.slab.slabD + 'mm to ' + (RES.slab.slabD + 25) + 'mm',
+      why: 'Slab too thin for its span will deflect excessively and crack. l/d check is a simple serviceability rule from IS 456.',
+      clause: 'IS 456 Cl 23.2',
+    });
+  }
+
+  if (steps.length === 0) return '';
+
+  const colors = { critical: '#f87171', high: '#f59e0b', medium: '#60a5fa' };
+  const bgColors = { critical: 'rgba(248,113,113,0.06)', high: 'rgba(245,158,11,0.06)', medium: 'rgba(96,165,250,0.05)' };
+
+  let html = '<div style="margin:0 0 14px 0;background:#0a1628;border:1.5px solid #f87171;border-radius:10px;overflow:hidden">';
+  html += '<div style="background:rgba(248,113,113,0.1);padding:12px 16px;display:flex;align-items:center;gap:10px">';
+  html += '<div style="font-size:20px">🎯</div>';
+  html += '<div><div style="font-family:var(--sans);font-size:13px;font-weight:700;color:#f87171">Guided Fix — ' + steps.length + ' issue' + (steps.length>1?'s':'')+' found</div>';
+  html += '<div style="font-size:10px;color:#94a3b8;margin-top:2px">Fix in this order — each step removes the most critical problem first</div></div>';
+  html += '</div>';
+
+  steps.forEach((step, idx) => {
+    const color = colors[step.priority];
+    const bg = bgColors[step.priority];
+    html += '<div style="padding:14px 16px;border-top:1px solid #1e293b;background:' + bg + '">';
+    html += '<div style="display:flex;align-items:flex-start;gap:12px">';
+    html += '<div style="width:24px;height:24px;border-radius:50%;background:' + color + ';color:#000;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px">' + (idx+1) + '</div>';
+    html += '<div style="flex:1">';
+    html += '<div style="font-size:12px;font-weight:700;color:' + color + ';margin-bottom:4px">' + step.icon + ' ' + step.member + '</div>';
+    html += '<div style="font-size:11px;color:#f87171;margin-bottom:6px;padding:5px 8px;background:rgba(248,113,113,0.08);border-radius:4px">Problem: ' + step.problem + '</div>';
+    html += '<div style="font-size:11px;color:#34d399;margin-bottom:5px">Fix: ' + step.fix + '</div>';
+    html += '<div style="font-size:10px;color:#94a3b8;line-height:1.6">Why: ' + step.why + '</div>';
+    if (step.clause) {
+      html += '<div style="margin-top:6px">' + (typeof clauseRef === 'function' ? clauseRef(step.clause) : step.clause) + '</div>';
+    }
+    html += '</div></div></div>';
+  });
+
+  html += '<div style="padding:10px 16px;border-top:1px solid #1e293b;font-size:10px;color:#475569">';
+  html += '💡 After each fix, click <strong style="color:#38bdf8">Run Full Analysis</strong> again to see updated results and a new "What Changed" summary.';
+  html += '</div></div>';
+
+  return html;
+}
+
 function secImprovements() {
   if (!RES) return '<div class="card"><div class="ct">Design Improvements</div><div class="cd">Run analysis first to generate improvement suggestions.</div></div>';
 
@@ -9200,7 +9320,7 @@ function secDiscussion() {
 
     ${P(`How was Vb calculated? First, the fundamental period: Ta = 0.09H/√d = 0.09×${r2(S.numFloors*S.floorHt)}/√${S.buildingW} = ${EM(r2(seis.Ta)+'s')}. This is how long your building takes to complete one full oscillation if pushed sideways. The Sa/g value is read directly from the IS 1893:2016 response spectrum for soil Type ${S.soilType} — giving Sa/g = ${r2(seis.Sa)}. Whether you're on the flat plateau (worst case, Sa/g = 2.5) or the descending branch depends on the soil type AND the period.`)}
 
-    ${P(`The seismic weight is W = ${EM(r0(seis.Wt)+' kN')} (full DL + 25% LL, IS 1893 Cl 7.3.1). The design horizontal acceleration is Ah = (Z/2)×(Sa/g)/R×I = ${EM(seis.Ah.toFixed(4))}. So every kN of your building's weight generates ${r2(seis.Ah*1000)} N of horizontal force. ${EM('Vb = Ah×W = '+r2(seis.Vb)+' kN')} total horizontal force at the base.`)}
+    ${P(`The seismic weight is W = ${EM(r0(seis.Wt)+' kN')} (full DL + 25% LL, IS 1893 Cl 7.4.1). The design horizontal acceleration is Ah = (Z/2)×(Sa/g)/R×I = ${EM(seis.Ah.toFixed(4))}. So every kN of your building's weight generates ${r2(seis.Ah*1000)} N of horizontal force. ${EM('Vb = Ah×W = '+r2(seis.Vb)+' kN')} total horizontal force at the base.`)}
 
     ${P(`Compare this with wind: wind generates approximately ${r2(wind.pz)} kN/m² pressure. For your ${S.buildingL}m wide building over ${S.numFloors} floors, total wind force ≈ ${r2(wind.Fw*S.buildingL*S.numFloors*S.floorHt/2)} kN. ${seisGoverns?EM('Seismic governs','#34d399')+' — your design must resist the seismic base shear. Wind is smaller and automatically covered.':EM('Wind governs in this case','#f59e0b')+' — design for wind load. Seismic is automatically covered.'}`)}
 
@@ -13389,7 +13509,7 @@ sections:[
 {id:'ch7',icon:'🌍',title:'Seismic Design',subtitle:'Zones, base shear, IS 1893 and ductile detailing',color:'#f87171',
 sections:[
 {heading:'Why seismic design exists',content:'Earthquakes create horizontal forces. A building designed only for gravity loads can collapse in an earthquake because it has no horizontal resistance.<br><br>IS 1893 force depends on:<br>• Seismic zone (II to V)<br>• Soil type (soft soil amplifies more)<br>• Building weight<br>• Building height (taller = longer time period)',is_code:'IS 1893:2016 Part 1 — Earthquake resistant design'},
-{heading:'Base shear',content:'Total horizontal force at building base = <strong>V = Ah × W</strong><br><br>Ah = (Z/2) × (I/R) × (Sa/g)<br>W = Dead load + 25% of live load<br><br>This force is distributed over height — more to upper floors. The ground floor column carries the full accumulated base shear.',is_code:'IS 1893 Cl 7.6 — Design seismic base shear'},
+{heading:'Base shear',content:'Total horizontal force at building base = <strong>V = Ah × W</strong><br><br>Ah = (Z/2) × (I/R) × (Sa/g)<br>W = Dead load + 25% of live load<br><br>This force is distributed over height — more to upper floors. The ground floor column carries the full accumulated base shear.',is_code:'IS 1893 Cl 7.6.3 — Design seismic base shear'},
 {heading:'IS 13920 — ductile detailing',content:'The building must deform under seismic force without collapsing — <strong>ductility</strong>.<br><br>IS 13920 rules:<br>• Minimum column 300mm<br>• Confinement zones at beam/column ends<br>• 135° hooks on stirrups<br>• Fe500D steel<br>• Strong column — weak beam principle<br><br><strong>Strong column — weak beam:</strong> Beams yield first, absorbing energy. Columns stay intact.',is_code:'IS 13920:2016 — Ductile detailing of RC structures'}
 ]},
 {id:'ch8',icon:'📊',title:'Reading Your Report',subtitle:'How to use StructLearn Pro results professionally',color:'#34d399',
@@ -14167,7 +14287,7 @@ const VISUAL_CHAPTERS = [
     },
     {
       heading:'Storey Drift — How Much Can the Building Sway',
-      is_code:'IS 1893:2016 Cl 7.11.1 — Storey drift limitation',
+      is_code:'IS 1893:2016 Cl 7.11.1.1.1 — Storey drift limitation',
       content:`<strong>Storey drift</strong> is the relative horizontal displacement between two adjacent floor levels during an earthquake. Excessive drift causes: non-structural damage (cracking of walls, glass breakage, pipe failures), P-delta effects (gravity load acting on displaced columns creates additional overturning moment), and potential collapse.<br><br>IS 1893 limits storey drift to 0.004 × storey height = 0.004 × 3000 = 12mm for a 3m storey. This is a service level check — if drift exceeds this, the structure must be stiffened (larger columns, shear walls, or bracing).<br><br>For buildings with brittle masonry infill, drift must be further limited to protect the infill from damage — typically 0.002 × storey height.`
     },
     {
