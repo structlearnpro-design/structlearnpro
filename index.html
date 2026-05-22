@@ -3291,7 +3291,7 @@ function buildMemberList(){
   if(failures.length){
     html += '<div style="font-size:10px;color:#f87171;font-weight:700;letter-spacing:0.5px;margin-bottom:5px">FAILING MEMBERS</div>';
     failures.slice(0,6).forEach(m=>{
-      const name = m.lbl || m.id || 'Member';
+      const name = String(m.lbl || m.id || 'Member');
       const reason = m.shearSafe===false ? 'Shear fail'
                    : m.deflOK===false    ? 'Deflection fail'
                    : m.safe===false      ? 'Column unsafe'
@@ -3318,7 +3318,7 @@ function buildMemberList(){
   if(passing.length){
     html += '<div style="font-size:10px;color:#34d399;font-weight:700;letter-spacing:0.5px;margin:10px 0 5px">PASSING MEMBERS (sample)</div>';
     passing.forEach(m=>{
-      const name = m.lbl || m.id || 'Beam';
+      const name = String(m.lbl || m.id || 'Beam');
       const _pn=name.replace(/'/g,"\'");
       html += `<button class="ai-member-btn pass" onclick="explainMember('${_pn}','passing')">
         <span style="font-size:14px">✅</span>
