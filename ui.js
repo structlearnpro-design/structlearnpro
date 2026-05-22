@@ -3154,8 +3154,37 @@ function ftgDetail(f){
         </svg>
       </div>
     </div>
-    <div style="font-size:9px;color:var(--txt3)">
+    <div style="font-size:9px;color:var(--txt3);margin-bottom:10px">
       <strong>Recommendation:</strong> ${f.Lda>=f.Ldr*0.7?'Use 90° hook — simplest fix, no size change needed.':'Use BOTH hooks AND increase footing.'}
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      ${f.Lda>=f.Ldr*0.7?`
+      <button onclick="(function(){
+        var key='F:'+${JSON.stringify(f.nodeId||'')};
+        if(!window._memberOverrides) window._memberOverrides={};
+        window._memberOverrides[key]={hook:true};
+        alert('✅ 90° hook noted. Re-run analysis — dev length check with hook factor 0.7 now applied.');
+      })()" style="padding:6px 12px;background:rgba(52,211,153,0.12);border:1.5px solid #34d399;border-radius:6px;color:#34d399;cursor:pointer;font-size:10px;font-weight:700">
+        ✅ Apply 90° Hook & Re-analyse
+      </button>`:`
+      <button onclick="(function(){
+        var key='F:${f.nodeId}';
+        var bfNeeded=Math.ceil(${(2*f.Ldr+f.colSize+2*(typeof S !== 'undefined' ? S.coverFtg : 50))/1000}*100)/100;
+        if(!window._memberOverrides) window._memberOverrides={};
+        window._memberOverrides[key]={Bf:bfNeeded};
+        runWithOverrides('Footing ${f.baseLabel||f.label}: Bf→'+bfNeeded+'m');
+      })()" style="padding:6px 12px;background:rgba(56,189,248,0.12);border:1.5px solid #38bdf8;border-radius:6px;color:#38bdf8;cursor:pointer;font-size:10px;font-weight:700">
+        ⚡ Apply Wider Footing & Re-analyse
+      </button>`}
+      <button onclick="(function(){
+        var key='F:${f.nodeId}';
+        var newD=Math.ceil(${Math.ceil(f.D*1.25/25)*25}/25)*25;
+        if(!window._memberOverrides) window._memberOverrides={};
+        window._memberOverrides[key]=Object.assign(window._memberOverrides[key]||{},{D:newD});
+        runWithOverrides('Footing ${f.baseLabel||f.label}: D→'+newD+'mm');
+      })()" style="padding:6px 12px;background:rgba(167,139,250,0.12);border:1.5px solid #a78bfa;border-radius:6px;color:#a78bfa;cursor:pointer;font-size:10px;font-weight:700">
+        🔧 Increase Depth +25% & Re-analyse
+      </button>
     </div>
   </div>
   `:''}
@@ -3413,6 +3442,12 @@ function secSafety(){
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       <button onclick="(function(){
         if(!window._memberOverrides) window._memberOverrides={};
+        // ── Slab: increase thickness if l/d or moment fails ──
+        ${(!slab.ld_ok||!slab.ok)?`
+        var slabNeeded=Math.ceil((slab.lx*1000/26+S.coverSlab+5)/25)*25;
+        S.slabThk=Math.max(slabNeeded, (S.slabThk||150)+25);
+        `:``}
+        // ── Beams: override depth/width ──
         ${beamChecks.filter(c=>!c.ok&&c.beam).map(c=>{
           const b=c.beam;
           const key='B:'+b.row+':'+b.col+':'+b.dir;
@@ -3420,6 +3455,7 @@ function secSafety(){
           const recB=!b.shearSafe?Math.max(b.b+50,Math.ceil(b.b*1.25/25)*25):b.b;
           return "window._memberOverrides['"+key+"']={D:"+recD+",b:"+recB+"};";
         }).join('')}
+        // ── Columns: override size ──
         ${colChecks.filter(c=>!c.ok&&c.col).map(c=>{
           const col=c.col;
           const key='C:'+col.nodeId;
@@ -3430,6 +3466,11 @@ function secSafety(){
           }
           return "window._memberOverrides['"+key+"']={size:"+recSize+"};";
         }).join('')}
+        // ── Footings: increase S.ftgMinD if dev length fails ──
+        ${ftgChecks.some(c=>!c.ok)?`
+        var maxFtgD=Math.max(...ftgs.map(f=>f.D||300));
+        S.ftgMinD=Math.ceil((maxFtgD+75)/25)*25;
+        `:``}
         runWithOverrides('Quick Fix: all recommended sizes');
       })()" style="padding:8px 16px;background:rgba(52,211,153,0.12);border:1.5px solid #34d399;border-radius:8px;color:#34d399;cursor:pointer;font-size:11px;font-weight:700">
         \u2713 Apply All Recommended & Re-analyse

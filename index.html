@@ -3326,8 +3326,17 @@ function buildMemberList(){
   const beams = (_currentRES.allBeams || _currentRES.beams || []).slice(0,8);
   const cols  = (_currentRES.allCols  || _currentRES.cols  || []).slice(0,4);
   const ftgs  = (_currentRES.allFtgs  || _currentRES.ftgs  || []).slice(0,4);
+  const slab  = _currentRES.slab || null;
+
+  // Build slab failures as synthetic member objects
+  const slabFails = [];
+  if(slab && slab.ld_ok === false)
+    slabFails.push({lbl:'Slab (l/d)', id:'Slab_ld',  _issue:'l/d ratio fail', _cat:'slab'});
+  if(slab && slab.ok === false)
+    slabFails.push({lbl:'Slab (moment)', id:'Slab_mu', _issue:'Mu exceeds Mulim', _cat:'slab'});
 
   const failures = [
+    ...slabFails,
     ...beams.filter(b=>b.shearSafe===false||b.deflOK===false),
     ...cols.filter(c=>c.safe===false),
     ...ftgs.filter(f=>f.punch_ok===false||f.ow_ok===false||f.Ld_ok===false)
@@ -3339,7 +3348,8 @@ function buildMemberList(){
     html += '<div style="font-size:10px;color:#f87171;font-weight:700;letter-spacing:0.5px;margin-bottom:5px">FAILING MEMBERS</div>';
     failures.slice(0,6).forEach(m=>{
       const name = String(m.lbl || m.id || 'Member');
-      const reason = m.shearSafe===false ? 'Shear fail'
+      const reason = m._issue             ? m._issue
+                   : m.shearSafe===false ? 'Shear fail'
                    : m.deflOK===false    ? 'Deflection fail'
                    : m.safe===false      ? 'Column unsafe'
                    : m.punch_ok===false  ? 'Punching fail'
@@ -3544,10 +3554,13 @@ async function explainAll(){
   const beams = _currentRES.allBeams || _currentRES.beams || [];
   const cols  = _currentRES.allCols  || _currentRES.cols  || [];
   const ftgs  = _currentRES.allFtgs  || _currentRES.ftgs  || [];
+  const slab = _currentRES.slab || null;
   const fails = [
-    ...beams.filter(b=>b.shearSafe===false||b.deflOK===false).map(b=>`Beam ${b.lbl||b.id}: ${b.shearSafe===false?'shear fail':'deflection fail'}`),
-    ...cols.filter(c=>c.safe===false).map(c=>`Column ${c.id||''}: unsafe`),
-    ...ftgs.filter(f=>f.punch_ok===false||f.ow_ok===false||f.Ld_ok===false).map(f=>`Footing ${f.lbl||''}: ${f.punch_ok===false?'punching':f.ow_ok===false?'one-way shear':'dev length'} fail`),
+    ...(slab && slab.ld_ok===false ? [`Slab: l/d ratio fails (l/d=${slab.lx&&slab.slabd?Math.round(slab.lx*1000/slab.slabd):'?'}, limit=26) — increase slab thickness`] : []),
+    ...(slab && slab.ok===false    ? [`Slab: design moment Mu=${slab.Mx||'?'}kN.m/m exceeds Mulim=${slab.Mulim||'?'}kN.m/m — increase slab thickness`] : []),
+    ...beams.filter(b=>b.shearSafe===false||b.deflOK===false).map(b=>`Beam ${b.lbl||b.id}: ${b.shearSafe===false?'shear fail (tv='+b.tv?.toFixed(2)+' vs '+b.tcmax?.toFixed(2)+')':'deflection fail (delta='+b.dfl?.toFixed(1)+'mm vs allow='+b.dall?.toFixed(1)+'mm)'}`),
+    ...cols.filter(c=>c.safe===false).map(c=>`Column ${c.id||''}: unsafe (Pu=${c.Pu?.toFixed(0)}kN vs Pcap=${c.Pcap?.toFixed(0)}kN)`),
+    ...ftgs.filter(f=>f.punch_ok===false||f.ow_ok===false||f.Ld_ok===false).map(f=>`Footing ${f.lbl||''}: ${f.punch_ok===false?'punching shear fail':f.ow_ok===false?'one-way shear fail':'dev length insufficient (avail='+Math.round(f.Lda)+'mm req='+Math.round(f.Ldr)+'mm)'}`),
   ];
   if(!fails.length){ document.getElementById('ai-explain-output').innerHTML='<span style="color:#34d399">✅ All members are passing! Nothing to explain.</span>'; return; }
   const prompt = `Explain all these failures in my building:

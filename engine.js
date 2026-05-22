@@ -3084,7 +3084,14 @@ function designOneFooting(col, soilBearing, ftgDepth, coverFtg, fck, fy, ftgMinD
   let Bf=Math.max(Math.ceil(Math.sqrt(Ps/qn)*100)/100, colSz/1000+0.3);
   const qu=Ps/(Bf*Bf), quf=qu*1.5;
   const dprel=(Bf*1000-colSz)/4;
-  const D=Math.max(ftgMinD||300,Math.ceil((dprel+coverFtg+8)/25)*25);
+
+  // Apply member override if student has set one (via Fix buttons or manual input)
+  const _ftgOvrKey = `F:${col.nodeId}`;
+  const _ftgOvr = window._memberOverrides && window._memberOverrides[_ftgOvrKey];
+  if(_ftgOvr && _ftgOvr.Bf) Bf = _ftgOvr.Bf;  // override footing plan size
+
+  const D=Math.max(_ftgOvr && _ftgOvr.D ? _ftgOvr.D : (ftgMinD||300),
+                   Math.ceil((dprel+coverFtg+8)/25)*25);
   const d=D-coverFtg-8;
   const bo=4*(colSz+d);
   const Pu=Ps*1.5;
