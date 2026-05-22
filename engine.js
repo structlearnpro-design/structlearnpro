@@ -1754,7 +1754,9 @@ function runWithOverrides(label){
       if(main) main.innerHTML = p7();
       renderHistoryBar();
       showSec(RSEC||'safety');
-      // Push fresh RES to parent immediately so AI panel is never stale
+      // Save immediately — don't wait for 30s auto-save timer
+      if(typeof saveToParent==='function') saveToParent();
+      // Push fresh RES to parent so AI panel is never stale
       try{
         window.parent.postMessage({
           type:'AI_CONTEXT',
@@ -4218,6 +4220,8 @@ function runNow(){
       if(window._analysisHistory&&window._analysisHistory.length===0){
         pushHistory('Original analysis');
       }
+      // Save immediately so refresh always shows latest result
+      if(typeof saveToParent==='function') saveToParent();
       go(7);
       // Show sanity warnings after results load
       if(RES.sanityWarnings&&RES.sanityWarnings.length>0){
