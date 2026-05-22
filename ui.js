@@ -2563,6 +2563,51 @@ function beamDetail(b){
     ${vd(b.deflOK,'δ ('+r2(b.dfl)+') '+(b.deflOK?'≤':'>')+' δallow ('+r2(b.dall)+') → '+(b.deflOK?'OK':'FAIL — increase D'),b.deflUtil)}
   `,'or')}
 
+  ${b.bf ? sb('B-7','T-Beam / L-Beam Analysis (IS 456 Cl 23.1.2)',`
+    <div class="cp bl" style="font-size:10px;line-height:1.9;margin-bottom:10px">
+      In a real building, the slab is cast monolithically with the beam. Under sagging (positive) moment,
+      the slab flange acts in compression — the beam behaves as a <strong>T-beam</strong> (interior) or
+      <strong>L-beam</strong> (edge). This significantly increases moment capacity and reduces required steel.
+    </div>
+    ${fm('Beam type',b.beamType||'T-beam','IS 456 Cl 23.1.2')}
+    ${fm('Web width bw (rectangular section)',b.bw+'mm','')}
+    ${fm('Flange thickness Df = slab depth',(b.Df||150)+'mm','')}
+    ${fm('lo = dist between zero-moment points = '+(b.endCond==='simply_supported'?'L':'0.7L')+' = '+(b.endCond==='simply_supported'?r0(b.L*1000):r0(0.7*b.L*1000))+'mm',r0(b.endCond==='simply_supported'?b.L*1000:0.7*b.L*1000)+' mm','IS 456 Cl 23.1.2')}
+    ${fm('Effective flange width bf = min(lo/6+bw+6Df, c/c span)',b.bf+'mm','IS 456 Cl 23.1.2')}
+    ${fm('NA in flange (xu,lim='+(b.d?r0(0.46*b.d):'-')+'mm '+(b.NA_in_flange?'≤':'>')+' Df='+b.Df+'mm)?',b.NA_in_flange?'YES — rectangular formula with bf applies':'NO — flanged section formula applies','')}
+    ${fm('T-beam Mulim (flanged section)',r2(b.Mulim_T||0)+' kN.m','IS 456 Annex G.2')}
+    ${fm('Rectangular Mulim (for comparison)',r2(b.Mulim||0)+' kN.m','')}
+    <div class="cp bl" style="font-size:10px;margin-top:6px">
+      <strong>T-beam advantage:</strong> Mulim increases from ${r2(b.Mulim||0)} kN.m (rectangular) to
+      ${r2(b.Mulim_T||0)} kN.m (T-beam) — a ${r0(((b.Mulim_T||0)/(b.Mulim||1)-1)*100)}% gain.
+      Steel required reduces from ${b.nm}T20 to <strong style="color:#38bdf8">${b.nm_T||b.nm}T20</strong>.
+    </div>
+    ${fm('T-beam tension steel (bottom bars)',( b.nm_T||b.nm)+'T20 (Ap='+r0(b.Ap_T||b.Ap)+' mm²)','IS 456 Annex G.2')}
+    ${vd((b.Mmax||0)<=(b.Mulim_T||b.Mulim),'Mmax ('+r2(b.Mmax||0)+') '+(( b.Mmax||0)<=(b.Mulim_T||b.Mulim)?'≤':'>')+' T-beam Mulim ('+r2(b.Mulim_T||b.Mulim||0)+') → '+((b.Mmax||0)<=(b.Mulim_T||b.Mulim)?'Singly reinforced T-beam OK':'Increase depth'))}
+  `,'bl') : ''}
+
+  ${b.wcr!==undefined ? sb('B-8','Crack Width Check (IS 456 Annex F)',`
+    <div class="cp" style="font-size:10px;line-height:1.9;margin-bottom:10px;background:rgba(148,163,184,0.05);border-left:2px solid #64748b;padding:8px 12px;border-radius:0 6px 6px 0">
+      Cracks in RC beams are inevitable — the goal is to limit them to acceptable widths so reinforcement
+      is protected from corrosion and the structure looks acceptable. IS 456 Annex F gives the crack width
+      formula based on steel strain, bar spacing and cover.
+    </div>
+    ${fm('Service moment Ms = α×ws×L² (unfactored)',r2(b.Ms||0)+' kN.m','')}
+    ${fm('Modular ratio m = 280/(3×0.33×fck) = 280/(3×0.33×'+S.fck+')',r2(280/(3*0.33*S.fck)),'IS 456 Cl B-1.3')}
+    ${fm('Neutral axis depth x (elastic, service load)',r1(b.x_na||0)+' mm','IS 456 Annex F')}
+    ${fm('Steel stress under service load fs',r1(b.fs_s||0)+' N/mm² (limit 0.58fy='+(0.58*S.fy)+')','IS 456 Annex F')}
+    ${fm('Average strain εm at tension face',((b.em||0)*1000).toFixed(4)+'×10⁻³','IS 456 Annex F Cl F-2')}
+    ${fm('acr = dist from point to nearest bar surface',r1(b.acr||0)+' mm','IS 456 Annex F')}
+    <div class="cp" style="font-size:10px;line-height:1.9;margin:8px 0;background:rgba(96,165,250,0.06);border-radius:6px;padding:8px 12px">
+      <strong>Formula: wcr = 3×acr×εm / (1 + 2×(acr−cmin)/(h−x))</strong><br>
+      = 3×${r1(b.acr||0)}×${((b.em||0)*1000).toFixed(4)}×10⁻³ / (1 + 2×(${r1(b.acr||0)}−${S.coverBeam})/(${b.D}−${r1(b.x_na||0)}))<br>
+      = <strong style="color:${(b.crackOK)?'#34d399':'#f87171'}">${(b.wcr||0).toFixed(4)} mm</strong>
+    </div>
+    ${fm('Permissible crack width (IS 456 Cl 35.3.2)',b.wcr_allow+' mm ('+( b.wcr_allow>=0.3?'mild':b.wcr_allow>=0.2?'moderate':'severe')+' exposure)','IS 456 Cl 35.3.2')}
+    ${vd(b.crackOK,'wcr ('+((b.wcr||0)).toFixed(4)+'mm) '+(b.crackOK?'≤':'>')+' wcr_allow ('+b.wcr_allow+'mm) → '+(b.crackOK?'Crack width OK':'Crack width EXCEEDS limit — reduce bar spacing or increase cover'),0)}
+    ${!b.crackOK ? '<div class="cp" style="font-size:10px;color:#f87171;margin-top:6px">To reduce crack width: use more bars of smaller diameter (reduces bar spacing), increase concrete cover, or use M30 concrete (higher modular ratio = lower steel stress).</div>' : ''}
+  `,'') : ''}
+
   ${(()=>{
     if(!RES.allBeams) return '';
     const sameBeams=RES.allBeams.filter(x=>x.row===b.row&&x.col===b.col&&x.dir===b.dir);

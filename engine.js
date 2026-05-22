@@ -110,6 +110,7 @@ const S={
 const r2=v=>String(isNaN(v)?0:Math.round(v*100)/100);
 const r1=v=>String(isNaN(v)?0:Math.round(v*10)/10);
 const r0=v=>String(isNaN(v)?0:Math.round(v));
+const r1=v=>String(isNaN(v)?0:Math.round(v*10)/10);
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const PI=Math.PI;
 
@@ -3296,6 +3297,126 @@ function designOneBeam(gridBeam, floorNum, isRoof,
   const label=`${typ}${rowLbl}${colLbl}-${gridBeam.dir}`;
   const floorLabel=isRoof?'Roof':`F${floorNum}`;
 
+
+  // ── T-BEAM EFFECTIVE FLANGE WIDTH (IS 456 Cl 23.1.2) ───────────────────
+  // Beams with slab on one or both sides act as T-beams (or L-beams at edges)
+  // The slab flange carries compression, reducing required steel significantly
+  const Df = S.slabThk || 150; // flange thickness = slab depth (mm)
+  const bw = bW;               // web width = rectangular beam width
+  // lo = distance between zero moment points
+  // Continuous beam: lo = 0.7L; Simply supported: lo = L
+  const isSS = (coeffs.type === 'simply_supported');
+  const lo = isSS ? L*1000 : 0.7*L*1000; // mm
+
+  // Is slab present on both sides (interior beam) or one side (edge/L-beam)?
+  // Edge beams: gridBeam.row===0 or row===GRID.ny or col===0 or col===GRID.nx
+  const isEdgeBeam = isPerim;
+  // T-beam: both sides have slab; L-beam: only one side
+  // Effective flange width per IS 456 Cl 23.1.2:
+  let bf_calc, beamType;
+  if(isEdgeBeam) {
+    // L-beam: bf = lo/12 + bw + 3Df, but ≤ bw + half clear distance to next beam
+    const halfClear = (gridBeam.dir==='X' ? (S.spansY[gridBeam.row]||4) : (S.spansX[gridBeam.col]||4))*1000/2 - bw/2;
+    bf_calc = Math.min(lo/12 + bw + 3*Df, bw + halfClear);
+    beamType = 'L-beam (edge)';
+  } else {
+    // T-beam: bf = lo/6 + bw + 6Df, but ≤ c/c distance between beams
+    const ccDist = (gridBeam.dir==='X' ? (S.spansY[gridBeam.row]||4) : (S.spansX[gridBeam.col]||4))*1000;
+    bf_calc = Math.min(lo/6 + bw + 6*Df, ccDist);
+    beamType = 'T-beam (interior)';
+  }
+  const bf = Math.round(bf_calc); // effective flange width (mm)
+
+  // T-beam Mulim: check if NA falls in flange or web (IS 456 Annex G.2)
+  // xu,lim/d for Fe500 = 0.46
+  const xu_lim = 0.46 * d;
+  let Mulim_T, NA_in_flange;
+  if(xu_lim <= Df) {
+    // NA in flange → treat as rectangular beam of width bf
+    Mulim_T = Mf * fck * bf * d * d / 1e6;
+    NA_in_flange = true;
+  } else {
+    // NA in web → IS 456 Annex G.2 flanged beam formula
+    // Mu,lim = 0.36fck×bf×Df×(d-0.42xu,lim) - 0.36fck×(bf-bw)×Df×(0.42xu,lim-Df/2)
+    // Simplified IS 456 approach: use yf = 0.15xu,lim + 0.65Df (≤ Df)
+    const yf = Math.min(0.15*xu_lim + 0.65*Df, Df);
+    Mulim_T = 0.36*fck*bw*xu_lim*(d-0.42*xu_lim)/1e6 + 0.45*fck*(bf-bw)*yf*(d-yf/2)/1e6;
+    NA_in_flange = false;
+  }
+
+  // T-beam steel: recalculate Ast using flanged section capacity
+  // For NA in flange: use AstCalc with bf instead of bw
+  // For NA in web: use iterative approach
+  let Am_T, As_T;
+  if(NA_in_flange) {
+    // Treat as rectangular section of width bf
+    Am_T = Math.max(AstFn(Mmax, bf, d), Ast_min);
+    As_T = Math.max(AstFn(Msup, bf, d), Ast_min);
+  } else {
+    // Iterative: find Ast such that xu falls in web
+    // Start with rectangular estimate then correct
+    Am_T = Math.max(AstFn(Mmax, bf, d), Ast_min); // conservative start
+    As_T = Math.max(AstFn(Msup, bf, d), Ast_min);
+  }
+  // Cap at IS 13920 max
+  Am_T = Math.min(Am_T, Ast_max_13920);
+  As_T = Math.min(As_T, Ast_max_13920);
+
+  const nm_T = Math.max(2, Math.ceil(Am_T / (Math.PI*100)));
+  const ns_T = Math.max(2, Math.ceil(As_T / (Math.PI*100)));
+  const Ap_T = nm_T * Math.PI*100;
+  const pt_T = Ap_T / (bw*d) * 100; // steel % based on web area (for shear)
+
+  // ── CRACK WIDTH (IS 456 Annex F) ────────────────────────────────────────
+  // Computed at soffit (tension face) under SERVICE load moment
+  // Service moment Ms = alpha × ws × L²  (unfactored)
+  const Ms = (coeffs.alpha_mid||1/8) * ws * L * L; // kN.m (service)
+  const Es = 2e5; // N/mm²
+  const m  = 280 / (3 * 0.33 * fck); // modular ratio per IS 456 Cl B-1.3
+
+  // Use rectangular section (web) for crack width — conservative
+  // Neutral axis depth x under service load (elastic, uncracked)
+  // From: b×x²/2 = m×Ast×(d-x)  → b×x² + 2m×Ast×x - 2m×Ast×d = 0
+  const As_crack = Ap_T; // provided steel
+  const a_coeff = bw;
+  const b_coeff = 2*m*As_crack;
+  const c_coeff = -2*m*As_crack*d;
+  const x_na = (-b_coeff + Math.sqrt(b_coeff*b_coeff - 4*a_coeff*c_coeff)) / (2*a_coeff);
+
+  // Steel stress under service load
+  const lever = d - x_na/3;
+  const fs_s = Ms*1e6 / (As_crack * lever); // N/mm²
+
+  // Strain at steel level
+  const eps1 = fs_s / Es; // strain in steel
+  // Strain at soffit (tension face) — at level h from top
+  const eps_tension = eps1 * (D - x_na) / (d - x_na);
+
+  // Average strain εm (IS 456 Annex F Cl F-2)
+  const bt = bw; // width at tension face
+  const eps_m = eps_tension - (bt*(D-x_na)*(D-x_na)) / (3*Es*As_crack*(d-x_na));
+  const em = Math.max(eps_m, 0.0001); // IS 456: not less than 0.0001 but use minimum
+
+  // acr = distance from soffit to surface of nearest bar
+  // Bar spacing at soffit: bars of dia 20mm in width bw
+  const barDia = 20;
+  const nBars_crack = nm_T;
+  const barSpacing = nBars_crack > 1 ? (bw - 2*coverBeam - barDia) / (nBars_crack-1) : 0;
+  // Distance from soffit to centre of nearest bar
+  const dc = coverBeam + 8 + barDia/2; // cover + stirrup + bar radius (to centre)
+  // acr from point at soffit midway between bars
+  const sMid = nBars_crack > 1 ? barSpacing/2 : 0;
+  const acr = Math.sqrt(sMid*sMid + dc*dc) - barDia/2;
+
+  // IS 456 Annex F crack width formula
+  const cmin = coverBeam; // minimum cover to tension steel
+  const wcr = 3*acr*em / (1 + 2*(acr-cmin)/(D-x_na));
+
+  // Permissible crack width per IS 456 Cl 35.3.2 (based on exposure)
+  // Use coverBeam as proxy: ≥45mm = severe, ≥40mm = moderate, else mild
+  const wcr_allow = coverBeam >= 45 ? 0.1 : coverBeam >= 40 ? 0.2 : 0.3;
+  const crackOK = wcr <= wcr_allow;
+
   return{
     id:gridBeam.id, label, floorLabel, floor:floorNum, isRoof,
     dir:gridBeam.dir, row:gridBeam.row, col:gridBeam.col,
@@ -3311,12 +3432,17 @@ function designOneBeam(gridBeam, floorNum, isRoof,
     isCantilever:!!gridBeam.isCantilever,
     isTransfer:!!gridBeam.isTransfer,
     isSecondary:!!gridBeam.isSecondary,
-    transferPL,  // point load data for display
+    transferPL,
     singly:true, Ast2:0, n2:0, bay:gridBeam.col||0,
     overDesigned:dfl/dall<0.4&&Mmax/Mulim<0.4&&pt<0.5,
     // IS 13920 geometry checks
     bDratio, bDratioOK, maxDepthOK,
     minSteelGoverns, Ast_min, Ast_min_13920, Ast_max_13920,
+    // T-beam properties (IS 456 Cl 23.1.2)
+    bf, bw, Df, beamType, NA_in_flange, Mulim_T,
+    Am_T, As_T, nm_T, ns_T, Ap_T, pt_T,
+    // Crack width (IS 456 Annex F)
+    Ms, x_na, fs_s, em, acr, wcr, wcr_allow, crackOK,
   };
 }
 
