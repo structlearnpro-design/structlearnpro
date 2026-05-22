@@ -52,7 +52,11 @@ function go(n){
       },300);
     },60);
     if(n===2){
-      if(!GRID)initGrid();
+      // Validate GRID - reinit if missing or corrupted from a bad saved project
+      if(!GRID || !Array.isArray(GRID.nodes) || !Array.isArray(GRID.beams) || !Array.isArray(GRID.bays)){
+        GRID=null;
+        if(typeof initGrid==='function') initGrid();
+      }
       // Apply any stored node choices so canvas is correct immediately
       if(Object.keys(window._nodeChoices||{}).length>0) applyNodeChoices();
       // Multiple draws to ensure _coordMode flag is read correctly
@@ -11390,12 +11394,10 @@ function takeSnapshot(label) {
   const allSafe = beams.every(b=>b.deflOK!==false&&b.shearSafe!==false) &&
                   cols.every(c=>c.safe!==false) &&
                   ftgs.every(f=>f.punch_ok!==false&&f.ow_ok!==false&&f.Ld_ok!==false&&f.tr_ok!==false);
-  // Compute richer summary values
   const gndCols = cols.filter(c=>c.floor===1);
-  const failBeams = beams.filter(b=>b.deflOK===false||b.shearSafe===false);
-  const failCols  = gndCols.filter(c=>c.safe===false);
-  const failFtgs  = ftgs.filter(f=>f.punch_ok===false||f.ow_ok===false||f.Ld_ok===false);
-  const totalSteelKg = beams.reduce((a,b)=>a+(b.Ap||0)*b.L*7850/1e6,0); // approx kg
+  const failBeams = beams.filter(b=>b.deflOK===false||b.shearSafe===false).length;
+  const failCols  = gndCols.filter(c=>c.safe===false).length;
+  const failFtgs  = ftgs.filter(f=>f.punch_ok===false||f.ow_ok===false||f.Ld_ok===false).length;
   const snap = {
     id: Date.now().toString(36),
     label: snapLabel,
@@ -11407,28 +11409,23 @@ function takeSnapshot(label) {
       // Inputs
       fck: S.fck, fy: S.fy,
       numFloors: S.numFloors, floorHt: S.floorHt,
-      zone: S.zone,
-      spansX: (S.spansX||[]).join('×'), spansY: (S.spansY||[]).join('×'),
-      udlLL: S.udlLL,
-      // Structure sizes
+      zone: S.zone, udlLL: S.udlLL,
+      slabThk: S.slabThk||150,
+      // Member sizes (from first ground floor member)
       slabD:   RES.slab ? RES.slab.slabD : 0,
       beamD:   beams[0] ? beams[0].D : 0,
       beamB:   beams[0] ? beams[0].b : 0,
       colSize: gndCols[0] ? gndCols[0].size : 0,
       ftgSize: ftgs[0] ? Math.round((ftgs[0].Bf||0)*100)/100 : 0,
-      // Results
-      maxDefl:    beams.length ? Math.max(...beams.map(b=>b.dfl||0)) : 0,
-      maxDeflAllow: beams.length ? beams[0].dall||0 : 0,
-      maxShear:   beams.length ? Math.max(...beams.map(b=>b.tv||0)) : 0,
-      baseShear:  RES.seis ? RES.seis.Vb : 0,
-      Ah:         RES.seis ? RES.seis.Ah : 0,
-      colPs:      gndCols[0] ? gndCols[0].Ps : 0,
-      colPcap:    gndCols[0] ? gndCols[0].Pcap : 0,
-      beamSteel:  beams[0] ? beams[0].nm : 0,
-      colSteel:   gndCols[0] ? gndCols[0].pt : 0,
-      totalSteelKg: Math.round(totalSteelKg),
-      // Checks
-      failBeams: failBeams.length, failCols: failCols.length, failFtgs: failFtgs.length,
+      // Structural results
+      maxDefl:   beams.length ? Math.max(...beams.map(b=>b.dfl||0)) : 0,
+      maxShear:  beams.length ? Math.max(...beams.map(b=>b.tv||0)) : 0,
+      baseShear: RES.seis ? Math.round(RES.seis.Vb) : 0,
+      Ah:        RES.seis ? RES.seis.Ah : 0,
+      colPt:     gndCols[0] ? gndCols[0].pt : 0,
+      beamNm:    beams[0] ? beams[0].nm : 0,
+      // Safety counts
+      failBeams, failCols, failFtgs,
       allSafe,
       beamCount: beams.length, colCount: gndCols.length,
     }
@@ -11459,7 +11456,6 @@ function renderSnapshotPanel() {
   
   const cols = _snapshots.slice(-3); // show last 3
   const fields = [
-    // ── INPUTS ──
     {h:'INPUTS'},
     ['Concrete Grade','fck','M',''],
     ['Steel Grade','fy','Fe',''],
@@ -11467,24 +11463,19 @@ function renderSnapshotPanel() {
     ['Floor Height','floorHt','','m'],
     ['Seismic Zone','zone','Zone ',''],
     ['Live Load','udlLL','','kN/m²'],
-    // ── MEMBER SIZES ──
     {h:'MEMBER SIZES'},
     ['Slab Thickness','slabD','','mm'],
-    ['Beam Size (D)','beamD','','mm'],
-    ['Beam Width (b)','beamB','','mm'],
+    ['Beam Depth','beamD','','mm'],
+    ['Beam Width','beamB','','mm'],
     ['Column Size','colSize','','mm sq'],
     ['Footing Size','ftgSize','','m sq'],
-    // ── STRUCTURAL RESULTS ──
     {h:'RESULTS'},
-    ['Max Beam Deflection','maxDefl','','mm'],
-    ['Max Shear Stress','maxShear','','N/mm²'],
+    ['Max Deflection','maxDefl','','mm'],
+    ['Max Shear τv','maxShear','','N/mm²'],
     ['Base Shear Vb','baseShear','','kN'],
-    ['Seismic Coeff Ah','Ah','',''],
-    ['Corner Col Service','colPs','','kN'],
-    ['Corner Col Capacity','colPcap','','kN'],
-    ['Beam Tension Steel','beamSteel','','×T20'],
-    ['Column Steel %','colSteel','','%'],
-    // ── SAFETY ──
+    ['Seismic Ah','Ah','',''],
+    ['Column Steel %','colPt','','%'],
+    ['Beam Bars','beamNm','','×T20'],
     {h:'SAFETY'},
     ['Failing Beams','failBeams','',''],
     ['Failing Columns','failCols','',''],
@@ -11501,52 +11492,48 @@ function renderSnapshotPanel() {
   });
   html += '</tr>';
   
-  // Data rows
+  // Data rows - support section headers {h:'...'} and data rows [label,key,prefix,suffix]
   fields.forEach(f => {
-    // Section header row
     if(f.h !== undefined){
-      html += `<tr><td colspan="${cols.length+1}" style="padding:4px 8px;background:#0a1628;border:1px solid var(--b1);font-size:9px;font-weight:800;color:#38bdf8;letter-spacing:1px;text-transform:uppercase">${f.h}</td></tr>`;
+      html += `<tr><td colspan="${cols.length+1}" style="padding:3px 8px;background:#0a1628;border:1px solid var(--b1);font-size:9px;font-weight:800;color:#38bdf8;letter-spacing:1px">${f.h}</td></tr>`;
       return;
     }
     const [label, key, prefix, suffix] = f;
-    html += `<tr><td style="padding:5px 8px;border:1px solid var(--b1);color:var(--txt3);font-size:11px">${label}</td>`;
+    html += `<tr><td style="padding:4px 8px;border:1px solid var(--b1);color:var(--txt3);font-size:11px">${label}</td>`;
     const vals = cols.map(s => s.summary[key]);
-    cols.forEach((s, i) => {
+    cols.forEach((s) => {
       const v = s.summary[key];
-      if(v===undefined||v===null){ html+=`<td style="text-align:center;border:1px solid var(--b1);padding:5px 8px;color:#475569">—</td>`; return; }
-      let display = '';
-      let style = 'text-align:center;border:1px solid var(--b1);padding:5px 8px;font-size:11px;';
-      if (key === 'allSafe') {
-        display = v ? '<span style="color:#34d399;font-weight:700">✓ SAFE</span>' : '<span style="color:#f87171;font-weight:700">✗ FAIL</span>';
-      } else if (key === 'failBeams'||key==='failCols'||key==='failFtgs') {
-        const n = parseInt(v)||0;
-        display = n===0 ? '<span style="color:#34d399">0 ✓</span>' : `<span style="color:#f87171;font-weight:700">${n} ✗</span>`;
-      } else if (key === 'Ah') {
-        display = parseFloat(v).toFixed(4);
-      } else if (key === 'colSteel') {
-        display = parseFloat(v).toFixed(2) + suffix;
-      } else if (typeof v === 'number' && !Number.isInteger(v)) {
-        display = parseFloat(v).toFixed(1) + suffix;
-        const numVals = vals.map(x=>parseFloat(x)||0).filter(x=>x>0);
-        const myNum = parseFloat(v)||0;
-        if(numVals.length>1){
-          const isWorst = ['maxDefl','maxShear','failBeams','failCols','failFtgs'].includes(key);
-          if (isWorst && myNum === Math.max(...numVals)) style += 'background:rgba(248,113,113,0.12);color:#f87171;';
-          else if (!isWorst && myNum === Math.max(...numVals)) style += 'background:rgba(59,130,246,0.1);color:#60a5fa;font-weight:700;';
-          if (myNum === Math.min(...numVals)) style += 'background:rgba(16,185,129,0.1);color:#34d399;font-weight:700;';
+      if(v===undefined||v===null){ html+=`<td style="text-align:center;border:1px solid var(--b1);padding:4px 8px;color:#475569">—</td>`; return; }
+      let display='', style='text-align:center;border:1px solid var(--b1);padding:4px 8px;font-size:11px;';
+      const numVals=vals.map(x=>parseFloat(x)||0);
+      const myNum=parseFloat(v)||0;
+      if(key==='allSafe'){
+        display=v?'<span style="color:#34d399;font-weight:700">✓ SAFE</span>':'<span style="color:#f87171;font-weight:700">✗ FAIL</span>';
+      } else if(key==='failBeams'||key==='failCols'||key==='failFtgs'){
+        const n=parseInt(v)||0;
+        display=n===0?'<span style="color:#34d399">0 ✓</span>':`<span style="color:#f87171;font-weight:700">${n} ✗</span>`;
+      } else if(key==='Ah'){
+        display=parseFloat(v).toFixed(4);
+      } else if(key==='colPt'){
+        display=parseFloat(v).toFixed(2)+'%';
+      } else if(typeof v==='number'&&!Number.isInteger(v)){
+        display=parseFloat(v).toFixed(1)+suffix;
+        if(vals.length>1){
+          const badHighKeys=['maxDefl','maxShear'];
+          if(badHighKeys.includes(key)&&myNum===Math.max(...numVals)&&myNum>0) style+='background:rgba(248,113,113,0.12);color:#f87171;font-weight:700;';
+          else if(myNum===Math.max(...numVals)&&myNum>0) style+='background:rgba(59,130,246,0.1);color:#60a5fa;font-weight:700;';
+          if(myNum===Math.min(...numVals)&&myNum>0) style+='background:rgba(16,185,129,0.1);color:#34d399;font-weight:700;';
         }
       } else {
-        display = prefix + v + suffix;
-        if (vals.length > 1 && vals.some(x => x !== vals[0])) {
-          const numVals = vals.map(x=>parseFloat(x)||0);
-          const myNum = parseFloat(v)||0;
-          if (myNum === Math.max(...numVals)) style += 'background:rgba(59,130,246,0.1);color:#60a5fa;font-weight:700;';
-          if (myNum === Math.min(...numVals)) style += 'background:rgba(16,185,129,0.1);color:#34d399;font-weight:700;';
+        display=prefix+v+suffix;
+        if(vals.length>1&&vals.some(x=>x!==vals[0])){
+          if(myNum===Math.max(...numVals)&&myNum>0) style+='background:rgba(59,130,246,0.1);color:#60a5fa;font-weight:700;';
+          if(myNum===Math.min(...numVals)&&myNum>0) style+='background:rgba(16,185,129,0.1);color:#34d399;font-weight:700;';
         }
       }
-      html += `<td style="${style}">${display}</td>`;
+      html+=`<td style="${style}">${display}</td>`;
     });
-    html += '</tr>';
+    html+='</tr>';
   });
   
   html += '</table></div>';

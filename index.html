@@ -754,21 +754,17 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
       </div><!-- ai-content -->
     </div><!-- ai-panel -->
   <!-- AI TOGGLE BUTTON -->
-  <!-- Draggable AI button -->
+  <!-- Draggable AI Assistant Button -->
   <div id="ai-toggle-btn"
-    style="position:fixed;bottom:80px;left:16px;z-index:9997;display:none;
-           user-select:none;touch-action:none;">
-    <button onclick="toggleAI()"
-      style="width:48px;height:48px;border-radius:12px;cursor:pointer;
-             background:linear-gradient(135deg,#4c1d95,#7c3aed);border:none;
-             color:#fff;font-size:18px;box-shadow:0 4px 16px rgba(124,58,237,0.5);
-             display:flex;align-items:center;justify-content:center;
-             transition:transform 0.15s;font-family:inherit"
+    style="position:fixed;bottom:80px;left:16px;z-index:9997;display:none;cursor:grab;width:56px;">
+    <button onclick="toggleAI()" id="ai-inner-btn"
+      style="width:56px;height:56px;border-radius:14px;background:linear-gradient(135deg,#4c1d95,#7c3aed);
+             border:none;color:#fff;font-size:20px;cursor:pointer;
+             box-shadow:0 4px 16px rgba(124,58,237,0.5);display:flex;align-items:center;
+             justify-content:center;transition:transform 0.15s;width:100%;font-family:inherit"
       onmouseover="this.style.transform='scale(1.08)'"
-      onmouseout="this.style.transform='scale(1)'">
-      🤖
-    </button>
-    <div style="font-size:8px;color:#a78bfa;text-align:center;margin-top:2px;font-weight:600">AI</div>
+      onmouseout="this.style.transform='scale(1)'">🤖</button>
+    <div style="font-size:8px;color:#a78bfa;text-align:center;margin-top:3px;font-weight:700;letter-spacing:0.5px">AI HELP</div>
   </div>
 </div>
 
@@ -3174,61 +3170,46 @@ function updateAIUsageBar(){
 
 // ── PANEL TOGGLE ───────────────────────────────────────────────
 // ── DRAGGABLE AI BUTTON ─────────────────────────────────────────
-function initDraggableAIBtn(){
-  const wrap = document.getElementById('ai-toggle-btn');
-  if(!wrap || wrap._dragInit) return;
-  wrap._dragInit = true;
-  let isDragging=false, startX, startY, origLeft, origTop;
-  function getPos(e){ return e.touches ? {x:e.touches[0].clientX,y:e.touches[0].clientY} : {x:e.clientX,y:e.clientY}; }
-  wrap.addEventListener('mousedown', function(e){
-    if(e.target.tagName==='BUTTON') return; // let button click through
-    const r=wrap.getBoundingClientRect();
-    isDragging=true; origLeft=r.left; origTop=r.top;
-    const p=getPos(e); startX=p.x; startY=p.y;
-    wrap.style.transition='none'; e.preventDefault();
-  });
-  wrap.addEventListener('touchstart', function(e){
-    const r=wrap.getBoundingClientRect();
-    isDragging=true; origLeft=r.left; origTop=r.top;
-    const p=getPos(e); startX=p.x; startY=p.y;
-    wrap.style.transition='none';
-  },{passive:true});
-  window.addEventListener('mousemove', function(e){
-    if(!isDragging) return;
-    const p=getPos(e);
-    const nx=Math.max(0,Math.min(window.innerWidth-64,origLeft+(p.x-startX)));
-    const ny=Math.max(0,Math.min(window.innerHeight-80,origTop+(p.y-startY)));
-    wrap.style.left=nx+'px'; wrap.style.top=ny+'px';
-    wrap.style.bottom='auto'; wrap.style.right='auto';
-  });
-  window.addEventListener('mouseup', function(){ isDragging=false; });
-  window.addEventListener('touchend', function(){ isDragging=false; });
-}
+(function initAIDrag(){
+  function setup(){
+    const wrap=document.getElementById('ai-toggle-btn');
+    if(!wrap||wrap._drag) return;
+    wrap._drag=true;
+    let dragging=false,sx,sy,ox,oy;
+    function pos(e){return e.touches?{x:e.touches[0].clientX,y:e.touches[0].clientY}:{x:e.clientX,y:e.clientY};}
+    wrap.addEventListener('mousedown',function(e){
+      if(e.target.tagName==='BUTTON') return;
+      const r=wrap.getBoundingClientRect(); ox=r.left; oy=r.top;
+      const p=pos(e); sx=p.x; sy=p.y; dragging=true;
+      wrap.style.transition='none'; e.preventDefault();
+    });
+    wrap.addEventListener('touchstart',function(e){
+      const r=wrap.getBoundingClientRect(); ox=r.left; oy=r.top;
+      const p=pos(e); sx=p.x; sy=p.y; dragging=true;
+      wrap.style.transition='none';
+    },{passive:true});
+    window.addEventListener('mousemove',function(e){
+      if(!dragging) return;
+      const p=pos(e);
+      wrap.style.left=Math.max(0,Math.min(window.innerWidth-64,ox+(p.x-sx)))+'px';
+      wrap.style.top=Math.max(0,Math.min(window.innerHeight-80,oy+(p.y-sy)))+'px';
+      wrap.style.bottom='auto'; wrap.style.right='auto';
+    });
+    window.addEventListener('mouseup',function(){dragging=false;});
+    window.addEventListener('touchend',function(){dragging=false;});
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',setup);
+  else setup();
+  // Also setup after showAIBtn makes it visible
+  window._setupAIDrag=setup;
+})();
 
 function toggleAI(){
   _aiPanelOpen = !_aiPanelOpen;
   const panel = document.getElementById('ai-panel');
-  const btn   = document.getElementById('ai-toggle-btn');
-  if(panel){
-    panel.style.width = _aiPanelOpen ? '340px' : '0';
-  }
-  // When AI panel opens: hide LJ body to avoid overlap and blocking clicks
-  // When AI closes: restore LJ panel
-  const ljPanel = document.getElementById('_cert_panel');
-  const ljBody  = document.getElementById('_cert_panel_body');
-  const ljToggle = document.getElementById('_cert_panel_toggle');
-  if(_aiPanelOpen) {
-    // Minimize LJ panel so it doesn't block AI panel content
-    if(ljBody) ljBody.style.display = 'none';
-    if(ljToggle) ljToggle.textContent = '+';
-    if(ljPanel) ljPanel.style.bottom = '16px';
-  } else {
-    // Restore LJ panel
-    if(ljBody) ljBody.style.display = '';
-    if(ljToggle) ljToggle.textContent = '−';
-  }
+  if(panel) panel.style.width = _aiPanelOpen ? '340px' : '0';
   // Update inner button appearance
-  const innerBtn = btn ? btn.querySelector('button') : null;
+  const innerBtn = document.getElementById('ai-inner-btn');
   if(innerBtn){
     innerBtn.style.background = _aiPanelOpen
       ? 'linear-gradient(135deg,#1e3a8a,#1d4ed8)'
@@ -3237,15 +3218,20 @@ function toggleAI(){
   }
   if(_aiPanelOpen){
     updateAIUsageBar();
-    requestAIContext(); // ask iframe for latest S and RES
-    refreshAIContext(); // build member list with what we have
+    requestAIContext();
+    refreshAIContext();
     initQuickQuestions();
   }
+  // Minimize Learning Journey panel when AI opens to prevent overlap
+  const ljBody=document.getElementById('_cert_panel_body');
+  const ljBtn=document.getElementById('_cert_panel_toggle');
+  if(_aiPanelOpen){ if(ljBody) ljBody.style.display='none'; if(ljBtn) ljBtn.textContent='+'; }
+  else { if(ljBody) ljBody.style.display=''; if(ljBtn) ljBtn.textContent='−'; }
 }
 
 function showAIBtn(){
   const btn = document.getElementById('ai-toggle-btn');
-  if(btn){ btn.style.display = 'block'; initDraggableAIBtn(); }
+  if(btn){ btn.style.display='block'; if(window._setupAIDrag) window._setupAIDrag(); }
 }
 
 function hideAIBtn(){
@@ -3312,8 +3298,8 @@ function buildMemberList(){
                    : m.punch_ok===false  ? 'Punching fail'
                    : m.Ld_ok===false     ? 'Dev length fail'
                    : 'Failed';
-      const safeN = name.replace(/'/g,"\'"); const safeR = reason.replace(/'/g,"\'");
-      html += `<button class="ai-member-btn fail" onclick="explainMember('${safeN}','${safeR}')" style="cursor:pointer;text-align:left">
+      const _n=name.replace(/'/g,"\'"),_r=reason.replace(/'/g,"\'");
+      html += `<button class="ai-member-btn fail" onclick="explainMember('${_n}','${_r}')">
         <span style="font-size:14px">⚠️</span>
         <div><div style="font-weight:700">${name}</div><div style="font-size:10px;color:#f87171">${reason}</div></div>
         <span style="margin-left:auto;font-size:10px;color:#64748b">Explain →</span>
@@ -3333,8 +3319,8 @@ function buildMemberList(){
     html += '<div style="font-size:10px;color:#34d399;font-weight:700;letter-spacing:0.5px;margin:10px 0 5px">PASSING MEMBERS (sample)</div>';
     passing.forEach(m=>{
       const name = m.lbl || m.id || 'Beam';
-      const safePN = name.replace(/'/g,"\'");
-      html += `<button class="ai-member-btn pass" onclick="explainMember('${safePN}','passing')" style="cursor:pointer;text-align:left">
+      const _pn=name.replace(/'/g,"\'");
+      html += `<button class="ai-member-btn pass" onclick="explainMember('${_pn}','passing')">
         <span style="font-size:14px">✅</span>
         <div><div style="font-weight:700">${name}</div><div style="font-size:10px;color:#34d399">All checks pass</div></div>
         <span style="margin-left:auto;font-size:10px;color:#64748b">Explain →</span>
@@ -3357,7 +3343,6 @@ async function callClaude(systemPrompt, userMessage, outputElId){
   if(el){ el.className='ai-output ai-loading'; el.textContent='AI is thinking'; }
 
   try{
-    // Try Anthropic API directly first
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -3373,29 +3358,14 @@ async function callClaude(systemPrompt, userMessage, outputElId){
       })
     });
 
-    const data = await response.json();
-    console.log('[AI] response status:', response.status);
-
     if(!response.ok){
-      // Fallback to Supabase edge function
-      const resp2 = await fetch(SUPA_URL+'/functions/v1/ai-chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer '+SUPA_KEY, 'apikey': SUPA_KEY },
-        body: JSON.stringify({ max_tokens: 1000, system: systemPrompt, messages: [{ role:'user', content: userMessage }] })
-      });
-      const data2 = await resp2.json();
-      if(!resp2.ok){
-        const errMsg = data2.error || data2.message || 'AI service unavailable ('+resp2.status+')';
-        if(el){ el.className='ai-output'; el.textContent='Error: '+errMsg; }
-        return null;
-      }
-      const text2 = data2.content?.[0]?.text;
-      if(!text2){ if(el){ el.className='ai-output'; el.textContent='No response from AI.'; } return null; }
-      incrementAIUsage();
-      if(el){ el.className='ai-output'; el.innerHTML=formatAIResponse(text2); }
-      return text2;
+      const errData = await response.json().catch(()=>({}));
+      const errMsg = errData.error?.message || 'AI error ('+response.status+')';
+      if(el){ el.className='ai-output'; el.textContent='Error: '+errMsg; }
+      return null;
     }
 
+    const data = await response.json();
     const text = data.content?.[0]?.text;
     if(!text){
       if(el){ el.className='ai-output'; el.textContent='No response from AI.'; }
@@ -3408,7 +3378,7 @@ async function callClaude(systemPrompt, userMessage, outputElId){
 
   }catch(e){
     console.error('[AI] fetch error:', e);
-    if(el){ el.className='ai-output'; el.textContent='Network error: '+e.message+'. Check console.'; }
+    if(el){ el.className='ai-output'; el.textContent='Network error: '+e.message; }
     return null;
   }
 }
