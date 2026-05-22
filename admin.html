@@ -194,13 +194,18 @@ tr:hover td{background:rgba(59,130,246,0.04)}
   <div class="nav-section">People</div>
   <div class="nav-item" onclick="showPage('users')"><span class="icon">👥</span>All Users</div>
   <div class="nav-item" onclick="showPage('batches')"><span class="icon">🎓</span>Batches</div>
+  <div class="nav-item" onclick="showPage('leaderboard')"><span class="icon">🏆</span>Leaderboard</div>
+  <div class="nav-item" onclick="showPage('atrisk')"><span class="icon">⚠️</span>At-Risk Students</div>
+  <div class="nav-item" onclick="showPage('bulk')"><span class="icon">📣</span>Bulk Actions</div>
 
   <div class="nav-section">Finance</div>
   <div class="nav-item" onclick="showPage('revenue')"><span class="icon">💰</span>Revenue</div>
   <div class="nav-item" onclick="showPage('coupons')"><span class="icon">🎟</span>Coupons</div>
+  <div class="nav-item" onclick="showPage('forecast')"><span class="icon">📈</span>Revenue Forecast</div>
 
   <div class="nav-section">Content</div>
   <div class="nav-item" onclick="showPage('projects')"><span class="icon">🏗</span>All Projects</div>
+  <div class="nav-item" onclick="showPage('content')"><span class="icon">📚</span>Content Performance</div>
 
   <div class="nav-section">System</div>
   <div class="nav-item" onclick="showPage('settings')"><span class="icon">⚙️</span>Settings</div>
@@ -284,6 +289,18 @@ tr:hover td{background:rgba(59,130,246,0.04)}
   <div id="expiry-alert-section" style="display:none">
     <div class="section-header"><div class="section-title">⚠️ Expiring Soon</div></div>
     <div class="expiry-alert" id="expiry-list"></div>
+  </div>
+
+  <!-- Risk Alerts -->
+  <div id="risk-alert-banner" style="display:none;margin-bottom:16px"></div>
+
+  <!-- Engagement Funnel -->
+  <div class="section-header">
+    <div class="section-title">🎯 Engagement Funnel</div>
+    <button class="btn-sm btn-gray" onclick="showPage('atrisk')">View At-Risk →</button>
+  </div>
+  <div id="funnel-wrap" style="background:var(--bg2);border:1px solid var(--b1);border-radius:12px;padding:20px;margin-bottom:16px">
+    <div id="funnel-bars">Loading...</div>
   </div>
 
   <!-- Recent registrations -->
@@ -704,6 +721,285 @@ tr:hover td{background:rgba(59,130,246,0.04)}
   <div id="features-msg" style="margin-top:12px;font-size:13px;font-weight:700;color:var(--green);display:none">✅ Saved to Supabase</div>
 </div>
 
+
+<!-- ═══════════════════════════════════════════════════════
+     PAGE: LEADERBOARD
+═══════════════════════════════════════════════════════ -->
+<div id="page-leaderboard" class="page">
+  <div class="page-title">🏆 Student Leaderboard</div>
+  <div class="page-sub">Ranked by Design Confidence and learning progress</div>
+
+  <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+    <select id="lb-filter-role" onchange="renderLeaderboard()" style="padding:6px 10px;background:var(--bg2);border:1.5px solid var(--b1);border-radius:8px;color:var(--txt);font-size:12px">
+      <option value="">All Roles</option>
+      <option value="student">Students</option>
+      <option value="lecturer">Lecturers</option>
+      <option value="engineer">Engineers</option>
+    </select>
+    <select id="lb-filter-plan" onchange="renderLeaderboard()" style="padding:6px 10px;background:var(--bg2);border:1.5px solid var(--b1);border-radius:8px;color:var(--txt);font-size:12px">
+      <option value="">All Plans</option>
+      <option value="free">Free</option>
+      <option value="pro">Pro</option>
+    </select>
+    <select id="lb-sort" onchange="renderLeaderboard()" style="padding:6px 10px;background:var(--bg2);border:1.5px solid var(--b1);border-radius:8px;color:var(--txt);font-size:12px">
+      <option value="confidence">Sort: Design Confidence</option>
+      <option value="analyses">Sort: Analyses Run</option>
+      <option value="lessons">Sort: Lessons Done</option>
+      <option value="quizzes">Sort: Quizzes Passed</option>
+    </select>
+    <button class="btn-sm btn-gray" onclick="loadLeaderboard()">🔄 Refresh</button>
+    <button class="btn-sm btn-blue" onclick="exportLeaderboard()">📥 Export CSV</button>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr>
+        <th style="width:40px">Rank</th>
+        <th>Name</th>
+        <th>Role</th>
+        <th>Plan</th>
+        <th>Design Confidence</th>
+        <th>Behaviors</th>
+        <th>Lessons</th>
+        <th>Quizzes Passed</th>
+        <th>Analyses</th>
+        <th>Last Active</th>
+      </tr></thead>
+      <tbody id="leaderboard-tbody"><tr><td colspan="10" class="loading">Loading...</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     PAGE: AT-RISK STUDENTS
+═══════════════════════════════════════════════════════ -->
+<div id="page-atrisk" class="page">
+  <div class="page-title">⚠️ At-Risk Students</div>
+  <div class="page-sub">Students who need attention — inactive, struggling, or about to churn</div>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-bottom:20px">
+    <div class="stat-card" style="cursor:pointer;border-color:rgba(248,113,113,0.4)" onclick="filterRisk('inactive7')">
+      <div class="stat-val" id="risk-inactive7" style="color:#f87171">—</div>
+      <div class="stat-lbl">No login 7+ days</div>
+    </div>
+    <div class="stat-card" style="cursor:pointer;border-color:rgba(251,191,36,0.4)" onclick="filterRisk('neveranalysed')">
+      <div class="stat-val" id="risk-never" style="color:#fbbf24">—</div>
+      <div class="stat-lbl">Signed up, never analysed</div>
+    </div>
+    <div class="stat-card" style="cursor:pointer;border-color:rgba(167,139,250,0.4)" onclick="filterRisk('expiring')">
+      <div class="stat-val" id="risk-expiring" style="color:#a78bfa">—</div>
+      <div class="stat-lbl">Pro expiring in 7 days</div>
+    </div>
+    <div class="stat-card" style="cursor:pointer;border-color:rgba(56,189,248,0.4)" onclick="filterRisk('zeroprogress')">
+      <div class="stat-val" id="risk-zero" style="color:#38bdf8">—</div>
+      <div class="stat-lbl">Zero learning progress</div>
+    </div>
+  </div>
+
+  <div class="section-header">
+    <div class="section-title" id="risk-table-title">All At-Risk Students</div>
+    <div style="display:flex;gap:8px">
+      <button class="btn-sm btn-gray" onclick="filterRisk('all')">Show All</button>
+      <button class="btn-sm btn-blue" onclick="bulkWhatsApp()">📱 WhatsApp All</button>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr>
+        <th><input type="checkbox" id="risk-select-all" onchange="toggleRiskSelect(this)"></th>
+        <th>Name</th><th>Mobile</th><th>Plan</th><th>Risk Reason</th>
+        <th>Last Active</th><th>Analyses</th><th>Actions</th>
+      </tr></thead>
+      <tbody id="atrisk-tbody"><tr><td colspan="8" class="loading">Loading...</td></tr></tbody>
+    </table>
+  </div>
+  <div id="risk-bulk-bar" style="display:none;margin-top:12px;padding:12px;background:var(--bg2);border:1px solid var(--b1);border-radius:8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+    <span id="risk-selected-count" style="font-size:12px;color:var(--txt3)">0 selected</span>
+    <button class="btn-sm btn-purple" onclick="bulkUpgradeSelected()">⚡ Upgrade Selected</button>
+    <button class="btn-sm btn-blue" onclick="bulkMessageSelected()">📢 Message Selected</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     PAGE: BULK ACTIONS
+═══════════════════════════════════════════════════════ -->
+<div id="page-bulk" class="page">
+  <div class="page-title">📣 Bulk Actions</div>
+  <div class="page-sub">Take actions on multiple users at once</div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+
+    <!-- Bulk Message -->
+    <div class="table-wrap" style="padding:20px">
+      <div class="section-title" style="margin-bottom:16px">📱 WhatsApp Bulk Message</div>
+      <div class="field">
+        <label>Target Audience</label>
+        <select id="bulk-msg-target" style="width:100%;padding:8px;background:var(--bg2);border:1.5px solid var(--b1);border-radius:8px;color:var(--txt);font-size:12px">
+          <option value="all">All Users</option>
+          <option value="free">Free Users Only</option>
+          <option value="pro">Pro Users Only</option>
+          <option value="inactive7">Inactive 7+ days</option>
+          <option value="inactive30">Inactive 30+ days</option>
+          <option value="neveranalysed">Never Run Analysis</option>
+          <option value="expiring7">Pro Expiring in 7 days</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Message Template</label>
+        <textarea id="bulk-msg-text" rows="4" placeholder="Hi {name}, ..."
+          style="width:100%;padding:10px;background:var(--bg2);border:1.5px solid var(--b1);border-radius:8px;color:var(--txt);font-size:12px;font-family:inherit;resize:vertical"></textarea>
+        <div style="font-size:10px;color:var(--txt3);margin-top:4px">Use {name} for student name, {mobile} for mobile number</div>
+      </div>
+      <div id="bulk-preview" style="font-size:11px;color:var(--txt3);margin-bottom:12px"></div>
+      <button class="btn-sm btn-blue" onclick="previewBulkMsg()">👁 Preview</button>
+      <button class="btn-sm btn-green" onclick="sendBulkMsg()" style="margin-left:8px">📱 Send to All</button>
+      <div id="bulk-msg-result" style="margin-top:10px;font-size:12px"></div>
+    </div>
+
+    <!-- Bulk Upgrade -->
+    <div class="table-wrap" style="padding:20px">
+      <div class="section-title" style="margin-bottom:16px">⚡ Bulk Upgrade to Pro</div>
+      <div class="field">
+        <label>Target</label>
+        <select id="bulk-upgrade-target" style="width:100%;padding:8px;background:var(--bg2);border:1.5px solid var(--b1);border-radius:8px;color:var(--txt);font-size:12px">
+          <option value="batch">Specific Batch (College Deal)</option>
+          <option value="city">Specific City</option>
+          <option value="role">Specific Role</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Value</label>
+        <input type="text" id="bulk-upgrade-value" placeholder="e.g. batch code, city name, student">
+      </div>
+      <div class="field">
+        <label>Plan Type</label>
+        <select id="bulk-upgrade-plan" style="width:100%;padding:8px;background:var(--bg2);border:1.5px solid var(--b1);border-radius:8px;color:var(--txt);font-size:12px">
+          <option value="monthly">Monthly Pro (30 days)</option>
+          <option value="annual">Annual Pro (365 days)</option>
+          <option value="lifetime">Lifetime Pro</option>
+        </select>
+      </div>
+      <button class="btn-sm btn-purple" onclick="previewBulkUpgrade()">👁 Preview Users</button>
+      <div id="bulk-upgrade-preview" style="margin-top:10px;font-size:12px;color:var(--txt3)"></div>
+      <button class="btn-sm btn-green" id="bulk-upgrade-go" style="margin-top:10px;display:none" onclick="executeBulkUpgrade()">⚡ Upgrade All</button>
+      <div id="bulk-upgrade-result" style="margin-top:10px;font-size:12px"></div>
+    </div>
+
+    <!-- Export by segment -->
+    <div class="table-wrap" style="padding:20px">
+      <div class="section-title" style="margin-bottom:16px">📥 Export by Segment</div>
+      <div class="field">
+        <label>Segment</label>
+        <select id="export-segment" style="width:100%;padding:8px;background:var(--bg2);border:1.5px solid var(--b1);border-radius:8px;color:var(--txt);font-size:12px">
+          <option value="all">All Users</option>
+          <option value="free">Free Users</option>
+          <option value="pro">Pro Users</option>
+          <option value="students">Students Only</option>
+          <option value="lecturers">Lecturers Only</option>
+          <option value="inactive30">Inactive 30+ days</option>
+          <option value="highengagement">High Engagement (5+ analyses)</option>
+        </select>
+      </div>
+      <button class="btn-sm btn-blue" onclick="exportSegment()">📥 Export CSV</button>
+      <div id="export-result" style="margin-top:8px;font-size:12px;color:var(--txt3)"></div>
+    </div>
+
+    <!-- Role change bulk -->
+    <div class="table-wrap" style="padding:20px">
+      <div class="section-title" style="margin-bottom:16px">🎭 Bulk Role Change</div>
+      <div class="field">
+        <label>Change users in batch</label>
+        <input type="text" id="bulk-role-batch" placeholder="Batch code (e.g. NITK2024)">
+      </div>
+      <div class="field">
+        <label>New Role</label>
+        <select id="bulk-role-new" style="width:100%;padding:8px;background:var(--bg2);border:1.5px solid var(--b1);border-radius:8px;color:var(--txt);font-size:12px">
+          <option value="student">Student</option>
+          <option value="lecturer">Lecturer</option>
+          <option value="engineer">Engineer</option>
+        </select>
+      </div>
+      <button class="btn-sm btn-purple" onclick="executeBulkRoleChange()">✅ Apply Role Change</button>
+      <div id="bulk-role-result" style="margin-top:8px;font-size:12px"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     PAGE: REVENUE FORECAST
+═══════════════════════════════════════════════════════ -->
+<div id="page-forecast" class="page">
+  <div class="page-title">📈 Revenue Forecast</div>
+  <div class="page-sub">3-month projection based on current conversion and churn rates</div>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-bottom:20px">
+    <div class="stat-card"><div class="stat-val" id="fc-mrr" style="color:#34d399">—</div><div class="stat-lbl">Current MRR</div></div>
+    <div class="stat-card"><div class="stat-val" id="fc-conv" style="color:#60a5fa">—</div><div class="stat-lbl">Conversion Rate</div></div>
+    <div class="stat-card"><div class="stat-val" id="fc-churn" style="color:#f87171">—</div><div class="stat-lbl">Monthly Churn</div></div>
+    <div class="stat-card"><div class="stat-val" id="fc-ltv" style="color:#a78bfa">—</div><div class="stat-lbl">Avg LTV</div></div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px">
+    <div class="chart-card">
+      <div class="chart-title">MRR Forecast — Next 3 Months</div>
+      <div class="chart-wrap"><canvas id="chart-forecast-mrr"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Subscriber Growth Forecast</div>
+      <div class="chart-wrap"><canvas id="chart-forecast-subs"></canvas></div>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Month</th><th>Projected Subscribers</th><th>Projected MRR</th><th>New Signups Needed</th><th>Scenario</th></tr></thead>
+      <tbody id="forecast-tbody"><tr><td colspan="5" class="loading">Loading...</td></tr></tbody>
+    </table>
+  </div>
+
+  <div style="margin-top:16px;padding:14px;background:var(--bg2);border:1px solid var(--b1);border-radius:8px;font-size:12px;color:var(--txt3)">
+    <strong style="color:var(--txt)">Assumptions:</strong> Conversion rate = free users who become pro within 30 days.
+    Churn = pro users who don't renew. LTV = average revenue per pro user before churn.
+    Forecasts assume current rates continue. Add college deals to significantly improve numbers.
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     PAGE: CONTENT PERFORMANCE
+═══════════════════════════════════════════════════════ -->
+<div id="page-content" class="page">
+  <div class="page-title">📚 Content Performance</div>
+  <div class="page-sub">Which features students use most, quiz difficulty, drop-off points</div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px">
+    <div class="chart-card">
+      <div class="chart-title">Tab Usage (how many students reached each step)</div>
+      <div class="chart-wrap"><canvas id="chart-tab-usage"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Quiz Pass Rates by Topic</div>
+      <div class="chart-wrap"><canvas id="chart-quiz-rates"></canvas></div>
+    </div>
+  </div>
+
+  <div class="section-header"><div class="section-title">📋 Feature Adoption</div></div>
+  <div id="feature-adoption-wrap" class="table-wrap">
+    <table>
+      <thead><tr><th>Feature / Tab</th><th>Users Reached</th><th>% of All Users</th><th>Avg Time Spent</th><th>Drop-off</th></tr></thead>
+      <tbody id="feature-adoption-tbody"><tr><td colspan="5" class="loading">Loading...</td></tr></tbody>
+    </table>
+  </div>
+
+  <div class="section-header" style="margin-top:20px"><div class="section-title">🧠 Hardest Quiz Questions</div></div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Quiz Topic</th><th>Attempts</th><th>Pass Rate</th><th>Avg Score</th><th>Status</th></tr></thead>
+      <tbody id="quiz-hard-tbody"><tr><td colspan="5" class="loading">Loading...</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
 </div><!-- end main -->
 </div><!-- end layout -->
 
@@ -954,8 +1250,13 @@ function showPage(id) {
     batches:   loadBatches,
     analytics: loadAnalytics,
     coupons:   loadCoupons,
-    settings:  loadSettings,
-    features:  loadFeatures,
+    settings:    loadSettings,
+    features:    loadFeatures,
+    leaderboard: loadLeaderboard,
+    atrisk:      loadAtRisk,
+    bulk:        loadBulk,
+    forecast:    loadForecast,
+    content:     loadContent,
   };
   if(loaders[id]) loaders[id]();
 }
@@ -1214,33 +1515,118 @@ function renderUsers() {
 }
 
 async function viewUser(id) {
-  const u = allUsers.find(x=>x.id===id);
+  // Always fetch fresh full profile so all fields (college, unique_id etc) are present
+  const fresh = await api('profiles?id=eq.'+id+'&select=*');
+  const u = (fresh && fresh[0]) || allUsers.find(x=>x.id===id);
   if(!u) return;
 
-  // Load user's projects
+  // Load user's projects, activity, and learning progress in parallel
+  if(!allProjects.length) allProjects = await api('projects?select=*&deleted_at=is.null') || [];
+  const [progressData, snapCount] = await Promise.all([
+    api('progress?profile_id=eq.'+id+'&select=*'),
+    apiCount('snapshots?profile_id=eq.'+id),
+  ]);
+  const prog = progressData && progressData[0];
   const projs = allProjects.filter(p=>p.profile_id===id);
-  const snapCount = await apiCount('snapshots?profile_id=eq.'+id);
   const totalAnalyses = projs.reduce((s,p)=>s+(p.analysis_count||0),0);
+  const lastProject = projs.sort((a,b)=>new Date(b.updated_at)-new Date(a.updated_at))[0];
+
+  // Parse learning progress
+  const lessons      = prog ? (prog.topics_completed || {}) : {};
+  const behaviors    = prog ? (prog.badges           || {}) : {};
+  const quizScores   = prog ? (prog.quiz_scores      || {}) : {};
+  const lessonsCount = Object.values(lessons).filter(Boolean).length;
+  const behaviorsCount = Object.values(behaviors).filter(Boolean).length;
+  const quizCount    = Object.keys(quizScores).length;
+  const quizPassCount= Object.values(quizScores).filter(s=>s>=70).length;
+  const designConf   = Math.min(100, behaviorsCount * 10);
 
   el('user-modal-title').textContent = u.full_name || '—';
   setHTML('user-modal-content', `
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px">
-      <div class="info-row"><span class="info-lbl">Unique ID</span><span class="info-val">${u.unique_id||'—'}</span></div>
+      <div class="info-row"><span class="info-lbl">Unique ID</span><span class="info-val" style="font-family:monospace">${u.unique_id||'—'}</span></div>
       <div class="info-row"><span class="info-lbl">Mobile</span><span class="info-val">${u.mobile||'—'}</span></div>
+      <div class="info-row"><span class="info-lbl">Full Name</span><span class="info-val">${u.full_name||'—'}</span></div>
+      <div class="info-row"><span class="info-lbl">Email</span><span class="info-val">${u.email||'—'}</span></div>
       <div class="info-row"><span class="info-lbl">Role</span><span class="info-val">${roleBadge(u.role)}</span></div>
       <div class="info-row"><span class="info-lbl">Plan</span><span class="info-val">${planBadge(u)}</span></div>
+      <div class="info-row"><span class="info-lbl">Plan Type</span><span class="info-val">${u.plan_type||'—'}</span></div>
+      <div class="info-row"><span class="info-lbl">Status</span><span class="info-val" style="color:${u.is_active===false?'#f87171':'#34d399'}">${u.is_active===false?'⛔ Deactivated':'✅ Active'}</span></div>
       <div class="info-row"><span class="info-lbl">City</span><span class="info-val">${u.city||'—'}</span></div>
       <div class="info-row"><span class="info-lbl">State</span><span class="info-val">${u.state||'—'}</span></div>
+      <div class="info-row"><span class="info-lbl">College</span><span class="info-val">${u.college||'—'}</span></div>
       <div class="info-row"><span class="info-lbl">Joined</span><span class="info-val">${fmtDate(u.created_at)}</span></div>
       <div class="info-row"><span class="info-lbl">Last Active</span><span class="info-val">${timeAgo(u.last_active)}</span></div>
-      ${u.college?`<div class="info-row"><span class="info-lbl">College</span><span class="info-val">${u.college}</span></div>`:''}
       ${u.plan_expires_at && u.plan==='pro'?`<div class="info-row"><span class="info-lbl">Plan Expires</span><span class="info-val">${fmtDate(u.plan_expires_at)}</span></div>`:''}
+      ${u.payment_date?`<div class="info-row"><span class="info-lbl">Last Payment</span><span class="info-val">${fmtDate(u.payment_date)}</span></div>`:''}
     </div>
-    <div style="background:var(--bg2);border-radius:8px;padding:14px;font-size:12px">
-      <div style="font-weight:700;margin-bottom:8px;color:var(--txt3)">ACTIVITY</div>
-      <div class="info-row"><span>Projects</span><span>${projs.length}</span></div>
-      <div class="info-row"><span>Analyses Run</span><span>${totalAnalyses}</span></div>
-      <div class="info-row"><span>Snapshots</span><span>${snapCount}</span></div>
+    <div style="background:var(--bg2);border-radius:8px;padding:14px;font-size:12px;margin-bottom:10px">
+      <div style="font-weight:700;margin-bottom:8px;color:var(--txt3);font-size:10px;letter-spacing:1px">ACTIVITY</div>
+      <div class="info-row"><span>Projects</span><span style="font-weight:700">${projs.length}</span></div>
+      <div class="info-row"><span>Analyses Run</span><span style="font-weight:700">${totalAnalyses}</span></div>
+      <div class="info-row"><span>Snapshots Saved</span><span style="font-weight:700">${snapCount}</span></div>
+      ${lastProject?`<div class="info-row"><span>Last Project</span><span style="font-weight:700;color:var(--blue)">${lastProject.name||'Untitled'}</span></div>`:''}
+      ${lastProject?`<div class="info-row"><span>Last Edited</span><span>${timeAgo(lastProject.updated_at)}</span></div>`:''}
+    </div>
+    ${projs.length?`<div style="background:var(--bg2);border-radius:8px;padding:14px;font-size:12px;margin-bottom:10px">
+      <div style="font-weight:700;margin-bottom:8px;color:var(--txt3);font-size:10px;letter-spacing:1px">PROJECTS</div>
+      ${projs.slice(0,5).map(p=>`<div class="info-row"><span style="color:var(--blue)">${p.name||'Untitled'}</span><span style="color:var(--txt3)">${fmtDate(p.updated_at)}</span></div>`).join('')}
+      ${projs.length>5?`<div style="font-size:10px;color:var(--txt3);margin-top:4px">+ ${projs.length-5} more projects</div>`:''}
+    </div>`:''}
+
+    <div style="background:var(--bg2);border-radius:8px;padding:14px;font-size:12px;margin-bottom:10px">
+      <div style="font-weight:700;margin-bottom:10px;color:var(--txt3);font-size:10px;letter-spacing:1px">🎓 LEARNING PROGRESS</div>
+
+      <!-- Design Confidence bar -->
+      <div style="margin-bottom:12px">
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+          <span style="font-size:11px;color:#94a3b8">Design Confidence</span>
+          <span style="font-size:12px;font-weight:800;color:#38bdf8">${designConf}%</span>
+        </div>
+        <div style="height:8px;background:#0f172a;border-radius:4px;overflow:hidden">
+          <div style="height:100%;width:${designConf}%;background:linear-gradient(90deg,#1d4ed8,#38bdf8);border-radius:4px;transition:width 0.5s"></div>
+        </div>
+        <div style="font-size:10px;color:#475569;margin-top:3px">${behaviorsCount}/10 learning behaviors completed</div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px">
+        <div style="padding:8px;background:#0f172a;border-radius:6px;text-align:center">
+          <div style="font-size:18px;font-weight:800;color:#34d399">${lessonsCount}</div>
+          <div style="font-size:9px;color:#475569">Lessons Done</div>
+        </div>
+        <div style="padding:8px;background:#0f172a;border-radius:6px;text-align:center">
+          <div style="font-size:18px;font-weight:800;color:#a78bfa">${quizCount}</div>
+          <div style="font-size:9px;color:#475569">Quizzes Taken</div>
+        </div>
+        <div style="padding:8px;background:#0f172a;border-radius:6px;text-align:center">
+          <div style="font-size:18px;font-weight:800;color:#f59e0b">${quizPassCount}</div>
+          <div style="font-size:9px;color:#475569">Quizzes Passed</div>
+        </div>
+      </div>
+
+      ${behaviorsCount>0?`
+      <div style="margin-bottom:8px">
+        <div style="font-size:10px;font-weight:700;color:#64748b;margin-bottom:5px">BEHAVIORS COMPLETED</div>
+        <div style="display:flex;flex-wrap:wrap;gap:4px">
+          ${Object.entries(behaviors).filter(([k,v])=>v).map(([k])=>`
+            <span style="padding:2px 8px;background:rgba(52,211,153,0.1);border:1px solid rgba(52,211,153,0.3);border-radius:10px;font-size:9px;color:#34d399">${k}</span>
+          `).join('')}
+        </div>
+      </div>`:'<div style="font-size:10px;color:#475569">No behaviors tracked yet — student has not started exploring the app.</div>'}
+
+      ${quizCount>0?`
+      <div>
+        <div style="font-size:10px;font-weight:700;color:#64748b;margin-bottom:5px">QUIZ SCORES</div>
+        <table style="width:100%;border-collapse:collapse;font-size:10px">
+          ${Object.entries(quizScores).slice(0,8).map(([k,v])=>`
+          <tr>
+            <td style="padding:3px 6px;border:1px solid var(--b1);color:#94a3b8">${k}</td>
+            <td style="padding:3px 6px;border:1px solid var(--b1);text-align:center;font-weight:700;color:${v>=70?'#34d399':'#f87171'}">${v}%</td>
+            <td style="padding:3px 6px;border:1px solid var(--b1);font-size:9px;color:${v>=70?'#34d399':'#f87171'}">${v>=70?'PASS':'FAIL'}</td>
+          </tr>`).join('')}
+        </table>
+        ${Object.keys(quizScores).length>8?`<div style="font-size:9px;color:#475569;margin-top:3px">+ ${Object.keys(quizScores).length-8} more quizzes</div>`:''}
+      </div>`:''}
     </div>
   `);
   setHTML('user-modal-btns', `
@@ -1741,6 +2127,495 @@ async function loadSettings() {
   if(!allUsers.length) allUsers = await api('profiles?select=*&order=created_at.desc') || [];
   loadAnnouncementHistory();
   loadFailedPayments();
+}
+
+// ═══════════════════════════════════════════════════════════
+// DASHBOARD: RISK ALERTS + ENGAGEMENT FUNNEL
+// ═══════════════════════════════════════════════════════════
+function buildRiskAlerts(users, projects) {
+  const now = Date.now();
+  const day7  = new Date(now - 7*86400000).toISOString();
+  const day1  = new Date(now - 86400000).toISOString();
+
+  const inactive7     = users.filter(u=>u.last_active && u.last_active < day7 && u.plan!=='pro');
+  const neverAnalysed = users.filter(u=>{ const p=projects.filter(pr=>pr.profile_id===u.id); return !p.length || p.reduce((s,pr)=>s+(pr.analysis_count||0),0)===0; });
+  const expiring      = users.filter(u=>u.plan==='pro' && u.plan_expires_at && daysUntil(u.plan_expires_at)>=0 && daysUntil(u.plan_expires_at)<=7);
+  const newToday      = users.filter(u=>u.created_at > day1);
+
+  const alerts = [];
+  if(inactive7.length)     alerts.push({ color:'#f87171', icon:'😴', msg:`${inactive7.length} free users haven't logged in for 7+ days — at risk of churning. <button class="btn-sm btn-gray" onclick="showPage('atrisk')" style="margin-left:8px">View →</button>` });
+  if(neverAnalysed.length) alerts.push({ color:'#fbbf24', icon:'🆕', msg:`${neverAnalysed.length} users signed up but never ran an analysis. They need a nudge. <button class="btn-sm btn-gray" onclick="filterRisk('neveranalysed');showPage('atrisk')" style="margin-left:8px">View →</button>` });
+  if(expiring.length)      alerts.push({ color:'#a78bfa', icon:'⏰', msg:`${expiring.length} Pro users expiring within 7 days — reach out now for renewals. <button class="btn-sm btn-gray" onclick="filterRisk('expiring');showPage('atrisk')" style="margin-left:8px">View →</button>` });
+  if(newToday.length)      alerts.push({ color:'#34d399', icon:'🎉', msg:`${newToday.length} new signup${newToday.length>1?'s':''} today!` });
+
+  const banner = document.getElementById('risk-alert-banner');
+  if(!banner) return;
+  if(alerts.length) {
+    banner.style.display = 'block';
+    banner.innerHTML = alerts.map(a=>`
+      <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:${a.color}18;border:1px solid ${a.color}55;border-radius:8px;margin-bottom:8px;font-size:12px;color:${a.color}">
+        <span style="font-size:16px">${a.icon}</span><span>${a.msg}</span>
+      </div>`).join('');
+  }
+}
+
+function buildFunnel(users, projects) {
+  const wrap = document.getElementById('funnel-wrap');
+  if(!wrap) return;
+  const total = users.length;
+  if(!total){ wrap.innerHTML='<div style="color:var(--txt3);font-size:12px">No users yet.</div>'; return; }
+
+  const ran     = users.filter(u=>{ const ps=projects.filter(p=>p.profile_id===u.id); return ps.reduce((s,p)=>s+(p.analysis_count||0),0)>0; }).length;
+  const snapshot= projects.filter(p=>p.all_checks_pass).length; // proxy: projects that passed
+  const pro     = users.filter(u=>u.plan==='pro' && !isExpired(u)).length;
+
+  const steps = [
+    { label:'Signed Up',     count:total, color:'#3b82f6' },
+    { label:'Ran Analysis',  count:ran,   color:'#34d399' },
+    { label:'Project Passed',count:Math.min(snapshot,ran), color:'#a78bfa' },
+    { label:'Converted Pro', count:pro,   color:'#f59e0b' },
+  ];
+
+  wrap.innerHTML = '<div style="display:flex;flex-direction:column;gap:8px">' +
+    steps.map((s,i)=>{
+      const pct = total ? Math.round(s.count/total*100) : 0;
+      const drop = i>0 ? Math.round((steps[i-1].count - s.count)/steps[i-1].count*100) : 0;
+      return `<div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:3px;font-size:11px">
+          <span style="color:var(--txt2)">${s.label}</span>
+          <span style="color:${s.color};font-weight:700">${s.count} (${pct}%)${i>0?' <span style="color:#f87171;font-size:10px">↓ '+drop+'% drop-off</span>':''}</span>
+        </div>
+        <div style="height:24px;background:#0f172a;border-radius:4px;overflow:hidden">
+          <div style="height:100%;width:${pct}%;background:${s.color};border-radius:4px;display:flex;align-items:center;padding-left:8px;font-size:10px;color:#fff;font-weight:700;transition:width 0.5s">${s.count>0?s.count:''}</div>
+        </div>
+      </div>`;
+    }).join('') + '</div>';
+}
+
+// Extend loadDashboard to call these
+const _origLoadDashboard = loadDashboard;
+loadDashboard = async function() {
+  await _origLoadDashboard();
+  buildRiskAlerts(allUsers, allProjects);
+  buildFunnel(allUsers, allProjects);
+};
+
+// ═══════════════════════════════════════════════════════════
+// LEADERBOARD
+// ═══════════════════════════════════════════════════════════
+let _lbData = [];
+
+async function loadLeaderboard() {
+  if(!allUsers.length) allUsers = await api('profiles?select=*&order=created_at.desc') || [];
+  if(!allProjects.length) allProjects = await api('projects?select=*&deleted_at=is.null') || [];
+
+  // Fetch all progress in one shot
+  const allProgress = await api('progress?select=*') || [];
+  const progMap = Object.fromEntries(allProgress.map(p=>[p.profile_id, p]));
+
+  _lbData = allUsers.map(u => {
+    const prog     = progMap[u.id] || {};
+    const lessons  = Object.values(prog.topics_completed||{}).filter(Boolean).length;
+    const behaviors= Object.values(prog.badges||{}).filter(Boolean).length;
+    const quizzes  = Object.values(prog.quiz_scores||{}).filter(s=>s>=70).length;
+    const analyses = allProjects.filter(p=>p.profile_id===u.id).reduce((s,p)=>s+(p.analysis_count||0),0);
+    return { ...u, _lessons:lessons, _behaviors:behaviors, _quizzes:quizzes, _analyses:analyses, _conf:Math.min(100,behaviors*10) };
+  });
+
+  renderLeaderboard();
+}
+
+function renderLeaderboard() {
+  const roleF = document.getElementById('lb-filter-role')?.value || '';
+  const planF = document.getElementById('lb-filter-plan')?.value || '';
+  const sortK  = document.getElementById('lb-sort')?.value || 'confidence';
+
+  let data = _lbData.filter(u =>
+    (!roleF || u.role===roleF) &&
+    (!planF || (planF==='pro'?u.plan==='pro':u.plan!=='pro'))
+  );
+
+  const sortMap = { confidence:'_conf', analyses:'_analyses', lessons:'_lessons', quizzes:'_quizzes' };
+  data.sort((a,b)=>b[sortMap[sortK]]-a[sortMap[sortK]]);
+
+  const medals = ['🥇','🥈','🥉'];
+  setHTML('leaderboard-tbody', data.length ? data.map((u,i)=>`<tr>
+    <td style="text-align:center;font-size:16px">${medals[i]||'#'+(i+1)}</td>
+    <td><strong>${u.full_name||'—'}</strong><br><span style="font-size:10px;color:var(--txt3)">${u.city||''}</span></td>
+    <td>${roleBadge(u.role)}</td>
+    <td>${planBadge(u)}</td>
+    <td>
+      <div style="display:flex;align-items:center;gap:6px">
+        <div style="flex:1;height:6px;background:#0f172a;border-radius:3px">
+          <div style="height:100%;width:${u._conf}%;background:linear-gradient(90deg,#1d4ed8,#38bdf8);border-radius:3px"></div>
+        </div>
+        <span style="font-size:11px;font-weight:700;color:#38bdf8;min-width:32px">${u._conf}%</span>
+      </div>
+    </td>
+    <td style="text-align:center">${u._behaviors}/10</td>
+    <td style="text-align:center">${u._lessons}</td>
+    <td style="text-align:center">${u._quizzes}</td>
+    <td style="text-align:center">${u._analyses}</td>
+    <td>${timeAgo(u.last_active)}</td>
+  </tr>`).join('') : '<tr><td colspan="10" class="empty">No data</td></tr>');
+}
+
+function exportLeaderboard() {
+  const rows = [['Rank','Name','Mobile','Role','Plan','Design Confidence %','Behaviors','Lessons','Quizzes Passed','Analyses','Last Active']];
+  _lbData.forEach((u,i)=>rows.push([i+1,u.full_name,u.mobile,u.role,u.plan,u._conf,u._behaviors,u._lessons,u._quizzes,u._analyses,timeAgo(u.last_active)]));
+  downloadCSV(rows,'leaderboard.csv');
+}
+
+// ═══════════════════════════════════════════════════════════
+// AT-RISK STUDENTS
+// ═══════════════════════════════════════════════════════════
+let _riskData = [], _riskFilter = 'all';
+
+async function loadAtRisk() {
+  if(!allUsers.length) allUsers = await api('profiles?select=*&order=created_at.desc') || [];
+  if(!allProjects.length) allProjects = await api('projects?select=*&deleted_at=is.null') || [];
+
+  const now = Date.now();
+  const day7  = new Date(now-7*86400000).toISOString();
+  const day30 = new Date(now-30*86400000).toISOString();
+
+  _riskData = allUsers.map(u=>{
+    const projs    = allProjects.filter(p=>p.profile_id===u.id);
+    const analyses = projs.reduce((s,p)=>s+(p.analysis_count||0),0);
+    const reasons  = [];
+    if(!u.last_active || u.last_active < day7)  reasons.push('Inactive 7+ days');
+    if(!u.last_active || u.last_active < day30) reasons.push('Inactive 30+ days');
+    if(analyses===0) reasons.push('Never analysed');
+    if(u.plan==='pro' && u.plan_expires_at && daysUntil(u.plan_expires_at)>=0 && daysUntil(u.plan_expires_at)<=7) reasons.push('Expiring soon');
+    return { ...u, _analyses:analyses, _reasons:reasons };
+  }).filter(u=>u._reasons.length>0);
+
+  // Update stat cards
+  setText('risk-inactive7', _riskData.filter(u=>u._reasons.includes('Inactive 7+ days')).length);
+  setText('risk-never',     _riskData.filter(u=>u._reasons.includes('Never analysed')).length);
+  setText('risk-expiring',  _riskData.filter(u=>u._reasons.includes('Expiring soon')).length);
+  setText('risk-zero',      _riskData.filter(u=>u._analyses===0).length);
+
+  renderRiskTable();
+}
+
+function filterRisk(type) {
+  _riskFilter = type;
+  if(document.getElementById('atrisk-tbody')) renderRiskTable();
+}
+
+function renderRiskTable() {
+  const filters = {
+    inactive7:     u=>u._reasons.includes('Inactive 7+ days'),
+    neveranalysed: u=>u._reasons.includes('Never analysed'),
+    expiring:      u=>u._reasons.includes('Expiring soon'),
+    zeroprogress:  u=>u._analyses===0,
+    all:           ()=>true,
+  };
+  const data = _riskData.filter(filters[_riskFilter]||filters.all);
+  const titles = { inactive7:'Inactive 7+ Days', neveranalysed:'Never Analysed', expiring:'Pro Expiring Soon', zeroprogress:'Zero Progress', all:'All At-Risk Students' };
+  setText('risk-table-title', (titles[_riskFilter]||'All At-Risk')+' ('+data.length+')');
+
+  setHTML('atrisk-tbody', data.length ? data.map(u=>`<tr>
+    <td><input type="checkbox" class="risk-chk" data-id="${u.id}" data-mobile="${u.mobile}" onchange="updateRiskSelection()"></td>
+    <td><strong>${u.full_name||'—'}</strong></td>
+    <td style="font-family:monospace">${u.mobile||'—'}</td>
+    <td>${planBadge(u)}</td>
+    <td>${u._reasons.map(r=>`<span style="padding:1px 6px;border-radius:10px;font-size:9px;font-weight:700;background:rgba(248,113,113,0.15);color:#f87171;margin-right:3px">${r}</span>`).join('')}</td>
+    <td>${timeAgo(u.last_active)}</td>
+    <td>${u._analyses}</td>
+    <td>
+      <button class="btn-sm btn-purple" onclick="upgradeUserModal('${u.id}')">⚡ Pro</button>
+    </td>
+  </tr>`).join('') : '<tr><td colspan="8" class="empty">No at-risk students in this category</td></tr>');
+}
+
+function toggleRiskSelect(cb) {
+  document.querySelectorAll('.risk-chk').forEach(c=>c.checked=cb.checked);
+  updateRiskSelection();
+}
+
+function updateRiskSelection() {
+  const sel = document.querySelectorAll('.risk-chk:checked');
+  const bar = document.getElementById('risk-bulk-bar');
+  const cnt = document.getElementById('risk-selected-count');
+  if(bar) bar.style.display = sel.length>0?'flex':'none';
+  if(cnt) cnt.textContent = sel.length+' selected';
+}
+
+function bulkUpgradeSelected() {
+  const sel = Array.from(document.querySelectorAll('.risk-chk:checked')).map(c=>c.dataset.id);
+  if(!sel.length){alert('No students selected');return;}
+  const plan = prompt('Plan type? (monthly/annual/lifetime)','monthly');
+  if(!plan) return;
+  Promise.all(sel.map(id=>upgradeToPro(id,plan))).then(()=>{
+    alert('✅ '+sel.length+' students upgraded to Pro ('+plan+')');
+    loadAtRisk();
+  });
+}
+
+function bulkWhatsApp() {
+  const mobiles = _riskData.map(u=>u.mobile).filter(Boolean);
+  const msg = encodeURIComponent('Hi, we noticed you haven\'t logged into StructLearn Pro recently. Jump back in and complete your building design!');
+  window.open('https://wa.me/?text='+msg);
+  alert('WhatsApp opened. Copy the message and send to these '+mobiles.length+' numbers:\n\n'+mobiles.join('\n'));
+}
+
+function bulkMessageSelected() {
+  const sel = Array.from(document.querySelectorAll('.risk-chk:checked')).map(c=>c.dataset.mobile).filter(Boolean);
+  if(!sel.length){alert('No students selected');return;}
+  alert('Selected mobile numbers ('+sel.length+'):\n\n'+sel.join('\n')+'\n\nCopy and use in WhatsApp Broadcast.');
+}
+
+// ═══════════════════════════════════════════════════════════
+// BULK ACTIONS
+// ═══════════════════════════════════════════════════════════
+let _bulkUpgradeUsers = [];
+
+async function loadBulk() {
+  if(!allUsers.length) allUsers = await api('profiles?select=*&order=created_at.desc') || [];
+  if(!allProjects.length) allProjects = await api('projects?select=*&deleted_at=is.null') || [];
+}
+
+function previewBulkMsg() {
+  const target = document.getElementById('bulk-msg-target')?.value;
+  const text   = document.getElementById('bulk-msg-text')?.value;
+  const preview= document.getElementById('bulk-preview');
+  if(!text){alert('Enter a message first');return;}
+
+  const now=Date.now();
+  const segments = {
+    all:           allUsers,
+    free:          allUsers.filter(u=>u.plan!=='pro'),
+    pro:           allUsers.filter(u=>u.plan==='pro'),
+    inactive7:     allUsers.filter(u=>u.last_active && u.last_active<new Date(now-7*86400000).toISOString()),
+    inactive30:    allUsers.filter(u=>u.last_active && u.last_active<new Date(now-30*86400000).toISOString()),
+    neveranalysed: allUsers.filter(u=>allProjects.filter(p=>p.profile_id===u.id).reduce((s,p)=>s+(p.analysis_count||0),0)===0),
+    expiring7:     allUsers.filter(u=>u.plan==='pro'&&u.plan_expires_at&&daysUntil(u.plan_expires_at)>=0&&daysUntil(u.plan_expires_at)<=7),
+  };
+  const users = segments[target]||[];
+  const sample = users[0];
+  const sampleMsg = sample ? text.replace('{name}',sample.full_name||'Student').replace('{mobile}',sample.mobile||'') : text;
+  if(preview) preview.innerHTML = `<strong style="color:var(--blue)">${users.length} users</strong> will receive this message.<br><div style="margin-top:6px;padding:8px;background:var(--bg2);border-radius:6px;font-size:11px">Preview: "${sampleMsg}"</div>`;
+}
+
+function sendBulkMsg() {
+  const target = document.getElementById('bulk-msg-target')?.value;
+  const text   = document.getElementById('bulk-msg-text')?.value;
+  const result = document.getElementById('bulk-msg-result');
+  if(!text){alert('Enter a message first');return;}
+  if(!confirm('Send this message to the selected group?')) return;
+  // In a real system this would call a WhatsApp API endpoint
+  // For now, export numbers and open WhatsApp
+  const segments = {
+    all: allUsers, free: allUsers.filter(u=>u.plan!=='pro'), pro: allUsers.filter(u=>u.plan==='pro'),
+    inactive7: allUsers.filter(u=>u.last_active&&u.last_active<new Date(Date.now()-7*86400000).toISOString()),
+    inactive30: allUsers.filter(u=>u.last_active&&u.last_active<new Date(Date.now()-30*86400000).toISOString()),
+    neveranalysed: allUsers.filter(u=>allProjects.filter(p=>p.profile_id===u.id).reduce((s,p)=>s+(p.analysis_count||0),0)===0),
+    expiring7: allUsers.filter(u=>u.plan==='pro'&&u.plan_expires_at&&daysUntil(u.plan_expires_at)>=0&&daysUntil(u.plan_expires_at)<=7),
+  };
+  const users = segments[target]||[];
+  const nums = users.map(u=>u.mobile).filter(Boolean);
+  downloadCSV([['Name','Mobile','Message'],...users.map(u=>[u.full_name,u.mobile,text.replace('{name}',u.full_name||'Student').replace('{mobile}',u.mobile||'')])], 'bulk_message_'+target+'.csv');
+  if(result) result.innerHTML = `<span style="color:var(--green)">✅ Exported ${nums.length} contacts with personalized messages. Use WhatsApp Broadcast or your SMS gateway.</span>`;
+}
+
+async function previewBulkUpgrade() {
+  const targetType  = document.getElementById('bulk-upgrade-target')?.value;
+  const targetValue = document.getElementById('bulk-upgrade-value')?.value?.trim();
+  const previewEl   = document.getElementById('bulk-upgrade-preview');
+  const goBtn       = document.getElementById('bulk-upgrade-go');
+  if(!targetValue){alert('Enter a value to filter by');return;}
+
+  if(!allUsers.length) allUsers = await api('profiles?select=*&order=created_at.desc')||[];
+
+  if(targetType==='batch') {
+    const members = await api('batch_members?select=*,batches(batch_code)') || [];
+    const batchMembers = members.filter(m=>m.batches?.batch_code?.toUpperCase()===targetValue.toUpperCase());
+    _bulkUpgradeUsers = batchMembers.map(m=>allUsers.find(u=>u.id===m.profile_id)).filter(Boolean);
+  } else if(targetType==='city') {
+    _bulkUpgradeUsers = allUsers.filter(u=>(u.city||'').toLowerCase()===targetValue.toLowerCase());
+  } else if(targetType==='role') {
+    _bulkUpgradeUsers = allUsers.filter(u=>u.role===targetValue.toLowerCase());
+  }
+
+  if(previewEl) previewEl.innerHTML = `<strong style="color:var(--blue)">${_bulkUpgradeUsers.length} users</strong> match: ${_bulkUpgradeUsers.slice(0,5).map(u=>u.full_name).join(', ')}${_bulkUpgradeUsers.length>5?'...':''}`;
+  if(goBtn) goBtn.style.display = _bulkUpgradeUsers.length ? 'inline-block' : 'none';
+}
+
+async function executeBulkUpgrade() {
+  if(!_bulkUpgradeUsers.length){alert('No users to upgrade');return;}
+  const plan = document.getElementById('bulk-upgrade-plan')?.value || 'monthly';
+  if(!confirm(`Upgrade ${_bulkUpgradeUsers.length} users to ${plan} Pro?`)) return;
+  const result = document.getElementById('bulk-upgrade-result');
+  if(result) result.textContent = 'Upgrading...';
+  await Promise.all(_bulkUpgradeUsers.map(u=>upgradeToPro(u.id,plan)));
+  if(result) result.innerHTML = `<span style="color:var(--green)">✅ ${_bulkUpgradeUsers.length} users upgraded to ${plan} Pro.</span>`;
+}
+
+function exportSegment() {
+  const seg = document.getElementById('export-segment')?.value;
+  const now = Date.now();
+  const segments = {
+    all:           allUsers,
+    free:          allUsers.filter(u=>u.plan!=='pro'),
+    pro:           allUsers.filter(u=>u.plan==='pro'),
+    students:      allUsers.filter(u=>u.role==='student'),
+    lecturers:     allUsers.filter(u=>u.role==='lecturer'),
+    inactive30:    allUsers.filter(u=>!u.last_active||u.last_active<new Date(now-30*86400000).toISOString()),
+    highengagement:allUsers.filter(u=>allProjects.filter(p=>p.profile_id===u.id).reduce((s,p)=>s+(p.analysis_count||0),0)>=5),
+  };
+  const data = segments[seg]||[];
+  downloadCSV([['Name','Mobile','Email','Role','Plan','City','State','College','Joined'],
+    ...data.map(u=>[u.full_name,u.mobile,u.email||'',u.role,u.plan,u.city,u.state,u.college||'',fmtDate(u.created_at)])],
+    'export_'+seg+'.csv');
+  const result = document.getElementById('export-result');
+  if(result) result.textContent = '✅ Exported '+data.length+' users.';
+}
+
+async function executeBulkRoleChange() {
+  const batchCode = document.getElementById('bulk-role-batch')?.value?.trim();
+  const newRole   = document.getElementById('bulk-role-new')?.value;
+  const result    = document.getElementById('bulk-role-result');
+  if(!batchCode){alert('Enter a batch code');return;}
+
+  const members = await api('batch_members?select=*,batches(batch_code)') || [];
+  const batchMembers = members.filter(m=>m.batches?.batch_code?.toUpperCase()===batchCode.toUpperCase());
+  if(!batchMembers.length){if(result)result.textContent='No batch found with code '+batchCode;return;}
+
+  if(!confirm(`Change role to "${newRole}" for ${batchMembers.length} students in batch ${batchCode}?`)) return;
+  await Promise.all(batchMembers.map(m=>api('profiles?id=eq.'+m.profile_id,{method:'PATCH',body:JSON.stringify({role:newRole})})));
+  if(result) result.innerHTML = `<span style="color:var(--green)">✅ ${batchMembers.length} users updated to role: ${newRole}</span>`;
+}
+
+// ═══════════════════════════════════════════════════════════
+// REVENUE FORECAST
+// ═══════════════════════════════════════════════════════════
+async function loadForecast() {
+  if(!allUsers.length)    allUsers    = await api('profiles?select=*&order=created_at.desc') || [];
+  if(!allPayments.length) allPayments = await api('payment_history?select=*&order=created_at.desc') || [];
+
+  const proUsers   = allUsers.filter(u=>u.plan==='pro'&&!isExpired(u));
+  const freeUsers  = allUsers.filter(u=>u.plan!=='pro');
+  const now        = new Date();
+  const month30ago = new Date(now-30*86400000).toISOString();
+  const month60ago = new Date(now-60*86400000).toISOString();
+
+  // Conversion rate: free users who became pro in last 30 days
+  const newProLast30 = allUsers.filter(u=>u.plan==='pro' && u.payment_date && u.payment_date>month30ago).length;
+  const convRate     = freeUsers.length > 0 ? (newProLast30/Math.max(freeUsers.length,1)*100).toFixed(1) : 0;
+
+  // Churn: pro users who expired in last 30 days
+  const churned = allUsers.filter(u=>u.plan_expires_at && u.plan_expires_at>month30ago && u.plan_expires_at<now.toISOString() && new Date(u.plan_expires_at).getFullYear()<2099).length;
+  const churnRate= proUsers.length > 0 ? (churned/Math.max(proUsers.length,1)*100).toFixed(1) : 0;
+
+  // MRR
+  const monthlyPro = allUsers.filter(u=>u.plan==='pro'&&(u.plan_type==='monthly'||!u.plan_type)&&!isExpired(u)).length;
+  const annualPro  = allUsers.filter(u=>u.plan==='pro'&&u.plan_type==='annual'&&!isExpired(u)).length;
+  const mrr        = monthlyPro*PRICES.monthly_display + annualPro*(PRICES.annual_display/12);
+  const ltv        = parseFloat(churnRate)>0 ? Math.round(PRICES.monthly_display*100/parseFloat(churnRate)) : PRICES.monthly_display*12;
+
+  setText('fc-mrr',  fmt(Math.round(mrr)));
+  setText('fc-conv', convRate+'%');
+  setText('fc-churn',churnRate+'%');
+  setText('fc-ltv',  fmt(ltv));
+
+  // 3-month forecast
+  const months    = ['This Month','Month 2','Month 3'];
+  const newSignups= allUsers.filter(u=>u.created_at>month30ago).length;
+  const rows = [];
+  let subs = proUsers.length, mrrNow = mrr;
+  for(let i=0;i<3;i++){
+    const newConv  = Math.round(newSignups*(parseFloat(convRate)/100));
+    const churnNum = Math.round(subs*(parseFloat(churnRate)/100));
+    subs = Math.max(0, subs + newConv - churnNum);
+    mrrNow = subs*PRICES.monthly_display;
+    rows.push({ month:months[i], subs, mrr:Math.round(mrrNow), needed:Math.max(0,churnNum+1) });
+  }
+
+  setHTML('forecast-tbody', rows.map(r=>`<tr>
+    <td><strong>${r.month}</strong></td>
+    <td>${r.subs} subscribers</td>
+    <td><strong>${fmt(r.mrr)}</strong></td>
+    <td>${r.needed} new conversions to maintain</td>
+    <td><span style="color:${r.mrr>mrr?'#34d399':'#fbbf24'}">${r.mrr>mrr?'📈 Growth':'⚠️ Stable'}</span></td>
+  </tr>`).join(''));
+
+  makeChart('chart-forecast-mrr','line',['Now',...months],[Math.round(mrr),...rows.map(r=>r.mrr)],'MRR (₹)','#34d399');
+  makeChart('chart-forecast-subs','line',['Now',...months],[proUsers.length,...rows.map(r=>r.subs)],'Subscribers','#3b82f6');
+}
+
+// ═══════════════════════════════════════════════════════════
+// CONTENT PERFORMANCE
+// ═══════════════════════════════════════════════════════════
+async function loadContent() {
+  if(!allUsers.length)    allUsers    = await api('profiles?select=*&order=created_at.desc') || [];
+  if(!allProjects.length) allProjects = await api('projects?select=*&deleted_at=is.null') || [];
+
+  const allProgress = await api('progress?select=*') || [];
+
+  // Feature adoption: how many users have run analysis (proxy for tab usage)
+  const ranAnalysis  = allUsers.filter(u=>allProjects.filter(p=>p.profile_id===u.id).reduce((s,p)=>s+(p.analysis_count||0),0)>0).length;
+  const hasSnapshots = allUsers.filter(u=>allProjects.some(p=>p.profile_id===u.id&&p.all_checks_pass)).length;
+  const hasProgress  = allProgress.length;
+  const total        = allUsers.length||1;
+
+  const featureSteps = [
+    ['Signed Up',           allUsers.length],
+    ['Ran Analysis',        ranAnalysis],
+    ['Passed All Checks',   hasSnapshots],
+    ['Started Learning',    hasProgress],
+    ['Completed a Quiz',    allProgress.filter(p=>Object.keys(p.quiz_scores||{}).length>0).length],
+    ['Reached 50% Conf',    allProgress.filter(p=>Object.values(p.badges||{}).filter(Boolean).length>=5).length],
+    ['Completed All Steps', allProgress.filter(p=>Object.values(p.badges||{}).filter(Boolean).length>=10).length],
+  ];
+
+  setHTML('feature-adoption-tbody', featureSteps.map(([label,count],i)=>{
+    const pct = Math.round(count/total*100);
+    const drop = i>0 ? Math.round((featureSteps[i-1][1]-count)/Math.max(featureSteps[i-1][1],1)*100) : 0;
+    return `<tr>
+      <td>${label}</td>
+      <td><strong>${count}</strong></td>
+      <td>
+        <div style="display:flex;align-items:center;gap:6px">
+          <div style="flex:1;height:8px;background:#0f172a;border-radius:4px;overflow:hidden">
+            <div style="height:100%;width:${pct}%;background:#3b82f6;border-radius:4px"></div>
+          </div>
+          <span style="font-size:11px;color:#60a5fa">${pct}%</span>
+        </div>
+      </td>
+      <td>—</td>
+      <td style="color:${drop>50?'#f87171':drop>20?'#fbbf24':'#34d399'}">${i>0?'↓ '+drop+'%':'—'}</td>
+    </tr>`;
+  }).join(''));
+
+  makeChart('chart-tab-usage','bar',featureSteps.map(s=>s[0]),featureSteps.map(s=>s[1]),'Users','#3b82f6');
+
+  // Quiz performance
+  const quizAgg = {};
+  allProgress.forEach(p=>{
+    Object.entries(p.quiz_scores||{}).forEach(([k,v])=>{
+      if(!quizAgg[k]) quizAgg[k]={total:0,sum:0,pass:0};
+      quizAgg[k].total++;
+      quizAgg[k].sum+=v;
+      if(v>=70) quizAgg[k].pass++;
+    });
+  });
+  const quizRows = Object.entries(quizAgg).sort((a,b)=>(a[1].pass/a[1].total)-(b[1].pass/b[1].total)).slice(0,10);
+
+  setHTML('quiz-hard-tbody', quizRows.length ? quizRows.map(([k,v])=>{
+    const passRate = Math.round(v.pass/v.total*100);
+    const avg = Math.round(v.sum/v.total);
+    return `<tr>
+      <td>${k}</td>
+      <td>${v.total}</td>
+      <td style="font-weight:700;color:${passRate<50?'#f87171':passRate<70?'#fbbf24':'#34d399'}">${passRate}%</td>
+      <td>${avg}%</td>
+      <td>${passRate<50?'<span style="color:#f87171">⚠️ Hard — review content</span>':passRate<70?'<span style="color:#fbbf24">Moderate</span>':'<span style="color:#34d399">Good</span>'}</td>
+    </tr>`;
+  }).join('') : '<tr><td colspan="5" class="empty">No quiz data yet</td></tr>');
+
+  if(quizRows.length) makeChart('chart-quiz-rates','bar',quizRows.map(r=>r[0]),quizRows.map(r=>Math.round(r[1].pass/r[1].total*100)),'Pass Rate %',quizRows.map(r=>r[1].pass/r[1].total<0.5?'#f87171':r[1].pass/r[1].total<0.7?'#fbbf24':'#34d399'));
 }
 
 // ═══════════════════════════════════════════════════════════
