@@ -2989,7 +2989,7 @@ function designOneColumn(node, floorsAbove, DL_tot, udlLL_floor, udlLL_roof,
   const nTypicalFloors = floorsAbove - 1; // floors that aren't the roof above this column
   // IS 875 P2 Cl 3.2.1: LL reduction applies only to floor LL, NOT roof LL
   // Roof LL (udlRoof) is already light (1.5 kN/m²) and IS 875 does not reduce it
-  const LL_total = (nTypicalFloors*udlLL_floor*llRedFactor + udlRoof) * slabArea;
+  const LL_total = (nTypicalFloors*udlLL_floor*llRedFactor + udlLL_roof) * slabArea;
   // Wall load: no wall above roof — so wall acts on (floorsAbove-1) typical floors
   // (Roof column carrying just the roof: floorsAbove=1, nTypicalFloors=0, wall=0.)
   const wallContribution = nTypicalFloors * wallLoad * perimLen;
