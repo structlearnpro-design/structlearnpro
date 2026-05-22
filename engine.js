@@ -38,6 +38,30 @@ window.addEventListener('message',(e)=>{
       const savedGRID = proj.grid_json  || (proj.data && proj.data.GRID) || null;
 
       if(savedS && typeof savedS === 'object' && Object.keys(savedS).length > 0){
+        // Fresh project: state_json only has name/client/location (≤5 keys)
+        // Reset S to defaults first so previous project data doesn't bleed through
+        const isFreshProject = Object.keys(savedS).length <= 5 &&
+          !savedS.spansX && !savedS.fck && !savedS.numFloors;
+        if(isFreshProject){
+          // Reset all structural inputs to defaults
+          S.spansX=[4,4,4]; S.spansY=[3,3,3];
+          S.numFloors=4; S.floorHt=3.2;
+          S.buildingL=12; S.buildingW=9;
+          S.fck=25; S.fy=500;
+          S.udlLL=3.0; S.udlRoof=1.5;
+          S.soilBearing=200; S.ftgDepth=1.5;
+          S.zone='IV'; S.soilType='II'; S.importance=1.0;
+          S.stairType='dogleg'; S.ftgType='isolated';
+          S.slabThk=150; S.coverSlab=20; S.coverBeam=25; S.coverCol=40; S.coverFtg=75;
+          S.columns=null; S.floorFinish=1.0; S.wallLoad=10;
+          // Clear overrides and analysis state
+          window._memberOverrides = {};
+          window._nodeChoices = {};
+          window._coordMode = false;
+          localStorage.setItem('_coordMode','false');
+          GRID = null;
+          RES  = null;
+        }
         Object.assign(S, savedS);
         // Safety: ensure spansX/spansY are valid arrays after loading
         if(!Array.isArray(S.spansX)||S.spansX.length===0) S.spansX=[4,4,4];
