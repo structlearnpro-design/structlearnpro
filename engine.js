@@ -42,7 +42,15 @@ window.addEventListener('message',(e)=>{
     if(proj.data&&Object.keys(proj.data).length>0){
       try{
         if(proj.data.S)Object.assign(S,proj.data.S);
-        if(proj.data.GRID){GRID=proj.data.GRID;}
+        // Ensure spansX/spansY are valid arrays after loading
+        if(!Array.isArray(S.spansX)||S.spansX.length===0) S.spansX=[4,4,4];
+        if(!Array.isArray(S.spansY)||S.spansY.length===0) S.spansY=[3,3,3];
+        if(proj.data.GRID && Array.isArray(proj.data.GRID.beams) &&
+           Array.isArray(proj.data.GRID.nodes) && Array.isArray(proj.data.GRID.bays)){
+          GRID=proj.data.GRID;
+        } else {
+          GRID=null; // Force reinit if saved GRID is corrupted
+        }
         if(typeof renderAll==='function')renderAll();
         if(typeof go==='function')go(1);
       }catch(err){console.error('Load error:',err);}
@@ -3805,9 +3813,12 @@ function runCalcsFromGrid(){
   // Ensure GRID is initialized — initGrid() is idempotent and safe to call.
   // We no longer fall back to the old runCalcs() because it returns a
   // structurally-different RES that breaks downstream report rendering.
-  if(!GRID){
+  // Validate GRID structure — reinit if missing or corrupted
+  if(!GRID || !GRID.nodes || !GRID.beams || !GRID.bays ||
+     !Array.isArray(GRID.nodes) || !Array.isArray(GRID.beams) || !Array.isArray(GRID.bays)) {
+    GRID = null;
     if(typeof initGrid === 'function') initGrid();
-    if(!GRID) throw new Error('Grid could not be initialised. Please go to Plan & Spans and add at least one bay.');
+    if(!GRID || !Array.isArray(GRID.beams)) throw new Error('Grid could not be initialised. Please go to Plan & Spans and add at least one bay.');
   }
 
   GRID.beams.forEach(b=>autoEndConditions(b));

@@ -52,7 +52,12 @@ function go(n){
       },300);
     },60);
     if(n===2){
-      if(!GRID)initGrid();
+      // Validate GRID structure — reinit if missing or corrupted
+      if(!GRID || !GRID.nodes || !GRID.beams || !GRID.bays ||
+         !Array.isArray(GRID.nodes) || !Array.isArray(GRID.beams) || !Array.isArray(GRID.bays)) {
+        GRID = null;
+        if(typeof initGrid === 'function') initGrid();
+      }
       // Apply any stored node choices so canvas is correct immediately
       if(Object.keys(window._nodeChoices||{}).length>0) applyNodeChoices();
       // Multiple draws to ensure _coordMode flag is read correctly
