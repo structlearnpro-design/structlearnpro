@@ -1179,7 +1179,7 @@ function showScreen(id){
 function goTo(tab){
   document.querySelectorAll('.tnav-btn').forEach(b=>b.classList.remove('on'));
   if(tab==='projects'){document.getElementById('n-proj').classList.add('on');showScreen('dash-screen');loadProjects();}
-  else if(tab==='app'){document.getElementById('n-app').classList.add('on');showScreen('app-screen');plan=resolvePlan();updTop();tellIframe();}
+  else if(tab==='app'){document.getElementById('n-app').classList.add('on');showScreen('app-screen');tellIframe();}
   else if(tab==='account'){document.getElementById('n-acc').classList.add('on');showScreen('acc-screen');renderAcc();}
 }
 
@@ -1521,18 +1521,15 @@ function updTop(){
   document.getElementById('t-up').style.display=plan==='free'?'':'none';
 }
 function tellIframe(){
-  // Send plan at 300ms, 800ms and 2000ms to handle race conditions
-  // Fixes: "shows PRO badge but cannot access pro features"
-  [300, 800, 2000].forEach(delay => {
-    setTimeout(()=>{
-      try{
-        const fr=document.getElementById('app-iframe');
-        if(!fr||!fr.contentWindow)return;
-        fr.contentWindow.postMessage({type:'USER_PLAN',plan,user:P},'*');
-        if(delay === 800) injectSaveToParent(fr);
-      }catch(e){}
-    }, delay);
-  });
+  setTimeout(()=>{
+    try{
+      const fr=document.getElementById('app-iframe');
+      if(!fr||!fr.contentWindow)return;
+      fr.contentWindow.postMessage({type:'USER_PLAN',plan,user:P},'*');
+      // Inject saveToParent so ui.js auto-save works
+      injectSaveToParent(fr);
+    }catch(e){}
+  },800);
   // Also restore progress — user may have just logged in
   setTimeout(sendProgressToIframe, 1000);
 }
@@ -1893,18 +1890,6 @@ function onIframeLoad(){
   // Inject saveToParent so ui.js auto-save can write to Supabase
   const fr = document.getElementById('app-iframe');
   if(fr && fr.contentWindow) injectSaveToParent(fr);
-  // BUGFIX: Always send plan to iframe on load — fixes "shows PRO but can't access features"
-  // The iframe needs the plan sent AFTER it finishes loading, not before
-  if(P && plan) {
-    setTimeout(() => {
-      try {
-        const fr2 = document.getElementById('app-iframe');
-        if(fr2 && fr2.contentWindow) {
-          fr2.contentWindow.postMessage({type:'USER_PLAN', plan:plan, user:P}, '*');
-        }
-      } catch(e) {}
-    }, 300);
-  }
 }
 
 function injectSaveToParent(fr){

@@ -208,45 +208,40 @@ const IS_CLAUSES = {
   'IS 13920 Cl 7.4.7':'Hooks in lateral ties: 135-degree hooks with 8d extension (not less than 75mm). No 90-degree hooks in confinement zones.',
   'IS 875 Pt 3':      'Design wind speed Vz = Vb × k1 × k2 × k3. Design wind pressure pz = 0.6 × Vz². Applies to all exposed structures.',
 };
-// ── EXPANDED IS CLAUSE LIBRARY — verified from actual IS code PDFs ──
+// Expanded IS clause descriptions — verified from actual IS code PDFs
 Object.assign(IS_CLAUSES, {
-  'IS 456 Cl 18.2':   'Load factors: 1.5(DL+LL) for basic; 1.2(DL+LL+EQ/WL); 1.5(DL+EQ/WL); 0.9DL+1.5EQ for overturning. All combinations must be checked.',
-  'IS 456 Cl 22.2':   'Effective span = clear span + effective depth, or centre-to-centre of supports — whichever is less.',
-  'IS 456 Cl 23.1':   'Basic l/d for deflection control: Cantilever=7, Simply Supported=20, Continuous=26. Modify for steel ratio and compression steel.',
-  'IS 456 Cl 23.2(b)':'Max permissible deflection = span/250 (total). Deflection affecting partitions limited to span/350 or 20mm, whichever is less.',
-  'IS 456 Cl 26.2':   'Development length transfers bar force to concrete by bond. Ld = φ×σs/(4×τbd). If Ld not provided, bar pulls out — sudden brittle failure without warning.',
-  'IS 456 Cl 26.2.2': 'Hook anchorage: 90° hook = 16φ equivalent; 135° hook = 12φ. Reduces required straight embedment. Use in footings and beam ends at columns.',
-  'IS 456 Cl 26.2.3': 'Bar curtailment: extend at least d or 12φ beyond theoretical cut-off point. At simple supports: min 1/3 of +ve moment bars must extend to support face.',
-  'IS 456 Cl 26.5.1.1':'Min beam width = 200mm. Must accommodate bars with adequate cover and min spacing (≥ max aggregate size + 5mm) between bars.',
-  'IS 456 Cl 26.5.2': 'Min tension steel in beams: As_min = 0.85×b×d/fy. Max = 4% of b×d. Minimum prevents sudden brittle fracture of under-reinforced sections.',
-  'IS 456 Cl 26.5.3.2':'Column link spacing ≤ min(least lateral dimension, 16×smallest bar dia, 300mm). Prevents longitudinal bar buckling under axial load.',
-  'IS 456 Table 19':  'Design shear strength τc of concrete depends on pt = 100As/bd. For M25: 0.28 N/mm² (pt=0.15%) to 0.82 N/mm² (pt=3%). More tension steel = more shear resistance.',
-  'IS 456 Table 26':  'Two-way slab moment coefficients αx, αy — depend on ly/lx ratio and edge support conditions. Case 4 (all edges continuous) has smallest values — most economical.',
-  'IS 1893 Cl 6.3':   'Seismic load combinations: 1.2(DL+IL+EL), 1.5(DL+EL), 0.9DL+1.5EL. The 0.9DL case governs when earthquake causes net uplift or overturning tendency.',
-  'IS 1893 Cl 6.4.2': 'Ah = (Z/2)×(Sa/g)/(R×I). Z/2 = design level (half MCE). Higher R = lower force — but REQUIRES complete IS 13920 ductile detailing to justify R=5.',
-  'IS 1893 Cl 6.4.5': 'Response spectrum Sa/g: peak = 2.5 for all soil types. Period range: rock 0.10-0.40s, medium soil 0.10-0.55s, soft soil 0.10-0.67s. Reduces beyond peak. Taller buildings → lower Ah.',
-  'IS 1893 Table 3':  'Zone Factor Z: II=0.10, III=0.16, IV=0.24, V=0.36. Z/2 used in Ah formula represents design basis earthquake = 50% of MCE.',
-  'IS 1893 Table 8':  'Importance Factor I: 1.5 (hospitals, schools, power stations, emergency); 1.2 (residential >4 storeys, important public buildings); 1.0 (ordinary residential ≤4 storeys).',
-  'IS 1893 Table 9':  'Response Reduction R: SMRF with IS 13920 = 5.0; OMRF = 3.0. R=5 reduces design force 5× below elastic — justified ONLY with complete ductile detailing throughout.',
-  'IS 1893 Cl 7.4.1': 'Seismic weight of floor = full DL + 25% IL (IL≤3 kN/m²) or 50% IL (IL>3 kN/m²). Roof: imposed load not included per Cl 7.3.2.',
-  'IS 1893 Cl 7.6.1': 'Base shear VB = Ah×W. W = total seismic weight. Every ground floor column must resist its share of VB laterally — this is the fundamental lateral design requirement.',
-  'IS 1893 Cl 7.6.2(c)':'Time period for RC frames: Ta = 0.09H/√d. H = height in m; d = base dimension in direction of earthquake in m. Longer buildings → longer period → lower seismic force.',
-  'IS 1893 Cl 7.6.3': 'Floor lateral forces: Qi = VB×(Wi×hi²)/Σ(Wj×hj²). Upper floors attract more force per unit weight (inverted triangle). Reflects first mode shape of vibration.',
-  'IS 1893 Cl 7.11.1.1':'Storey drift ≤ 0.004×storey height (load factor = 1.0). For 3.2m storey: limit = 12.8mm. Protects non-structural elements (walls, glass, pipes) even when structure is safe.',
-  'IS 13920 Cl 5.2':  'Min concrete: M25 for buildings >15m in Zones III/IV/V; M20 otherwise. Always use M25 for seismic zone RC frames — better bond, ductility and confinement.',
-  'IS 13920 Cl 6.2.1':'Beam steel: ρmin=0.24√fck/fy; ρmax=2.5% (tension face). Min 2 bars ≥12mm diameter at top and bottom throughout the full beam length.',
-  'IS 13920 Cl 6.3.2':'Min stirrup diameter in beams = 8mm. Provides adequate confinement and shear capacity under reversed cyclic earthquake loading.',
-  'IS 13920 Cl 7.1.1':'Min column width = max(300mm, 20×db_largest_beam_bar_through_joint). Aspect ratio ≥ 0.45. Ensures confinement reinforcement can be properly detailed.',
-  'IS 13920 Cl 7.2.1':'Strong column–weak beam: ΣMc ≥ 1.4×ΣMb at joint. Ensures beams yield before columns — beams can be repaired; column failure causes progressive collapse of entire structure.',
-  'IS 13920 Cl 7.4.1':'Column ties: 135° hooks with 8d extension ≥75mm (Amendment 1). Closed rectangular hoops only — 90° hooks open up during earthquakes and lose all confinement.',
-  'IS 13920 Cl 7.6.1':'Confinement zone Lo = max(column dimension, clear height/6, 450mm). Tie spacing in Lo = min(D/4, 6×db, 100mm). Amendment 1 tightened from 8×db to 6×db.',
-  'IS 13920 Cl 7.6.1 (Amd 1)':'Amendment 1 (Sept 2017): confining tie spacing changed from min(D/4, 8×db, 100mm) to min(D/4, 6×db, 100mm). Tighter spacing improves concrete confinement and column ductility.',
-  'IS 875 P2 Table 1':'Residential imposed loads: all rooms/kitchens=2.0 kN/m²; corridors/stairs=3.0 kN/m²; balconies=3.0 kN/m²; accessible roof=1.5 kN/m²; non-accessible roof=0.75 kN/m².',
-  'IS 875 P3 Cl 6.2': 'Basic wind speed Vb from Fig.1: peak gust at 10m, open terrain, 50-year return period. 33-55 m/s across India. Coastal/cyclone zones highest.',
-  'IS 875 P3 Cl 6.3': 'Design wind speed: Vz = Vb×k1×k2×k3×k4. k1=risk coefficient (Table 1); k2=terrain/height factor (Table 2 — increases with height); k3=topography (1.0 flat); k4=cyclone zone.',
-  'IS 875 P3 Cl 7.2': 'Design wind pressure: pz = 0.6×Vz² N/m². The 0.6 = ½×air density (1.2 kg/m³). Net wind force = (Cpe−Cpi)×pz×area. Both windward (+) and leeward (−) faces must be checked.',
+  'IS 456 Cl 18.2':   'Load factors: 1.5(DL+LL) basic; 1.2(DL+LL+EQ/WL); 1.5(DL+EQ/WL); 0.9DL+1.5EQ for overturning.',
+  'IS 456 Cl 23.1':   'Basic l/d: Cantilever=7, Simply Supported=20, Continuous=26.',
+  'IS 456 Cl 23.2(b)':'Max deflection = span/250 total; span/350 or 20mm affecting partitions.',
+  'IS 456 Cl 26.2':   'Development length Ld = φ×σs/(4×τbd). Provides bond to transfer bar force to concrete.',
+  'IS 456 Cl 26.2.2': 'Standard hook reduces Ld: 90° hook = 16φ equivalent; 135° hook = 12φ equivalent.',
+  'IS 456 Cl 26.5.1.1':'Min beam width = 200mm (IS 456 Cl 26.5.1.1).',
+  'IS 456 Cl 26.5.2': 'Min tension steel in beams: As_min = 0.85×b×d/fy. Max = 4% bd.',
+  'IS 456 Cl 26.5.3.2':'Column link spacing ≤ min(least lateral dimension, 16×bar dia, 300mm).',
+  'IS 456 Table 19':  'Shear strength τc of concrete depends on pt=100As/bd. M25: 0.28–0.82 N/mm².',
+  'IS 456 Table 26':  'Two-way slab moment coefficients αx, αy — depend on ly/lx and edge conditions.',
+  'IS 1893 Cl 6.3':   'Seismic load combinations: 1.2(DL+IL+EL), 1.5(DL+EL), 0.9DL+1.5EL.',
+  'IS 1893 Cl 6.4.2': 'Ah = (Z/2)×(Sa/g)/(R×I). Z/2 = design level; R=5 for SMRF with IS 13920.',
+  'IS 1893 Cl 6.4.5': 'Sa/g peak = 2.5 for all soil types. Reduces beyond peak period.',
+  'IS 1893 Table 3':  'Zone Factor Z: II=0.10, III=0.16, IV=0.24, V=0.36.',
+  'IS 1893 Table 8':  'Importance Factor I: 1.5 critical; 1.2 important public; 1.0 ordinary residential.',
+  'IS 1893 Table 9':  'Response Reduction R: SMRF with IS 13920 = 5.0; OMRF = 3.0.',
+  'IS 1893 Cl 7.4.1': 'Seismic weight = full DL + 25% IL (IL≤3 kN/m²) or 50% IL (IL>3 kN/m²).',
+  'IS 1893 Cl 7.6.1': 'Base shear VB = Ah×W. Every ground floor column resists its share of VB laterally.',
+  'IS 1893 Cl 7.6.2(c)':'Time period: Ta = 0.09H/√d. H=height (m); d=base dimension (m).',
+  'IS 1893 Cl 7.6.3': 'Floor forces: Qi = VB×(Wi×hi²)/Σ(Wj×hj²). Inverted triangle distribution.',
+  'IS 1893 Cl 7.11.1.1':'Storey drift ≤ 0.004×storey height. Protects non-structural elements.',
+  'IS 13920 Cl 5.2':  'Min concrete: M25 for buildings >15m in Zones III/IV/V; M20 otherwise.',
+  'IS 13920 Cl 6.2.1':'Beam steel: ρmin=0.24√fck/fy; ρmax=2.5%. Min 2 bars ≥12mm at top and bottom.',
+  'IS 13920 Cl 7.1.1':'Min column width = max(300mm, 20×db). Aspect ratio ≥ 0.45.',
+  'IS 13920 Cl 7.2.1':'Strong column–weak beam: ΣMc ≥ 1.4×ΣMb. Beams yield before columns.',
+  'IS 13920 Cl 7.4.1':'Column ties: 135° hooks with 8d extension ≥75mm. No 90° hooks.',
+  'IS 13920 Cl 7.6.1':'Confinement zone Lo = max(col dim, H/6, 450mm). Tie spacing = min(D/4, 6×db, 100mm).',
+  'IS 875 P2 Table 1':'Residential loads: rooms=2.0; stairs=3.0; balconies=3.0 kN/m².',
+  'IS 875 P3 Cl 6.2': 'Basic wind speed Vb from Fig.1: peak gust, 10m height, 50-year return.',
+  'IS 875 P3 Cl 6.3': 'Design wind speed: Vz = Vb×k1×k2×k3×k4.',
+  'IS 875 P3 Cl 7.2': 'Wind pressure: pz = 0.6×Vz² N/m².',
 });
-
 
 function clauseRef(ref) {
   if (!ref) return '';
@@ -425,10 +420,10 @@ const FM_WHY = {
   'ly/lx = ':     'Aspect ratio ly/lx of slab panel. If ly/lx < 2.0: two-way slab (spans in both directions, uses IS 456 Table 26 coefficients). If ly/lx ≥ 2.0: one-way slab (main span in short direction only).',
   'ly/lx':        'Aspect ratio determines slab behaviour. Two-way slab (ly/lx < 2) carries load to all four supports — more efficient. One-way slab (ly/lx ≥ 2) carries load mainly to two supports.',
   'ax':           'Bending moment coefficients αx (short span) and αy (long span) from IS 456 Table 26. Depend on boundary conditions: Case 4 (all edges continuous) has smallest coefficients; Case 1 (all simply supported) has largest.',
-  'Vb = Ah x W':  'Base shear Vb = Ah x W = total horizontal seismic force. Distributed up the building height using inverted triangle pattern (top floor gets most). IS 1893 Cl 7.6.1 and 7.6.',
+  'Vb = Ah x W':  'Base shear Vb = Ah x W = total horizontal seismic force. Distributed up the building height using inverted triangle pattern (top floor gets most). IS 1893 Cl 7.6.1 and 7.6.3.',
   'Ah = ':        'Design seismic coefficient Ah = (Z/2)(Sa/g)/(RxI). Z/2 is design level (half MCE). Sa/g from response spectrum depends on soil type and building period. R=5 for good ductile frames.',
   'Ta = 0.09H':   'Fundamental time period of RC frame: Ta = 0.09H/√D (IS 1893 Cl 7.6.2(c)). H=total height in m, D=base width in m in the direction of motion. Longer period → lower Sa/g → lower seismic force.',
-  'pz = 0.6xVz':  'Design wind pressure pz = 0.6Vz² N/m² (IS 875 Pt3 Cl 7.2). Vz is design wind speed in m/s. The 0.6 = ½×air density. pz gives basic pressure; multiply by Cp coefficients for net force on surfaces.',
+  'pz = 0.6xVz':  'Design wind pressure pz = 0.6Vz² N/m² (IS 875 Pt3 Cl 5.4). Vz is design wind speed in m/s. The 0.6 = ½×air density. pz gives basic pressure; multiply by Cp coefficients for net force on surfaces.',
   'Qi = Vb':      'Floor seismic force Qi = Vb × WiHi²/ΣWjHj². Upper floors attract more seismic force (inverted triangle). This distribution reflects the first mode shape of the building vibrating.',
   'Sa/g':         'Spectral acceleration Sa/g from IS 1893 Fig. 2 response spectrum. Depends on building period Ta and soil type. For short stiff buildings Sa/g = 2.5 (peak). Reduces for longer periods.',
 };
@@ -4039,116 +4034,6 @@ function runCalcsFromGrid(){
   };
 }
 
-
-// ── WHAT CHANGED — Teaching Feature ─────────────────────────────
-// Stores previous analysis result for comparison
-let PREV_RES = null;
-let PREV_S = null;
-
-function getWhatChanged(oldRES, newRES, oldS, newS) {
-  if (!oldRES || !newRES) return null;
-  const changes = [];
-  const improvements = [];
-  const regressions = [];
-
-  // Slab
-  if (oldRES.slab && newRES.slab) {
-    const os = oldRES.slab, ns = newRES.slab;
-    if (!os.ld_ok && ns.ld_ok) improvements.push('✅ Slab l/d check now PASSES (was failing — deflection control satisfied)');
-    if (os.ld_ok && !ns.ld_ok) regressions.push('❌ Slab l/d check now FAILS (was passing — slab may be too thin now)');
-    if (os.slabD !== ns.slabD) changes.push('Slab thickness: ' + os.slabD + 'mm → ' + ns.slabD + 'mm');
-  }
-
-  // Beams
-  if (oldRES.beams && newRES.beams) {
-    newRES.beams.forEach((nb, i) => {
-      const ob = oldRES.beams[i];
-      if (!ob) return;
-      const label = nb.label || ('Beam ' + (i+1));
-      if (!ob.deflOK && nb.deflOK) improvements.push('✅ ' + label + ' deflection now PASSES (δ=' + (nb.dfl||0).toFixed(1) + 'mm ≤ ' + (nb.dall||0).toFixed(1) + 'mm)');
-      if (ob.deflOK && !nb.deflOK) regressions.push('❌ ' + label + ' deflection now FAILS (δ=' + (nb.dfl||0).toFixed(1) + 'mm > ' + (nb.dall||0).toFixed(1) + 'mm)');
-      if (!ob.shearSafe && nb.shearSafe) improvements.push('✅ ' + label + ' shear now PASSES (τv=' + (nb.tv||0).toFixed(2) + ' N/mm²)');
-      if (ob.shearSafe && !nb.shearSafe) regressions.push('❌ ' + label + ' shear now FAILS (τv=' + (nb.tv||0).toFixed(2) + ' > τc_max)');
-      if (ob.D !== nb.D) changes.push(label + ' depth: ' + ob.D + 'mm → ' + nb.D + 'mm');
-    });
-  }
-
-  // Columns
-  if (oldRES.cols && newRES.cols) {
-    const oldGF = oldRES.cols.filter(c => c.floor === 1);
-    const newGF = newRES.cols.filter(c => c.floor === 1);
-    newGF.forEach((nc, i) => {
-      const oc = oldGF[i];
-      if (!oc) return;
-      const label = nc.corner ? 'Corner' : nc.edge ? 'Edge' : 'Interior';
-      if (!oc.safe && nc.safe) improvements.push('✅ ' + label + ' column now SAFE (Pu=' + (nc.Pu||0).toFixed(0) + 'kN ≤ Pcap=' + (nc.Pcap||0).toFixed(0) + 'kN)');
-      if (oc.safe && !nc.safe) regressions.push('❌ ' + label + ' column now FAILS (Pu=' + (nc.Pu||0).toFixed(0) + 'kN > Pcap=' + (nc.Pcap||0).toFixed(0) + 'kN)');
-      if (oc.size !== nc.size) changes.push(label + ' column: ' + oc.size + 'mm → ' + nc.size + 'mm');
-    });
-  }
-
-  // Footings
-  if (oldRES.ftgs && newRES.ftgs) {
-    newRES.ftgs.forEach((nf, i) => {
-      const of2 = oldRES.ftgs[i];
-      if (!of2) return;
-      if (!of2.punch_ok && nf.punch_ok) improvements.push('✅ ' + (nf.lbl||'Footing') + ' punching shear now PASSES');
-      if (of2.punch_ok && !nf.punch_ok) regressions.push('❌ ' + (nf.lbl||'Footing') + ' punching shear now FAILS');
-    });
-  }
-
-  // Seismic / material changes
-  if (oldS && newS) {
-    if (oldS.fck !== newS.fck) changes.push('Concrete grade: M' + oldS.fck + ' → M' + newS.fck);
-    if (oldS.fy !== newS.fy) changes.push('Steel grade: Fe' + oldS.fy + ' → Fe' + newS.fy);
-    if (oldS.zone !== newS.zone) changes.push('Seismic zone: ' + oldS.zone + ' → ' + newS.zone);
-    if (oldS.numFloors !== newS.numFloors) changes.push('Floors: ' + oldS.numFloors + ' → ' + newS.numFloors);
-  }
-
-  if (improvements.length === 0 && regressions.length === 0 && changes.length === 0) return null;
-  return { improvements, regressions, changes };
-}
-
-function showWhatChangedBanner(oldRES, newRES, oldS, newS) {
-  const existing = document.getElementById('whatChangedBanner');
-  if (existing) existing.remove();
-  const result = getWhatChanged(oldRES, newRES, oldS, newS);
-  if (!result) return;
-
-  const { improvements, regressions, changes } = result;
-  const banner = document.createElement('div');
-  banner.id = 'whatChangedBanner';
-  banner.style.cssText = 'margin:0 0 14px 0;padding:14px 16px;background:#0a1628;border:1.5px solid #1e3a5f;border-radius:10px;font-size:11px;animation:fadeInDown 0.3s ease';
-
-  let html = '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">';
-  html += '<div style="font-family:var(--sans);font-size:13px;font-weight:700;color:#38bdf8">📊 What Changed From Last Run</div>';
-  html += '<button onclick="document.getElementById('whatChangedBanner').remove()" style="background:transparent;border:none;color:#64748b;cursor:pointer;font-size:16px">×</button>';
-  html += '</div>';
-
-  if (improvements.length > 0) {
-    html += '<div style="margin-bottom:8px">';
-    improvements.forEach(i => { html += '<div style="color:#34d399;padding:3px 0;line-height:1.6">' + i + '</div>'; });
-    html += '</div>';
-  }
-  if (regressions.length > 0) {
-    html += '<div style="margin-bottom:8px">';
-    regressions.forEach(r => { html += '<div style="color:#f87171;padding:3px 0;line-height:1.6">' + r + '</div>'; });
-    html += '</div>';
-  }
-  if (changes.length > 0) {
-    html += '<div style="color:#94a3b8;font-size:10px;margin-top:6px;padding-top:8px;border-top:1px solid #1e293b">';
-    html += '<strong style="color:#64748b">INPUT CHANGES: </strong>' + changes.join(' · ');
-    html += '</div>';
-  }
-
-  banner.innerHTML = html;
-  // Insert at top of main content after analysis
-  setTimeout(() => {
-    const main = document.getElementById('main');
-    if (main && main.firstChild) main.insertBefore(banner, main.firstChild);
-  }, 100);
-}
-
 function runNow(){
   const ldEl=document.getElementById('ld');
   const rbEl=document.getElementById('rb');
@@ -4166,11 +4051,8 @@ function runNow(){
   setTimeout(()=>{
     try{
       if(!GRID)initGrid();
-      const _prevRES = RES ? JSON.parse(JSON.stringify(RES)) : null;
-      const _prevS = JSON.parse(JSON.stringify(S));
       RES=runCalcsFromGrid();
       if(!RES){alert('Calculation returned empty. Check inputs.');return;}
-      if(_prevRES) showWhatChangedBanner(_prevRES, RES, _prevS, S);
       // Push to history as the original/first run
       if(window._analysisHistory&&window._analysisHistory.length===0){
         pushHistory('Original analysis');
