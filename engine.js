@@ -92,7 +92,7 @@ function saveToParent(status){
     if(typeof RES!=='undefined'&&RES&&!status){
       const beamFail=(RES.allBeams||[]).some(b=>!b.deflOK||!b.shearSafe);
       const colFail =(RES.allCols||[]).some(c=>!c.safe);
-      const ftgFail =(RES.allFtgs||[]).some(f=>!f.punch_ok||!f.ow_ok);
+      const ftgFail =(RES.allFtgs||[]).some(f=>!f.punch_ok||!f.ow_ok||!f.Ld_ok);
       autoStatus = (beamFail||colFail||ftgFail)?'fail':'pass';
     }
     window.parent.postMessage({
@@ -1704,6 +1704,14 @@ function runWithOverrides(label){
       if(main) main.innerHTML = p7();
       renderHistoryBar();
       showSec(RSEC||'safety');
+      // Push fresh RES to parent immediately so AI panel is never stale
+      try{
+        window.parent.postMessage({
+          type:'AI_CONTEXT',
+          S: JSON.parse(JSON.stringify(S)),
+          RES: JSON.parse(JSON.stringify(RES)),
+        }, '*');
+      }catch(err){}
     } catch(e){
       console.error('Override re-run error:', e);
       if(ldEl) ldEl.style.display='none';
@@ -4071,6 +4079,14 @@ function runNow(){
       if(!GRID)initGrid();
       RES=runCalcsFromGrid();
       if(!RES){alert('Calculation returned empty. Check inputs.');return;}
+      // Push fresh RES to parent so AI panel stays in sync
+      try{
+        window.parent.postMessage({
+          type:'AI_CONTEXT',
+          S: JSON.parse(JSON.stringify(S)),
+          RES: JSON.parse(JSON.stringify(RES)),
+        }, '*');
+      }catch(err){}
       // Push to history as the original/first run
       if(window._analysisHistory&&window._analysisHistory.length===0){
         pushHistory('Original analysis');

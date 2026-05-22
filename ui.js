@@ -2988,7 +2988,7 @@ function secFootings(){
       const ftgResult=isCol?allFtgsArr.find(f=>f.row===r&&f.col===c):null;
       const globalIdx=ftgResult?allFtgsArr.indexOf(ftgResult):-1;
       const isActive=globalIdx>=0&&globalIdx===_ftgIdx;
-      const ok=ftgResult&&ftgResult.punch_ok&&ftgResult.ow_ok;
+      const ok=ftgResult&&ftgResult.punch_ok&&ftgResult.ow_ok&&ftgResult.Ld_ok;
       const lbl=ftgResult?(ftgResult.baseLabel||String.fromCharCode(65+r)+(c+1)):(isCol?'?':'');
       if(!isCol){
         nodeGrid+=`<div style="width:36px;height:36px;border:1px dashed #1e293b;border-radius:4px;opacity:0.25"></div>`;
@@ -3007,7 +3007,7 @@ function secFootings(){
   }
   nodeGrid+='</div>';
 
-  const allOk=RES.allFtgs.filter(f=>f.punch_ok&&f.ow_ok).length;
+  const allOk=RES.allFtgs.filter(f=>f.punch_ok&&f.ow_ok&&f.Ld_ok).length;
   const allFail=RES.allFtgs.length-allOk;
 
   return`
