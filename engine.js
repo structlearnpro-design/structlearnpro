@@ -1720,6 +1720,83 @@ function runWithOverrides(label){
   }, 400);
 }
 
+// ── SMART FIX: reads checkboxes/radios from Safety tab, applies all chosen fixes ──
+function applySmartFix(){
+  if(!window._memberOverrides) window._memberOverrides = {};
+
+  // ── SLAB ──────────────────────────────────────────────────────
+  const fixSlab = document.getElementById('fix-slab');
+  if(fixSlab && fixSlab.checked && RES && RES.slab){
+    const sl = RES.slab;
+    const needed = Math.ceil((sl.lx*1000/26 + (S.coverSlab||25) + 5) / 25) * 25;
+    S.slabThk = Math.max(needed, (S.slabThk||150) + 25);
+  }
+
+  // ── BEAMS ─────────────────────────────────────────────────────
+  const fixBeams = document.getElementById('fix-beams');
+  if(fixBeams && fixBeams.checked && RES){
+    const beams = RES.allBeams || RES.beams || [];
+    beams.forEach(b => {
+      if(b.deflOK !== false && b.shearSafe !== false) return;
+      const key = 'B:' + b.row + ':' + b.col + ':' + b.dir;
+      const recD = !b.deflOK ? Math.ceil(b.D * Math.pow(b.dfl/b.dall, 1/3) / 25 + 1) * 25 : b.D;
+      const recB = !b.shearSafe ? Math.max(b.b + 50, Math.ceil(b.b * 1.25 / 25) * 25) : b.b;
+      window._memberOverrides[key] = { D: recD, b: recB };
+    });
+  }
+
+  // ── COLUMNS ───────────────────────────────────────────────────
+  const fixCols = document.getElementById('fix-cols');
+  if(fixCols && fixCols.checked && RES){
+    const cols = (RES.allCols || RES.cols || []).filter(c => c.floor === 1 && c.safe === false);
+    cols.forEach(col => {
+      const key = 'C:' + col.nodeId;
+      let recSize = col.size;
+      for(let sz = col.size + 25; sz <= 800; sz += 25){
+        const Pcap2 = (0.4 * S.fck * (sz*sz*0.992) + 0.67 * S.fy * sz*sz*0.008) / 1000;
+        if(Pcap2 >= col.Pu){ recSize = sz; break; }
+      }
+      window._memberOverrides[key] = { size: recSize };
+    });
+  }
+
+  // ── FOOTINGS ──────────────────────────────────────────────────
+  const fixFtgs = document.getElementById('fix-ftgs');
+  if(fixFtgs && fixFtgs.checked && RES){
+    const radios = document.querySelectorAll('input[name="ftg-fix"]');
+    let ftgMethod = 'hook'; // default
+    radios.forEach(r => { if(r.checked) ftgMethod = r.value; });
+
+    const ftgs = RES.allFtgs || RES.ftgs || [];
+    const failingFtgs = ftgs.filter(f => !f.Ld_ok);
+
+    failingFtgs.forEach(f => {
+      const key = 'F:' + f.nodeId;
+      const Ldr_s = f.Ldr_straight || f.Ldr / 0.7; // straight dev length
+
+      if(ftgMethod === 'hook'){
+        window._memberOverrides[key] = Object.assign(window._memberOverrides[key]||{}, { hook:true, dBf:f.dBf||12 });
+      } else if(ftgMethod === 'widen'){
+        const bfNeed = Math.ceil(((Ldr_s * 0.7 * 2) + f.colSize + 2*(S.coverFtg||75)) / 1000 * 100) / 100;
+        window._memberOverrides[key] = Object.assign(window._memberOverrides[key]||{}, { Bf:bfNeed });
+      } else if(ftgMethod === 't10'){
+        window._memberOverrides[key] = Object.assign(window._memberOverrides[key]||{}, { hook:true, dBf:10 });
+      } else if(ftgMethod === 't8'){
+        window._memberOverrides[key] = Object.assign(window._memberOverrides[key]||{}, { hook:true, dBf:8 });
+      }
+    });
+
+    // Also fix punching/shear failures by increasing ftgMinD
+    const punchFail = ftgs.some(f => !f.punch_ok || !f.ow_ok);
+    if(punchFail){
+      const maxD = Math.max(...ftgs.map(f => f.D || 300));
+      S.ftgMinD = Math.ceil((maxD + 75) / 25) * 25;
+    }
+  }
+
+  runWithOverrides('Smart Fix: custom selection');
+}
+
 // ── EDITOR STATE ─────────────────────────────────────────────────
 let GE = {
   mode: 'select',

@@ -3476,53 +3476,89 @@ function secSafety(){
     ${failChecks.map(c=>`<div style="font-size:10px;color:#fca5a5;padding:3px 0">\u2022 <strong>${c.it}:</strong> ${c.note}</div>`).join('')}
   </div>
   <div style="margin-bottom:16px;padding:12px;background:rgba(52,211,153,0.04);border:1.5px solid rgba(52,211,153,0.2);border-radius:8px">
-    <div style="font-size:11px;font-weight:700;color:#34d399;margin-bottom:4px">\ud83d\udd27 Quick Fix \u2014 Apply Recommended Sizes & Re-analyse</div>
-    <div style="font-size:10px;color:#94a3b8;margin-bottom:10px">One click applies the recommended fix for ALL failing members and re-runs the full analysis.</div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap">
-      <button onclick="(function(){
-        if(!window._memberOverrides) window._memberOverrides={};
-        // ── Slab: increase thickness if l/d or moment fails ──
-        ${(!slab.ld_ok||!slab.ok)?`
-        var slabNeeded=Math.ceil((slab.lx*1000/26+S.coverSlab+5)/25)*25;
-        S.slabThk=Math.max(slabNeeded, (S.slabThk||150)+25);
-        `:``}
-        // ── Beams: override depth/width ──
-        ${beamChecks.filter(c=>!c.ok&&c.beam).map(c=>{
-          const b=c.beam;
-          const key='B:'+b.row+':'+b.col+':'+b.dir;
-          const recD=!b.deflOK?Math.ceil(b.D*Math.pow(b.dfl/b.dall,1/3)/25+1)*25:b.D;
-          const recB=!b.shearSafe?Math.max(b.b+50,Math.ceil(b.b*1.25/25)*25):b.b;
-          return "window._memberOverrides['"+key+"']={D:"+recD+",b:"+recB+"};";
-        }).join('')}
-        // ── Columns: override size ──
-        ${colChecks.filter(c=>!c.ok&&c.col).map(c=>{
-          const col=c.col;
-          const key='C:'+col.nodeId;
-          let recSize=col.size;
-          for(let sz=col.size+25;sz<=800;sz+=25){
-            const Pcap2=(0.4*S.fck*(sz*sz*0.992)+0.67*S.fy*sz*sz*0.008)/1000;
-            if(Pcap2>=col.Pu){recSize=sz;break;}
-          }
-          return "window._memberOverrides['"+key+"']={size:"+recSize+"};";
-        }).join('')}
-        // ── Footings: increase S.ftgMinD if dev length fails ──
-        ${ftgChecks.some(c=>!c.ok)?`
-        var maxFtgD=Math.max(...ftgs.map(f=>f.D||300));
-        S.ftgMinD=Math.ceil((maxFtgD+75)/25)*25;
-        `:``}
-        runWithOverrides('Quick Fix: all recommended sizes');
-      })()" style="padding:8px 16px;background:rgba(52,211,153,0.12);border:1.5px solid #34d399;border-radius:8px;color:#34d399;cursor:pointer;font-size:11px;font-weight:700">
-        \u2713 Apply All Recommended & Re-analyse
+    <div style="font-size:11px;font-weight:700;color:#34d399;margin-bottom:6px">🔧 Smart Fix — Choose How to Fix Each Failure Type</div>
+    <div style="font-size:10px;color:#94a3b8;margin-bottom:10px">Select your preferred fix for each member type below, then click Apply.</div>
+
+    <!-- SLAB -->
+    ${(!slab.ld_ok||!slab.ok)?`
+    <div style="margin-bottom:8px;padding:10px;background:rgba(56,189,248,0.06);border:1px solid rgba(56,189,248,0.25);border-radius:8px">
+      <div style="font-size:11px;font-weight:700;color:#38bdf8;margin-bottom:4px">⬛ SLAB — ${!slab.ld_ok?"l/d ratio fail":"Moment fail"}</div>
+      <div style="font-size:10px;color:#94a3b8;margin-bottom:6px">Recommended: increase to ${Math.ceil((slab.lx*1000/26+S.coverSlab+5)/25)*25}mm (now ${S.slabThk||150}mm)</div>
+      <label style="display:flex;align-items:center;gap:6px;font-size:10px;color:#e2e8f0;cursor:pointer">
+        <input type="checkbox" id="fix-slab" checked style="width:14px;height:14px">
+        Increase slab thickness → ${Math.ceil((slab.lx*1000/26+S.coverSlab+5)/25)*25}mm
+      </label>
+    </div>`:``}
+
+    <!-- BEAMS -->
+    ${beamChecks.some(c=>!c.ok)?`
+    <div style="margin-bottom:8px;padding:10px;background:rgba(251,191,36,0.06);border:1px solid rgba(251,191,36,0.25);border-radius:8px">
+      <div style="font-size:11px;font-weight:700;color:#fbbf24;margin-bottom:4px">🟧 BEAMS — ${beamChecks.filter(c=>!c.ok).length} failures</div>
+      ${beamChecks.filter(c=>!c.ok&&c.beam).slice(0,3).map(c=>{
+        const b=c.beam; const recD=!b.deflOK?Math.ceil(b.D*Math.pow(b.dfl/b.dall,1/3)/25+1)*25:b.D; const recB=!b.shearSafe?Math.max(b.b+50,Math.ceil(b.b*1.25/25)*25):b.b;
+        return `<div style="font-size:9px;color:#94a3b8">• ${b.label}: ${!b.deflOK?"D "+b.D+"→"+recD+"mm":""}${!b.shearSafe?" b "+b.b+"→"+recB+"mm":""}</div>`;
+      }).join("")}
+      ${beamChecks.filter(c=>!c.ok&&c.beam).length>3?`<div style="font-size:9px;color:#64748b">+ ${beamChecks.filter(c=>!c.ok&&c.beam).length-3} more...</div>`:""}
+      <label style="display:flex;align-items:center;gap:6px;font-size:10px;color:#e2e8f0;cursor:pointer;margin-top:6px">
+        <input type="checkbox" id="fix-beams" checked style="width:14px;height:14px">
+        Apply minimum recommended sizes to all failing beams
+      </label>
+    </div>`:``}
+
+    <!-- COLUMNS -->
+    ${colChecks.some(c=>!c.ok)?`
+    <div style="margin-bottom:8px;padding:10px;background:rgba(167,139,250,0.06);border:1px solid rgba(167,139,250,0.25);border-radius:8px">
+      <div style="font-size:11px;font-weight:700;color:#a78bfa;margin-bottom:4px">🏛 COLUMNS — ${colChecks.filter(c=>!c.ok).length} failures</div>
+      <label style="display:flex;align-items:center;gap:6px;font-size:10px;color:#e2e8f0;cursor:pointer">
+        <input type="checkbox" id="fix-cols" checked style="width:14px;height:14px">
+        Increase column sizes to meet axial capacity
+      </label>
+    </div>`:``}
+
+    <!-- FOOTINGS -->
+    ${ftgChecks.some(c=>!c.ok)?`
+    <div style="margin-bottom:8px;padding:10px;background:rgba(248,113,113,0.06);border:1px solid rgba(248,113,113,0.25);border-radius:8px">
+      <div style="font-size:11px;font-weight:700;color:#f87171;margin-bottom:4px">🟡 FOOTINGS — ${ftgChecks.filter(c=>!c.ok).length} failures</div>
+      <div style="font-size:10px;color:#94a3b8;margin-bottom:8px">Choose fix for development length failures (all ${ftgs.filter(f=>!f.Ld_ok).length} failing footings):</div>
+      <div style="display:flex;flex-direction:column;gap:5px;margin-bottom:8px">
+        <label style="display:flex;align-items:flex-start;gap:8px;padding:6px 8px;background:rgba(52,211,153,0.06);border-radius:6px;cursor:pointer">
+          <input type="radio" name="ftg-fix" id="ftg-opt-A" value="hook" style="margin-top:2px" ${ftgs.filter(f=>!f.Ld_ok).every(f=>f.Lda>=(f.Ldr_straight||f.Ldr/0.7)*0.7)?"checked":""}>
+          <div><div style="font-size:10px;font-weight:700;color:#34d399">A: 90° Hook on all failing footings</div>
+          <div style="font-size:9px;color:#64748b">IS 456 Cl 26.2.2.1 — reduces Ld needed by 30%. ${ftgs.filter(f=>!f.Ld_ok).every(f=>f.Lda>=(f.Ldr_straight||f.Ldr/0.7)*0.7)?"✅ Fixes all":"⚠ May not fix all — check after"}</div></div>
+        </label>
+        <label style="display:flex;align-items:flex-start;gap:8px;padding:6px 8px;background:rgba(56,189,248,0.06);border-radius:6px;cursor:pointer">
+          <input type="radio" name="ftg-fix" id="ftg-opt-B" value="widen" style="margin-top:2px">
+          <div><div style="font-size:10px;font-weight:700;color:#38bdf8">B: Widen each footing for more grip length</div>
+          <div style="font-size:9px;color:#64748b">Sets minimum Bf so bar fits. Isolated footings only — most reliable fix.</div></div>
+        </label>
+        <label style="display:flex;align-items:flex-start;gap:8px;padding:6px 8px;background:rgba(251,191,36,0.06);border-radius:6px;cursor:pointer">
+          <input type="radio" name="ftg-fix" id="ftg-opt-C" value="t10" style="margin-top:2px" ${!ftgs.filter(f=>!f.Ld_ok).every(f=>f.Lda>=(f.Ldr_straight||f.Ldr/0.7)*0.7)&&ftgs.filter(f=>!f.Ld_ok).every(f=>f.Lda>=(f.Ldr_straight||f.Ldr/0.7)*10/12*0.7)?"checked":""}>
+          <div><div style="font-size:10px;font-weight:700;color:#fbbf24">C: T10 bars + 90° hook (best practice)</div>
+          <div style="font-size:9px;color:#64748b">Smaller bar = shorter Ld needed + hook reduction. ${ftgs.filter(f=>!f.Ld_ok).every(f=>f.Lda>=(f.Ldr_straight||f.Ldr/0.7)*10/12*0.7)?"✅ Fixes all":""}</div></div>
+        </label>
+        <label style="display:flex;align-items:flex-start;gap:8px;padding:6px 8px;background:rgba(245,158,11,0.06);border-radius:6px;cursor:pointer">
+          <input type="radio" name="ftg-fix" id="ftg-opt-D" value="t8" style="margin-top:2px">
+          <div><div style="font-size:10px;font-weight:700;color:#f59e0b">D: T8 bars + 90° hook</div>
+          <div style="font-size:9px;color:#64748b">Maximum reduction — use only if T10 still not enough.</div></div>
+        </label>
+      </div>
+      <label style="display:flex;align-items:center;gap:6px;font-size:10px;color:#e2e8f0;cursor:pointer">
+        <input type="checkbox" id="fix-ftgs" checked style="width:14px;height:14px">
+        Apply selected footing fix to all ${ftgs.filter(f=>!f.Ld_ok).length} failing footings
+      </label>
+    </div>`:``}
+
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+      <button onclick="applySmartFix()" style="padding:8px 20px;background:rgba(52,211,153,0.15);border:1.5px solid #34d399;border-radius:8px;color:#34d399;cursor:pointer;font-size:12px;font-weight:700">
+        ✓ Apply Selected Fixes & Re-analyse
       </button>
-      ${(window._memberOverrides&&Object.keys(window._memberOverrides).length>0)?`
-      <button onclick="window._memberOverrides={};runWithOverrides('Reset all to auto')"
-        style="padding:8px 16px;background:transparent;border:1px solid #64748b;border-radius:8px;color:#64748b;cursor:pointer;font-size:11px">
-        \u21ba Reset All Overrides
-      </button>`:''}
+      ${(typeof window._memberOverrides!=="undefined"&&window._memberOverrides&&Object.keys(window._memberOverrides).length>0)?`
+      <button onclick="window._memberOverrides={};runWithOverrides('Reset all to auto')" style="padding:8px 16px;background:transparent;border:1px solid #64748b;border-radius:8px;color:#64748b;cursor:pointer;font-size:11px">
+        ↺ Reset All Overrides
+      </button>`:""}
     </div>
-    <div style="font-size:9px;color:#475569;margin-top:8px">\ud83d\udca1 After re-analysis, use the history bar at the top to compare before and after.</div>
+    <div style="font-size:9px;color:#475569;margin-top:8px">💡 After re-analysis, history bar shows before/after comparison.</div>
   </div>
-  `:``}
 
   ${renderGroup('SLAB','\ud83d\udd32','var(--cyan)',slabChecks)}
   ${renderGroup('BEAMS','\ud83d\udfe7','var(--orange)',beamChecks)}
