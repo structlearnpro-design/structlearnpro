@@ -1521,15 +1521,20 @@ function updTop(){
   document.getElementById('t-up').style.display=plan==='free'?'':'none';
 }
 function tellIframe(){
-  setTimeout(()=>{
-    try{
-      const fr=document.getElementById('app-iframe');
-      if(!fr||!fr.contentWindow)return;
-      fr.contentWindow.postMessage({type:'USER_PLAN',plan,user:P},'*');
-      // Inject saveToParent so ui.js auto-save works
-      injectSaveToParent(fr);
-    }catch(e){}
-  },800);
+  // Send at multiple intervals to handle race conditions
+  // 300ms: catches fast-loading iframes
+  // 800ms: original timing, also injects saveToParent
+  // 2000ms: final retry for slow connections
+  [300, 800, 2000].forEach(function(delay){
+    setTimeout(function(){
+      try{
+        var fr=document.getElementById('app-iframe');
+        if(!fr||!fr.contentWindow)return;
+        fr.contentWindow.postMessage({type:'USER_PLAN',plan:plan,user:P},'*');
+        if(delay===800) injectSaveToParent(fr);
+      }catch(e){}
+    }, delay);
+  });
   // Also restore progress — user may have just logged in
   setTimeout(sendProgressToIframe, 1000);
 }
@@ -1887,9 +1892,20 @@ function generateThumb(S, GRID) {
 
 function onIframeLoad(){
   // Called every time StructLearnPro.html finishes loading
-  // Inject saveToParent so ui.js auto-save can write to Supabase
   const fr = document.getElementById('app-iframe');
   if(fr && fr.contentWindow) injectSaveToParent(fr);
+  // If user is already logged in, send plan immediately after iframe loads
+  // This handles page refresh — iframe reloads but user is still logged in
+  if(P && plan) {
+    setTimeout(function(){
+      try {
+        const fr2 = document.getElementById('app-iframe');
+        if(fr2 && fr2.contentWindow) {
+          fr2.contentWindow.postMessage({type:'USER_PLAN', plan:plan, user:P}, '*');
+        }
+      } catch(e){}
+    }, 200);
+  }
 }
 
 function injectSaveToParent(fr){
@@ -2859,6 +2875,19 @@ function startRS(){
 async function resendOTP(){await sendOTP(pending.type);}
 
 // ── IFRAME MESSAGES ──────────────────────────────────────────
+// When iframe signals it's ready, send plan immediately
+window.addEventListener('message', function(e){
+  if(e.data && e.data.type==='IFRAME_READY'){
+    if(P && plan){
+      try{
+        var fr=document.getElementById('app-iframe');
+        if(fr && fr.contentWindow)
+          fr.contentWindow.postMessage({type:'USER_PLAN',plan:plan,user:P},'*');
+      }catch(err){}
+    }
+  }
+});
+
 window.addEventListener('message',async(e)=>{
   if(e.data?.type==='REQUEST_UPGRADE'){showUp();return;}
   if(e.data?.type==='SAVE_PROJECT'){

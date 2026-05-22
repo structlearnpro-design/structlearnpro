@@ -7,6 +7,18 @@
 // ── PLATFORM INTEGRATION  ──────────────────────────────────────
 let _userPlan='free', _currentProjectId=null, _platformSaveTimer=null;
 
+// Signal parent that iframe is fully loaded and ready to receive USER_PLAN
+// This fires after all JS is parsed and executed
+window.addEventListener('DOMContentLoaded', function() {
+  setTimeout(function() {
+    try {
+      window.parent.postMessage({type:'IFRAME_READY'}, '*');
+    } catch(e) {}
+  }, 100);
+});
+// Also signal immediately in case DOMContentLoaded already fired
+try { window.parent.postMessage({type:'IFRAME_READY'}, '*'); } catch(e) {}
+
 window.addEventListener('message',(e)=>{
   if(e.data?.type==='USER_PLAN'){
     _userPlan=e.data.plan||'free';
@@ -3316,12 +3328,19 @@ function designOneBeam(gridBeam, floorNum, isRoof,
   let bf_calc, beamType;
   if(isEdgeBeam) {
     // L-beam: bf = lo/12 + bw + 3Df, but ≤ bw + half clear distance to next beam
-    const halfClear = (gridBeam.dir==='X' ? (S.spansY[gridBeam.row]||4) : (S.spansX[gridBeam.col]||4))*1000/2 - bw/2;
-    bf_calc = Math.min(lo/12 + bw + 3*Df, bw + halfClear);
+    // Clamp index to valid range — row=GRID.ny or col=GRID.nx are boundary nodes
+    const spY_idx = Math.min(gridBeam.row, (S.spansY||[]).length-1);
+    const spX_idx = Math.min(gridBeam.col, (S.spansX||[]).length-1);
+    const adjSpan = (gridBeam.dir==='X' ? (S.spansY[spY_idx]||4) : (S.spansX[spX_idx]||4));
+    const halfClear = adjSpan*1000/2 - bw/2;
+    bf_calc = Math.min(lo/12 + bw + 3*Df, bw + Math.max(halfClear, 0));
     beamType = 'L-beam (edge)';
   } else {
     // T-beam: bf = lo/6 + bw + 6Df, but ≤ c/c distance between beams
-    const ccDist = (gridBeam.dir==='X' ? (S.spansY[gridBeam.row]||4) : (S.spansX[gridBeam.col]||4))*1000;
+    const spY_idx = Math.min(gridBeam.row, (S.spansY||[]).length-1);
+    const spX_idx = Math.min(gridBeam.col, (S.spansX||[]).length-1);
+    const adjSpan = (gridBeam.dir==='X' ? (S.spansY[spY_idx]||4) : (S.spansX[spX_idx]||4));
+    const ccDist = adjSpan*1000;
     bf_calc = Math.min(lo/6 + bw + 6*Df, ccDist);
     beamType = 'T-beam (interior)';
   }
