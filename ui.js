@@ -476,7 +476,7 @@ function svgStairSection(st) {
   // Use student-selected type from result (set before analysis) or S state
   var type = st.stairType || S.stairType || (spX >= 2.5 && spY >= 5 ? 'dogleg' : spX >= 3 && spY >= 3 ? '90turn' : 'straight');
 
-  var W = 660, H = 380;
+  var W = 660, H = 500;
   var lines = [];
   lines.push('<svg viewBox="0 0 ' + W + ' ' + H + '" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block;background:#0a0f1e;border-radius:8px">');
 
@@ -540,8 +540,70 @@ function svgStairSection(st) {
     lines.push('<text x="' + cx + '" y="' + (ty + cardH - 12) + '" fill="#64748b" font-size="7.5" text-anchor="middle" font-family="JetBrains Mono" opacity="' + alpha + '">' + td.recW + ' × ' + td.recL + ' bay</text>');
   });
 
+  // ── PLAN VIEW: type-specific schematic ─────────────────────────
+  var pvY = 120, pvH = 70, pvX = 40, pvW = W - 80;
+  var typeTitleColor = type === 'dogleg' ? '#34d399' : type === '90turn' ? '#38bdf8' : '#f59e0b';
+
+  lines.push('<text x="' + (W/2) + '" y="' + (pvY - 6) + '" fill="' + typeTitleColor + '" font-size="9" font-weight="700" text-anchor="middle" font-family="JetBrains Mono">PLAN SCHEMATIC: ' + (type==='dogleg'?'DOG-LEG (2 flights + mid landing)':type==='90turn'?'90° QUARTER-TURN (L-shaped)':'STRAIGHT FLIGHT (single run)') + '</text>');
+
+  var bx = pvX, by = pvY, bw = pvW, bh = pvH;
+  // Bay outline
+  lines.push('<rect x="' + bx + '" y="' + by + '" width="' + bw + '" height="' + bh + '" fill="rgba(15,23,42,0.6)" stroke="#334155" stroke-width="1.5" rx="3"/>');
+
+  if (type === 'straight') {
+    // Single flight across bay
+    var fW = bw * 0.65, fH = bh * 0.55;
+    var fX = bx + (bw - fW) / 2, fY = by + (bh - fH) / 2;
+    lines.push('<rect x="' + fX + '" y="' + fY + '" width="' + fW + '" height="' + fH + '" fill="rgba(245,158,11,0.12)" stroke="#f59e0b" stroke-width="1.5" rx="2"/>');
+    // Steps (lines across flight)
+    var nSp = 8;
+    for (var si = 1; si < nSp; si++) {
+      lines.push('<line x1="' + (fX + si*fW/nSp) + '" y1="' + fY + '" x2="' + (fX + si*fW/nSp) + '" y2="' + (fY+fH) + '" stroke="#f59e0b" stroke-width="0.5" opacity="0.5"/>');
+    }
+    // Arrow direction
+    lines.push('<line x1="' + (fX+fW*0.1) + '" y1="' + (fY+fH/2) + '" x2="' + (fX+fW*0.9) + '" y2="' + (fY+fH/2) + '" stroke="#f59e0b" stroke-width="1.5" marker-end="url(#sArr)"/>');
+    lines.push('<text x="' + (fX+fW/2) + '" y="' + (fY-5) + '" fill="#f59e0b" font-size="7" text-anchor="middle" font-family="JetBrains Mono">FLIGHT ' + Math.ceil(S.floorHt*1000/riser) + ' risers</text>');
+    lines.push('<rect x="' + fX + '" y="' + by + '" width="' + fW + '" height="' + ((bh-fH)/2) + '" fill="rgba(71,85,105,0.3)" stroke="#475569" stroke-width="1"/>');
+    lines.push('<text x="' + (fX+fW/2) + '" y="' + (by+(bh-fH)/4+4) + '" fill="#64748b" font-size="7" text-anchor="middle" font-family="JetBrains Mono">LANDING</text>');
+  } else if (type === 'dogleg') {
+    // Two flights with mid landing U-turn
+    var fH2 = bh * 0.38, fW2 = bw * 0.42, lW = bw * 0.16;
+    var f1X = bx, f2X = bx + fW2 + lW, lX = bx + fW2;
+    // Flight 1
+    lines.push('<rect x="' + f1X + '" y="' + by + '" width="' + fW2 + '" height="' + fH2 + '" fill="rgba(52,211,153,0.12)" stroke="#34d399" stroke-width="1.5" rx="2"/>');
+    for (var si2 = 1; si2 < 7; si2++) lines.push('<line x1="' + (f1X + si2*fW2/7) + '" y1="' + by + '" x2="' + (f1X + si2*fW2/7) + '" y2="' + (by+fH2) + '" stroke="#34d399" stroke-width="0.5" opacity="0.4"/>');
+    lines.push('<line x1="' + (f1X+fW2*0.15) + '" y1="' + (by+fH2/2) + '" x2="' + (f1X+fW2*0.85) + '" y2="' + (by+fH2/2) + '" stroke="#34d399" stroke-width="1.5" marker-end="url(#sArr)"/>');
+    lines.push('<text x="' + (f1X+fW2/2) + '" y="' + (by+fH2+10) + '" fill="#34d399" font-size="7" text-anchor="middle" font-family="JetBrains Mono">UP</text>');
+    // Mid landing
+    lines.push('<rect x="' + lX + '" y="' + by + '" width="' + lW + '" height="' + fH2 + '" fill="rgba(71,85,105,0.4)" stroke="#475569" stroke-width="1"/>');
+    lines.push('<text x="' + (lX+lW/2) + '" y="' + (by+fH2/2+4) + '" fill="#64748b" font-size="6" text-anchor="middle" font-family="JetBrains Mono" writing-mode="tb">LAND</text>');
+    // Flight 2 (going back opposite direction)
+    lines.push('<rect x="' + f2X + '" y="' + by + '" width="' + fW2 + '" height="' + fH2 + '" fill="rgba(52,211,153,0.12)" stroke="#34d399" stroke-width="1.5" rx="2"/>');
+    for (var si3 = 1; si3 < 7; si3++) lines.push('<line x1="' + (f2X + si3*fW2/7) + '" y1="' + by + '" x2="' + (f2X + si3*fW2/7) + '" y2="' + (by+fH2) + '" stroke="#34d399" stroke-width="0.5" opacity="0.4"/>');
+    lines.push('<line x1="' + (f2X+fW2*0.85) + '" y1="' + (by+fH2/2) + '" x2="' + (f2X+fW2*0.15) + '" y2="' + (by+fH2/2) + '" stroke="#34d399" stroke-width="1.5" marker-end="url(#sArr)"/>');
+    lines.push('<text x="' + (f2X+fW2/2) + '" y="' + (by+fH2+10) + '" fill="#34d399" font-size="7" text-anchor="middle" font-family="JetBrains Mono">UP</text>');
+    // Lower landing
+    lines.push('<rect x="' + f1X + '" y="' + (by+fH2) + '" width="' + (f2X+fW2-f1X) + '" height="' + (bh-fH2) + '" fill="rgba(71,85,105,0.2)" stroke="#475569" stroke-width="1"/>');
+    lines.push('<text x="' + (bx+bw/2) + '" y="' + (by+fH2+(bh-fH2)/2+4) + '" fill="#64748b" font-size="7" text-anchor="middle" font-family="JetBrains Mono">LOWER LANDING</text>');
+  } else {
+    // 90° quarter turn - L-shaped
+    var fH3 = bh * 0.45, fW3 = bw * 0.45, lS = bh * 0.45;
+    // First flight (horizontal)
+    lines.push('<rect x="' + bx + '" y="' + (by+bh-fH3) + '" width="' + fW3 + '" height="' + fH3 + '" fill="rgba(56,189,248,0.12)" stroke="#38bdf8" stroke-width="1.5" rx="2"/>');
+    for (var si4 = 1; si4 < 7; si4++) lines.push('<line x1="' + (bx+si4*fW3/7) + '" y1="' + (by+bh-fH3) + '" x2="' + (bx+si4*fW3/7) + '" y2="' + (by+bh) + '" stroke="#38bdf8" stroke-width="0.5" opacity="0.4"/>');
+    lines.push('<line x1="' + (bx+fW3*0.15) + '" y1="' + (by+bh-fH3/2) + '" x2="' + (bx+fW3*0.85) + '" y2="' + (by+bh-fH3/2) + '" stroke="#38bdf8" stroke-width="1.5" marker-end="url(#sArr)"/>');
+    // Quarter landing (corner)
+    lines.push('<rect x="' + (bx+fW3) + '" y="' + (by+bh-lS) + '" width="' + (bw-fW3) + '" height="' + lS + '" fill="rgba(71,85,105,0.3)" stroke="#475569" stroke-width="1"/>');
+    lines.push('<text x="' + (bx+fW3+(bw-fW3)/2) + '" y="' + (by+bh-lS/2+4) + '" fill="#64748b" font-size="7" text-anchor="middle" font-family="JetBrains Mono">LANDING</text>');
+    // Second flight (vertical = 90° turn)
+    var f2W = bw - fW3;
+    lines.push('<rect x="' + (bx+fW3) + '" y="' + by + '" width="' + f2W + '" height="' + (bh-lS) + '" fill="rgba(56,189,248,0.12)" stroke="#38bdf8" stroke-width="1.5" rx="2"/>');
+    for (var si5 = 1; si5 < 6; si5++) lines.push('<line x1="' + (bx+fW3) + '" y1="' + (by+(bh-lS)*si5/6) + '" x2="' + (bx+fW3+f2W) + '" y2="' + (by+(bh-lS)*si5/6) + '" stroke="#38bdf8" stroke-width="0.5" opacity="0.4"/>');
+    lines.push('<line x1="' + (bx+fW3+f2W/2) + '" y1="' + (by+(bh-lS)*0.85) + '" x2="' + (bx+fW3+f2W/2) + '" y2="' + (by+(bh-lS)*0.15) + '" stroke="#38bdf8" stroke-width="1.5" marker-end="url(#sArr)"/>');
+  }
+
   // ── STAIR CROSS-SECTION (bottom half) ──────────────────────────
-  var csY = 125, csH = H - csY - 15;
+  var csY = pvY + pvH + 20, csH = H - csY - 15;
   var csX = 40, csW = W - 80;
   var nSteps = Math.min(steps, 12);
   var stepW = Math.min(tread / 5, csW / (nSteps + 2));
@@ -3235,11 +3297,21 @@ function ftgDetail(f){
 function secStair(){
   const stairDesigns = RES.allStairDesigns;
 
-  // If no stair bays marked, fall back to generic single stair
+  // If no stair bays marked → show clear message, do NOT design a phantom stair
   if(!stairDesigns||stairDesigns.length===0){
-    const st=RES.stair;
-    if(!st)return '<div class="card"><div class="ct tl">🪜 Staircase Design</div><div class="cd">No staircase bays marked in the plan. Mark a bay as "Staircase" in the Building Plan Editor.</div></div>';
-    return stairSinglePanel(st,'Generic Stair (no bay marked)');
+    return \`<div class="card">
+      <div class="ct tl">🪜 Staircase Design</div>
+      <div style="padding:20px;text-align:center">
+        <div style="font-size:32px;margin-bottom:10px">🏗</div>
+        <div style="font-size:13px;font-weight:700;color:#f59e0b;margin-bottom:8px">No Staircase Bay Marked</div>
+        <div style="font-size:11px;color:#94a3b8;line-height:1.8;max-width:400px;margin:0 auto">
+          To design a staircase, go to <strong>Plan & Spans</strong> and right-click on a bay in the grid.<br>
+          Select <strong>"Staircase"</strong> from the bay type menu.<br>
+          Then re-run analysis to get a full stair design.
+        </div>
+        <button class="btn" onclick="go(2)" style="margin-top:16px">← Go to Plan & Spans</button>
+      </div>
+    </div>\`;
   }
 
   // Multiple stair bays: tab per bay
@@ -6541,9 +6613,12 @@ function secXSections() {
 
   // ── FOOTING CROSS-SECTION ────────────────────────────────────
   function svgFtg(f) {
+    const ftgType = S.ftgType || 'isolated';
     const W = 300, H = 200;
-    const fScale = Math.min(200 / (f.Bf * 1000), 0.14);
-    const fw = f.Bf * 1000 * fScale;
+    // Combined footing: show elongated shape
+    const displayBf = ftgType === 'combined' ? f.Bf * 1.8 : f.Bf;
+    const fScale = Math.min(200 / (displayBf * 1000), 0.14);
+    const fw = displayBf * 1000 * fScale;
     const fh = Math.min(70, Math.max(35, f.D * fScale * 2));
     const colW = (f.col || 300) * fScale;
     const ox = (W - fw) / 2, oy = 30;
@@ -6596,6 +6671,9 @@ function secXSections() {
     s += `<text x="${ox+5+barR+4}" y="${legY+4}" fill="#94a3b8" font-size="8" font-family="monospace">T${f.dBf}@${f.spf}mm c/c both ways (Ast=${r0(f.Af)}mm²)</text>`;
     s += `<text x="${ox}" y="${legY+16}" fill="#64748b" font-size="8" font-family="monospace">Cover=75mm (earth face, IS 456 Cl 26.4.2.2) | d_eff=${r0(f.d)}mm</text>`;
     const ok = f.punch_ok && f.ow_ok && f.Ld_ok;
+    const ftgTypeLbl = {'isolated':'Isolated Pad','combined':'Combined Footing','raft':'Raft Foundation'}[S.ftgType||'isolated']||'Isolated Pad';
+    const ftgTypeClr = {'isolated':'#34d399','combined':'#f59e0b','raft':'#f87171'}[S.ftgType||'isolated']||'#34d399';
+    s += `<text x="${W/2}" y="${oy-20}" fill="${ftgTypeClr}" font-size="8" font-weight="700" text-anchor="middle" font-family="monospace">⬛ ${ftgTypeLbl.toUpperCase()}</text>`;
     s += `<text x="${ox}" y="${legY+28}" fill="${ok?'#34d399':'#f87171'}" font-size="8" font-weight="bold" font-family="monospace">${ok?'All checks PASS':'Needs revision - see footing design section'}</text>`;
 
     s += `<text x="${W/2}" y="14" fill="#fbbf24" font-size="10" font-weight="bold" text-anchor="middle" font-family="monospace">${(f.lbl||'Footing').slice(0,20)} — ${r2(f.Bf)}m x ${r2(f.Bf)}m</text>`;
@@ -10006,7 +10084,8 @@ async function startConstructionPDF() {
     Txt('CF (Corner Footing): '+ftin(f1.Bf||0.5)+' x '+ftin(f1.Bf||0.5)+' x D='+r0(f1.D||300)+'mm  |  Ps='+r2(f1.Ps||0)+'kN',fpX,schY+6);
     Txt('EF (Edge Footing):   '+ftin(f2.Bf||0.8)+' x '+ftin(f2.Bf||0.8)+' x D='+r0(f2.D||350)+'mm  |  Ps='+r2(f2.Ps||0)+'kN',fpX,schY+12);
     Txt('IF (Interior Ftg):   '+ftin(f3.Bf||1.0)+' x '+ftin(f3.Bf||1.0)+' x D='+r0(f3.D||400)+'mm  |  Ps='+r2(f3.Ps||0)+'kN',fpX,schY+18);
-    F(6.5,'italic',80,80,80);Txt('NOTE: All footings are ISOLATED SQUARE footings. All dimensions refer to plan size (L x B). Refer ST/FD02 for cross-section details.',fpX,schY+26);
+    const _ftgTypeNote={'isolated':'ISOLATED SQUARE','combined':'COMBINED / ELONGATED','raft':'RAFT (continuous mat)'}[S.ftgType||'isolated']||'ISOLATED SQUARE';
+    F(6.5,'italic',80,80,80);Txt('NOTE: All footings are '+_ftgTypeNote+' footings. All dimensions refer to plan size (L x B). Refer ST/FD02 for cross-section details.',fpX,schY+26);
 
     log('Sheet 3 done',28);
 

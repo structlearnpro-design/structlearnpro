@@ -31,23 +31,30 @@ window.addEventListener('message',(e)=>{
   if(e.data?.type==='LOAD_PROJECT'){
     const proj=e.data.project;
     _currentProjectId=proj.id;
-    if(proj.data&&Object.keys(proj.data).length>0){
-      try{
-        if(proj.data.S)Object.assign(S,proj.data.S);
+    try{
+      // Supabase row uses state_json / grid_json columns
+      // Legacy saves may use proj.data.S / proj.data.GRID — support both
+      const savedS    = proj.state_json || (proj.data && proj.data.S) || null;
+      const savedGRID = proj.grid_json  || (proj.data && proj.data.GRID) || null;
+
+      if(savedS && typeof savedS === 'object' && Object.keys(savedS).length > 0){
+        Object.assign(S, savedS);
         // Safety: ensure spansX/spansY are valid arrays after loading
         if(!Array.isArray(S.spansX)||S.spansX.length===0) S.spansX=[4,4,4];
         if(!Array.isArray(S.spansY)||S.spansY.length===0) S.spansY=[3,3,3];
-        // Only restore GRID if it has all required arrays - else force reinit
-        if(proj.data.GRID && Array.isArray(proj.data.GRID.nodes) &&
-           Array.isArray(proj.data.GRID.beams) && Array.isArray(proj.data.GRID.bays)){
-          GRID=proj.data.GRID;
-        } else {
-          GRID=null; // will be reinitialised on next page visit
-        }
-        if(typeof renderAll==='function')renderAll();
-        if(typeof go==='function')go(1);
-      }catch(err){console.error('Load error:',err);}
-    }
+      }
+
+      // Only restore GRID if it has all required arrays - else force reinit
+      if(savedGRID && Array.isArray(savedGRID.nodes) &&
+         Array.isArray(savedGRID.beams) && Array.isArray(savedGRID.bays)){
+        GRID = savedGRID;
+      } else {
+        GRID = null; // will be reinitialised when user visits Plan & Spans
+      }
+
+      if(typeof renderAll==='function') renderAll();
+      if(typeof go==='function') go(1);
+    }catch(err){ console.error('Load error:',err); }
   }
   if(e.data?.type==='PROJECT_ID'){_currentProjectId=e.data.id;}
 });
