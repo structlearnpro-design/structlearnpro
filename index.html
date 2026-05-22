@@ -687,14 +687,24 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
 
         <!-- EXPLAIN TAB -->
         <div id="ai-tab-explain-content" class="ai-tab-content">
-          <div style="font-size:12px;color:#64748b;margin-bottom:12px;line-height:1.6">
-            Select any member from your analysis results and click Explain to understand why it passed or failed.
+          <!-- How it works -->
+          <div style="background:#0f172a;border:1px solid #1e3a8a;border-radius:8px;padding:10px 12px;margin-bottom:10px;font-size:11px;color:#94a3b8;line-height:1.7">
+            <strong style="color:#38bdf8">How to use:</strong><br>
+            1️⃣ Click any member below → AI explains it immediately<br>
+            2️⃣ Or click <strong style="color:#60a5fa">Explain All Failures</strong> for a full summary
           </div>
-          <div id="ai-member-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px"></div>
+          <!-- Selected member indicator -->
+          <div id="ai-selected-member" style="display:none;padding:8px 12px;background:rgba(124,58,237,0.15);border:1px solid #7c3aed;border-radius:7px;margin-bottom:8px;font-size:11px;color:#a78bfa;font-weight:700">
+            🔍 Explaining: <span id="ai-selected-name"></span>
+          </div>
+          <!-- Member list -->
+          <div id="ai-member-list" style="display:flex;flex-direction:column;gap:5px;margin-bottom:10px"></div>
+          <!-- Explain all button -->
           <button onclick="explainAll()" id="ai-explain-all-btn"
-            style="width:100%;padding:10px;background:#1e3a8a;border:1px solid #3b82f6;border-radius:8px;color:#60a5fa;font-size:12px;cursor:pointer;font-family:inherit;display:none">
-            🔍 Explain All Failures
+            style="width:100%;padding:9px;background:#1e3a8a;border:1px solid #3b82f6;border-radius:8px;color:#60a5fa;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;display:none;margin-bottom:10px">
+            🔍 Explain All Failures at Once
           </button>
+          <!-- Output -->
           <div id="ai-explain-output" class="ai-output"></div>
         </div>
 
@@ -3247,7 +3257,13 @@ function switchAITab(tab){
   document.querySelectorAll('.ai-tab-content').forEach(c=>c.style.display='none');
   document.getElementById('ai-tab-'+tab)?.classList.add('active');
   document.getElementById('ai-tab-'+tab+'-content').style.display='block';
-  if(tab === 'explain') refreshAIContext();
+  if(tab === 'explain'){
+    refreshAIContext();
+    // Clear selected state
+    const sel=document.getElementById('ai-selected-member');
+    if(sel) sel.style.display='none';
+    document.querySelectorAll('.ai-member-btn').forEach(b=>b.style.outline='');
+  }
   if(tab === 'ask') initQuickQuestions();
 }
 
@@ -3299,10 +3315,10 @@ function buildMemberList(){
                    : m.Ld_ok===false     ? 'Dev length fail'
                    : 'Failed';
       const _n=name.replace(/'/g,"\'"),_r=reason.replace(/'/g,"\'");
-      html += `<button class="ai-member-btn fail" onclick="explainMember('${_n}','${_r}')">
-        <span style="font-size:14px">⚠️</span>
-        <div><div style="font-weight:700">${name}</div><div style="font-size:10px;color:#f87171">${reason}</div></div>
-        <span style="margin-left:auto;font-size:10px;color:#64748b">Explain →</span>
+      html += `<button class="ai-member-btn fail" onclick="explainMember('${_n}','${_r}')" title="Click to get AI explanation">
+        <span style="font-size:13px">⚠️</span>
+        <div style="flex:1"><div style="font-weight:700;font-size:11px">${name}</div><div style="font-size:10px;color:#f87171">${reason}</div></div>
+        <span style="font-size:10px;color:#7c3aed;font-weight:700;white-space:nowrap">Explain →</span>
       </button>`;
     });
     if(explainBtn) explainBtn.style.display='block';
@@ -3320,10 +3336,10 @@ function buildMemberList(){
     passing.forEach(m=>{
       const name = String(m.lbl || m.id || 'Beam');
       const _pn=name.replace(/'/g,"\'");
-      html += `<button class="ai-member-btn pass" onclick="explainMember('${_pn}','passing')">
-        <span style="font-size:14px">✅</span>
-        <div><div style="font-weight:700">${name}</div><div style="font-size:10px;color:#34d399">All checks pass</div></div>
-        <span style="margin-left:auto;font-size:10px;color:#64748b">Explain →</span>
+      html += `<button class="ai-member-btn pass" onclick="explainMember('${_pn}','passing')" title="Click to understand why this passes">
+        <span style="font-size:13px">✅</span>
+        <div style="flex:1"><div style="font-weight:700;font-size:11px">${name}</div><div style="font-size:10px;color:#34d399">All checks pass</div></div>
+        <span style="font-size:10px;color:#64748b;white-space:nowrap">Explain →</span>
       </button>`;
     });
   }
@@ -3343,29 +3359,23 @@ async function callClaude(systemPrompt, userMessage, outputElId){
   if(el){ el.className='ai-output ai-loading'; el.textContent='AI is thinking'; }
 
   try{
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
+    const response = await fetch(SUPA_URL+'/functions/v1/ai-chat', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true'
-      },
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer '+SUPA_KEY, 'apikey': SUPA_KEY },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
         max_tokens: 1000,
-        system: systemPrompt,
-        messages: [{ role:'user', content: userMessage }]
+        system:     systemPrompt,
+        messages:   [{ role:'user', content: userMessage }]
       })
     });
 
+    const data = await response.json();
     if(!response.ok){
-      const errData = await response.json().catch(()=>({}));
-      const errMsg = errData.error?.message || 'AI error ('+response.status+')';
+      const errMsg = data.error || data.message || 'AI service error ('+response.status+'). The AI assistant requires a Supabase Edge Function "ai-chat" to be deployed with your Anthropic API key.';
       if(el){ el.className='ai-output'; el.textContent='Error: '+errMsg; }
       return null;
     }
 
-    const data = await response.json();
     const text = data.content?.[0]?.text;
     if(!text){
       if(el){ el.className='ai-output'; el.textContent='No response from AI.'; }
@@ -3444,20 +3454,57 @@ ${projectContext}${resultsContext}`;
 
 // ── TAB 1: EXPLAIN MEMBER ──────────────────────────────────────
 async function explainMember(memberName, issue){
+  // Show which member is being explained
+  const selDiv  = document.getElementById('ai-selected-member');
+  const selName = document.getElementById('ai-selected-name');
+  if(selDiv)  selDiv.style.display = 'block';
+  if(selName) selName.textContent  = memberName + (issue!=='passing' ? ' — '+issue : ' (passing)');
+
+  // Highlight the clicked button
+  document.querySelectorAll('.ai-member-btn').forEach(b=>b.style.outline='');
+  // Find the clicked button by member name in its text
+  document.querySelectorAll('.ai-member-btn').forEach(b=>{
+    if(b.textContent.includes(memberName)) b.style.outline='2px solid #7c3aed';
+  });
+
+  // Scroll output into view
+  const outEl = document.getElementById('ai-explain-output');
+  if(outEl) outEl.innerHTML = '';
+
+  // Build detailed prompt using actual member data
   refreshAIContext();
-  const fr = document.getElementById('app-iframe');
   let memberData = '';
-  if(fr && fr.contentWindow && _currentRES){
+  if(_currentRES){
     const beams = _currentRES.allBeams || _currentRES.beams || [];
     const cols  = _currentRES.allCols  || _currentRES.cols  || [];
     const ftgs  = _currentRES.allFtgs  || _currentRES.ftgs  || [];
-    const member = [...beams,...cols,...ftgs].find(m=>(m.lbl||m.id||'').includes(memberName));
-    if(member) memberData = '\nMember data: '+JSON.stringify(member).slice(0,400);
+    const member = [...beams,...cols,...ftgs].find(m=>String(m.lbl||m.id||'')===memberName);
+    if(member){
+      // Pick relevant fields only - avoid sending huge JSON
+      const fields = {};
+      ['lbl','id','D','b','d','L','Mmax','Mulim','tv','tcmax','tc','dfl','dall',
+       'deflOK','shearSafe','safe','Pu','Pcap','size','pt','punch_ok','Ld_ok',
+       'Lda','Ldr','Bf','floor','Am','nm'].forEach(k=>{ if(member[k]!==undefined) fields[k]=member[k]; });
+      memberData = '\nMember data: '+JSON.stringify(fields);
+    }
   }
-  const prompt = `Explain why member "${memberName}" has issue: "${issue}".${memberData}
-Give: 1) What the check means 2) Why it failed/passed 3) What to do to fix it (if failed).
-Be specific to this building's parameters.`;
+
+  const isPassing = issue==='passing';
+  const prompt = isPassing
+    ? `Explain why member "${memberName}" is passing all checks.${memberData}
+Give: 1) What key checks were performed 2) Why it passed 3) One thing a student should note about this member.
+Keep it under 120 words.`
+    : `Explain why member "${memberName}" has this problem: "${issue}".${memberData}
+Give:
+1) What this check means (1 sentence)
+2) Why this specific member failed — use the actual numbers from member data
+3) Exactly what to change to fix it
+Keep it under 150 words. Be direct and specific.`;
+
   await callClaude(buildSystemPrompt(), prompt, 'ai-explain-output');
+
+  // Scroll to output
+  if(outEl) outEl.scrollIntoView({behavior:'smooth', block:'nearest'});
 }
 
 async function explainAll(){
