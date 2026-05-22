@@ -1943,14 +1943,18 @@ function injectSaveToParent(fr){
           fy:              iw.S.fy || null,
           grid_x:          iw.S.spansX ? iw.S.spansX.length : null,
           grid_y:          iw.S.spansY ? iw.S.spansY.length : null,
-          state_json:      JSON.parse(JSON.stringify(iw.S)),
+          state_json:      JSON.parse(JSON.stringify({
+                             ...iw.S,
+                             _nodeChoices:    iw._nodeChoices    || {},
+                             _coordMode:      !!iw._coordMode,
+                             _memberOverrides: iw._memberOverrides || {},
+                           })),
           grid_json:       iw.GRID ? JSON.parse(JSON.stringify(iw.GRID)) : null,
           results_json:    iw.RES  ? JSON.parse(JSON.stringify(iw.RES))  : null,
           thumbnail_svg:   generateThumb(iw.S, iw.GRID),
           safety_score:    iw.RES  ? (iw.RES.safetyScore||0) : null,
           all_checks_pass: iw.RES  ? (iw.RES.allPass||false) : false,
-          analysis_count:  iw.RES  ? (projects.find(x=>x.id===pid)?.analysis_count||0)+1
-                                   : (projects.find(x=>x.id===pid)?.analysis_count||0),
+          analysis_count:  (projects.find(x=>x.id===pid)?.analysis_count||0),
           updated_at:      new Date().toISOString(),
         };
         const resp = await fetch(SUPA_URL+'/rest/v1/projects?id=eq.'+pid+'&profile_id=eq.'+P.id,{

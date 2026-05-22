@@ -77,8 +77,22 @@ window.addEventListener('message',(e)=>{
         });
         // DO NOT call applyNodeChoices — the GRID bay types are already correct from saved data
       }
+      // Restore member overrides (beam/col/ftg size changes student applied)
+      if(savedS && savedS._memberOverrides && Object.keys(savedS._memberOverrides).length > 0){
+        window._memberOverrides = savedS._memberOverrides;
+      }
+
+      // Restore RES — always use the saved analysis result if it exists
+      const savedRES = proj.results_json || (proj.data && proj.data.RES) || null;
+      if(savedRES && typeof savedRES === 'object' && Object.keys(savedRES).length > 0){
+        RES = savedRES;
+      }
+
       if(typeof renderAll==='function') renderAll();
-      if(typeof go==='function') go(1);
+
+      // Go to full report if results exist, else project info
+      const goStep = (RES && RES.allBeams) ? 7 : 1;
+      if(typeof go==='function') go(goStep);
     }catch(err){ console.error('Load error:',err); }
   }
   if(e.data?.type==='PROJECT_ID'){_currentProjectId=e.data.id;}
@@ -129,8 +143,12 @@ function saveToParent(status){
     }
     window.parent.postMessage({
       type:'SAVE_PROJECT',name:nm,
-      data:{S:{...S, _nodeChoices:window._nodeChoices||{}, _coordMode:!!window._coordMode},
-            GRID:GRID?JSON.parse(JSON.stringify(GRID)):null},
+      data:{
+        S:   {...S, _nodeChoices:window._nodeChoices||{}, _coordMode:!!window._coordMode,
+               _memberOverrides:window._memberOverrides||{}},
+        GRID: GRID ? JSON.parse(JSON.stringify(GRID)) : null,
+        RES:  (typeof RES!=='undefined'&&RES) ? JSON.parse(JSON.stringify(RES)) : null,
+      },
       floors:S.numFloors||1,spansX:S.spansX||[],spansY:S.spansY||[],
       status:autoStatus,projectId:_currentProjectId,
     },'*');
