@@ -1543,21 +1543,49 @@ async function viewUser(id) {
 
   el('user-modal-title').textContent = u.full_name || '—';
   setHTML('user-modal-content', `
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px">
-      <div class="info-row"><span class="info-lbl">Unique ID</span><span class="info-val" style="font-family:monospace">${u.unique_id||'—'}</span></div>
-      <div class="info-row"><span class="info-lbl">Mobile</span><span class="info-val">${u.mobile||'—'}</span></div>
+    <!-- IDENTITY -->
+    <div style="font-size:9px;font-weight:800;color:#38bdf8;letter-spacing:1px;margin-bottom:6px">IDENTITY</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:14px">
+      <div class="info-row"><span class="info-lbl">Unique ID</span><span class="info-val" style="font-family:monospace;color:#38bdf8">${u.unique_id||'—'}</span></div>
       <div class="info-row"><span class="info-lbl">Full Name</span><span class="info-val">${u.full_name||'—'}</span></div>
+      <div class="info-row"><span class="info-lbl">Mobile</span><span class="info-val" style="font-family:monospace">${u.mobile||'—'}</span></div>
       <div class="info-row"><span class="info-lbl">Email</span><span class="info-val">${u.email||'—'}</span></div>
       <div class="info-row"><span class="info-lbl">Role</span><span class="info-val">${roleBadge(u.role)}</span></div>
-      <div class="info-row"><span class="info-lbl">Plan</span><span class="info-val">${planBadge(u)}</span></div>
-      <div class="info-row"><span class="info-lbl">Plan Type</span><span class="info-val">${u.plan_type||'—'}</span></div>
       <div class="info-row"><span class="info-lbl">Status</span><span class="info-val" style="color:${u.is_active===false?'#f87171':'#34d399'}">${u.is_active===false?'⛔ Deactivated':'✅ Active'}</span></div>
       <div class="info-row"><span class="info-lbl">City</span><span class="info-val">${u.city||'—'}</span></div>
       <div class="info-row"><span class="info-lbl">State</span><span class="info-val">${u.state||'—'}</span></div>
-      <div class="info-row"><span class="info-lbl">College</span><span class="info-val">${u.college||'—'}</span></div>
       <div class="info-row"><span class="info-lbl">Joined</span><span class="info-val">${fmtDate(u.created_at)}</span></div>
       <div class="info-row"><span class="info-lbl">Last Active</span><span class="info-val">${timeAgo(u.last_active)}</span></div>
-      ${u.plan_expires_at && u.plan==='pro'?`<div class="info-row"><span class="info-lbl">Plan Expires</span><span class="info-val">${fmtDate(u.plan_expires_at)}</span></div>`:''}
+    </div>
+
+    <!-- ROLE-SPECIFIC PROFILE -->
+    ${u.role==='student'?`
+    <div style="font-size:9px;font-weight:800;color:#34d399;letter-spacing:1px;margin-bottom:6px">STUDENT PROFILE</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:14px">
+      <div class="info-row"><span class="info-lbl">College</span><span class="info-val">${u.college||'—'}</span></div>
+      <div class="info-row"><span class="info-lbl">Course</span><span class="info-val">${u.course||'—'}</span></div>
+      <div class="info-row"><span class="info-lbl">Year of Study</span><span class="info-val">${u.year_of_study?'Year '+u.year_of_study:'—'}</span></div>
+      <div class="info-row"><span class="info-lbl">Batch</span><span class="info-val" style="font-family:monospace">${u.batch||'—'}</span></div>
+    </div>`:u.role==='lecturer'?`
+    <div style="font-size:9px;font-weight:800;color:#a78bfa;letter-spacing:1px;margin-bottom:6px">LECTURER PROFILE</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:14px">
+      <div class="info-row"><span class="info-lbl">Institution</span><span class="info-val">${u.college||'—'}</span></div>
+      <div class="info-row"><span class="info-lbl">Department</span><span class="info-val">${u.department||'—'}</span></div>
+      <div class="info-row"><span class="info-lbl">Designation</span><span class="info-val">${u.designation||'—'}</span></div>
+    </div>`:u.role==='engineer'?`
+    <div style="font-size:9px;font-weight:800;color:#f59e0b;letter-spacing:1px;margin-bottom:6px">ENGINEER PROFILE</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:14px">
+      <div class="info-row"><span class="info-lbl">Firm / Company</span><span class="info-val">${u.firm_name||'—'}</span></div>
+      <div class="info-row"><span class="info-lbl">Role Title</span><span class="info-val">${u.role_title||'—'}</span></div>
+      <div class="info-row"><span class="info-lbl">Experience</span><span class="info-val">${u.experience||'—'}</span></div>
+    </div>`:''}
+
+    <!-- SUBSCRIPTION -->
+    <div style="font-size:9px;font-weight:800;color:#60a5fa;letter-spacing:1px;margin-bottom:6px">SUBSCRIPTION</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:14px">
+      <div class="info-row"><span class="info-lbl">Plan</span><span class="info-val">${planBadge(u)}</span></div>
+      <div class="info-row"><span class="info-lbl">Plan Type</span><span class="info-val">${u.plan_type||'—'}</span></div>
+      ${u.plan_expires_at && u.plan==='pro'?`<div class="info-row"><span class="info-lbl">Expires</span><span class="info-val" style="color:${daysUntil(u.plan_expires_at)<7?'#f87171':'#34d399'}">${fmtDate(u.plan_expires_at)} (${daysUntil(u.plan_expires_at)}d)</span></div>`:''}
       ${u.payment_date?`<div class="info-row"><span class="info-lbl">Last Payment</span><span class="info-val">${fmtDate(u.payment_date)}</span></div>`:''}
     </div>
     <div style="background:var(--bg2);border-radius:8px;padding:14px;font-size:12px;margin-bottom:10px">
