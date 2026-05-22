@@ -52,6 +52,16 @@ window.addEventListener('message',(e)=>{
         GRID = null; // will be reinitialised when user visits Plan & Spans
       }
 
+      // Restore nodeChoices and coordMode from savedS
+      if(savedS && savedS._nodeChoices && Object.keys(savedS._nodeChoices).length > 0){
+        window._nodeChoices = savedS._nodeChoices;
+      }
+      if(savedS && typeof savedS._coordMode !== 'undefined'){
+        window._coordMode = !!savedS._coordMode;
+        localStorage.setItem('_coordMode', String(window._coordMode));
+      }
+      // Apply node choices to the restored GRID immediately
+      if(typeof applyNodeChoices === 'function') applyNodeChoices();
       if(typeof renderAll==='function') renderAll();
       if(typeof go==='function') go(1);
     }catch(err){ console.error('Load error:',err); }
@@ -104,7 +114,8 @@ function saveToParent(status){
     }
     window.parent.postMessage({
       type:'SAVE_PROJECT',name:nm,
-      data:{S:{...S},GRID:GRID?JSON.parse(JSON.stringify(GRID)):null},
+      data:{S:{...S, _nodeChoices:window._nodeChoices||{}, _coordMode:!!window._coordMode},
+            GRID:GRID?JSON.parse(JSON.stringify(GRID)):null},
       floors:S.numFloors||1,spansX:S.spansX||[],spansY:S.spansY||[],
       status:autoStatus,projectId:_currentProjectId,
     },'*');
