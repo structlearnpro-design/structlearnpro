@@ -3179,14 +3179,16 @@ function designOneColumn(node, floorsAbove, DL_tot, udlLL_floor, udlLL_roof,
     Math.max(300,Math.ceil(Math.sqrt(Math.max(Pu*1000/fck_eff,90000))/25)*25);
   for(let iter=0;iter<20;iter++){
     const Ag=size*size;
-    const Ar=(Pu*1000-0.4*fck*Ag)/(0.67*fy-0.4*fck);
-    const Af=clamp(Math.max(Ar,0.008*Ag),0.008*Ag,0.04*Ag);
-    const dB=Pu>800?20:16;
-    const nb=Math.max(4,Math.ceil(Af/(Math.PI*dB*dB/4)));
-    const Aprov=nb*(Math.PI*dB*dB/4);
-    const Pcap_a=(0.4*fck*(Ag-Aprov)+0.67*fy*Aprov)/1000;
-    // Reduce capacity for min-eccentricity moment (IS 456 Cl 39.3)
+    const Ar_l=(Pu*1000-0.4*fck*Ag)/(0.67*fy-0.4*fck);
+    const dB_l=Pu>800?20:16;
     const emin_i=Math.max(floorHt*1000/500+size/30,20);
+    const Mu_i=Pu*emin_i/1000;
+    const lev_i=Math.max(30,size/2-coverCol-8-dB_l/2);
+    const Asc_ecc_i=Mu_i*1e6/(0.67*fy*lev_i);
+    const Af_l=clamp(Math.max(Math.max(0,Ar_l)+Asc_ecc_i,0.008*Ag),0.008*Ag,0.04*Ag);
+    const nb_l=Math.max(4,Math.ceil(Af_l/(Math.PI*dB_l*dB_l/4)));
+    const Aprov_l=nb_l*(Math.PI*dB_l*dB_l/4);
+    const Pcap_a=(0.4*fck*(Ag-Aprov_l)+0.67*fy*Aprov_l)/1000;
     const eR=emin_i/size;
     const red=eR>0.05?Math.max(0.6,1-1.5*eR):1.0;
     if(Pcap_a*red>=Pu||size>=800) break;
@@ -3194,9 +3196,17 @@ function designOneColumn(node, floorsAbove, DL_tot, udlLL_floor, udlLL_roof,
     size+=25;
   }
   const Ag=size*size;
-  const Ar=(Pu*1000-0.4*fck*Ag)/(0.67*fy-0.4*fck);
-  const Af=clamp(Math.max(Ar,0.008*Ag),0.008*Ag,0.04*Ag);
+  const Ar=(Pu*1000-0.4*fck*Ag)/(0.67*fy-0.4*fck); // axial demand only (can be negative)
   const dB=Pu>800?20:16;
+  // IS 456 Cl 25.4 + 39.3: minimum eccentricity always induces bending
+  const emin_f=Math.max(floorHt*1000/500+size/30,20);
+  const Mu_min_f=Pu*emin_f/1000; // kN.m
+  // Steel needed for Mu_min (symmetric section, tension side resists moment)
+  // Lever arm = D/2 - cover - stirrup - barR (from centroid to bar CL)
+  const leverArm_f=Math.max(30, size/2-coverCol-8-dB/2);
+  const Asc_ecc=Mu_min_f*1e6/(0.67*fy*leverArm_f); // mm²
+  // Governing Asc = max(axial_demand + ecc_demand, min_steel)
+  const Af=clamp(Math.max(Math.max(0,Ar)+Asc_ecc, 0.008*Ag),0.008*Ag,0.04*Ag);
   const dBA=Math.PI*dB*dB/4;
   const nb=Math.max(4,Math.ceil(Af/dBA));
   const Aprov=nb*dBA;
@@ -3229,7 +3239,7 @@ function designOneColumn(node, floorsAbove, DL_tot, udlLL_floor, udlLL_roof,
     row:node.row, col:node.col,
     Ps, Pu, Pcap, Pcap_axial, eccReduction, Mu_min,
     size, Ag,
-    Ar, Af, Aprov, pt, nb, dB,
+    Ar, Asc_ecc, Af, Aprov, pt, nb, dB,
     leff, lex, short:lex<=12, emin,
     ts, tsc, Lo,
     safe:Pu<=Pcap,

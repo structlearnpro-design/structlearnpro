@@ -2899,8 +2899,44 @@ function colDetail(c){
       &nbsp;&nbsp;Asc = ${r0(c.Aprov)} mm² (steel area provided = ${c.nb}×D${c.dB})<br>
       <strong>Result:</strong> Pcap = 0.4×${S.fck}×${r0(c.Ag-c.Aprov)} + 0.67×${S.fy}×${r0(c.Aprov)} = <strong style="color:#a78bfa">${r2(c.Pcap)} kN</strong>
     </div>
-    ${fm('Asc_req from demand = (Pu×1000 − 0.4×fck×Ag)/(0.67×fy−0.4×fck)',r0(Math.max(0,c.Ar))+' mm²','')}
-    ${fm('Asc_min = 0.8% × Ag = 0.008 × '+r0(c.Ag),r0(0.008*c.Ag)+' mm²','IS 456 Cl 26.5.3.1')}
+    ${(()=>{
+      const Ar_raw=(c.Pu*1000-0.4*S.fck*c.Ag)/(0.67*S.fy-0.4*S.fck);
+      const Asc_axial=Math.max(0,Ar_raw);
+      const Asc_ecc=c.Asc_ecc||0;
+      const Asc_min=0.008*c.Ag;
+      const Asc_combined=Asc_axial+Asc_ecc;
+      const concreteCarries=0.4*S.fck*c.Ag/1000;
+      return \`<div style="background:rgba(167,139,250,0.05);border:1px solid rgba(167,139,250,0.2);border-radius:8px;padding:10px;margin:8px 0;font-size:11px">
+        <div style="font-weight:700;color:#a78bfa;margin-bottom:8px">Steel Requirement — 3 Checks (IS 456 Cl 25.4, 26.5.3, 39.3)</div>
+
+        <div style="margin-bottom:6px;padding:6px;background:rgba(0,0,0,0.2);border-radius:4px">
+          <span style="color:#94a3b8">① Axial demand only (IS 456 Cl 39.3):</span><br>
+          <span style="font-family:monospace;font-size:10px">Asc_axial = (Pu×1000 − 0.4×fck×Ag)/(0.67×fy−0.4×fck)</span><br>
+          <span style="font-family:monospace;font-size:10px">= (${r0(c.Pu*1000)} − ${r0(0.4*S.fck*c.Ag)})/${r0(0.67*S.fy-0.4*S.fck)} = ${r2(Ar_raw)} mm²</span><br>
+          ${Ar_raw<=0
+            ? \`<span style="color:#fbbf24">→ 0 mm² (concrete alone can carry ${r2(concreteCarries)}kN ≥ Pu=${r2(c.Pu)}kN for pure axial)</span>\`
+            : \`<span style="color:#34d399">→ ${r0(Asc_axial)} mm²</span>\`}
+        </div>
+
+        <div style="margin-bottom:6px;padding:6px;background:rgba(0,0,0,0.2);border-radius:4px">
+          <span style="color:#94a3b8">② Minimum eccentricity moment (IS 456 Cl 25.4):</span><br>
+          <span style="font-family:monospace;font-size:10px">emin = max(L/500 + D/30, 20) = max(${r1(c.leff/500+c.size/30)}, 20) = ${r1(c.emin)}mm</span><br>
+          <span style="font-family:monospace;font-size:10px">Mu_min = Pu × emin = ${r2(c.Pu)} × ${r1(c.emin)}/1000 = ${r2(c.Mu_min)} kN.m</span><br>
+          <span style="font-family:monospace;font-size:10px">Asc_ecc = Mu_min×10⁶ / (0.67×fy×lever_arm) = ${r0(Asc_ecc)} mm²</span><br>
+          <span style="color:#f87171;font-weight:600">→ ${r0(Asc_ecc)} mm² (columns ALWAYS have bending — no column is purely axial)</span>
+        </div>
+
+        <div style="margin-bottom:6px;padding:6px;background:rgba(0,0,0,0.2);border-radius:4px">
+          <span style="color:#94a3b8">③ Minimum steel (IS 456 Cl 26.5.3.1):</span><br>
+          <span style="font-family:monospace;font-size:10px">Asc_min = 0.8% × Ag = 0.008 × ${r0(c.Ag)} = ${r0(Asc_min)} mm²</span><br>
+          <span style="color:#60a5fa">→ ${r0(Asc_min)} mm² (prevents brittle failure, resists creep/shrinkage)</span>
+        </div>
+
+        <div style="padding:8px;background:rgba(52,211,153,0.1);border:1px solid rgba(52,211,153,0.3);border-radius:4px">
+          <strong style="color:#34d399">Governing: Asc_design = max(①+②, ③) = max(${r0(Asc_axial)}+${r0(Asc_ecc)}, ${r0(Asc_min)}) = <span style="color:#a78bfa">${r0(Math.max(Asc_combined,Asc_min))} mm²</span></strong>
+        </div>
+      </div>\`;
+    })()}
     ${fm('Asc_max = 4% × Ag = 0.04 × '+r0(c.Ag),r0(0.04*c.Ag)+' mm²','IS 456 Cl 26.5.3.1')}
     ${fm('Provide: '+c.nb+' D'+c.dB+' bars',r0(c.Aprov)+' mm² (pt='+r2(c.pt)+'%)','IS 456 Cl 26.5.3')}
     ${(()=>{
@@ -14242,11 +14278,20 @@ Zone II: Z=0.10 | Zone III: Z=0.16 | Zone IV: Z=0.24 | Zone V: Z=0.36</p>
 // ── MODULE PROGRESS TRACKING ──────────────────────────────────
 const _EDU = {
   getProgress() {
+    // Initialize from localStorage on first call (instant, before parent RESTORE_PROGRESS)
+    if(!window._slpProgress){
+      try{
+        const cached = localStorage.getItem('slp_progress_cache');
+        window._slpProgress = cached ? JSON.parse(cached) : {};
+      }catch(e){ window._slpProgress = {}; }
+    }
     return window._slpProgress || {};
   },
   saveProgress(data) {
     const merged = {...this.getProgress(),...data};
     window._slpProgress = merged;
+    // Persist to localStorage immediately (survives page refresh)
+    try{ localStorage.setItem('slp_progress_cache', JSON.stringify(merged)); }catch(e){}
     // Send to parent (Supabase) every save
     try{ window.parent.postMessage({type:'SAVE_PROGRESS',progress:{lessons:merged,quizAttempts:{},behaviors:{},confidence:0}},'*'); }catch(e){}
     // Sync to Supabase via parent (cross-device persistence)
@@ -14255,6 +14300,10 @@ const _EDU = {
   _syncToCloud() {
     try {
       const progress = this.getProgress();
+      // Also persist behaviors cache
+      if(_BT && typeof _BT.export==='function'){
+        try{ localStorage.setItem('slp_behaviors_cache', JSON.stringify(_BT.export())); }catch(e){}
+      }
       // Get cert quiz attempts from localStorage
       const quizAttempts = {};
       [1,2,3].forEach(function(lv){
@@ -16160,8 +16209,11 @@ window.addEventListener('message', function(e) {
   if(!prog) return;
   if(prog.lessons && Object.keys(prog.lessons).length > 0) {
     var existing = window._slpProgress || {};
-    // Supabase is authoritative — it wins over local cache
-    window._slpProgress = Object.assign({}, existing, prog.lessons);
+    // Supabase is authoritative — merge with local, Supabase wins
+    var merged2 = Object.assign({}, existing, prog.lessons);
+    window._slpProgress = merged2;
+    // Update localStorage cache with authoritative data
+    try{ localStorage.setItem('slp_progress_cache', JSON.stringify(merged2)); }catch(e){}
   }
   if(prog.behaviors) {
     window._slpBehaviors = prog.behaviors;
