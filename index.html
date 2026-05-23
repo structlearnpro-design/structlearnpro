@@ -535,6 +535,11 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
     <span id="t-name" style="font-size:11px;color:#8891b0"></span>
     <span id="t-plan" class="chip free">FREE</span>
     <button class="tbtn up" id="t-up" onclick="showUp()">⚡ Upgrade</button>
+    <button id="ai-topbar-btn" onclick="toggleAI()" title="Ask AI about your design"
+      style="padding:6px 13px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;
+             background:linear-gradient(135deg,#4c1d95,#7c3aed);border:none;color:#fff;
+             display:none;align-items:center;gap:5px;transition:all 0.2s"
+      onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">🤖 AI Help</button>
     <button class="tbtn out" onclick="doLogout()">Sign Out</button>
   </div>
 </div>
@@ -766,7 +771,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
   <!-- AI TOGGLE BUTTON -->
   <!-- Draggable AI Assistant Button -->
   <div id="ai-toggle-btn"
-    style="position:fixed;bottom:24px;right:24px;z-index:9997;display:none;cursor:grab;width:64px;">
+    style="position:fixed;bottom:24px;right:24px;z-index:9997;display:none;cursor:grab;width:64px;" id="ai-pill-float">
     <button onclick="toggleAI()" id="ai-inner-btn"
       style="width:64px;height:64px;border-radius:16px;background:linear-gradient(135deg,#4c1d95,#7c3aed);
              border:none;color:#fff;font-size:24px;cursor:pointer;
@@ -3392,10 +3397,14 @@ function toggleAI(){
   // Update inner button appearance
   const innerBtn = document.getElementById('ai-inner-btn');
   if(innerBtn){
-    innerBtn.style.background = _aiPanelOpen
-      ? 'linear-gradient(135deg,#1e3a8a,#1d4ed8)'
-      : 'linear-gradient(135deg,#4c1d95,#7c3aed)';
-    innerBtn.textContent = _aiPanelOpen ? '✕' : '🤖';
+    innerBtn.style.background = _aiPanelOpen ? 'linear-gradient(135deg,#1e3a8a,#1d4ed8)' : 'linear-gradient(135deg,#4c1d95,#7c3aed)';
+    innerBtn.textContent = _aiPanelOpen ? 'x' : '🤖';
+  }
+  // Sync top bar button state
+  var topBtn = document.getElementById('ai-topbar-btn');
+  if(topBtn){
+    topBtn.style.background = _aiPanelOpen ? 'linear-gradient(135deg,#1e3a8a,#1d4ed8)' : 'linear-gradient(135deg,#4c1d95,#7c3aed)';
+    topBtn.innerHTML = _aiPanelOpen ? '&#10005; Close AI' : '🤖 AI Help';
   }
   if(_aiPanelOpen){
     updateAIUsageBar();
@@ -3411,13 +3420,19 @@ function toggleAI(){
 }
 
 function showAIBtn(){
-  const btn = document.getElementById('ai-toggle-btn');
-  if(btn){ btn.style.display='block'; if(window._setupAIDrag) window._setupAIDrag(); }
+  // Show AI button in top bar (primary) — no floating pill to block UI
+  var topBtn = document.getElementById('ai-topbar-btn');
+  if(topBtn) topBtn.style.display = 'inline-flex';
+  // Keep floating pill hidden — top bar button replaces it
+  var pill = document.getElementById('ai-toggle-btn');
+  if(pill) pill.style.display = 'none';
 }
 
 function hideAIBtn(){
-  const btn = document.getElementById('ai-toggle-btn');
-  if(btn) btn.style.display = 'none';
+  var topBtn = document.getElementById('ai-topbar-btn');
+  if(topBtn) topBtn.style.display = 'none';
+  var pill = document.getElementById('ai-toggle-btn');
+  if(pill) pill.style.display = 'none';
   if(_aiPanelOpen) toggleAI();
 }
 
