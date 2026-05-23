@@ -3365,60 +3365,24 @@ function updateAIUsageBar(){
 
 function showAINudge(){
   if(!_currentRES) return;
-  // Don't show if already dismissed this session or AI already open
   if(sessionStorage.getItem('ai_nudge_dismissed') || _aiPanelOpen) return;
-  const beams = _currentRES.allBeams||[];
-  const cols  = _currentRES.allCols||[];
-  const ftgs  = _currentRES.allFtgs||[];
-  const failBeams = beams.filter(b=>b.shearSafe===false||b.deflOK===false);
-  const failCols  = cols.filter(c=>c.safe===false);
-  const failFtgs  = ftgs.filter(f=>f.Ld_ok===false||f.punch_ok===false||f.ow_ok===false);
-  const totalFail = failBeams.length + failCols.length + failFtgs.length;
-
-  // Remove any existing nudge
-  const old = document.getElementById('ai-nudge-banner');
-  if(old) old.remove();
-
-  const banner = document.createElement('div');
-  banner.id = 'ai-nudge-banner';
-  banner.style.cssText = 'position:fixed;bottom:100px;right:24px;z-index:9996;max-width:280px;' +
-    'background:linear-gradient(135deg,#1e1b4b,#312e81);border:1.5px solid #4f46e5;' +
-    'border-radius:12px;padding:12px 14px;box-shadow:0 8px 32px rgba(79,70,229,0.4);' +
-    'font-family:inherit;animation:nudgeIn 0.3s ease-out';
-
-  const msg = totalFail > 0
-    ? '⚠️ <strong>' + totalFail + ' member' + (totalFail>1?'s':'') + ' failing</strong> — ask AI why and how to fix each one'
-    : '✅ All checks pass! Ask AI to explain your design choices or explore improvements';
-
-  banner.innerHTML =
-    '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">' +
-      '<div style="font-size:11px;color:#e0e7ff;line-height:1.5">' + msg + '</div>' +
-      '<button onclick="document.getElementById('ai-nudge-banner').remove();sessionStorage.setItem('ai_nudge_dismissed','1')" ' +
-        'style="background:none;border:none;color:#6366f1;cursor:pointer;font-size:14px;padding:0;flex-shrink:0">✕</button>' +
-    '</div>' +
-    '<button onclick="toggleAI();document.getElementById('ai-nudge-banner').remove()" ' +
-      'style="margin-top:8px;width:100%;padding:7px;background:linear-gradient(135deg,#4f46e5,#7c3aed);' +
-      'border:none;border-radius:8px;color:#fff;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">' +
-      '🤖 Open AI Assistant →' +
-    '</button>' +
-    '<div style="font-size:9px;color:#6366f1;margin-top:6px;text-align:center">Auto-dismisses in 12s</div>';
-
-  document.body.appendChild(banner);
-
-  // Add animation CSS once
-  if(!document.getElementById('nudge-style')){
-    const s=document.createElement('style');
-    s.id='nudge-style';
-    s.textContent='@keyframes nudgeIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}';
-    document.head.appendChild(s);
-  }
-
-  // Auto-dismiss after 12 seconds
-  setTimeout(function(){
-    const b=document.getElementById('ai-nudge-banner');
-    if(b){ b.style.opacity='0'; b.style.transition='opacity 0.5s'; setTimeout(()=>b.remove(),500); }
-    sessionStorage.setItem('ai_nudge_dismissed','1');
-  }, 12000);
+  var beams=_currentRES.allBeams||[], cols=_currentRES.allCols||[], ftgs=_currentRES.allFtgs||[];
+  var failCount=beams.filter(function(b){return b.shearSafe===false||b.deflOK===false;}).length
+    +cols.filter(function(c){return c.safe===false;}).length
+    +ftgs.filter(function(f){return f.Ld_ok===false||f.punch_ok===false||f.ow_ok===false;}).length;
+  var el=document.getElementById('ai-nudge-banner');
+  if(el) el.remove();
+  var msg=failCount>0
+    ?('<strong>'+failCount+' member'+(failCount>1?'s':'')+' failing</strong> &mdash; ask AI why')
+    :'All checks pass! Ask AI to explain or improve your design';
+  var d=document.createElement('div');
+  d.id='ai-nudge-banner';
+  d.style.cssText='position:fixed;bottom:100px;right:24px;z-index:9996;max-width:280px;background:linear-gradient(135deg,#1e1b4b,#312e81);border:1.5px solid #4f46e5;border-radius:12px;padding:12px 14px;box-shadow:0 8px 32px rgba(79,70,229,0.4);font-family:inherit';
+  d.innerHTML='<div style="display:flex;justify-content:space-between;gap:8px"><div style="font-size:11px;color:#e0e7ff;line-height:1.5">'+msg+'</div><button id="ai-nx" style="background:none;border:none;color:#6366f1;cursor:pointer;font-size:14px;padding:0;flex-shrink:0">x</button></div><button id="ai-no" style="margin-top:8px;width:100%;padding:7px;background:linear-gradient(135deg,#4f46e5,#7c3aed);border:none;border-radius:8px;color:#fff;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">Open AI Assistant</button><div style="font-size:9px;color:#6366f1;margin-top:5px;text-align:center">Auto-dismisses in 12s</div>';
+  document.body.appendChild(d);
+  document.getElementById('ai-nx').onclick=function(){d.remove();sessionStorage.setItem('ai_nudge_dismissed','1');};
+  document.getElementById('ai-no').onclick=function(){toggleAI();d.remove();};
+  setTimeout(function(){var b=document.getElementById('ai-nudge-banner');if(b){b.style.opacity='0';b.style.transition='opacity 0.5s';setTimeout(function(){b.remove();},500);}sessionStorage.setItem('ai_nudge_dismissed','1');},12000);
 }
 
 function toggleAI(){
