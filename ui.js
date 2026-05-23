@@ -14743,12 +14743,18 @@ function openLearningHub() {
 
   var cards = LEARNING_MODULES.map(function(mod) {
     var pct    = _EDU.getModuleProgress(mod.id);
-    var locked = !mod.free && typeof _userPlan!=='undefined' && _userPlan!=='pro';
+    var proLocked = !mod.free && typeof _userPlan!=='undefined' && _userPlan!=='pro';
+    // Sequential lock: M2 locked until M1 complete, M3 locked until M2 complete
+    var M1pct = _EDU.getModuleProgress('M1');
+    var M2pct = _EDU.getModuleProgress('M2');
+    var seqLocked = (mod.id==='M2' && M1pct<100) || (mod.id==='M3' && M2pct<100);
+    var locked = proLocked || seqLocked;
+    var lockReason = proLocked ? 'PRO' : seqLocked ? (mod.id==='M2'?'Complete M1 First':'Complete M2 First') : '';
     var done   = mod.lessons.filter(function(l){ return _EDU.isQuizPassed(l.id); }).length;
 
     return '<div data-modid="'+mod.id+'" data-locked="'+(locked?'1':'0')+'" onclick="handleModuleClick(this)"'
       + ' style="background:#0a0f1e;border:1.5px solid '+(locked?'#1e293b':mod.color+'55')+';border-radius:12px;padding:22px;cursor:pointer;position:relative;overflow:hidden">'
-      + (locked?'<div style="position:absolute;top:12px;right:12px;background:rgba(184,134,11,0.9);color:#1a1208;font-size:9px;font-weight:700;padding:2px 8px;border-radius:10px">PRO</div>':'')
+      + (locked?'<div style="position:absolute;top:12px;right:12px;background:rgba(184,134,11,0.9);color:#1a1208;font-size:9px;font-weight:700;padding:2px 8px;border-radius:10px">🔒 '+lockReason+'</div>':'')
       + '<div style="font-size:28px;margin-bottom:8px">'+mod.icon+'</div>'
       + '<div style="font-size:16px;font-weight:800;color:'+(locked?'#64748b':mod.color)+';margin-bottom:4px">'+mod.title+'</div>'
       + '<div style="font-size:11px;color:#64748b;margin-bottom:14px">'+mod.subtitle+'</div>'
@@ -15734,6 +15740,21 @@ _TRACK.init();
 
 // ── RESTORE PROGRESS FROM SUPABASE (cross-device) ────────────
 window.addEventListener('message', function(e) {
+  // ── OPEN_MODULE: parent asks us to open a specific learning module ──
+  if(e.data && e.data.type === 'OPEN_MODULE') {
+    try {
+      var modId = e.data.modId || 'M1';
+      if(typeof openLearningHub === 'function') {
+        openLearningHub();
+        // After hub renders, open the specific module detail
+        setTimeout(function(){
+          if(typeof openModuleDetail === 'function') openModuleDetail(modId);
+        }, 300);
+      }
+    } catch(err) { console.warn('OPEN_MODULE error:', err); }
+    return;
+  }
+
   // ── GET_AI_CONTEXT: AI panel requests current S and RES ───────
   if(e.data && e.data.type === 'GET_AI_CONTEXT') {
     try{

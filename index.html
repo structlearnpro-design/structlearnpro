@@ -1669,21 +1669,59 @@ function renderJourneyModules(){
   const raw = sessionStorage.getItem('slp_restore_progress');
   if(raw){ try{ lessonsDone = JSON.parse(raw).lessons || {}; }catch(e){} }
 
-  el.innerHTML = modules.map(function(mod){
+  // Read progress from Supabase-synced progress store
+  var lessonsDoneMap = {};
+  var quizPassedMap  = {};
+  try{
+    const raw = sessionStorage.getItem('slp_restore_progress');
+    if(raw){
+      const parsed = JSON.parse(raw);
+      lessonsDoneMap = parsed.lessons || {};
+      quizPassedMap  = parsed.quizAttempts || {};
+    }
+  }catch(e){}
+
+  // Module lesson IDs (must match LEARNING_MODULES in ui.js)
+  var moduleLessons = {
+    M1: ['L1_1','L1_2','L1_3','L1_4'],
+    M2: ['L2_1','L2_2','L2_3','L2_4'],
+    M3: ['L3_1','L3_2','L3_3'],
+  };
+
+  function modPct(id){
+    var lessons = moduleLessons[id] || [];
+    if(!lessons.length) return 0;
+    var done = lessons.filter(function(lid){ return quizPassedMap[lid] >= 70 || lessonsDoneMap[lid]; }).length;
+    return Math.round(done / lessons.length * 100);
+  }
+  function modDone(id){ return modPct(id) === 100; }
+
+  var M1done = modDone('M1');
+
+  el.innerHTML = modules.map(function(mod, idx){
     const isPro = mod.pro && plan !== 'pro';
-    // Count passed quizzes for this module (rough estimate by module index)
-    const pct = 0; // Will be updated when iframe loads
-    const statusColor = isPro ? '#374e6e' : mod.color;
-    const statusText = isPro ? '🔒 Pro' : 'Free';
-    return '<div style="background:var(--bg3);border:1px solid var(--b2);border-radius:10px;padding:14px;cursor:'+(isPro?'default':'pointer')+'" '
-      + (isPro ? '' : 'onclick="goJourneyApp()"') + '>'
+    // Module 2 locked until Module 1 done; Module 3 locked until Module 2 done
+    const isLocked = (mod.id==='M2' && !M1done) || (mod.id==='M3' && !modDone('M2'));
+    const pct = modPct(mod.id);
+    const canOpen = !isPro && !isLocked;
+
+    var lockReason = '';
+    if(mod.id==='M2' && !M1done) lockReason = 'Complete Module 1 first';
+    if(mod.id==='M3' && !modDone('M2')) lockReason = 'Complete Module 2 first';
+
+    var statusText = isPro ? '🔒 Pro' : isLocked ? '🔒 Locked' : pct===100 ? '✅ Done' : 'Free';
+    var statusBg   = isPro||isLocked ? 'rgba(55,78,110,0.3)' : pct===100 ? 'rgba(52,211,153,0.15)' : 'rgba(96,165,250,0.15)';
+    var statusClr  = isPro ? '#94a3b8' : isLocked ? '#f59e0b' : pct===100 ? '#34d399' : mod.color;
+
+    return '<div style="background:var(--bg3);border:1.5px solid '+(pct===100?mod.color:isLocked?'rgba(245,158,11,0.3)':'var(--b2)')+';border-radius:10px;padding:14px;cursor:'+(canOpen?'pointer':'not-allowed')+';opacity:'+(isLocked||isPro?'0.8':'1')+'" '
+      + (canOpen ? 'onclick="openLearningModule(\''+mod.id+'\')" title="Open '+mod.name+'"' : 'title="'+(lockReason||'Upgrade to Pro to unlock')+'"') + '>'
       + '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">'
       + '<div style="font-size:18px">'+mod.emoji+'</div>'
-      + '<span style="font-size:9px;font-weight:700;padding:2px 8px;border-radius:8px;background:rgba('+
-        (isPro?'55,78,110':'96,165,250')+',0.15);color:'+(isPro?'#94a3b8':mod.color)+'">'+statusText+'</span>'
+      + '<span style="font-size:9px;font-weight:700;padding:2px 8px;border-radius:8px;background:'+statusBg+';color:'+statusClr+'">'+statusText+'</span>'
       + '</div>'
       + '<div style="font-size:12px;font-weight:700;color:var(--txt);margin-bottom:2px">'+mod.name+'</div>'
       + '<div style="font-size:10px;color:var(--txt3);margin-bottom:10px">'+mod.subtitle+'</div>'
+      + (isLocked ? '<div style="font-size:9px;color:#f59e0b;margin-bottom:8px">🔒 '+lockReason+'</div>' : '')
       + '<div style="height:4px;background:var(--b1);border-radius:2px;overflow:hidden">'
       + '<div style="height:100%;width:'+pct+'%;background:'+mod.color+';border-radius:2px;transition:width 0.5s"></div>'
       + '</div>'
@@ -1693,8 +1731,43 @@ function renderJourneyModules(){
 }
 
 function goJourneyApp(){
-  if(_autoSaveProjId) goTo('app');
-  else newProject();
+  // Fallback: open app for any module
+  openLearningModule('M1');
+}
+
+function openLearningModule(modId){
+  // If no project open yet, create one first then open the module
+  if(!_autoSaveProjId){
+    // Create a learning project silently, then open module
+    fetch(SUPA_URL+'/rest/v1/projects',{
+      method:'POST',
+      headers:{'Authorization':'Bearer '+SUPA_KEY,'apikey':SUPA_KEY,'Content-Type':'application/json','Prefer':'return=representation'},
+      body:JSON.stringify({profile_id:P.id, name:'Learning Project', analysis_count:0, state_json:{name:'Learning Project'}})
+    }).then(function(r){ return r.json(); }).then(function(data){
+      var p = Array.isArray(data)?data[0]:data;
+      if(p){
+        projects.unshift(p);
+        _autoSaveProjId = p.id;
+        // Open the app and navigate to the Learning Modules tab inside the iframe
+        goTo('app');
+        setTimeout(function(){
+          var fr = document.getElementById('app-iframe');
+          if(fr && fr.contentWindow){
+            fr.contentWindow.postMessage({type:'OPEN_MODULE', modId:modId}, '*');
+          }
+        }, 1200);
+      }
+    }).catch(function(e){ console.error('Learning project create error:',e); goTo('app'); });
+  } else {
+    // Project already open — go to app and open the module
+    goTo('app');
+    setTimeout(function(){
+      var fr = document.getElementById('app-iframe');
+      if(fr && fr.contentWindow){
+        fr.contentWindow.postMessage({type:'OPEN_MODULE', modId:modId}, '*');
+      }
+    }, 600);
+  }
 }
 function filterP(){
   const s=document.getElementById('f-search').value.toLowerCase();
