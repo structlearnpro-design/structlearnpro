@@ -3596,46 +3596,140 @@ function formatAIResponse(text){
 function buildSystemPrompt(){
   const role = P?.role || 'student';
   const audienceNote = role === 'student'
-    ? 'Explain clearly for a civil engineering student. Use simple language, avoid jargon.'
+    ? 'Explain clearly for a civil engineering student. Use simple language, avoid jargon where possible.'
     : role === 'engineer'
     ? 'Be concise and technical. The user is a practising structural engineer.'
     : 'Balance technical accuracy with clear explanation for an educator.';
 
-  let projectContext = 'No project loaded yet.';
-  if(_currentS){
-    projectContext = `Current project:
-- Building: G+${(_currentS.numFloors||3)-1} (${_currentS.numFloors||3} storeys)
-- Spans X: ${(_currentS.spansX||[3,3]).join(', ')}m
-- Spans Y: ${(_currentS.spansY||[3,3]).join(', ')}m
-- Concrete: ${_currentS.fck||25} MPa (M${_currentS.fck||25})
-- Steel: Fe${_currentS.fy||500}
-- Seismic Zone: ${_currentS.zone||'III'}
-- City: ${_currentS.city||'Not specified'}
-- Floor Height: ${_currentS.floorHt||3}m`;
+  const S = _currentS;
+  const RES = _currentRES;
+
+  // ── SECTION 1: INPUTS ─────────────────────────────────────────
+  let inputContext = 'No project loaded yet.';
+  if(S){
+    inputContext = `=== PROJECT INPUTS ===
+Building: G+${(S.numFloors||3)-1} (${S.numFloors||3} storeys), Floor height: ${S.floorHt||3}m, Total height: ${((S.numFloors||3)*(S.floorHt||3)).toFixed(1)}m
+Plan: ${(S.spansX||[]).join('+')}m (X) × ${(S.spansY||[]).join('+')}m (Y) = ${((S.spansX||[3,3]).reduce((a,b)=>a+b,0)).toFixed(1)}m × ${((S.spansY||[3,3]).reduce((a,b)=>a+b,0)).toFixed(1)}m
+Materials: M${S.fck||25} concrete, Fe${S.fy||500} steel (IS 456:2000)
+Loads: Floor LL=${S.udlLL||3} kN/m², Roof LL=${S.udlRoof||1.5} kN/m², Floor finish=${S.floorFinish||1} kN/m², Wall load=${S.wallLoad||10} kN/m
+Seismic: Zone ${S.zone||'III'}, Soil type ${S.soilType||'II'}, Importance factor=${S.importance||1.0} (IS 1893:2016)
+Wind: Zone ${S.windZone||'IV'}, Terrain ${S.terrain||'2'} (IS 875 Part 3)
+Foundation: SBC=${S.soilBearing||200} kN/m² at ${S.ftgDepth||1.5}m depth, Type=${S.ftgType||'isolated'}
+Covers: Beam=${S.coverBeam||25}mm, Slab=${S.coverSlab||20}mm, Column=${S.coverCol||40}mm, Footing=${S.coverFtg||75}mm
+Slab thickness: ${S.slabThk||150}mm
+Stair type: ${S.stairType||'dogleg'}`;
   }
 
-  let resultsContext = '';
-  if(_currentRES){
-    const beams = _currentRES.allBeams || _currentRES.beams || [];
-    const cols  = _currentRES.allCols  || _currentRES.cols  || [];
-    const ftgs  = _currentRES.allFtgs  || _currentRES.ftgs  || [];
-    const failBeams = beams.filter(b=>b.shearSafe===false||b.deflOK===false).length;
-    const failCols  = cols.filter(c=>c.safe===false).length;
-    const failFtgs  = ftgs.filter(f=>f.punch_ok===false||f.ow_ok===false||f.Ld_ok===false).length;
-    resultsContext = `\nAnalysis results: ${beams.length} beams (${failBeams} failing), ${cols.length} columns (${failCols} failing), ${ftgs.length} footings (${failFtgs} failing)`;
+  // ── SECTION 2: SLAB ───────────────────────────────────────────
+  let slabContext = '';
+  if(RES && RES.slab){
+    const sl = RES.slab;
+    slabContext = `\n\n=== SLAB DESIGN (IS 456 Cl 23, 26) ===
+Size: ${sl.lx||0}m × ${sl.ly||0}m, Type: ${sl.twoWay?'Two-way':'One-way'}, D=${sl.slabD||150}mm, d=${sl.slabd||125}mm
+Short-span Mu=${(sl.Mx||0).toFixed(2)} kN.m/m vs Mulim=${(sl.Mulim||0).toFixed(2)} kN.m/m → ${sl.ok!==false?'PASS':'FAIL'}
+l/d ratio: ${sl.slabd?Math.round(sl.lx*1000/sl.slabd):'?'} vs limit 26 → ${sl.ld_ok!==false?'PASS':'FAIL'}
+Steel: Ast_x=${(sl.Ax||0).toFixed(0)} mm²/m @${sl.spx||200}mm, Ast_y=${(sl.Ay||0).toFixed(0)} mm²/m @${sl.spy||200}mm
+Top bars at support: @${sl.spx_n||300}mm (0.3×lx extension)`;
   }
 
-  return `You are an expert structural engineering AI assistant for StructLearn Pro, an Indian structural engineering education platform.
+  // ── SECTION 3: BEAMS ─────────────────────────────────────────
+  let beamContext = '';
+  if(RES){
+    const beams = (RES.allBeams||RES.beams||[]).filter(b=>b.floor===1);
+    if(beams.length){
+      beamContext = `\n\n=== BEAM DESIGN - GROUND FLOOR (IS 456 Cl 22-26) ===`;
+      // Unique beam types to avoid repetition
+      const seen = {};
+      beams.forEach(b=>{
+        const key = `${b.b}x${b.D}`;
+        if(!seen[key]) seen[key]=0;
+        seen[key]++;
+      });
+      beams.slice(0,8).forEach(b=>{
+        const ok = b.deflOK!==false && b.shearSafe!==false;
+        beamContext += `\n${b.label||b.lbl||'B'}: ${b.b}×${b.D}mm, L=${b.L}m, ${b.dir}-dir`;
+        beamContext += `, Mu=${(b.Mu||0).toFixed(1)}kN.m, Ast_bot=${(b.Ast_bot||b.ast||0).toFixed(0)}mm²`;
+        beamContext += `, Shear tv=${(b.tv||0).toFixed(2)} vs tcmax=${(b.tcmax||2.8).toFixed(2)} N/mm²→${b.shearSafe!==false?'OK':'FAIL'}`;
+        beamContext += `, Defl ${(b.dfl||0).toFixed(1)}mm vs ${(b.dall||0).toFixed(1)}mm→${b.deflOK!==false?'OK':'FAIL'}`;
+        beamContext += `, Stirrups D${b.sv_dia||8}@${b.svd||100}mm(supp)/${b.sv||200}mm(mid)`;
+      });
+      if(beams.length>8) beamContext += `\n... and ${beams.length-8} more beams (total ${RES.allBeams.length} across all floors)`;
+    }
+  }
+
+  // ── SECTION 4: COLUMNS ───────────────────────────────────────
+  let colContext = '';
+  if(RES){
+    const cols = (RES.allCols||RES.cols||[]).filter(c=>c.floor===1);
+    if(cols.length){
+      colContext = `\n\n=== COLUMN DESIGN - GROUND FLOOR (IS 456 Cl 25, IS 13920) ===`;
+      cols.slice(0,8).forEach(c=>{
+        colContext += `\n${c.baseLabel||c.id||'C'}: ${c.size}×${c.size}mm`;
+        colContext += `, Pu=${(c.Pu||0).toFixed(0)}kN vs Pcap=${(c.Pcap||0).toFixed(0)}kN→${c.safe!==false?'SAFE':'FAIL'}`;
+        colContext += `, pt=${(c.pt||0).toFixed(2)}%, ${c.nb||4}-D${c.dB||16} bars`;
+        colContext += `, Stirrups D${c.ts||8}@${c.tsc||150}mm, Lo=${(c.Lo||0).toFixed(2)}m confinement`;
+        colContext += `, ${c.corner?'Corner':c.edge?'Edge':'Interior'}`;
+      });
+      if(cols.length>8) colContext += `\n... ${RES.allCols.length} total columns across all floors`;
+    }
+  }
+
+  // ── SECTION 5: FOOTINGS ──────────────────────────────────────
+  let ftgContext = '';
+  if(RES && RES.allFtgs && RES.allFtgs.length){
+    ftgContext = `\n\n=== FOOTING DESIGN (IS 456 Cl 34, IS 1904) ===
+Foundation type: ${S&&S.ftgType||'isolated'}, SBC=${S&&S.soilBearing||200}kN/m², Depth=${S&&S.ftgDepth||1.5}m`;
+    RES.allFtgs.slice(0,8).forEach(f=>{
+      const ok = f.punch_ok!==false && f.ow_ok!==false && f.Ld_ok!==false;
+      ftgContext += `\n${f.label||f.lbl||'FTG'}: ${(f.Bf||1).toFixed(2)}m×${(f.Bf||1).toFixed(2)}m, D=${f.D||300}mm, d=${f.d||225}mm`;
+      ftgContext += `, Ps=${(f.Ps||0).toFixed(1)}kN, qu=${(f.qu||0).toFixed(1)}kN/m²`;
+      ftgContext += `, Punch ${f.punch_ok!==false?'OK':'FAIL'}, OWShear ${f.ow_ok!==false?'OK':'FAIL'}, DevLen ${f.Ld_ok!==false?'OK':'FAIL('+Math.round(f.Lda||0)+'mm<'+Math.round(f.Ldr||0)+'mm)'}`;
+      ftgContext += `, Y${f.dBf||12}@${f.spf||200}mm EW`;
+    });
+    if(RES.allFtgs.length>8) ftgContext += `\n... ${RES.allFtgs.length} footings total`;
+  }
+
+  // ── SECTION 6: SEISMIC ───────────────────────────────────────
+  let seismicContext = '';
+  if(RES && RES.seismic){
+    const sei = RES.seismic;
+    seismicContext = `\n\n=== SEISMIC ANALYSIS (IS 1893:2016) ===
+Zone ${S&&S.zone||'III'}, Z=${sei.Z||0.16}, I=${sei.I||1.0}, R=${sei.R||5}
+Sa/g=${(sei.Sa||0).toFixed(3)}, Ah=${(sei.Ah||0).toFixed(4)}, W=${(sei.W||0).toFixed(0)}kN
+Base shear VB=${(sei.VB||0).toFixed(1)}kN (${(sei.VBpct||0).toFixed(1)}% of weight)
+Drift check: ${sei.drift_ok!==false?'PASS':'FAIL'}`;
+  }
+
+  // ── SECTION 7: SAFETY SUMMARY ────────────────────────────────
+  let safetyContext = '';
+  if(RES){
+    const beams = RES.allBeams||RES.beams||[];
+    const cols  = RES.allCols||RES.cols||[];
+    const ftgs  = RES.allFtgs||RES.ftgs||[];
+    const sl    = RES.slab;
+    const failB = beams.filter(b=>b.shearSafe===false||b.deflOK===false);
+    const failC = cols.filter(c=>c.safe===false);
+    const failF = ftgs.filter(f=>f.punch_ok===false||f.ow_ok===false||f.Ld_ok===false);
+    const slFail= (sl&&(sl.ok===false||sl.ld_ok===false));
+    safetyContext = `\n\n=== SAFETY SUMMARY ===
+Overall: ${!failB.length&&!failC.length&&!failF.length&&!slFail?'ALL PASS ✓':'HAS FAILURES ✗'}
+Slab: ${slFail?'FAIL':'PASS'} | Beams: ${failB.length} of ${beams.length} fail | Columns: ${failC.length} of ${cols.length} fail | Footings: ${failF.length} of ${ftgs.length} fail`;
+    if(failB.length) safetyContext += `\nFailing beams: ${failB.slice(0,5).map(b=>`${b.label||b.lbl}(${b.shearSafe===false?'shear':'defl'})`).join(', ')}`;
+    if(failC.length) safetyContext += `\nFailing columns: ${failC.slice(0,5).map(c=>c.baseLabel||c.id).join(', ')}`;
+    if(failF.length) safetyContext += `\nFailing footings: ${failF.slice(0,5).map(f=>f.label||f.lbl).join(', ')}`;
+  }
+
+  return `You are an expert structural engineering AI assistant for StructLearn Pro, an IS code-based structural design education platform for Indian civil engineering students and engineers.
 
 ${audienceNote}
 
-You help users understand IS 456:2000 (RC design), IS 1893:2016 (seismic), IS 875 Part 3 (wind), and IS 13920:2016 (ductile detailing).
+You have COMPLETE ACCESS to the student's design — every input, every calculated value, every check result is provided below. Use this data to give specific, accurate answers about THEIR actual design. Always reference actual numbers from their design, not generic examples.
 
-Always cite specific IS clauses when relevant (e.g. "IS 456:2000 Clause 26.5.1").
-Keep responses concise — under 200 words unless detailed explanation is specifically needed.
-Be encouraging and educational in tone.
+Reference IS codes precisely: IS 456:2000, IS 1893:2016, IS 875, IS 13920:2016, IS 1904.
+When answering, cite the exact clause AND the actual value from their design.
+Be educational — explain WHY a value is what it is, not just what it is.
 
-${projectContext}${resultsContext}`;
+${inputContext}${slabContext}${beamContext}${colContext}${ftgContext}${seismicContext}${safetyContext}`;
 }
 
 // ── TAB 1: EXPLAIN MEMBER ──────────────────────────────────────
