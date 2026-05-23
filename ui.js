@@ -10955,32 +10955,34 @@ async function startConstructionPDF() {
       }
     }
 
-    // Column squares (use actual footing data for size)
-    cxA.forEach((gx2,ci2)=>cyA.forEach((gy2,ri2)=>{
+    // Compute column/row positions at slPlanScale (independent of cxA/cyA)
+    const slCxA=[slPX]; S.spansX.slice(0,nBX).forEach(sp=>slCxA.push(slCxA[slCxA.length-1]+sp*1000*slPlanScale));
+    const slCyA=[slPY]; S.spansY.slice(0,nBY).forEach(sp=>slCyA.push(slCyA[slCyA.length-1]+sp*1000*slPlanScale));
+
+    // Column squares at correct positions
+    slCxA.slice(0,nBX+1).forEach((gx2,ci2)=>slCyA.slice(0,nBY+1).forEach((gy2,ri2)=>{
       const ftgNode=getFtgAt(ri2,ci2);
       const cSzN=(ftgNode?.colSize||300);
-      const cSzP=Math.max(2,cSzN*slPlanScale*0.6);  // smaller, lighter
+      const cSzP=Math.max(2,cSzN*slPlanScale*0.6);
       FC(80,80,120);LC(0,0,0);LW(0.3);Rect(gx2-cSzP/2,gy2-cSzP/2,cSzP,cSzP,'FD');
     }));
 
-    // Grid column numbers ABOVE and BELOW plan
-    cxA.forEach((gx2,i)=>{
-      F(7,'bold',0,0,0);Txt(String(i+1),gx2,slPY-10,{align:'center'});  // above
-      Txt(String(i+1),gx2,slPY+slPH+10,{align:'center'});               // below
+    // Grid column numbers ABOVE and BELOW plan — at correct X positions
+    slCxA.forEach((gx2,i)=>{
+      F(7,'bold',0,0,0);Txt(String(i+1),gx2,slPY-10,{align:'center'});
+      Txt(String(i+1),gx2,slPY+slPH+10,{align:'center'});
     });
-    // Grid row letters LEFT and RIGHT (A at top = j=0)
-    cyA.forEach((gy2,j)=>{
-      F(7,'bold',0,0,0);Txt(String.fromCharCode(65+j),slPX-12,gy2+2.5,{align:'right'}); // left
-      Txt(String.fromCharCode(65+j),slPX+slPW+12,gy2+2.5);                              // right
+    // Grid row letters LEFT and RIGHT — at correct Y positions
+    slCyA.forEach((gy2,j)=>{
+      F(7,'bold',0,0,0);Txt(String.fromCharCode(65+j),slPX-12,gy2+2.5,{align:'right'});
+      Txt(String.fromCharCode(65+j),slPX+slPW+12,gy2+2.5);
     });
 
-    // Dimension chains — X below plan, Y left of plan
-    S.spansX.slice(0,nBX).forEach((sp,i)=>DH(cxA[i],cxA[i+1],slPY+slPH+14,ftin(sp),false));
+    // Dimension chains at correct positions (no duplicates)
+    S.spansX.slice(0,nBX).forEach((sp,i)=>DH(slCxA[i],slCxA[i+1],slPY+slPH+14,ftin(sp),false));
     DH(slPX,slPX+slPW,slPY+slPH+22,ftin(totX)+' TOTAL',false);
-    S.spansY.slice(0,nBY).forEach((sp,j)=>DV(slPX-22,cyA[j],cyA[j+1],ftin(sp),true));
+    S.spansY.slice(0,nBY).forEach((sp,j)=>DV(slPX-22,slCyA[j],slCyA[j+1],ftin(sp),true));
     DV(slPX-32,slPY,slPY+slPH,ftin(totY)+' TOTAL',true);
-    S.spansY.slice(0,nBY).forEach((sp,j)=>DV(slPX-22,cyA[j],cyA[j+1],ftin(sp),true));
-    DV(slPX-30,slPY,slPY+slPH,ftin(totY)+' TOTAL',true);
 
     // LEGEND box
     const lgYs=slPY+slPH+32;
@@ -11032,25 +11034,23 @@ async function startConstructionPDF() {
     doc.setLineDashPattern([],0);
     F(6,'normal',80,80,80);Txt('PLOT BOUNDARY',clPX-18,clPY-28);
 
-    // Centre lines — dash-dot through entire plan and beyond
+    // Centre lines — dash-dot through entire plan and beyond (use clCxA/clCyA — correct scale)
     LC(0,100,180);LW(0.3);doc.setLineDashPattern([8,3,2,3],0);
-    cxA.forEach(gx2=>Line(gx2,clPY-16,gx2,clPY+planH+16));
-    cyA.forEach(gy2=>Line(clPX-16,gy2,clPX+planW+16,gy2));
+    clCxA.forEach(gx2=>Line(gx2,clPY-16,gx2,clPY+clPH+16));
+    clCyA.forEach(gy2=>Line(clPX-16,gy2,clPX+clPW+16,gy2));
     doc.setLineDashPattern([],0);
 
-    // Diagonal check line (grey, to illustrate the measurement)
+    // Diagonal check line
     LC(160,160,160);LW(0.3);doc.setLineDashPattern([3,3],0);
     Line(clPX,clPY,clPX+clPlanW2,clPY+clPlanH2);
     Line(clPX+clPlanW2,clPY,clPX,clPY+clPlanH2);
     doc.setLineDashPattern([],0);
     F(5.5,'italic',120,120,120);Txt('diag='+r0(Math.sqrt(totX*totX+totY*totY)*1000)+'mm',clPX+clPlanW2/2+4,clPY+clPlanH2/2);
 
-    // Column squares (outline only, no fill — keep centre lines visible)
-    cxA.forEach((gx2,i)=>cyA.forEach((gy2,j)=>{
-      // Small solid column square
+    // Column squares — use clCxA/clCyA (correct constrained scale)
+    clCxA.forEach((gx2,i)=>clCyA.forEach((gy2,j)=>{
       const cSzP2=Math.max(3,((getFtgAt(j,i)?.colSize||300))*clPlanScale);
       FC(180,190,220);LC(0,0,100);LW(0.5);Rect(gx2-cSzP2/2,gy2-cSzP2/2,cSzP2,cSzP2,'FD');
-      // Centre mark cross (on top of column)
       LC(0,0,100);LW(0.3);
       Line(gx2-cSzP2*0.7,gy2,gx2+cSzP2*0.7,gy2);
       Line(gx2,gy2-cSzP2*0.7,gx2,gy2+cSzP2*0.7);
