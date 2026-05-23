@@ -2049,7 +2049,21 @@ function svgFootingTypePanel(ftg) {
   lines.push('</svg>');
 
   var cap = 'Fig: Footing type selection for ' + ftg.label + '. Recommended: ' + ti.name + '. Based on IS 456 Cl 34 and proximity to adjacent footings (gap < 300mm triggers combined footing recommendation).';
-  return '<div class="dg">' + lines.join('') + '<div class="dg-cap">' + cap + '</div></div>';
+
+  // Action buttons so user can apply the recommendation without going to Soil & Site tab
+  var btnStyle = 'padding:7px 16px;border-radius:8px;cursor:pointer;font-size:11px;font-weight:700;font-family:inherit;margin-right:8px;';
+  var btns = '';
+  if(type !== (S.ftgType||'isolated')){
+    btns += '<button onclick="S.ftgType=\''+type+'\';runNow()" style="'+btnStyle+'background:rgba('+
+      (type==='combined'?'245,158,11':'248,113,113')+',0.15);border:1.5px solid '+ti.col+';color:'+ti.col+'">'+
+      '✅ Apply '+ti.short+' Footing & Re-analyse</button>';
+  } else {
+    btns += '<span style="font-size:11px;color:#34d399;font-weight:700">✓ '+ti.short+' footing is already selected</span>';
+  }
+  btns += '<button onclick="go(5)" style="'+btnStyle+'background:transparent;border:1px solid #475569;color:#94a3b8">⚙ Change in Soil & Site →</button>';
+  var actionBar = '<div style="margin-top:10px;padding:10px;background:rgba(15,23,42,0.5);border-radius:8px;display:flex;align-items:center;flex-wrap:wrap;gap:6px">'+btns+'</div>';
+
+  return '<div class="dg">' + lines.join('') + '<div class="dg-cap">' + cap + '</div>' + actionBar + '</div>';
 }
 
 function secBeams(){
@@ -10156,15 +10170,19 @@ async function startConstructionPDF() {
       const cf=RES.allFtgs&&RES.allFtgs[0]||{D:400,Bf:1.2,dBf:12,spf:150,d:320,Ps:150,colSize:300};
       // Combined spans 2 columns
       const cfSpan=Math.max(2,(S.spansX&&S.spansX[0])||4); // first X span
-      const cfL=cfSpan+cf.Bf; // total length = span + Bf
-      const cfSc=Math.min(30,(DR_W*0.65)/(cfL*1000/25));
-      const cfW2=cfL*1000*cfSc, cfH2=Math.max(12,Math.min(28,(cf.D||400)/25));
-      const cfX2=DX+(DR_W-cfW2)/2, cfY2=y+10;
+      const cfL=cfSpan+cf.Bf; // total length in metres (span + footing width)
+      // cfSc: mm on paper per metre of real length, to fit in 72% of drawing width
+      const cfSc=Math.min(50,(DW2*0.72)/cfL); // cfSc in mm/m
+      const cfW2=cfL*cfSc; // width in PDF mm — now correct
+      const cfH2=Math.max(12,Math.min(28,(cf.D||400)/25)); // depth in PDF mm
+      const cfX2=DX+(DW2-cfW2)/2, cfY2=y+10;
       // Plan view (top)
       F(7,'bold',0,0,0);Txt('PLAN',DX+DW2/2,cfY2-3,{align:'center'});
       FC(235,238,248);LC(0,0,0);LW(0.8);Rect(cfX2,cfY2,cfW2,cfH2,'FD');Hatch(cfX2,cfY2,cfW2,cfH2);
       // 2 column positions in plan
-      const col1X=cfX2+(cf.Bf||1)*500*cfSc, col2X=cfX2+cfW2-(cf.Bf||1)*500*cfSc;
+      // col1X and col2X at actual column CL positions (Bf/2 overhang from each column)
+      const cfOverhang=(cf.Bf||1)/2; // overhang in metres
+      const col1X=cfX2+cfOverhang*cfSc, col2X=cfX2+cfW2-cfOverhang*cfSc;
       const colPW2=Math.max(4,(cf.colSize||300)/25);
       FC(100,100,130);Rect(col1X-colPW2/2,cfY2+cfH2/2-colPW2/2,colPW2,colPW2,'F');
       Rect(col2X-colPW2/2,cfY2+cfH2/2-colPW2/2,colPW2,colPW2,'F');
@@ -10178,7 +10196,7 @@ async function startConstructionPDF() {
       // Section view below
       const secY=cfY2+cfH2+22;
       F(7,'bold',0,0,0);Txt('TYPICAL SECTION (ALONG LENGTH)',DX+DW2/2,secY-3,{align:'center'});
-      const sfH=Math.max(14,Math.min(26,(cf.D||400)/25));
+      const sfH=cfH2; // same depth as plan view
       FC(225,228,238);LC(0,0,0);LW(0.8);Rect(cfX2,secY,cfW2,sfH,'FD');Hatch(cfX2,secY,cfW2,sfH);
       // Bottom bars (longitudinal)
       const nLB=Math.min(8,Math.floor(cfW2/8)+2);
@@ -10879,12 +10897,49 @@ async function startConstructionPDF() {
         const isVoid=panel===undefined&&slP; // no panel = void/stair
 
         if(isVoid){
-          // Hatched void
-          FC(210,210,210);Rect(bxL,byT,bW,bH,'F');
-          LC(140,140,140);LW(0.25);
-          for(let hx=bxL;hx<bxR;hx+=4)Line(hx,byT,hx-bH,byT+bH);
-          for(let hx=bxL;hx<bxR+bH;hx+=4)Line(Math.min(hx,bxR),byT,Math.max(bxL,hx-bH),byB);
-          F(6,'bold',80,80,80);Txt('VOID/STAIR',bmx,bmy+2,{align:'center'});
+          // Determine if staircase or structural void
+          const bayObj = GRID && GRID.bays ? GRID.bays.find(b=>b.col===ci&&b.row===ri) : null;
+          const isStairBay = bayObj && bayObj.type === 'staircase';
+
+          if(isStairBay){
+            // STAIRCASE bay: amber diagonal hatch, step pattern
+            FC(255,243,220);Rect(bxL,byT,bW,bH,'F');
+            // Bounded diagonal lines (clip to bay)
+            LC(200,130,0);LW(0.35);
+            const step=6;
+            for(let d=0;d<bW+bH;d+=step){
+              const x1=bxL+d, y1=byT;
+              const x2=bxL, y2=byT+d;
+              Line(Math.min(x1,bxR), Math.max(y1, byT + Math.max(0,d-bW)),
+                   Math.max(x2,bxL), Math.min(y2, byT + Math.min(bH, d)));
+            }
+            LC(200,130,0);LW(0.6);Rect(bxL,byT,bW,bH,'D');
+            // Step symbol (small stair icon)
+            const sw=bW*0.35, sh=bH*0.35, sx=bmx-sw/2, sy=bmy-sh/2;
+            LC(180,100,0);LW(0.8);
+            const nst=4, stW=sw/nst, stH=sh/nst;
+            for(let si=0;si<nst;si++){
+              doc.rect(sx+si*stW, sy+(nst-si-1)*stH, stW, stH+(si*stH),'D');
+            }
+            F(6,'bold',150,80,0);Txt('STAIRCASE',bmx,bmy+sh/2+5,{align:'center'});
+            F(5,'italic',150,100,0);Txt('SC-01',bmx,bmy+sh/2+10,{align:'center'});
+          } else {
+            // STRUCTURAL VOID: grey cross-hatch
+            FC(220,222,228);Rect(bxL,byT,bW,bH,'F');
+            LC(160,160,165);LW(0.25);
+            // Bounded diagonal hatch — never outside bay
+            const step2=5;
+            for(let d=0;d<bW+bH;d+=step2){
+              const startX=Math.min(bxL+d, bxR);
+              const startY=byT+Math.max(0,d-bW);
+              const endX=Math.max(bxL, bxL+d-bH);
+              const endY=Math.min(byT+d, byB);
+              if(startX>bxL||startY>byT) Line(startX,startY,endX,endY);
+            }
+            LC(120,120,125);LW(0.5);Rect(bxL,byT,bW,bH,'D');
+            F(5.5,'bold',100,100,110);Txt('VOID',bmx,bmy-2,{align:'center'});
+            F(4.5,'normal',120,120,130);Txt('(no slab)',bmx,bmy+4,{align:'center'});
+          }
           continue;
         }
 
@@ -11014,16 +11069,18 @@ async function startConstructionPDF() {
     F(8,'bold',0,0,100);Txt('CENTRE LINE PLAN  (SETTING OUT DRAWING)',DR_X+DR_W/2,y,{align:'center'});
     y+=16;
 
-    // Constrain plan so notes box fits inside drawing frame
-    const clMaxH=DR_H-90; // leave room for notes inside frame
-    const clScale2=Math.min(mmPerM,clMaxH/planH);
+    // Fit plan to available area: use max of width/height scale, leave 38mm for notes
+    const clAvailW = DR_W - 80;  // leave margins for labels/dims
+    const clAvailH = DR_H - 50;  // leave 50mm for notes + margins
+    // clScale2 in mm/m so that plan fits available area
+    const clScale2 = Math.min(clAvailW / totX, clAvailH / totY);
     const clPlanW2=totX*clScale2, clPlanH2=totY*clScale2;
-    // Recompute column/row positions at constrained scale
+    // Centre plan in drawing area
     const clCxA=S.spansX.reduce((a,sp,i)=>{a.push((i===0?DR_X+(DR_W-clPlanW2)/2:a[a.length-1])+sp*clScale2);return a;},[DR_X+(DR_W-clPlanW2)/2]);
     const clCyA=S.spansY.reduce((a,sp,j)=>{a.push((j===0?DR_Y+y+10:a[a.length-1])+sp*clScale2);return a;},[DR_Y+y+10]);
     const clPX=clCxA[0], clPY=clCyA[0];
     const clPW=clPlanW2, clPH=clPlanH2;
-    const clPlanScale=clScale2/1000; // same as plan scale (1mm on paper per mm real = 1:100 → mmPerM=10, /1000 = 0.01)
+    const clPlanScale=clScale2/1000;
 
     // Note below title, above plan
     F(6.5,'italic',80,80,80);Txt('This drawing is for setting out of columns and footings on site. All dimensions are in mm unless noted.',DR_X+DR_W/2,y-8,{align:'center'});
@@ -11117,42 +11174,78 @@ async function startConstructionPDF() {
     cyA.forEach(gy2=>Line(exPX-20,gy2,exPX+planW+20,gy2));
 
     // Excavation pits and footing rectangles at each column
+    const exFtgType = S.ftgType || 'isolated';
+    const drawnCombined = {}; // track combined pairs to avoid duplicates
+
     cxA.forEach((gx2,i)=>cyA.forEach((gy2,j)=>{
-      const ftg2 = getFtgAt(j,i); // row=j, col=i
-      const fSz=Math.max(5,(ftg2.Bf||1)*mmPerM);
-      const excSz=fSz+4; // 200mm working space at scale (reduced to prevent overlap)
+      const ftg2 = getFtgAt(j,i);
+      const fSz = Math.max(5,(ftg2.Bf||1)*mmPerM);
 
-      // Excavation pit (light soil colour, dashed)
-      LC(120,80,30);LW(0.3);doc.setLineDashPattern([4,2],0);
-      Rect(gx2-excSz/2,gy2-excSz/2,excSz,excSz,'D');
-      doc.setLineDashPattern([],0);
-
-      // PCC blinding (slightly larger than footing)
-      FC(195,190,178);LC(80,70,50);LW(0.3);Rect(gx2-fSz/2-1,gy2-fSz/2-1,fSz+2,fSz+2,'FD');
-
-      // Footing outline (solid bold)
-      FC(215,218,230);LC(0,0,0);LW(0.6);Rect(gx2-fSz/2,gy2-fSz/2,fSz,fSz,'FD');
-
-      // Column stub
-      const cSz2=(ftg2.colSize||300);
-      const cSzP2=Math.max(2,cSz2*mmPerM/1000);
-      FC(80,80,130);LC(0,0,0);LW(0.4);Rect(gx2-cSzP2/2,gy2-cSzP2/2,cSzP2,cSzP2,'FD');
-
-      // Grid reference — Row letter + Col number (e.g. A1, B2) — matches other sheets
-      F(6,'bold',0,0,100);Txt(String.fromCharCode(65+j)+String(i+1),gx2,gy2-fSz/2-4,{align:'center'});
-      // Size label below footing — short format to avoid truncation
-      F(5.5,'normal',0,0,0);Txt(r0((ftg2.Bf||1)*1000)+'x'+r0((ftg2.Bf||1)*1000),gx2,gy2+fSz/2+5,{align:'center'});
-      // Depth inside
-      F(5,'italic',80,0,0);Txt('D='+r0(ftg2.D||300),gx2,gy2+1.5,{align:'center'});
+      if(exFtgType==='combined' && i<cxA.length-1){
+        // Combined: draw elongated pit spanning 2 columns in X
+        const key=j+':'+i;
+        if(drawnCombined[key]) return; // already drawn this pair
+        drawnCombined[key]=true;
+        const gx2r=cxA[i+1]; // right column
+        const cfPitW=(gx2r-gx2)+fSz+4; // span + excavation allowance
+        const cfPitH=fSz+4;
+        const cfL2=(gx2r-gx2)+fSz; // combined footing length on paper
+        // Excavation pit
+        LC(120,80,30);LW(0.3);doc.setLineDashPattern([4,2],0);
+        Rect(gx2-cfPitH/2,gy2-cfPitH/2,cfPitW,cfPitH,'D');
+        doc.setLineDashPattern([],0);
+        // PCC
+        FC(195,190,178);LC(80,70,50);LW(0.3);Rect(gx2-fSz/2-1,gy2-fSz/2-1,cfL2+2,fSz+2,'FD');
+        // Footing
+        FC(215,218,230);LC(0,0,0);LW(0.6);Rect(gx2-fSz/2,gy2-fSz/2,cfL2,fSz,'FD');
+        // Column stubs
+        FC(80,80,130);LC(0,0,0);LW(0.4);
+        const cSzP3=Math.max(2,(ftg2.colSize||300)*mmPerM/1000);
+        Rect(gx2-cSzP3/2,gy2-cSzP3/2,cSzP3,cSzP3,'FD');
+        Rect(gx2r-cSzP3/2,gy2-cSzP3/2,cSzP3,cSzP3,'FD');
+        // Label inside footing
+        F(5.5,'bold',0,0,100);Txt(String.fromCharCode(65+j)+String(i+1)+'+'+String(i+2),(gx2+gx2r)/2,gy2-fSz/2+5,{align:'center'});
+        F(5,'normal',0,0,0);Txt(r0(cfL2/mmPerM*1000)+'x'+r0((ftg2.Bf||1)*1000),(gx2+gx2r)/2,gy2+fSz/2-3,{align:'center'});
+        F(4.5,'italic',80,0,0);Txt('D='+r0(ftg2.D||300),(gx2+gx2r)/2,gy2+1.5,{align:'center'});
+      } else if(exFtgType==='raft'){
+        // Raft: just draw column position marker, no individual pits
+        FC(80,80,130);LC(0,0,0);LW(0.4);
+        const cSzP4=Math.max(3,(ftg2.colSize||300)*mmPerM/1000);
+        Rect(gx2-cSzP4/2,gy2-cSzP4/2,cSzP4,cSzP4,'FD');
+        F(5.5,'bold',0,0,100);Txt(String.fromCharCode(65+j)+String(i+1),gx2,gy2-cSzP4/2-3,{align:'center'});
+      } else {
+        // Isolated: original logic
+        const excSz=fSz+4;
+        LC(120,80,30);LW(0.3);doc.setLineDashPattern([4,2],0);
+        Rect(gx2-excSz/2,gy2-excSz/2,excSz,excSz,'D');
+        doc.setLineDashPattern([],0);
+        FC(195,190,178);LC(80,70,50);LW(0.3);Rect(gx2-fSz/2-1,gy2-fSz/2-1,fSz+2,fSz+2,'FD');
+        FC(215,218,230);LC(0,0,0);LW(0.6);Rect(gx2-fSz/2,gy2-fSz/2,fSz,fSz,'FD');
+        const cSz2=(ftg2.colSize||300);
+        const cSzP2=Math.max(2,cSz2*mmPerM/1000);
+        FC(80,80,130);LC(0,0,0);LW(0.4);Rect(gx2-cSzP2/2,gy2-cSzP2/2,cSzP2,cSzP2,'FD');
+        // Labels inside plan boundaries
+        F(6,'bold',0,0,100);Txt(String.fromCharCode(65+j)+String(i+1),gx2,gy2-fSz/2+6,{align:'center'});
+        F(5.5,'normal',0,0,0);Txt(r0((ftg2.Bf||1)*1000)+'x'+r0((ftg2.Bf||1)*1000),gx2,gy2+fSz/2-3,{align:'center'});
+        F(5,'italic',80,0,0);Txt('D='+r0(ftg2.D||300),gx2,gy2+1.5,{align:'center'});
+      }
     }));
+    // Raft: draw single hatched outline
+    if(exFtgType==='raft'){
+      FC(215,218,230);LC(0,0,0);LW(0.8);
+      const raftExPad=8;
+      Rect(exPX-raftExPad,exPY-raftExPad,planW+raftExPad*2,planH+raftExPad*2,'D');
+      LC(120,80,30);LW(0.3);doc.setLineDashPattern([4,2],0);
+      Rect(exPX-raftExPad-3,exPY-raftExPad-3,planW+raftExPad*2+6,planH+raftExPad*2+6,'D');
+      doc.setLineDashPattern([],0);
+      F(6.5,'bold',0,0,100);Txt('RAFT FOUNDATION — Continuous excavation under full footprint',exPX+planW/2,exPY-raftExPad-6,{align:'center'});
+    }
 
-    // Dims — X below plan, Y left of plan
+    // Dims — X below plan, Y left of plan (no duplicates)
     S.spansX.slice(0,nBX).forEach((sp,i)=>DH(cxA[i],cxA[i+1],exPY+planH+14,ftin(sp),false));
     DH(exPX,exPX+planW,exPY+planH+22,ftin(totX)+' TOTAL',false);
     S.spansY.slice(0,nBY).forEach((sp,j)=>DV(exPX-22,cyA[j],cyA[j+1],ftin(sp),true));
     DV(exPX-32,exPY,exPY+planH,ftin(totY)+' TOTAL',true);
-    S.spansY.slice(0,nBY).forEach((sp,j)=>DV(exPX-26,cyA[j],cyA[j+1],ftin(sp),true));
-    DV(exPX-34,exPY,exPY+planH,ftin(totY)+' TOTAL',true);
 
     // Section notation and schedule
     const exSchY=exPY+planH+38;
