@@ -3184,23 +3184,26 @@ async function saveProgressToSupabase(progress) {
     // Update sessionStorage immediately so refresh restores it instantly
     sessionStorage.setItem('slp_restore_progress', JSON.stringify(progress));
     // Save to our progress table using profile_id
-    // UPSERT: creates row if missing, updates if exists
-    await fetch(SUPA_URL+'/rest/v1/progress', {
-      method: 'POST',
-      headers: {
-        'Authorization':'Bearer '+SUPA_KEY,
-        'apikey':SUPA_KEY,
-        'Content-Type':'application/json',
-        'Prefer':'resolution=merge-duplicates'
-      },
-      body: JSON.stringify({
-        profile_id:       P.id,
-        quiz_scores:      progress.quizAttempts || {},
-        topics_completed: progress.lessons      || {},
-        badges:           progress.behaviors    || {},
-        updated_at:       new Date().toISOString()
-      })
+    // Try UPDATE first; if no row exists, INSERT
+    const payload = JSON.stringify({
+      quiz_scores:      progress.quizAttempts || {},
+      topics_completed: progress.lessons      || {},
+      badges:           progress.behaviors    || {},
+      updated_at:       new Date().toISOString()
     });
+    const patchResp = await fetch(SUPA_URL+'/rest/v1/progress?profile_id=eq.'+P.id, {
+      method: 'PATCH',
+      headers: {'Authorization':'Bearer '+SUPA_KEY,'apikey':SUPA_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},
+      body: payload
+    });
+    // If PATCH updated 0 rows (no existing row), INSERT a new one
+    if(patchResp.headers.get('content-range')==='*/0' || patchResp.status===404){
+      await fetch(SUPA_URL+'/rest/v1/progress', {
+        method: 'POST',
+        headers: {'Authorization':'Bearer '+SUPA_KEY,'apikey':SUPA_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},
+        body: JSON.stringify({profile_id:P.id, quiz_scores:progress.quizAttempts||{}, topics_completed:progress.lessons||{}, badges:progress.behaviors||{}, updated_at:new Date().toISOString()})
+      });
+    }
   } catch(e) { console.warn('Save progress error', e); }
 }
 
@@ -3645,13 +3648,13 @@ Top bars at support: @${sl.spx_n||300}mm (0.3×lx extension)`;
         if(!seen[key]) seen[key]=0;
         seen[key]++;
       });
-      beams.slice(0,8).forEach(b=>{
-        const ok = b.deflOK!==false && b.shearSafe!==false;
-        beamContext += `\n${b.label||b.lbl||'B'}: ${b.b}×${b.D}mm, L=${b.L}m, ${b.dir}-dir`;
-        beamContext += `, Mu=${(b.Mu||0).toFixed(1)}kN.m, Ast_bot=${(b.Ast_bot||b.ast||0).toFixed(0)}mm²`;
-        beamContext += `, Shear tv=${(b.tv||0).toFixed(2)} vs tcmax=${(b.tcmax||2.8).toFixed(2)} N/mm²→${b.shearSafe!==false?'OK':'FAIL'}`;
-        beamContext += `, Defl ${(b.dfl||0).toFixed(1)}mm vs ${(b.dall||0).toFixed(1)}mm→${b.deflOK!==false?'OK':'FAIL'}`;
-        beamContext += `, Stirrups D${b.sv_dia||8}@${b.svd||100}mm(supp)/${b.sv||200}mm(mid)`;
+      beams.slice(0,10).forEach(b=>{
+        beamContext += `\n${b.label||'B'} [${b.floorLabel||'F1'}]: ${b.b}×${b.D}mm, L=${b.L}m, ${b.dir}-dir, ${b.endCond||'continuous'}, trib=${(b.trib||0).toFixed(1)}m`;
+        beamContext += `\n  Loads: wu=${(b.wu||0).toFixed(2)}kN/m (factored UDL)`;
+        beamContext += `\n  Moments: Mmax=${(b.Mmax||0).toFixed(2)}kN.m (midspan), Msup=${(b.Msup||0).toFixed(2)}kN.m (support), Mulim=${(b.Mulim||0).toFixed(2)}kN.m`;
+        beamContext += `\n  Steel: Ast_mid=${(b.Am||0).toFixed(0)}mm² (${b.nm||2}-T10), Ast_sup=${(b.As2||0).toFixed(0)}mm² (${b.ns||2}-T10)`;
+        beamContext += `\n  Shear: tv=${(b.tv||0).toFixed(2)} vs tcmax=${(b.tcmax||2.8).toFixed(2)} N/mm²→${b.shearSafe!==false?'PASS':'FAIL'}, Stirrups D8@${b.svd||100}mm(supp)/D8@${b.sv||200}mm(mid)`;
+        beamContext += `\n  Deflection: ${(b.dfl||0).toFixed(1)}mm vs ${(b.dall||0).toFixed(1)}mm limit→${b.deflOK!==false?'PASS':'FAIL'}`;
       });
       if(beams.length>8) beamContext += `\n... and ${beams.length-8} more beams (total ${RES.allBeams.length} across all floors)`;
     }
@@ -3663,8 +3666,8 @@ Top bars at support: @${sl.spx_n||300}mm (0.3×lx extension)`;
     const cols = (RES.allCols||RES.cols||[]).filter(c=>c.floor===1);
     if(cols.length){
       colContext = `\n\n=== COLUMN DESIGN - GROUND FLOOR (IS 456 Cl 25, IS 13920) ===`;
-      cols.slice(0,8).forEach(c=>{
-        colContext += `\n${c.baseLabel||c.id||'C'}: ${c.size}×${c.size}mm`;
+      cols.slice(0,10).forEach(c=>{
+        colContext += `\n${c.baseLabel||c.nodeId||'C'}: ${c.size}×${c.size}mm`;
         colContext += `, Pu=${(c.Pu||0).toFixed(0)}kN vs Pcap=${(c.Pcap||0).toFixed(0)}kN→${c.safe!==false?'SAFE':'FAIL'}`;
         colContext += `, pt=${(c.pt||0).toFixed(2)}%, ${c.nb||4}-D${c.dB||16} bars`;
         colContext += `, Stirrups D${c.ts||8}@${c.tsc||150}mm, Lo=${(c.Lo||0).toFixed(2)}m confinement`;
@@ -3691,13 +3694,14 @@ Foundation type: ${S&&S.ftgType||'isolated'}, SBC=${S&&S.soilBearing||200}kN/m²
 
   // ── SECTION 6: SEISMIC ───────────────────────────────────────
   let seismicContext = '';
-  if(RES && RES.seismic){
-    const sei = RES.seismic;
+  if(RES && RES.seis){
+    const sei = RES.seis;
+    const VBpct = sei.Wt>0 ? (sei.Vb/sei.Wt*100).toFixed(1) : '0';
     seismicContext = `\n\n=== SEISMIC ANALYSIS (IS 1893:2016) ===
 Zone ${S&&S.zone||'III'}, Z=${sei.Z||0.16}, I=${sei.I||1.0}, R=${sei.R||5}
-Sa/g=${(sei.Sa||0).toFixed(3)}, Ah=${(sei.Ah||0).toFixed(4)}, W=${(sei.W||0).toFixed(0)}kN
-Base shear VB=${(sei.VB||0).toFixed(1)}kN (${(sei.VBpct||0).toFixed(1)}% of weight)
-Drift check: ${sei.drift_ok!==false?'PASS':'FAIL'}`;
+Time period Ta=${(sei.Ta||0).toFixed(3)}s, Sa/g=${(sei.Sa||0).toFixed(3)}, Ah=${(sei.Ah||0).toFixed(4)}
+Seismic weight W=${(sei.Wt||0).toFixed(1)}kN, Base shear Vb=${(sei.Vb||0).toFixed(1)}kN (${VBpct}% of weight)
+Floor forces: ${(sei.floors||[]).slice(0,3).map(f=>`F${f.floor}=${(f.Qi||0).toFixed(1)}kN`).join(', ')}`;
   }
 
   // ── SECTION 7: SAFETY SUMMARY ────────────────────────────────
