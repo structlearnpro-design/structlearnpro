@@ -2906,36 +2906,35 @@ function colDetail(c){
       const Asc_min=0.008*c.Ag;
       const Asc_combined=Asc_axial+Asc_ecc;
       const concreteCarries=0.4*S.fck*c.Ag/1000;
-      return \`<div style="background:rgba(167,139,250,0.05);border:1px solid rgba(167,139,250,0.2);border-radius:8px;padding:10px;margin:8px 0;font-size:11px">
-        <div style="font-weight:700;color:#a78bfa;margin-bottom:8px">Steel Requirement — 3 Checks (IS 456 Cl 25.4, 26.5.3, 39.3)</div>
-
-        <div style="margin-bottom:6px;padding:6px;background:rgba(0,0,0,0.2);border-radius:4px">
-          <span style="color:#94a3b8">① Axial demand only (IS 456 Cl 39.3):</span><br>
-          <span style="font-family:monospace;font-size:10px">Asc_axial = (Pu×1000 − 0.4×fck×Ag)/(0.67×fy−0.4×fck)</span><br>
-          <span style="font-family:monospace;font-size:10px">= (${r0(c.Pu*1000)} − ${r0(0.4*S.fck*c.Ag)})/${r0(0.67*S.fy-0.4*S.fck)} = ${r2(Ar_raw)} mm²</span><br>
-          ${Ar_raw<=0
-            ? \`<span style="color:#fbbf24">→ 0 mm² (concrete alone can carry ${r2(concreteCarries)}kN ≥ Pu=${r2(c.Pu)}kN for pure axial)</span>\`
-            : \`<span style="color:#34d399">→ ${r0(Asc_axial)} mm²</span>\`}
-        </div>
-
-        <div style="margin-bottom:6px;padding:6px;background:rgba(0,0,0,0.2);border-radius:4px">
-          <span style="color:#94a3b8">② Minimum eccentricity moment (IS 456 Cl 25.4):</span><br>
-          <span style="font-family:monospace;font-size:10px">emin = max(L/500 + D/30, 20) = max(${r1(c.leff/500+c.size/30)}, 20) = ${r1(c.emin)}mm</span><br>
-          <span style="font-family:monospace;font-size:10px">Mu_min = Pu × emin = ${r2(c.Pu)} × ${r1(c.emin)}/1000 = ${r2(c.Mu_min)} kN.m</span><br>
-          <span style="font-family:monospace;font-size:10px">Asc_ecc = Mu_min×10⁶ / (0.67×fy×lever_arm) = ${r0(Asc_ecc)} mm²</span><br>
-          <span style="color:#f87171;font-weight:600">→ ${r0(Asc_ecc)} mm² (columns ALWAYS have bending — no column is purely axial)</span>
-        </div>
-
-        <div style="margin-bottom:6px;padding:6px;background:rgba(0,0,0,0.2);border-radius:4px">
-          <span style="color:#94a3b8">③ Minimum steel (IS 456 Cl 26.5.3.1):</span><br>
-          <span style="font-family:monospace;font-size:10px">Asc_min = 0.8% × Ag = 0.008 × ${r0(c.Ag)} = ${r0(Asc_min)} mm²</span><br>
-          <span style="color:#60a5fa">→ ${r0(Asc_min)} mm² (prevents brittle failure, resists creep/shrinkage)</span>
-        </div>
-
-        <div style="padding:8px;background:rgba(52,211,153,0.1);border:1px solid rgba(52,211,153,0.3);border-radius:4px">
-          <strong style="color:#34d399">Governing: Asc_design = max(①+②, ③) = max(${r0(Asc_axial)}+${r0(Asc_ecc)}, ${r0(Asc_min)}) = <span style="color:#a78bfa">${r0(Math.max(Asc_combined,Asc_min))} mm²</span></strong>
-        </div>
-      </div>\`;
+      const govAsc=Math.max(Asc_combined,Asc_min);
+      var html3='';
+      html3+='<div style="background:rgba(167,139,250,0.05);border:1px solid rgba(167,139,250,0.2);border-radius:8px;padding:10px;margin:8px 0;font-size:11px">';
+      html3+='<div style="font-weight:700;color:#a78bfa;margin-bottom:8px">Steel Requirement — 3 Checks (IS 456 Cl 25.4, 26.5.3, 39.3)</div>';
+      html3+='<div style="margin-bottom:6px;padding:6px;background:rgba(0,0,0,0.2);border-radius:4px">';
+      html3+='<span style="color:#94a3b8">① Axial demand only (IS 456 Cl 39.3):</span><br>';
+      html3+='<span style="font-family:monospace;font-size:10px">Asc_axial = (Pu×1000 − 0.4×fck×Ag)/(0.67×fy−0.4×fck)</span><br>';
+      html3+='<span style="font-family:monospace;font-size:10px">= ('+r0(c.Pu*1000)+' − '+r0(0.4*S.fck*c.Ag)+')/'+r0(0.67*S.fy-0.4*S.fck)+' = '+r2(Ar_raw)+' mm²</span><br>';
+      html3+=Ar_raw<=0
+        ?'<span style="color:#fbbf24">→ 0 mm² (concrete alone can carry '+r2(concreteCarries)+'kN ≥ Pu='+r2(c.Pu)+'kN for pure axial)</span>'
+        :'<span style="color:#34d399">→ '+r0(Asc_axial)+' mm²</span>';
+      html3+='</div>';
+      html3+='<div style="margin-bottom:6px;padding:6px;background:rgba(0,0,0,0.2);border-radius:4px">';
+      html3+='<span style="color:#94a3b8">② Minimum eccentricity moment (IS 456 Cl 25.4):</span><br>';
+      html3+='<span style="font-family:monospace;font-size:10px">emin = max(L/500+D/30, 20) = '+r1(c.emin)+'mm</span><br>';
+      html3+='<span style="font-family:monospace;font-size:10px">Mu_min = Pu×emin = '+r2(c.Pu)+'×'+r1(c.emin)+'/1000 = '+r2(c.Mu_min)+' kN.m</span><br>';
+      html3+='<span style="font-family:monospace;font-size:10px">Asc_ecc = Mu_min×10⁶/(0.67×fy×lever_arm) = '+r0(Asc_ecc)+' mm²</span><br>';
+      html3+='<span style="color:#f87171;font-weight:600">→ '+r0(Asc_ecc)+' mm² (columns ALWAYS have bending — no column is purely axial)</span>';
+      html3+='</div>';
+      html3+='<div style="margin-bottom:6px;padding:6px;background:rgba(0,0,0,0.2);border-radius:4px">';
+      html3+='<span style="color:#94a3b8">③ Minimum steel (IS 456 Cl 26.5.3.1):</span><br>';
+      html3+='<span style="font-family:monospace;font-size:10px">Asc_min = 0.8% × Ag = 0.008 × '+r0(c.Ag)+' = '+r0(Asc_min)+' mm²</span><br>';
+      html3+='<span style="color:#60a5fa">→ '+r0(Asc_min)+' mm² (prevents brittle failure, resists creep/shrinkage)</span>';
+      html3+='</div>';
+      html3+='<div style="padding:8px;background:rgba(52,211,153,0.1);border:1px solid rgba(52,211,153,0.3);border-radius:4px">';
+      html3+='<strong style="color:#34d399">Governing: Asc_design = max(①+②, ③) = max('+r0(Asc_axial)+'+'+r0(Asc_ecc)+', '+r0(Asc_min)+') = <span style="color:#a78bfa">'+r0(govAsc)+' mm²</span></strong>';
+      html3+='</div>';
+      html3+='</div>';
+      return html3;
     })()}
     ${fm('Asc_max = 4% × Ag = 0.04 × '+r0(c.Ag),r0(0.04*c.Ag)+' mm²','IS 456 Cl 26.5.3.1')}
     ${fm('Provide: '+c.nb+' D'+c.dB+' bars',r0(c.Aprov)+' mm² (pt='+r2(c.pt)+'%)','IS 456 Cl 26.5.3')}
