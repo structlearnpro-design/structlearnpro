@@ -2750,6 +2750,11 @@ function beamDetail(b){
       ${hasOvr?`<div style="font-size:9px;padding:4px 10px;background:rgba(249,115,22,0.1);border-radius:4px;color:#f97316">⚠ This beam is using a student override (D=${ovr.D}mm, b=${ovr.b}mm). Auto-design is disabled for this beam.</div>`:''}
     </div>`;
   })()}
+
+
+  <div style="margin-top:12px;border-top:1px solid rgba(71,85,105,0.3);padding-top:10px">
+    <button onclick="(function(){try{window.parent.postMessage({type:'OPEN_AI_FOR_MEMBER',member:'${b.label||'beam'}',issue:'${b.shearSafe===false?'shear fail':b.deflOK===false?'deflection fail':'design check'}',memberType:'beam'},'*');}catch(e){}})()" style="width:100%;padding:8px;background:linear-gradient(135deg,rgba(79,70,229,0.15),rgba(124,58,237,0.15));border:1.5px solid rgba(99,102,241,0.4);border-radius:8px;color:#818cf8;cursor:pointer;font-size:11px;font-weight:700;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px" onmouseover="this.style.borderColor='#6366f1'" onmouseout="this.style.borderColor='rgba(99,102,241,0.4)'">🤖 Ask AI about this beam →</button>
+  </div>
 </div>`;
 }
 
@@ -3087,7 +3092,11 @@ function colDetail(c){
       ${hasOvr?`<div style="font-size:9px;padding:4px 10px;background:rgba(249,115,22,0.1);border-radius:4px;color:#f97316">⚠ This column is using a student override (${ovr.size}×${ovr.size}mm). Auto-design is disabled.</div>`:''}
     </div>`;
   })()}
-</div>`;
+</div>
+
+  <div style="margin-top:12px;border-top:1px solid rgba(71,85,105,0.3);padding-top:10px">
+    <button onclick="(function(){try{window.parent.postMessage({type:'OPEN_AI_FOR_MEMBER',member:'${c.baseLabel||'column'}',issue:'${c.safe===false?'capacity fail':'design check'}',memberType:'column'},'*');}catch(e){}})()" style="width:100%;padding:8px;background:linear-gradient(135deg,rgba(79,70,229,0.15),rgba(124,58,237,0.15));border:1.5px solid rgba(99,102,241,0.4);border-radius:8px;color:#818cf8;cursor:pointer;font-size:11px;font-weight:700;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px" onmouseover="this.style.borderColor='#6366f1'" onmouseout="this.style.borderColor='rgba(99,102,241,0.4)'">🤖 Ask AI about this column →</button>
+  </div>`;
 }
 
 
@@ -3358,7 +3367,11 @@ function ftgDetail(f){
 
   </div>
   `:''}
-</div>`;
+</div>
+
+  <div style="margin-top:12px;border-top:1px solid rgba(71,85,105,0.3);padding-top:10px">
+    <button onclick="(function(){try{window.parent.postMessage({type:'OPEN_AI_FOR_MEMBER',member:'${f.label||'footing'}',issue:'${f.Ld_ok===false?'development length fail':f.punch_ok===false?'punching fail':f.ow_ok===false?'shear fail':'design check'}',memberType:'footing'},'*');}catch(e){}})()" style="width:100%;padding:8px;background:linear-gradient(135deg,rgba(79,70,229,0.15),rgba(124,58,237,0.15));border:1.5px solid rgba(99,102,241,0.4);border-radius:8px;color:#818cf8;cursor:pointer;font-size:11px;font-weight:700;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px" onmouseover="this.style.borderColor='#6366f1'" onmouseout="this.style.borderColor='rgba(99,102,241,0.4)'">🤖 Ask AI about this footing →</button>
+  </div>`;
 }
 
 

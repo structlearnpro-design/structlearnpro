@@ -766,12 +766,12 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
   <!-- AI TOGGLE BUTTON -->
   <!-- Draggable AI Assistant Button -->
   <div id="ai-toggle-btn"
-    style="position:fixed;bottom:80px;left:16px;z-index:9997;display:none;cursor:grab;width:56px;">
+    style="position:fixed;bottom:24px;right:24px;z-index:9997;display:none;cursor:grab;width:64px;">
     <button onclick="toggleAI()" id="ai-inner-btn"
-      style="width:56px;height:56px;border-radius:14px;background:linear-gradient(135deg,#4c1d95,#7c3aed);
-             border:none;color:#fff;font-size:20px;cursor:pointer;
-             box-shadow:0 4px 16px rgba(124,58,237,0.5);display:flex;align-items:center;
-             justify-content:center;transition:transform 0.15s;width:100%;font-family:inherit"
+      style="width:64px;height:64px;border-radius:16px;background:linear-gradient(135deg,#4c1d95,#7c3aed);
+             border:none;color:#fff;font-size:24px;cursor:pointer;
+             box-shadow:0 6px 24px rgba(124,58,237,0.6);display:flex;align-items:center;
+             justify-content:center;transition:all 0.2s;width:100%;font-family:inherit"
       onmouseover="this.style.transform='scale(1.08)'"
       onmouseout="this.style.transform='scale(1)'">🤖</button>
     <div style="font-size:8px;color:#a78bfa;text-align:center;margin-top:3px;font-weight:700;letter-spacing:0.5px">AI HELP</div>
@@ -1086,7 +1086,7 @@ function showAnnouncement(ann) {
   const popup = document.createElement('div');
   popup.id = 'ann-popup';
   popup.style.cssText = [
-    'position:fixed;bottom:80px;right:20px;z-index:9999',
+    'position:fixed;bottom:24px;right:24px;z-index:9999',
     'width:320px;background:#0f172a;border:1px solid #1d4ed8',
     'border-radius:14px;padding:18px;box-shadow:0 8px 32px rgba(0,0,0,0.5)',
     'animation:slideIn 0.3s ease'
@@ -2152,6 +2152,8 @@ window.addEventListener('message', function(ev){
     if(ev.data.RES) _currentRES = ev.data.RES;
     // If AI panel is open, refresh member list
     if(_aiPanelOpen && _aiCurrentTab==='explain') buildMemberList();
+    // Show AI nudge banner after analysis
+    setTimeout(showAINudge, 1200);
     return;
   }
   // Legacy handlers
@@ -2165,6 +2167,22 @@ window.addEventListener('message', function(ev){
   // Save snapshot to Supabase
   if(ev.data.type==='SAVE_SNAPSHOT' && ev.data.projectId){
     saveSnapshot(ev.data);
+    return;
+  }
+
+  // OPEN_AI_FOR_MEMBER — student clicked "Ask AI" on a specific member
+  if(ev.data.type==='OPEN_AI_FOR_MEMBER'){
+    const {member, issue, memberType} = ev.data;
+    // Open AI panel if closed
+    if(!_aiPanelOpen) toggleAI();
+    // Switch to explain tab
+    setTimeout(function(){
+      switchAITab('explain');
+      // Pre-fill with this member's context and trigger explanation
+      if(typeof explainMember==='function'){
+        explainMember(member, issue);
+      }
+    }, 300);
     return;
   }
 
@@ -3344,6 +3362,64 @@ function updateAIUsageBar(){
   // Also setup after showAIBtn makes it visible
   window._setupAIDrag=setup;
 })();
+
+function showAINudge(){
+  if(!_currentRES) return;
+  // Don't show if already dismissed this session or AI already open
+  if(sessionStorage.getItem('ai_nudge_dismissed') || _aiPanelOpen) return;
+  const beams = _currentRES.allBeams||[];
+  const cols  = _currentRES.allCols||[];
+  const ftgs  = _currentRES.allFtgs||[];
+  const failBeams = beams.filter(b=>b.shearSafe===false||b.deflOK===false);
+  const failCols  = cols.filter(c=>c.safe===false);
+  const failFtgs  = ftgs.filter(f=>f.Ld_ok===false||f.punch_ok===false||f.ow_ok===false);
+  const totalFail = failBeams.length + failCols.length + failFtgs.length;
+
+  // Remove any existing nudge
+  const old = document.getElementById('ai-nudge-banner');
+  if(old) old.remove();
+
+  const banner = document.createElement('div');
+  banner.id = 'ai-nudge-banner';
+  banner.style.cssText = 'position:fixed;bottom:100px;right:24px;z-index:9996;max-width:280px;' +
+    'background:linear-gradient(135deg,#1e1b4b,#312e81);border:1.5px solid #4f46e5;' +
+    'border-radius:12px;padding:12px 14px;box-shadow:0 8px 32px rgba(79,70,229,0.4);' +
+    'font-family:inherit;animation:nudgeIn 0.3s ease-out';
+
+  const msg = totalFail > 0
+    ? '⚠️ <strong>' + totalFail + ' member' + (totalFail>1?'s':'') + ' failing</strong> — ask AI why and how to fix each one'
+    : '✅ All checks pass! Ask AI to explain your design choices or explore improvements';
+
+  banner.innerHTML =
+    '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">' +
+      '<div style="font-size:11px;color:#e0e7ff;line-height:1.5">' + msg + '</div>' +
+      '<button onclick="document.getElementById('ai-nudge-banner').remove();sessionStorage.setItem('ai_nudge_dismissed','1')" ' +
+        'style="background:none;border:none;color:#6366f1;cursor:pointer;font-size:14px;padding:0;flex-shrink:0">✕</button>' +
+    '</div>' +
+    '<button onclick="toggleAI();document.getElementById('ai-nudge-banner').remove()" ' +
+      'style="margin-top:8px;width:100%;padding:7px;background:linear-gradient(135deg,#4f46e5,#7c3aed);' +
+      'border:none;border-radius:8px;color:#fff;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">' +
+      '🤖 Open AI Assistant →' +
+    '</button>' +
+    '<div style="font-size:9px;color:#6366f1;margin-top:6px;text-align:center">Auto-dismisses in 12s</div>';
+
+  document.body.appendChild(banner);
+
+  // Add animation CSS once
+  if(!document.getElementById('nudge-style')){
+    const s=document.createElement('style');
+    s.id='nudge-style';
+    s.textContent='@keyframes nudgeIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}';
+    document.head.appendChild(s);
+  }
+
+  // Auto-dismiss after 12 seconds
+  setTimeout(function(){
+    const b=document.getElementById('ai-nudge-banner');
+    if(b){ b.style.opacity='0'; b.style.transition='opacity 0.5s'; setTimeout(()=>b.remove(),500); }
+    sessionStorage.setItem('ai_nudge_dismissed','1');
+  }, 12000);
+}
 
 function toggleAI(){
   _aiPanelOpen = !_aiPanelOpen;
