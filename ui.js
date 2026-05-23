@@ -9826,16 +9826,18 @@ async function startConstructionPDF() {
 
     // Grid drawing helper (used in layout plans)
     const drawGrid=(ox,oy,pw2,ph2,cxA2,cyA2,nBX2,nBY2)=>{
-      // Grid circles and CL lines
+      // Grid CL lines + column/row reference numbers (no circles that overlap footings)
       cxA2.forEach((gx,i)=>{
-        LC(150,150,200);LW(0.15);doc.setLineDashPattern([3,2],0);Line(gx,oy-14,gx,oy+ph2+6);doc.setLineDashPattern([],0);
-        LC(0,0,0);LW(0.5);doc.circle(gx,oy-10,3,'D');
-        F(7,'bold',0,0,0);Txt(String(i+1),gx,oy-7.5,{align:'center'});
+        LC(150,150,200);LW(0.15);doc.setLineDashPattern([3,2],0);Line(gx,oy-22,gx,oy+ph2+8);doc.setLineDashPattern([],0);
+        // Column number above plan — box style, not circle
+        FC(0,0,80);LC(0,0,0);LW(0.4);Rect(gx-3.5,oy-22,7,7,'FD');
+        F(6.5,'bold',255,255,255);Txt(String(i+1),gx,oy-16.5,{align:'center'});
       });
       cyA2.forEach((gy,j)=>{
-        LC(150,150,200);LW(0.15);doc.setLineDashPattern([3,2],0);Line(ox-14,gy,ox+pw2+6,gy);doc.setLineDashPattern([],0);
-        LC(0,0,0);LW(0.5);doc.circle(ox-10,gy,3,'D');
-        F(7,'bold',0,0,0);Txt(String.fromCharCode(65+j),ox-10,gy+2,{align:'center'});
+        LC(150,150,200);LW(0.15);doc.setLineDashPattern([3,2],0);Line(ox-22,gy,ox+pw2+8,gy);doc.setLineDashPattern([],0);
+        // Row letter left of plan — box style, not circle
+        FC(0,0,80);LC(0,0,0);LW(0.4);Rect(ox-22,gy-3.5,7,7,'FD');
+        F(6.5,'bold',255,255,255);Txt(String.fromCharCode(65+j),ox-18.5,gy+1.5,{align:'center'});
       });
     };
 
@@ -10065,10 +10067,17 @@ async function startConstructionPDF() {
         const fw=Math.max(5,(f.Bf||1)*mmPerM);
         if(ftgLayoutType==='combined'){
           // Combined: draw elongated rectangle in X-direction between adjacent columns
-          const fwX = i<cxA.length-1 ? Math.min((cxA[i+1]-gx)*0.85, fw*1.8) : fw;
-          const fwY = fw;
-          LC(0,0,80);LW(0.8);Rect(gx-fw/2,gy-fwY/2,fwX,fwY,'D');
-          LW(0.25);Line(gx,gy-fwY/2,gx,gy+fwY/2); // column CL mark
+          if(i<cxA.length-1){
+            // Combined pair: elongated rect from this column rightward
+            const fwX = Math.min((cxA[i+1]-gx)*0.85, fw*1.8);
+            LC(0,0,80);LW(0.8);Rect(gx-fw/2,gy-fw/2,fwX,fw,'D');
+            LW(0.25);Line(gx,gy-fw/2,gx,gy+fw/2);
+          } else {
+            // Last column: draw isolated square
+            LC(0,0,0);LW(0.6);Rect(gx-fw/2,gy-fw/2,fw,fw,'D');
+            LW(0.25);const cxLen=Math.min(fw*0.3,5);
+            Line(gx-cxLen,gy,gx+cxLen,gy);Line(gx,gy-cxLen,gx,gy+cxLen);
+          }
         } else {
           // Isolated square
           LC(0,0,0);LW(0.6);Rect(gx-fw/2,gy-fw/2,fw,fw,'D');
@@ -10191,8 +10200,11 @@ async function startConstructionPDF() {
       // Bar grid
       const nCFB=Math.min(8,Math.floor(cfH2/4)+2);
       LC(0,0,0);LW(0.4);for(let i=1;i<nCFB;i++)Line(cfX2+3,cfY2+i*cfH2/nCFB,cfX2+cfW2-3,cfY2+i*cfH2/nCFB);
-      DH(cfX2,cfX2+cfW2,cfY2+cfH2+6,ftin(cfL)+' (span+2×overhang)',false);
-      DH(col1X,col2X,cfY2-6,ftin(cfSpan)+' c/c',true);
+      DH(cfX2,cfX2+cfW2,cfY2+cfH2+6,r0(cfL*1000)+'mm total ('+r0(cfSpan*1000)+'mm c/c + '+r0(cfOverhang*1000)+'mm overhang each end)',false);
+      DH(col1X,col2X,cfY2-6,r0(cfSpan*1000)+'mm c/c',true);
+      // Overhang dims
+      DH(cfX2,col1X,cfY2-12,r0(cfOverhang*1000)+'mm',true);
+      DH(col2X,cfX2+cfW2,cfY2-12,r0(cfOverhang*1000)+'mm',true);
       // Section view below
       const secY=cfY2+cfH2+22;
       F(7,'bold',0,0,0);Txt('TYPICAL SECTION (ALONG LENGTH)',DX+DW2/2,secY-3,{align:'center'});
@@ -11207,6 +11219,19 @@ async function startConstructionPDF() {
         F(5.5,'bold',0,0,100);Txt(String.fromCharCode(65+j)+String(i+1)+'+'+String(i+2),(gx2+gx2r)/2,gy2-fSz/2+5,{align:'center'});
         F(5,'normal',0,0,0);Txt(r0(cfL2/mmPerM*1000)+'x'+r0((ftg2.Bf||1)*1000),(gx2+gx2r)/2,gy2+fSz/2-3,{align:'center'});
         F(4.5,'italic',80,0,0);Txt('D='+r0(ftg2.D||300),(gx2+gx2r)/2,gy2+1.5,{align:'center'});
+      } else if(exFtgType==='combined' && i===cxA.length-1){
+        // Last column — no right neighbour, draw as isolated
+        const excSz=fSz+4;
+        LC(120,80,30);LW(0.3);doc.setLineDashPattern([4,2],0);
+        Rect(gx2-excSz/2,gy2-excSz/2,excSz,excSz,'D');
+        doc.setLineDashPattern([],0);
+        FC(195,190,178);LC(80,70,50);LW(0.3);Rect(gx2-fSz/2-1,gy2-fSz/2-1,fSz+2,fSz+2,'FD');
+        FC(215,218,230);LC(0,0,0);LW(0.6);Rect(gx2-fSz/2,gy2-fSz/2,fSz,fSz,'FD');
+        const cSzPa=Math.max(2,(ftg2.colSize||300)*mmPerM/1000);
+        FC(80,80,130);LC(0,0,0);LW(0.4);Rect(gx2-cSzPa/2,gy2-cSzPa/2,cSzPa,cSzPa,'FD');
+        F(6,'bold',0,0,100);Txt(String.fromCharCode(65+j)+String(i+1),gx2,gy2-fSz/2+6,{align:'center'});
+        F(5.5,'normal',0,0,0);Txt(r0((ftg2.Bf||1)*1000)+'x'+r0((ftg2.Bf||1)*1000),gx2,gy2+fSz/2-3,{align:'center'});
+        F(5,'italic',80,0,0);Txt('D='+r0(ftg2.D||300),gx2,gy2+1.5,{align:'center'});
       } else if(exFtgType==='raft'){
         // Raft: just draw column position marker, no individual pits
         FC(80,80,130);LC(0,0,0);LW(0.4);
