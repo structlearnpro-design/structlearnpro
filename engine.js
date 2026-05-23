@@ -4113,10 +4113,28 @@ function runCalcsFromGrid(){
   const allFtgs=groundCols.map(col=>{
     const ftg=designOneFooting(col,soilBearing,ftgDepth,coverFtg,fck,fy,ftgMinD||300,AstFn);
     ftg.label='FTG-'+col.baseLabel;
-    ftg.lbl=ftg.label; // alias — both f.label and f.lbl work
+    ftg.lbl=ftg.label;
     ftg.colLabel=col.baseLabel;
     return ftg;
   });
+
+  // Auto-determine correct foundation type based on actual footing sizes and spacing
+  // Only override S.ftgType if user hasn't manually selected one (i.e. it's still default)
+  if(!S._ftgTypeManual){
+    const avgBfAuto = allFtgs.reduce((s,f)=>s+f.Bf,0)/allFtgs.length;
+    const minSpanAuto = Math.min(...S.spansX,...S.spansY);
+    const coverageRatio = avgBfAuto / minSpanAuto;
+    // Check if any footings are genuinely close (gap < 300mm)
+    let anyClose = false;
+    allFtgs.forEach(f=>{
+      const spanX = S.spansX[f.col]||minSpanAuto;
+      const spanY = S.spansY[f.row]||minSpanAuto;
+      if(spanX - f.Bf < 0.3 || spanY - f.Bf < 0.3) anyClose = true;
+    });
+    if(coverageRatio > 0.5 || S.soilBearing < 50) S.ftgType = 'raft';
+    else if(anyClose) S.ftgType = 'combined';
+    else S.ftgType = 'isolated';
+  }
 
   // ── SLAB: design for each FLOOR (typical vs roof) ─────────────
   // Typical floor slab

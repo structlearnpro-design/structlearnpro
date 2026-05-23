@@ -218,7 +218,7 @@ function p5(){return`
         {id:'combined', label:'Combined Footing', desc:'Two columns share one elongated pad.', icon:'▭', color:'#f59e0b'},
         {id:'raft',     label:'Raft / Mat',   desc:'Continuous slab under all columns. IS 456 Cl 34.4.', icon:'▦', color:'#f87171'},
       ].map(t=>`
-        <button onclick="S.ftgType='${t.id}';go(5)"
+        <button onclick="S.ftgType='${t.id}';S._ftgTypeManual=true;go(5)"
           style="flex:1;min-width:140px;padding:10px 12px;border-radius:8px;cursor:pointer;text-align:left;
           border:1.5px solid ${(S.ftgType||'isolated')===t.id?t.color:'rgba(30,58,138,0.4)'};
           background:${(S.ftgType||'isolated')===t.id?'rgba('+((S.ftgType||'isolated')===t.id&&t.color==="#34d399"?'52,211,153':t.color==='#f59e0b'?'245,158,11':'248,113,113')+',0.08)':'transparent'}">
@@ -1925,13 +1925,33 @@ function getFootingType(ftg) {
     else if (combinedHalfY2 > spanY2 * 0.5) overlaps.push('Y- close');
   }
 
-  // Global check: if average Bf > 50% of min span across whole building → raft
+  // Global check: raft if average footing covers >50% of min span (footings overlap even if combined)
   var avgBf = allFtgs.reduce(function(s, f2) { return s + f2.Bf; }, 0) / allFtgs.length;
-  // Raft: average footing covers >60% of bay, or SBC very low (< 75 kN/m² typical weak soil)
   var ftgCoverageRatio = avgBf / minSpan;
-  if (ftgCoverageRatio > 0.6 || S.soilBearing < 50) return 'raft';
-  if (ftg.Bf > minSpan * 0.4) return 'combined';
-  if (overlaps.length > 0) return 'combined';
+  if (ftgCoverageRatio > 0.5 || S.soilBearing < 50) return 'raft';
+
+  // Combined: ONLY when footings are genuinely close (gap < 300mm between edges)
+  // gap = span - Bf → combined if gap < 0.3m, i.e. Bf > span - 0.3
+  var needsCombined = false;
+  if (adjRight) {
+    var gapR = (S.spansX[ftg.col]||maxSpanX) - (ftg.Bf + adjRight.Bf)/2 - (ftg.Bf + adjRight.Bf)/2;
+    // Simpler: gap = span - max(ftg.Bf, adjRight.Bf) < 0.3
+    var actualGapR = (S.spansX[ftg.col]||maxSpanX) - ftg.Bf;
+    if (actualGapR < 0.3) needsCombined = true;
+  }
+  if (adjLeft) {
+    var actualGapL = (S.spansX[ftg.col-1]||maxSpanX) - ftg.Bf;
+    if (actualGapL < 0.3) needsCombined = true;
+  }
+  if (adjDown) {
+    var actualGapD = (S.spansY[ftg.row]||maxSpanY) - ftg.Bf;
+    if (actualGapD < 0.3) needsCombined = true;
+  }
+  if (adjUp) {
+    var actualGapU = (S.spansY[ftg.row-1]||maxSpanY) - ftg.Bf;
+    if (actualGapU < 0.3) needsCombined = true;
+  }
+  if (needsCombined) return 'combined';
   return 'isolated';
 }
 
@@ -2054,7 +2074,7 @@ function svgFootingTypePanel(ftg) {
   var btnStyle = 'padding:7px 16px;border-radius:8px;cursor:pointer;font-size:11px;font-weight:700;font-family:inherit;margin-right:8px;';
   var btns = '';
   if(type !== (S.ftgType||'isolated')){
-    btns += '<button onclick="S.ftgType=\''+type+'\';runNow()" style="'+btnStyle+'background:rgba('+
+    btns += '<button onclick="S.ftgType=\''+type+'\';S._ftgTypeManual=true;runNow()" style="'+btnStyle+'background:rgba('+
       (type==='combined'?'245,158,11':'248,113,113')+',0.15);border:1.5px solid '+ti.col+';color:'+ti.col+'">'+
       '✅ Apply '+ti.short+' Footing & Re-analyse</button>';
   } else {
@@ -9801,7 +9821,22 @@ async function startConstructionPDF() {
     const c3=(RES.allCols||RES.cols).find(c=>c.floor===1&&c.inter)||c1;
     const allFtgArr = RES.allFtgs || RES.ftgs || [];
     // Helper: find footing by grid position (exact match)
-    const getFtgAt = (row,col) => allFtgArr.find(f=>f.row===row&&f.col===col) || allFtgArr[0] || {Bf:1,D:300,dBf:12,spf:200,Ps:100,qu:100,quf:150,d:200,colSize:300,punch_ok:true,ow_ok:true,Ld_ok:true};
+    // getFtgAt: find footing by grid row/col with multiple fallback strategies
+    const getFtgAt = (row,col) => {
+      // Strategy 1: exact match by row+col
+      let f = allFtgArr.find(ft=>ft.row===row && ft.col===col);
+      if(f) return f;
+      // Strategy 2: match by baseLabel position (CCxy format)
+      const lbl=(String.fromCharCode(65+row))+(col+1);
+      f = allFtgArr.find(ft=>ft.baseLabel&&(ft.baseLabel.endsWith(lbl)||ft.colLabel===lbl));
+      if(f) return f;
+      // Strategy 3: pick footing closest to corner/edge/interior based on position
+      const isCornerPos = (row===0||row===nBY)&&(col===0||col===nBX);
+      const isEdgePos = !isCornerPos&&(row===0||row===nBY||col===0||col===nBX);
+      if(isCornerPos) return allFtgArr.find(ft=>ft.nodeId&&ft.nodeId.includes('A1'))||allFtgArr[0];
+      if(isEdgePos)   return allFtgArr[Math.floor(allFtgArr.length/4)]||allFtgArr[0];
+      return allFtgArr[Math.floor(allFtgArr.length/2)]||allFtgArr[0]||{Bf:1,D:300,dBf:12,spf:200,Ps:100,qu:100,quf:150,d:200,colSize:300,punch_ok:true,ow_ok:true,Ld_ok:true};
+    };
     // Representative footings for schedule (corner=0,0 | edge=0,1 | interior=1,1)
     const f1 = getFtgAt(0,0);          // corner
     const f2 = getFtgAt(0,1)||getFtgAt(1,0)||allFtgArr[1]||f1;  // edge
@@ -10068,12 +10103,18 @@ async function startConstructionPDF() {
         if(ftgLayoutType==='combined'){
           // Combined: draw elongated rectangle in X-direction between adjacent columns
           if(i<cxA.length-1){
-            // Combined pair: elongated rect from this column rightward
-            const fwX = Math.min((cxA[i+1]-gx)*0.85, fw*1.8);
-            LC(0,0,80);LW(0.8);Rect(gx-fw/2,gy-fw/2,fwX,fw,'D');
-            LW(0.25);Line(gx,gy-fw/2,gx,gy+fw/2);
+            // Combined pair: correct length = column spacing + Bf (overhang both sides)
+            const nextFtg=getFtgAt(j,i+1);
+            const overh=(f.Bf||1)*mmPerM/2; // half-Bf overhang on each side
+            const span_paper=cxA[i+1]-gx;   // column-to-column on paper
+            const cfW=span_paper+overh+((nextFtg.Bf||f.Bf||1)*mmPerM/2);
+            FC(220,228,245);LC(0,0,80);LW(0.8);Rect(gx-overh,gy-fw/2,cfW,fw,'FD');
+            // Column CL marks
+            LW(0.25);
+            Line(gx,gy-fw/2,gx,gy+fw/2);
+            Line(cxA[i+1],gy-fw/2,cxA[i+1],gy+fw/2);
           } else {
-            // Last column: draw isolated square
+            // Last column: draw isolated square (no right neighbour)
             LC(0,0,0);LW(0.6);Rect(gx-fw/2,gy-fw/2,fw,fw,'D');
             LW(0.25);const cxLen=Math.min(fw*0.3,5);
             Line(gx-cxLen,gy,gx+cxLen,gy);Line(gx,gy-cxLen,gx,gy+cxLen);
@@ -10117,8 +10158,13 @@ async function startConstructionPDF() {
     Txt('CF (Corner Footing): '+ftin(f1.Bf||0.5)+' x '+ftin(f1.Bf||0.5)+' x D='+r0(f1.D||300)+'mm  |  Ps='+r2(f1.Ps||0)+'kN',fpX,schY+6);
     Txt('EF (Edge Footing):   '+ftin(f2.Bf||0.8)+' x '+ftin(f2.Bf||0.8)+' x D='+r0(f2.D||350)+'mm  |  Ps='+r2(f2.Ps||0)+'kN',fpX,schY+12);
     Txt('IF (Interior Ftg):   '+ftin(f3.Bf||1.0)+' x '+ftin(f3.Bf||1.0)+' x D='+r0(f3.D||400)+'mm  |  Ps='+r2(f3.Ps||0)+'kN',fpX,schY+18);
-    const _ftgTypeNote={'isolated':'ISOLATED SQUARE','combined':'COMBINED / ELONGATED','raft':'RAFT (continuous mat)'}[S.ftgType||'isolated']||'ISOLATED SQUARE';
-    F(6.5,'italic',80,80,80);Txt('NOTE: All footings are '+_ftgTypeNote+' footings. All dimensions refer to plan size (L x B). Refer ST/FD02 for cross-section details.',fpX,schY+26);
+    const _ftgTypeNote={'isolated':'ISOLATED SQUARE','combined':'COMBINED / ELONGATED — length = column c/c + Bf overhang each end','raft':'RAFT FOUNDATION (continuous mat)'}[S.ftgType||'isolated']||'ISOLATED SQUARE';
+    // For combined footing: show total length = span + Bf
+    if((S.ftgType||'isolated')==='combined'){
+      const cfSpanNote=(S.spansX&&S.spansX[0])||4;
+      Txt('CF TYPE: Individual Bf shown. Combined footing length = column c/c + Bf (e.g. '+ftin(cfSpanNote)+' span + '+ftin(f1.Bf||1)+' Bf = '+ftin(cfSpanNote+(f1.Bf||1))+')',fpX,schY+20);
+    }
+    F(6.5,'italic',80,80,80);Txt('NOTE: '+_ftgTypeNote+'. Refer ST/FD02 for cross-section details.',fpX,schY+26);
 
     log('Sheet 3 done',28);
 
@@ -10200,11 +10246,13 @@ async function startConstructionPDF() {
       // Bar grid
       const nCFB=Math.min(8,Math.floor(cfH2/4)+2);
       LC(0,0,0);LW(0.4);for(let i=1;i<nCFB;i++)Line(cfX2+3,cfY2+i*cfH2/nCFB,cfX2+cfW2-3,cfY2+i*cfH2/nCFB);
-      DH(cfX2,cfX2+cfW2,cfY2+cfH2+6,r0(cfL*1000)+'mm total ('+r0(cfSpan*1000)+'mm c/c + '+r0(cfOverhang*1000)+'mm overhang each end)',false);
-      DH(col1X,col2X,cfY2-6,r0(cfSpan*1000)+'mm c/c',true);
-      // Overhang dims
-      DH(cfX2,col1X,cfY2-12,r0(cfOverhang*1000)+'mm',true);
-      DH(col2X,cfX2+cfW2,cfY2-12,r0(cfOverhang*1000)+'mm',true);
+      // Main length dim below section
+      DH(cfX2,cfX2+cfW2,cfY2+cfH2+6,r0(cfL*1000)+'mm TOTAL (incl. '+r0(cfOverhang*1000)+'mm overhang each end)',false);
+      // Column c/c dim above plan
+      DH(col1X,col2X,cfY2-5,r0(cfSpan*1000)+'mm c/c columns',true);
+      // Overhang dims above plan
+      DH(cfX2,col1X,cfY2-10,r0(cfOverhang*1000)+'mm',true);
+      DH(col2X,cfX2+cfW2,cfY2-10,r0(cfOverhang*1000)+'mm',true);
       // Section view below
       const secY=cfY2+cfH2+22;
       F(7,'bold',0,0,0);Txt('TYPICAL SECTION (ALONG LENGTH)',DX+DW2/2,secY-3,{align:'center'});
