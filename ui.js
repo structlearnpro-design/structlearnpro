@@ -11222,13 +11222,14 @@ async function startConstructionPDF() {
     F(6.5,'italic',80,80,80);Txt('Excavation dimensions include 300mm working space all around footing. All dimensions in mm unless noted.',DR_X+DR_W/2,y+7,{align:'center'});
     y+=16;
 
-    const exPX=DR_X+(DR_W-planW)/2, exPY=y+16;
+    // Use planXoff/planYoff as origin (same as cxA/cyA) so footings align with plan
+    const exPX=planXoff, exPY=planYoff;
 
-    // Ground outline
+    // Ground outline (slightly larger than plan)
     FC(232,218,196);LC(0,0,0);LW(0.3);Rect(exPX-30,exPY-30,planW+60,planH+60,'FD');
     F(6.5,'bold',120,80,30);Txt('EXISTING GROUND LEVEL',exPX-28,exPY-22);
 
-    // Grid (faint)
+    // Grid lines through plan
     LC(160,140,100);LW(0.2);
     cxA.forEach(gx2=>Line(gx2,exPY-20,gx2,exPY+planH+20));
     cyA.forEach(gy2=>Line(exPX-20,gy2,exPX+planW+20,gy2));
@@ -11321,7 +11322,7 @@ async function startConstructionPDF() {
     DV(exPX-32,exPY,exPY+planH,ftin(totY)+' TOTAL',true);
 
     // Section notation and schedule
-    const exSchY=exPY+planH+38;
+    const exSchY=planYoff+planH+38;
     LC(0,0,100);LW(0.4);FC(242,244,255);Rect(DR_X,exSchY,DR_W/2-4,30,'FD');
     F(7,'bold',0,0,100);Txt('EXCAVATION SCHEDULE:',DR_X+3,exSchY+6);
     F(6.5,'normal',0,0,0);
