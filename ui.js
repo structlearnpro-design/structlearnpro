@@ -10036,24 +10036,36 @@ async function startConstructionPDF() {
     const fpX=DR_X+(DR_W-planW)/2, fpY=y+16;
     drawGrid(fpX,fpY,planW,planH,cxA,cyA,nBX,nBY);
 
-    // Footing squares at each column intersection
-    cxA.forEach((gx,i)=>{cyA.forEach((gy,j)=>{
-      const ct=colType(i,j);
-      const f=getFtgAt(j,i); // use actual footing by row/col
-      const fw=Math.max(5,(f.Bf||1)*mmPerM);
-      // Footing outline (bold solid)
-      LC(0,0,0);LW(0.6);Rect(gx-fw/2,gy-fw/2,fw,fw,'D');
-      // Small centre cross (not full width)
-      LW(0.25);
-      const cxLen=Math.min(fw*0.3,5);
-      Line(gx-cxLen,gy,gx+cxLen,gy);Line(gx,gy-cxLen,gx,gy+cxLen);
-      // Footing TYPE label — clearly above the box, no overlap
-      F(6.5,'bold',0,0,140);Txt(ct==='C1'?'CF':ct==='C2'?'EF':'IF',gx,gy-fw/2-4,{align:'center'});
-      // SIZE label — BELOW the box, not inside, with gap
-      F(5.5,'normal',0,0,0);Txt(ftin(f.Bf||1)+'x'+ftin(f.Bf||1),gx,gy+fw/2+5,{align:'center'});
-      // D= label — to the RIGHT, offset so it doesn't sit on the grid line
-      F(5,'italic',60,80,120);Txt('D='+r0(f.D||300)+'mm',gx+fw/2+5,gy-fw/4,{align:'left'});
-    });});
+    // Footing shapes at each column intersection — adapt for foundation type
+    const ftgLayoutType = S.ftgType || 'isolated';
+    if(ftgLayoutType === 'raft'){
+      // Raft: single hatched rectangle covering whole plan
+      FC(210,215,230);LC(0,0,80);LW(1.0);Rect(fpX-8,fpY-8,planW+16,planH+16,'FD');
+      Hatch(fpX-8,fpY-8,planW+16,planH+16);
+      F(7,'bold',0,0,100);Txt('RAFT FOUNDATION — Continuous mat under full footprint',fpX+planW/2,fpY+planH/2,{align:'center'});
+      F(6,'italic',60,80,120);Txt('Thickness D='+r0((RES.allFtgs||[])[0]?.D||400)+'mm. Refer FD02 for reinforcement.',fpX+planW/2,fpY+planH/2+8,{align:'center'});
+    } else {
+      cxA.forEach((gx,i)=>{cyA.forEach((gy,j)=>{
+        const ct=colType(i,j);
+        const f=getFtgAt(j,i);
+        const fw=Math.max(5,(f.Bf||1)*mmPerM);
+        if(ftgLayoutType==='combined'){
+          // Combined: draw elongated rectangle in X-direction between adjacent columns
+          const fwX = i<cxA.length-1 ? Math.min((cxA[i+1]-gx)*0.85, fw*1.8) : fw;
+          const fwY = fw;
+          LC(0,0,80);LW(0.8);Rect(gx-fw/2,gy-fwY/2,fwX,fwY,'D');
+          LW(0.25);Line(gx,gy-fwY/2,gx,gy+fwY/2); // column CL mark
+        } else {
+          // Isolated square
+          LC(0,0,0);LW(0.6);Rect(gx-fw/2,gy-fw/2,fw,fw,'D');
+          LW(0.25);const cxLen=Math.min(fw*0.3,5);
+          Line(gx-cxLen,gy,gx+cxLen,gy);Line(gx,gy-cxLen,gx,gy+cxLen);
+        }
+        F(6.5,'bold',0,0,140);Txt(ct==='C1'?'CF':ct==='C2'?'EF':'IF',gx,gy-fw/2-4,{align:'center'});
+        F(5.5,'normal',0,0,0);Txt(ftin(f.Bf||1)+'x'+ftin(f.Bf||1),gx,gy+fw/2+5,{align:'center'});
+        F(5,'italic',60,80,120);Txt('D='+r0(f.D||300)+'mm',gx+fw/2+5,gy-fw/4,{align:'left'});
+      });});
+    }
 
     // Plot line dashed border — well clear of footings
     LC(120,120,120);LW(0.5);doc.setLineDashPattern([6,3],0);
@@ -10094,7 +10106,102 @@ async function startConstructionPDF() {
     doc.addPage();drawPage('ST/FD02/R0','FOUNDATION DETAIL','1:25');
     y=DR_Y+14;
 
-    // 3 footings side by side — each zone is DR_W/3 = ~116mm
+    const ftgDetailType = S.ftgType || 'isolated';
+
+    if(ftgDetailType==='raft'){
+      // RAFT: one full-width cross-section + reinforcement detail
+      F(8,'bold',0,0,100);Txt('RAFT FOUNDATION — TYPICAL CROSS-SECTION',DX+DW2/2,y,{align:'center'});y+=8;
+      const rf=RES.allFtgs&&RES.allFtgs[0]||{D:400,Bf:1.5,dBf:12,spf:150,d:320,Ps:150};
+      const raftSc=Math.min(40,(DR_W*0.7)/(S.buildingL*1000/25));
+      const raftW=Math.min(DR_W-20,S.buildingL*1000*raftSc);
+      const raftH=Math.min(30,Math.max(15,(rf.D||400)/25));
+      const rx=DX+(DR_W-raftW)/2, ry=y+10;
+      // PCC blinding
+      FC(195,188,175);LC(0,0,0);LW(0.3);Rect(rx-3,ry+raftH,raftW+6,3,'FD');
+      // Raft body
+      FC(225,228,238);LC(0,0,0);LW(0.8);Rect(rx,ry,raftW,raftH,'FD');Hatch(rx,ry,raftW,raftH);
+      // Soil hatch below
+      FC(210,195,165);Rect(rx-3,ry+raftH+3,raftW+6,8,'F');
+      LC(120,95,55);LW(0.3);for(let hx=rx;hx<rx+raftW;hx+=5)Line(hx,ry+raftH+3,hx-3,ry+raftH+8);
+      // Bottom bars
+      const nRB=Math.min(10,Math.floor(raftW/10)+2);
+      for(let i=0;i<nRB;i++)Rebar(rx+3+i*(raftW-6)/(nRB-1),ry+raftH-4,1.2);
+      // Top bars
+      for(let i=0;i<nRB;i++)Rebar(rx+3+i*(raftW-6)/(nRB-1),ry+4,0.9);
+      // Columns stubs
+      const colStubs=Math.min(5,cxA.length);
+      const colPitch=raftW/(colStubs-1||1);
+      for(let ci=0;ci<colStubs;ci++){const cx=rx+ci*colPitch;FC(180,182,200);LC(0,0,0);LW(0.5);Rect(cx-4,ry-12,8,12,'FD');}
+      // Dims
+      DH(rx,rx+raftW,ry+raftH+16,ftin(S.buildingL)+' (building length)',false);
+      DV(rx+raftW+6,ry,ry+raftH,r0(rf.D||400)+'mm',false);
+      // Labels
+      Ld(rx+raftW/3,ry+raftH-4,rx+raftW+20,ry+raftH-4,'Y'+(rf.dBf||12)+'@'+r0(rf.spf||150)+' BOTTOM EW');
+      Ld(rx+raftW/3,ry+4,rx+raftW+20,ry+4,'Y'+(rf.dBf||12)+'@'+r0(rf.spf||150)+' TOP EW');
+      // Schedule
+      const rsX=DX+4,rsY=ry+raftH+30,rsW=DR_W-8;
+      LC(0,0,100);LW(0.4);Rect(rsX,rsY,rsW,32,'D');FC(220,228,248);Rect(rsX,rsY,rsW,7,'F');
+      F(7,'bold',0,0,100);Txt('RAFT FOUNDATION SCHEDULE',DX+DW2/2,rsY+5,{align:'center'});
+      let rsy2=rsY+12;F(6.5,'normal',0,0,0);
+      [['Raft Thickness D',r0(rf.D||400)+'mm'],['Eff. depth d',r0((rf.D||400)-80)+'mm'],
+       ['Bottom reinf.',  'Y'+(rf.dBf||12)+'@'+r0(rf.spf||150)+' mm c/c both ways'],
+       ['Top reinf.',     'Y'+(rf.dBf||12)+'@'+r0(rf.spf||150)+' mm c/c both ways (min)'],
+       ['Concrete',       'M'+S.fck+' (IS 456-2000)'],
+       ['Cover (bottom)', '75mm (IS 456 — soil face)'],
+       ['Cover (top)',    '50mm'],
+      ].forEach(([l,v])=>{F(6.5,'bold',0,40,100);Txt(l,rsX+4,rsy2);F(6.5,'normal',0,0,0);Txt(v,rsX+60,rsy2);rsy2+=5;});
+    } else if(ftgDetailType==='combined'){
+      // COMBINED FOOTING: elongated rectangular section + plan
+      F(8,'bold',0,0,100);Txt('COMBINED FOOTING — TYPICAL DETAIL (CF TYPE)',DX+DW2/2,y,{align:'center'});y+=8;
+      const cf=RES.allFtgs&&RES.allFtgs[0]||{D:400,Bf:1.2,dBf:12,spf:150,d:320,Ps:150,colSize:300};
+      // Combined spans 2 columns
+      const cfSpan=Math.max(2,(S.spansX&&S.spansX[0])||4); // first X span
+      const cfL=cfSpan+cf.Bf; // total length = span + Bf
+      const cfSc=Math.min(30,(DR_W*0.65)/(cfL*1000/25));
+      const cfW2=cfL*1000*cfSc, cfH2=Math.max(12,Math.min(28,(cf.D||400)/25));
+      const cfX2=DX+(DR_W-cfW2)/2, cfY2=y+10;
+      // Plan view (top)
+      F(7,'bold',0,0,0);Txt('PLAN',DX+DW2/2,cfY2-3,{align:'center'});
+      FC(235,238,248);LC(0,0,0);LW(0.8);Rect(cfX2,cfY2,cfW2,cfH2,'FD');Hatch(cfX2,cfY2,cfW2,cfH2);
+      // 2 column positions in plan
+      const col1X=cfX2+(cf.Bf||1)*500*cfSc, col2X=cfX2+cfW2-(cf.Bf||1)*500*cfSc;
+      const colPW2=Math.max(4,(cf.colSize||300)/25);
+      FC(100,100,130);Rect(col1X-colPW2/2,cfY2+cfH2/2-colPW2/2,colPW2,colPW2,'F');
+      Rect(col2X-colPW2/2,cfY2+cfH2/2-colPW2/2,colPW2,colPW2,'F');
+      LC(0,0,0);LW(0.4);Rect(col1X-colPW2/2,cfY2+cfH2/2-colPW2/2,colPW2,colPW2,'D');
+      Rect(col2X-colPW2/2,cfY2+cfH2/2-colPW2/2,colPW2,colPW2,'D');
+      // Bar grid
+      const nCFB=Math.min(8,Math.floor(cfH2/4)+2);
+      LC(0,0,0);LW(0.4);for(let i=1;i<nCFB;i++)Line(cfX2+3,cfY2+i*cfH2/nCFB,cfX2+cfW2-3,cfY2+i*cfH2/nCFB);
+      DH(cfX2,cfX2+cfW2,cfY2+cfH2+6,ftin(cfL)+' (span+2×overhang)',false);
+      DH(col1X,col2X,cfY2-6,ftin(cfSpan)+' c/c',true);
+      // Section view below
+      const secY=cfY2+cfH2+22;
+      F(7,'bold',0,0,0);Txt('TYPICAL SECTION (ALONG LENGTH)',DX+DW2/2,secY-3,{align:'center'});
+      const sfH=Math.max(14,Math.min(26,(cf.D||400)/25));
+      FC(225,228,238);LC(0,0,0);LW(0.8);Rect(cfX2,secY,cfW2,sfH,'FD');Hatch(cfX2,secY,cfW2,sfH);
+      // Bottom bars (longitudinal)
+      const nLB=Math.min(8,Math.floor(cfW2/8)+2);
+      for(let i=0;i<nLB;i++)Rebar(cfX2+4+i*(cfW2-8)/(nLB-1),secY+sfH-4,1.2);
+      // Column stubs
+      FC(180,182,200);LC(0,0,0);LW(0.5);Rect(col1X-colPW2/2,secY-10,colPW2,10,'FD');Rect(col2X-colPW2/2,secY-10,colPW2,10,'FD');
+      // Starter bars
+      LC(0,0,100);LW(0.6);const dOff2=colPW2*0.3;
+      Line(col1X-dOff2,secY,col1X-dOff2,secY-14);Line(col1X+dOff2,secY,col1X+dOff2,secY-14);
+      Line(col2X-dOff2,secY,col2X-dOff2,secY-14);Line(col2X+dOff2,secY,col2X+dOff2,secY-14);
+      DH(cfX2,cfX2+cfW2,secY+sfH+8,ftin(cfL),false);DV(cfX2+cfW2+4,secY,secY+sfH,r0(cf.D||400)+'mm',false);
+      Ld(cfX2+cfW2/3,secY+sfH-4,cfX2+cfW2+18,secY+sfH-4,'Y'+(cf.dBf||12)+'@'+r0(cf.spf||150)+' LONGITUDINAL');
+      // Schedule
+      const csX=DX+4,csY=secY+sfH+22,csW=DR_W-8;
+      LC(0,0,100);LW(0.4);Rect(csX,csY,csW,28,'D');FC(220,228,248);Rect(csX,csY,csW,7,'F');
+      F(7,'bold',0,0,100);Txt('COMBINED FOOTING SCHEDULE',DX+DW2/2,csY+5,{align:'center'});
+      let csy=csY+12;F(6.5,'normal',0,0,0);
+      [['Size (L×B)',ftin(cfL)+' × '+ftin(cf.Bf||1)],['Depth D',r0(cf.D||400)+'mm'],
+       ['Longitudinal bars','Y'+(cf.dBf||12)+'@'+r0(cf.spf||150)+' (bottom)'],
+       ['Transverse bars','Y'+(cf.dBf||12)+'@200 c/c'],['Concrete','M'+S.fck],['Cover','75mm bottom / 50mm sides'],
+      ].forEach(([l,v])=>{F(6.5,'bold',0,40,100);Txt(l,csX+4,csy);F(6.5,'normal',0,0,0);Txt(v,csX+55,csy);csy+=5;});
+    } else {
+    // ISOLATED: original 3-footing layout
     const fzW=(DR_W-8)/3;
     [{lbl:'CORNER FOOTING (CF)',f:f1},{lbl:'EDGE FOOTING (EF)',f:f2},{lbl:'INTERIOR FOOTING (IF)',f:f3}].forEach(({lbl,f},fi)=>{
       const fzX=DR_X+2+fi*(fzW+2);
@@ -10215,6 +10322,7 @@ async function startConstructionPDF() {
       });
     });
 
+    } // end isolated footing detail
     log('Sheet 4 done',36);
 
     // ================================================================
@@ -11333,21 +11441,87 @@ async function startConstructionPDF() {
     doc.addPage();drawPage('ST/SC01/R0','STAIRCASE DETAIL','1:25');
     y=DR_Y+14;
 
-    // Use allStairDesigns if available (has correct stairType from user selection), fallback to RES.stair
-    const stairData = (RES.allStairDesigns && RES.allStairDesigns.length > 0)
-      ? RES.allStairDesigns[0]
-      : RES.stair;
+    // FIX 3: Check if stair bay was actually marked
+    const hasStairBay = RES.allStairDesigns && RES.allStairDesigns.length > 0;
+
+    if(!hasStairBay){
+      // No stair bay marked — show clear notice
+      F(8,'bold',200,80,0);Txt('STAIRCASE DETAIL — NOT APPLICABLE',DX+DW2/2,y,{align:'center'});y+=10;
+      LC(200,80,0);LW(0.8);Rect(DX,y,DW2,40,'D');
+      F(10,'bold',200,80,0);Txt('⚠ No Staircase Bay Designated',DX+DW2/2,y+12,{align:'center'});
+      F(8,'normal',80,60,0);Txt('No bay was marked as "Staircase" in the Building Plan Editor.',DX+DW2/2,y+22,{align:'center'});
+      F(7,'normal',80,60,0);Txt('To generate stair details: go to Plan & Spans → right-click a bay → select Staircase → re-run analysis.',DX+DW2/2,y+30,{align:'center'});
+    } else {
+
+    const stairData = RES.allStairDesigns[0];
     const st = stairData || {riser:150,tread:270,wD:150,wd:125,Ast2:200,stsp:200};
-    const stairTypeLabel = st.stairType==='dogleg'?'DOG-LEG (U-TURN)':st.stairType==='90turn'?'90° QUARTER-TURN':'STRAIGHT FLIGHT';
+    const stType = st.stairType || S.stairType || 'dogleg';
+    const stairTypeLabel = stType==='dogleg'?'DOG-LEG (U-TURN)':stType==='90turn'?'90° QUARTER-TURN':'STRAIGHT FLIGHT';
+
+    // FIX 4: Bar size from actual Ast2 value, not hardcoded threshold
+    const stairBarDia = st.Ast2>350?16:st.Ast2>200?12:10;
+
     F(8,'bold',0,0,100);Txt('STAIRCASE DETAIL  —  '+stairTypeLabel,DX+DW2/2,y,{align:'center'});
     y+=10;
     const nSteps=Math.round(S.floorHt*1000/st.riser)||10;
-    const nTread=Math.ceil(nSteps/2);
-    const sc25s=0.035; // ~1:25 but adjusted for page
+    const nFlight=stType==='straight'?1:2; // flights per floor
+    const nTread=Math.ceil(nSteps/nFlight);
+    const sc25s=0.032;
     const stepH=st.riser*sc25s, stepW=st.tread*sc25s;
     const totalW=nTread*stepW, totalH=nTread*stepH;
+    const wD=st.wD*sc25s;
 
-    F(7,'bold',0,0,80);Txt('CROSS SECTION OF FLIGHT-1',DX+totalW/2+10,y-1);
+    // ── PLAN VIEW (top half) — TYPE-SPECIFIC ─────────────────────
+    const planAreaH = stType==='straight' ? 28 : 45;
+    const planY=y;
+    F(7,'bold',0,0,80);Txt('PLAN VIEW (SCHEMATIC)',DX+DW2/2,planY,{align:'center'});
+    const pX=DX+10, pW=DW2-20, pH=planAreaH;
+
+    if(stType==='straight'){
+      // Single flight box
+      FC(235,238,248);LC(0,0,80);LW(0.8);Rect(pX,planY+4,pW*0.65,pH,'FD');
+      // Step lines
+      LC(0,0,100);LW(0.3);for(let i=1;i<nTread;i++)Line(pX+i*pW*0.65/nTread,planY+4,pX+i*pW*0.65/nTread,planY+4+pH);
+      // Arrow
+      LC(0,0,0);LW(1.0);Line(pX+pW*0.1,planY+4+pH/2,pX+pW*0.55,planY+4+pH/2);
+      F(6,'bold',0,0,100);Txt('UP',pX+pW*0.6,planY+4+pH/2+2);
+      // Landing
+      FC(210,210,220);LC(0,0,0);LW(0.5);Rect(pX+pW*0.65,planY+4,pW*0.25,pH,'FD');
+      F(6,'normal',80,80,80);Txt('LANDING',pX+pW*0.775,planY+4+pH/2+2,{align:'center'});
+    } else if(stType==='dogleg'){
+      // Two flights with mid-landing (U-turn)
+      const fW=pW*0.38, lW=pW*0.18, fH=pH*0.85;
+      // Flight 1
+      FC(220,230,248);LC(0,0,100);LW(0.8);Rect(pX,planY+4,fW,fH,'FD');
+      LC(0,0,100);LW(0.3);for(let i=1;i<nTread;i++)Line(pX+i*fW/nTread,planY+4,pX+i*fW/nTread,planY+4+fH);
+      LC(0,0,0);LW(1.0);Line(pX+fW*0.15,planY+4+fH/2,pX+fW*0.85,planY+4+fH/2);
+      F(6,'bold',0,0,100);Txt('UP →',pX+fW/2,planY+4+fH/2+3,{align:'center'});
+      // Mid landing
+      FC(200,205,220);LC(0,0,0);LW(0.5);Rect(pX+fW,planY+4,lW,fH,'FD');
+      F(6,'normal',80,80,80);Txt('LAND',pX+fW+lW/2,planY+4+fH/2+2,{align:'center'});
+      // Flight 2 (return)
+      FC(220,230,248);LC(0,0,100);LW(0.8);Rect(pX+fW+lW,planY+4,fW,fH,'FD');
+      LC(0,0,100);LW(0.3);for(let i=1;i<nTread;i++)Line(pX+fW+lW+i*fW/nTread,planY+4,pX+fW+lW+i*fW/nTread,planY+4+fH);
+      LC(0,0,0);LW(1.0);Line(pX+fW+lW+fW*0.85,planY+4+fH/2,pX+fW+lW+fW*0.15,planY+4+fH/2);
+      F(6,'bold',0,0,100);Txt('← UP',pX+fW+lW+fW/2,planY+4+fH/2+3,{align:'center'});
+      // Lower landing
+      FC(200,205,220);LC(0,0,0);LW(0.5);Rect(pX,planY+4+fH,fW*2+lW,pH-fH,'FD');
+      F(6,'normal',80,80,80);Txt('LOWER LANDING',pX+(fW*2+lW)/2,planY+4+fH+(pH-fH)/2+2,{align:'center'});
+    } else { // 90turn
+      // L-shaped: flight 1 horizontal, landing corner, flight 2 vertical
+      const fW=pW*0.45, fH2=pH*0.45, lS=Math.min(pW*0.25,pH*0.45);
+      FC(220,230,248);LC(0,0,100);LW(0.8);Rect(pX,planY+4+pH-fH2,fW,fH2,'FD');
+      LC(0,0,100);LW(0.3);for(let i=1;i<nTread;i++)Line(pX+i*fW/nTread,planY+4+pH-fH2,pX+i*fW/nTread,planY+4+pH);
+      LC(0,0,0);LW(1.0);Line(pX+fW*0.1,planY+4+pH-fH2/2,pX+fW*0.9,planY+4+pH-fH2/2);
+      FC(200,205,220);LC(0,0,0);LW(0.5);Rect(pX+fW,planY+4+pH-lS,lS,lS,'FD');
+      F(6,'normal',80,80,80);Txt('LANDING',pX+fW+lS/2,planY+4+pH-lS/2+2,{align:'center'});
+      FC(220,230,248);LC(0,0,100);LW(0.8);Rect(pX+fW,planY+4,lS,pH-lS,'FD');
+      LC(0,0,100);LW(0.3);for(let i=1;i<nTread;i++)Line(pX+fW,planY+4+i*(pH-lS)/nTread,pX+fW+lS,planY+4+i*(pH-lS)/nTread);
+      LC(0,0,0);LW(1.0);Line(pX+fW+lS/2,planY+4+(pH-lS)*0.85,pX+fW+lS/2,planY+4+(pH-lS)*0.1);
+    }
+
+    y=planY+planAreaH+14;
+    F(7,'bold',0,0,80);Txt('CROSS SECTION — FLIGHT-1 (WAIST SLAB)',DX+DW2/2,y-1,{align:'center'});
 
     const stX=DX+12, stBaseY=y+totalH+12;
 
@@ -11358,40 +11532,28 @@ async function startConstructionPDF() {
     // Ground line
     LW(0.8);Line(stX-18,stBaseY,stX+totalW+18,stBaseY);
 
-    // Waist slab (filled triangle/parallelogram)
-    const wD=st.wD*sc25s;
+    // Waist slab and individual steps
     FC(215,218,228);LC(0,0,0);LW(0.5);
-    // Draw waist as sloped filled shape
-    doc.triangle?doc.triangle(stX,stBaseY,stX+totalW,stBaseY-totalH,stX+totalW,stBaseY-totalH+wD,'FD'):null;
-    // Fallback: individual steps
     let curX=stX, curY=stBaseY;
     for(let i=0;i<nTread;i++){
       FC(228,230,240);LC(0,0,0);LW(0.5);
-      // Riser
       doc.rect(curX,curY-stepH,stepW*0.12,stepH,'FD');
-      // Tread
       doc.rect(curX,curY-stepH,stepW,stepH*0.12,'FD');
-      // Fill interior
       FC(215,218,228);doc.rect(curX+stepW*0.12,curY-stepH+stepH*0.12,stepW*(1-0.12),stepH*(1-0.12),'F');
       curX+=stepW; curY-=stepH;
     }
-
     // Main reinforcement line along slope
     LC(0,0,0);LW(1.5);Line(stX+4,stBaseY-4,stX+totalW-4,stBaseY-totalH+4);
     // Distribution bars
-    LC(0,0,0);LW(0.5);
-    for(let i=1;i<nTread-1;i+=2){
-      Rebar(stX+i*stepW+stepW/2,stBaseY-(i+0.5)*stepH+wD/2,1.0);
-    }
+    for(let i=1;i<nTread-1;i+=2){Rebar(stX+i*stepW+stepW/2,stBaseY-(i+0.5)*stepH+wD/2,1.0);}
 
-    // Floor level landing
-    F(7,'bold',0,0,0);Txt('FLOOR LEVEL',stX+totalW+2,stBaseY-totalH-3);
+    // Landing at top
+    F(7,'bold',0,0,0);Txt(stType==='straight'?'FLOOR LEVEL':'MID LANDING',stX+totalW+2,stBaseY-totalH-3);
     FC(195,198,215);LC(0,0,0);LW(0.5);Rect(stX+totalW,stBaseY-totalH-4,18,wD+4,'FD');
 
-    // Rebar annotation
+    // Rebar annotations
     F(6.5,'bold',0,0,0);
-    // Main bar label — positioned clearly away from steps
-    Ld(stX+totalW/2,stBaseY-totalH/2,stX+totalW+22,stBaseY-totalH/2,'Y'+(st.Ast2>300?12:10)+'@'+r0(st.stsp)+'mm MAIN');
+    Ld(stX+totalW/2,stBaseY-totalH/2,stX+totalW+22,stBaseY-totalH/2,'Y'+stairBarDia+'@'+r0(st.stsp)+'mm MAIN');
     Ld(stX+totalW/2,stBaseY-totalH/2+wD,stX+totalW+22,stBaseY-totalH/2+6,'D8@200mm DIST.');
 
     // Dimensions
@@ -11410,7 +11572,7 @@ async function startConstructionPDF() {
      ['Tread',r0(st.tread)+'mm'],
      ['Waist D',r0(st.wD)+'mm'],['Eff. depth d',r0(st.wd)+'mm'],
      ['No. of Steps',nSteps+' per flight'],['Concrete','M'+S.fck+' (IS 456)'],
-     ['Steel','Fe'+S.fy+'D'],['Main bars','Y'+(st.Ast2>300?12:10)+'@'+r0(st.stsp)+'mm'],
+     ['Steel','Fe'+S.fy+'D'],['Main bars','Y'+stairBarDia+'@'+r0(st.stsp)+'mm'],
      ['Dist. bars','D8@200mm'],['Cover','20mm (IS 456)'],
     ].forEach(([l,v],ri)=>{
       if(ri%2===0){FC(245,248,255);Rect(ssX+1,sy5-3.5,ssW-2,5.8,'F');}
@@ -11432,6 +11594,7 @@ async function startConstructionPDF() {
     DH(ssX+14,ssX+32,sy5+11,'Ld = '+r0(60*slabBarDia)+'mm',false);
     F(6,'italic',80,80,80);Txt('(=60xdia for slabs)',ssX+3,sy5+18);
 
+    } // end hasStairBay
     log('All done! Saving...',99);
     await new Promise(r=>setTimeout(r,80));
 
