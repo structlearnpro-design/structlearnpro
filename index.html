@@ -1994,6 +1994,15 @@ function onIframeLoad(){
         }
       }catch(e){}
     },200);
+    // Restore learning progress after iframe loads (handles hard refresh)
+    setTimeout(function(){
+      const raw = sessionStorage.getItem('slp_restore_progress');
+      if(raw){
+        sendProgressToIframe(); // already in sessionStorage from earlier fetch
+      } else {
+        loadAndRestoreProgress(); // fetch from Supabase then send to iframe
+      }
+    }, 800);
   }
 }
 
@@ -2131,6 +2140,8 @@ window.addEventListener('message', function(ev){
       }catch(err){}
     }
     return;
+    // Also restore learning progress
+    setTimeout(sendProgressToIframe, 500);
   }
 
   // Main project save — sent by ui.js after analysis or every 30s
@@ -3170,11 +3181,20 @@ function showToast(msg, type) {
 async function saveProgressToSupabase(progress) {
   if(!P || !progress) return;
   try {
+    // Update sessionStorage immediately so refresh restores it instantly
+    sessionStorage.setItem('slp_restore_progress', JSON.stringify(progress));
     // Save to our progress table using profile_id
-    await fetch(SUPA_URL+'/rest/v1/progress?profile_id=eq.'+P.id, {
-      method: 'PATCH',
-      headers: {'Authorization':'Bearer '+SUPA_KEY,'apikey':SUPA_KEY,'Content-Type':'application/json'},
+    // UPSERT: creates row if missing, updates if exists
+    await fetch(SUPA_URL+'/rest/v1/progress', {
+      method: 'POST',
+      headers: {
+        'Authorization':'Bearer '+SUPA_KEY,
+        'apikey':SUPA_KEY,
+        'Content-Type':'application/json',
+        'Prefer':'resolution=merge-duplicates'
+      },
       body: JSON.stringify({
+        profile_id:       P.id,
         quiz_scores:      progress.quizAttempts || {},
         topics_completed: progress.lessons      || {},
         badges:           progress.behaviors    || {},
