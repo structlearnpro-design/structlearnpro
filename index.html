@@ -4348,7 +4348,9 @@ async function submitBugReport() {
       })
     });
 
-    if(resp.ok || resp.status === 201) {
+    const respBody = await resp.text();
+    console.log('[BugReport] Response:', resp.status, respBody);
+    if(resp.ok || resp.status === 201 || resp.status === 200) {
       document.getElementById('_bug-report-modal').remove();
       // Thank you toast
       var t = document.createElement('div');
@@ -4361,7 +4363,16 @@ async function submitBugReport() {
     }
   } catch(e) {
     console.error('Bug report error:', e);
-    if(btn){ btn.textContent = 'Failed — try again'; btn.disabled = false; }
+    if(btn){ btn.textContent = 'Failed — try again'; btn.disabled = false; btn.style.color='#fbbf24'; }
+    // Show error detail in modal
+    var errDiv = document.getElementById('_bug-error');
+    if(!errDiv){
+      errDiv = document.createElement('div');
+      errDiv.id = '_bug-error';
+      errDiv.style.cssText = 'font-size:11px;color:#fbbf24;margin-top:8px;padding:6px 10px;background:rgba(251,191,36,0.08);border-radius:6px;';
+      if(btn) btn.parentElement.insertBefore(errDiv, btn);
+    }
+    errDiv.textContent = 'Error: ' + e.message + ' — check console for details';
   }
 }
 

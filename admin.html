@@ -1236,7 +1236,13 @@ async function checkAdminAccess() {
 // NAVIGATION
 // ═══════════════════════════════════════════════════════════
 function showPage(id) {
-  if(id==='bugreports'){ loadBugReports(); }
+  if(id==='bugreports'){
+    document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+    document.getElementById('main-content').classList.add('active');
+    document.querySelectorAll('.nav-item').forEach(n=>{ if(n.id==='nav-bugreports') n.classList.add('active'); });
+    loadBugReports(); return;
+  }
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   document.getElementById('page-'+id)?.classList.add('active');
@@ -1259,6 +1265,7 @@ function showPage(id) {
     bulk:        loadBulk,
     forecast:    loadForecast,
     content:     loadContent,
+    bugreports:  loadBugReports,
   };
   if(loaders[id]) loaders[id]();
 }
@@ -2919,7 +2926,7 @@ async function loadBugReports(){
 
   try {
     const resp = await fetch(SUPA_URL+'/rest/v1/bug_reports?select=*,profiles(full_name,unique_id,role)&order=reported_at.desc&limit=100',{
-      headers:{'Authorization':'Bearer '+ADMIN_KEY,'apikey':ADMIN_KEY}
+      headers:{'Authorization':'Bearer '+SUPA_KEY,'apikey':SUPA_KEY}
     });
     const data = await resp.json();
     renderBugReports(data||[]);
@@ -3003,7 +3010,7 @@ async function updateBugStatus(id, status){
   try {
     await fetch(SUPA_URL+'/rest/v1/bug_reports?id=eq.'+id,{
       method:'PATCH',
-      headers:{'Authorization':'Bearer '+ADMIN_KEY,'apikey':ADMIN_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},
+      headers:{'Authorization':'Bearer '+SUPA_KEY,'apikey':SUPA_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},
       body: JSON.stringify({status:status})
     });
   } catch(e){ console.error('Status update failed:',e); }
