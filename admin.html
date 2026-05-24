@@ -203,6 +203,7 @@ tr:hover td{background:rgba(59,130,246,0.04)}
   <div class="nav-item" onclick="showPage('coupons')"><span class="icon">🎟</span>Coupons</div>
   <div class="nav-item" onclick="showPage('forecast')"><span class="icon">📈</span>Revenue Forecast</div>
   <div class="nav-item" onclick="showPage('bugreports')" id="nav-bugreports"><span class="icon">🚩</span>Bug Reports</div>
+  <div class="nav-item" onclick="showPage('contactmessages')" id="nav-contact"><span class="icon">📬</span>Contact Messages</div>
 
   <div class="nav-section">Content</div>
   <div class="nav-item" onclick="showPage('projects')"><span class="icon">🏗</span>All Projects</div>
@@ -1065,6 +1066,10 @@ tr:hover td{background:rgba(59,130,246,0.04)}
   </div>
 </div>
 
+<div id="page-contactmessages" class="page">
+  <div id="contact-list" style="padding:24px"><div style="color:#64748b;font-size:13px">Loading...</div></div>
+</div>
+
 <div id="page-bugreports" class="page">
   <div id="bug-list" style="padding:24px"><div style="color:#64748b;font-size:13px">Click 'Bug Reports' to load.</div></div>
 </div>
@@ -1240,6 +1245,14 @@ async function checkAdminAccess() {
 // NAVIGATION
 // ═══════════════════════════════════════════════════════════
 function showPage(id) {
+  if(id==='contactmessages'){
+    document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+    var cmPage = document.getElementById('page-contactmessages');
+    if(cmPage) cmPage.classList.add('active');
+    document.querySelectorAll('.nav-item').forEach(n=>{ if(n.id==='nav-contact') n.classList.add('active'); });
+    loadContactMessages(); return;
+  }
   if(id==='bugreports'){
     document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
     document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
@@ -2923,6 +2936,77 @@ async function loadFailedPayments() {
 (async()=>{
   await checkAdminAccess();
 })();
+
+
+// ── CONTACT MESSAGES ─────────────────────────────────────────
+async function loadContactMessages(){
+  var pg = document.getElementById('page-contactmessages');
+  if(pg) pg.innerHTML = '<div style="padding:24px"><div style="font-size:18px;font-weight:700;color:#f1f5f9;margin-bottom:4px">📬 Contact Messages</div><div style="font-size:12px;color:#64748b;margin-bottom:20px">Messages sent by users via the Contact Us form in the app.</div><div id="contact-list"><div style="color:#64748b;font-size:13px">Loading...</div></div></div>';
+
+  try {
+    const resp = await fetch(SUPA_URL+'/rest/v1/contact_messages?select=*&order=sent_at.desc&limit=100',{
+      headers:{'Authorization':'Bearer '+SUPA_KEY,'apikey':SUPA_KEY}
+    });
+    const data = await resp.json();
+    if(!Array.isArray(data)){ document.getElementById('contact-list').innerHTML='<div style="color:#f87171;font-size:12px">Error: '+JSON.stringify(data)+'</div>'; return; }
+    renderContactMessages(data);
+  } catch(e){
+    document.getElementById('contact-list').innerHTML = '<div style="color:#f87171">Error: '+e.message+'</div>';
+  }
+}
+
+function renderContactMessages(msgs){
+  const el = document.getElementById('contact-list');
+  const topicColors = {bug:'#f87171', feature:'#a78bfa', billing:'#fbbf24', course:'#38bdf8', collab:'#34d399', other:'#94a3b8'};
+
+  if(!msgs.length){
+    el.innerHTML = '<div style="text-align:center;padding:40px;color:#475569"><div style="font-size:32px;margin-bottom:8px">📭</div><div>No contact messages yet.</div></div>';
+    return;
+  }
+
+  // Count by status
+  var newCount = msgs.filter(function(m){return m.status==='new';}).length;
+  var html = '<div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap">';
+  html += '<div style="background:rgba(248,113,113,0.1);border:1px solid rgba(248,113,113,0.2);border-radius:8px;padding:10px 18px;text-align:center"><div style="font-size:20px;font-weight:800;color:#f87171">'+newCount+'</div><div style="font-size:9px;color:#64748b">UNREAD</div></div>';
+  html += '<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:10px 18px;text-align:center"><div style="font-size:20px;font-weight:800;color:#94a3b8">'+msgs.length+'</div><div style="font-size:9px;color:#64748b">TOTAL</div></div>';
+  html += '</div>';
+
+  msgs.forEach(function(m){
+    const tc = topicColors[m.topic]||'#94a3b8';
+    const date = new Date(m.sent_at).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+    html += '<div style="background:#0a1628;border:1px solid rgba(56,189,248,0.1);border-radius:12px;padding:16px;margin-bottom:10px">';
+    html += '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:10px;flex-wrap:wrap">';
+    html += '<div>';
+    html += '<div style="font-size:13px;font-weight:700;color:#e2e8f0">'+(m.user_name||'Unknown')+'</div>';
+    html += '<div style="font-size:10px;color:#475569;margin-top:2px">'+(m.user_mobile||'')+(m.plan?' · '+m.plan.toUpperCase()+' plan':'')+'</div>';
+    html += '<div style="font-size:10px;color:#334155">'+date+'</div>';
+    html += '</div>';
+    html += '<div style="display:flex;gap:6px;align-items:center">';
+    html += '<span style="font-size:9px;font-weight:700;padding:3px 9px;border-radius:4px;background:rgba('+hexToRgb(tc)+',0.1);color:'+tc+'">'+( m.topic_label||m.topic )+'</span>';
+    html += '<select data-mid="'+m.id+'" onchange="updateContactStatus(this.dataset.mid,this.value)" style="background:#060c18;border:1px solid rgba(255,255,255,0.1);border-radius:6px;color:#94a3b8;font-size:10px;padding:3px 7px;font-family:inherit;cursor:pointer">';
+    ['new','read','replied','resolved'].forEach(function(s){
+      html += '<option value="'+s+'"'+(m.status===s?' selected':'')+'>'+s.charAt(0).toUpperCase()+s.slice(1)+'</option>';
+    });
+    html += '</select></div></div>';
+    html += '<div style="font-size:12px;color:#94a3b8;line-height:1.7;background:rgba(255,255,255,0.02);border-radius:6px;padding:10px 12px;white-space:pre-wrap">'+escH(m.message)+'</div>';
+    html += '<div style="margin-top:8px"><a href="mailto:'+escH(m.user_mobile||'structlearnpro@gmail.com')+'?subject=Re: '+escH(m.topic_label||m.topic)+' — StructLearn Pro" style="font-size:11px;color:#38bdf8;text-decoration:none">↳ Reply via Email</a></div>';
+    html += '</div>';
+  });
+
+  el.innerHTML = html;
+}
+
+async function updateContactStatus(id, status){
+  try {
+    await fetch(SUPA_URL+'/rest/v1/contact_messages?id=eq.'+id,{
+      method:'PATCH',
+      headers:{'Authorization':'Bearer '+SUPA_KEY,'apikey':SUPA_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},
+      body: JSON.stringify({status:status})
+    });
+  } catch(e){ console.error('Contact status update failed:',e); }
+}
+
+function hexToRgb(hex){ hex=hex.replace('#',''); var r=parseInt(hex.substring(0,2),16),g=parseInt(hex.substring(2,4),16),b=parseInt(hex.substring(4,6),16); return r+','+g+','+b; }
 
 // ── BUG REPORTS ─────────────────────────────────────────────
 async function loadBugReports(){

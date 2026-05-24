@@ -953,6 +953,55 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
       <div id="acc-settings-msg" style="margin-top:8px;font-size:11px;color:#34d399;display:none">✅ Settings saved</div>
     </div>
 
+
+    <!-- CONTACT US -->
+    <div class="acc-card" style="border-color:rgba(56,189,248,0.2)">
+      <div class="acc-ct" style="color:#38bdf8">Contact Us</div>
+
+      <!-- Quick contact options -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px">
+        <a href="mailto:structlearnpro@gmail.com" style="text-decoration:none">
+          <div style="background:rgba(56,189,248,0.06);border:1px solid rgba(56,189,248,0.15);border-radius:10px;padding:12px;text-align:center;cursor:pointer;transition:all 0.2s">
+            <div style="font-size:20px;margin-bottom:4px">📧</div>
+            <div style="font-size:11px;font-weight:700;color:#38bdf8">Email Us</div>
+            <div style="font-size:9px;color:#475569;margin-top:2px">structlearnpro@gmail.com</div>
+          </div>
+        </a>
+        <a href="https://structlearnpro.vercel.app" target="_blank" style="text-decoration:none">
+          <div style="background:rgba(167,139,250,0.06);border:1px solid rgba(167,139,250,0.15);border-radius:10px;padding:12px;text-align:center;cursor:pointer">
+            <div style="font-size:20px;margin-bottom:4px">🌐</div>
+            <div style="font-size:11px;font-weight:700;color:#a78bfa">Website</div>
+            <div style="font-size:9px;color:#475569;margin-top:2px">structlearnpro.vercel.app</div>
+          </div>
+        </a>
+      </div>
+
+      <!-- Message form -->
+      <div style="font-size:11px;font-weight:700;color:#94a3b8;letter-spacing:0.5px;margin-bottom:8px">SEND A MESSAGE</div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <select id="contact-topic" style="padding:9px 12px;background:var(--bg2);border:1px solid var(--b1);border-radius:8px;color:var(--txt);font-size:12px;font-family:inherit;outline:none">
+          <option value="">Select topic...</option>
+          <option value="bug">🐛 Found a calculation error</option>
+          <option value="feature">💡 Feature request / suggestion</option>
+          <option value="billing">💳 Billing or subscription issue</option>
+          <option value="course">📚 Question about learning modules</option>
+          <option value="collab">🤝 Partnership / collaboration</option>
+          <option value="other">💬 Other</option>
+        </select>
+        <textarea id="contact-msg" rows="4" placeholder="Describe your issue or question in detail. If it's a calculation error, please include the member name, the value shown, and what you expected..." style="padding:10px 12px;background:var(--bg2);border:1px solid var(--b1);border-radius:8px;color:var(--txt);font-size:12px;font-family:inherit;resize:vertical;outline:none;line-height:1.6"></textarea>
+        <button onclick="sendContactMessage()" style="width:100%;padding:11px;background:linear-gradient(135deg,#1d4ed8,#38bdf8);border:none;border-radius:8px;color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">
+          Send Message →
+        </button>
+        <div id="contact-msg-status" style="font-size:11px;text-align:center;min-height:16px"></div>
+      </div>
+
+      <!-- Response time note -->
+      <div style="margin-top:12px;padding:10px 12px;background:rgba(52,211,153,0.04);border:1px solid rgba(52,211,153,0.1);border-radius:8px;font-size:11px;color:#475569;line-height:1.6">
+        ⏱ <strong style="color:#34d399">Typical response: 24–48 hours.</strong>
+        For urgent issues, email directly: <a href="mailto:structlearnpro@gmail.com" style="color:#38bdf8">structlearnpro@gmail.com</a>
+      </div>
+    </div>
+
     <!-- ACCOUNT ACTIONS -->
     <div class="acc-card">
       <div class="acc-ct">Account</div>
@@ -4253,6 +4302,65 @@ function maybeShowTour(){
 
 </script>
 <script>
+
+
+// ── CONTACT US ───────────────────────────────────────────────
+async function sendContactMessage(){
+  const topic = (document.getElementById('contact-topic')||{}).value || '';
+  const msg   = (document.getElementById('contact-msg')||{}).value || '';
+  const status = document.getElementById('contact-msg-status');
+
+  if(!topic){ if(status) status.innerHTML='<span style="color:#f87171">Please select a topic.</span>'; return; }
+  if(!msg.trim()){ if(status) status.innerHTML='<span style="color:#f87171">Please enter your message.</span>'; return; }
+  if(msg.trim().length < 20){ if(status) status.innerHTML='<span style="color:#f87171">Please describe your issue in a bit more detail (20+ characters).</span>'; return; }
+
+  if(status) status.innerHTML='<span style="color:#94a3b8">Sending...</span>';
+
+  const topicLabels = {
+    bug:'Calculation Error Report', feature:'Feature Request',
+    billing:'Billing Issue', course:'Learning Module Question',
+    collab:'Partnership Enquiry', other:'General Enquiry'
+  };
+
+  try {
+    // Save to Supabase contact_messages table
+    const payload = {
+      profile_id:    P ? P.id : null,
+      user_name:     P ? (P.full_name || P.mobile || 'Unknown') : 'Unknown',
+      user_mobile:   P ? P.mobile : '',
+      topic:         topic,
+      topic_label:   topicLabels[topic] || topic,
+      message:       msg.trim(),
+      plan:          plan || 'free',
+      sent_at:       new Date().toISOString(),
+      status:        'new'
+    };
+
+    const resp = await fetch(SUPA_URL + '/rest/v1/contact_messages', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + SUPA_KEY,
+        'apikey': SUPA_KEY,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if(resp.ok || resp.status === 201) {
+      document.getElementById('contact-msg').value = '';
+      document.getElementById('contact-topic').value = '';
+      if(status) status.innerHTML='<span style="color:#34d399">✅ Message sent! We will reply within 24–48 hours.</span>';
+      setTimeout(function(){ if(status) status.innerHTML=''; }, 6000);
+    } else {
+      const body = await resp.text();
+      throw new Error('Status ' + resp.status + ': ' + body);
+    }
+  } catch(e) {
+    console.error('Contact send error:', e);
+    if(status) status.innerHTML='<span style="color:#f87171">Failed to send. Please email us directly at structlearnpro@gmail.com</span>';
+  }
+}
 
 // ══════════════════════════════════════════════════════════════
 // BUG REPORT SYSTEM — Student flags AI responses as incorrect
