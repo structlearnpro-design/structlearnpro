@@ -576,7 +576,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
     <div class="tlogo">StructLearn Pro</div>
     <div class="tnav">
       <button class="tnav-btn on" id="n-proj" onclick="goTo('projects')">My Projects</button>
-      <button class="tnav-btn" id="n-app"  onclick="_autoSaveProjId?goTo('app'):newProject()" title="Open design tool">Design Tool</button>
+      <button class="tnav-btn" id="n-app"  onclick="_autoSaveProjId?goTo('app'):goTo('projects')" title="Open design tool">Design Tool</button>
       <button class="tnav-btn" id="n-acc"  onclick="goTo('account')">Account</button>
     </div>
   </div>
@@ -632,7 +632,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
       <div style="background:var(--bg2);border:1px solid var(--b1);border-radius:12px;padding:18px;margin-bottom:20px">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
           <div style="font-size:13px;font-weight:800;color:var(--txt)">📚 Learning Journey</div>
-          <button onclick="_autoSaveProjId?goTo('app'):newProject()" style="padding:5px 14px;background:var(--blue2);border:none;border-radius:6px;color:white;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">Open Design Tool →</button>
+          <button onclick="_autoSaveProjId?goTo('app'):goTo('projects')" style="padding:5px 14px;background:var(--blue2);border:none;border-radius:6px;color:white;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">Open Design Tool →</button>
         </div>
         <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px" id="journey-modules"></div>
       </div>
@@ -886,6 +886,56 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
       <div id="acc-email-msg" style="margin-top:6px;font-size:11px;color:var(--txt3)"></div>
     </div>
 
+
+
+    <!-- CONTACT US -->
+    <div class="acc-card" style="border-color:rgba(56,189,248,0.2)">
+      <div class="acc-ct" style="color:#38bdf8">Contact Us</div>
+
+      <!-- Quick contact options -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px">
+        <a href="mailto:structlearnpro@gmail.com" style="text-decoration:none">
+          <div style="background:rgba(56,189,248,0.06);border:1px solid rgba(56,189,248,0.15);border-radius:10px;padding:12px;text-align:center;cursor:pointer;transition:all 0.2s">
+            <div style="font-size:20px;margin-bottom:4px">📧</div>
+            <div style="font-size:11px;font-weight:700;color:#38bdf8">Email Us</div>
+            <div style="font-size:9px;color:#475569;margin-top:2px">structlearnpro@gmail.com</div>
+          </div>
+        </a>
+        <a href="https://structlearnpro.vercel.app" target="_blank" style="text-decoration:none">
+          <div style="background:rgba(167,139,250,0.06);border:1px solid rgba(167,139,250,0.15);border-radius:10px;padding:12px;text-align:center;cursor:pointer">
+            <div style="font-size:20px;margin-bottom:4px">🌐</div>
+            <div style="font-size:11px;font-weight:700;color:#a78bfa">Website</div>
+            <div style="font-size:9px;color:#475569;margin-top:2px">structlearnpro.vercel.app</div>
+          </div>
+        </a>
+      </div>
+
+      <!-- Message form -->
+      <div style="font-size:11px;font-weight:700;color:#94a3b8;letter-spacing:0.5px;margin-bottom:8px">SEND A MESSAGE</div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <select id="contact-topic" style="padding:9px 12px;background:var(--bg2);border:1px solid var(--b1);border-radius:8px;color:var(--txt);font-size:12px;font-family:inherit;outline:none">
+          <option value="">Select topic...</option>
+          <option value="bug">🐛 Found a calculation error</option>
+          <option value="feature">💡 Feature request / suggestion</option>
+          <option value="billing">💳 Billing or subscription issue</option>
+          <option value="course">📚 Question about learning modules</option>
+          <option value="collab">🤝 Partnership / collaboration</option>
+          <option value="other">💬 Other</option>
+        </select>
+        <textarea id="contact-msg" rows="4" placeholder="Describe your issue or question in detail. If it's a calculation error, please include the member name, the value shown, and what you expected..." style="padding:10px 12px;background:var(--bg2);border:1px solid var(--b1);border-radius:8px;color:var(--txt);font-size:12px;font-family:inherit;resize:vertical;outline:none;line-height:1.6"></textarea>
+        <button onclick="sendContactMessage()" style="width:100%;padding:11px;background:linear-gradient(135deg,#1d4ed8,#38bdf8);border:none;border-radius:8px;color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">
+          Send Message →
+        </button>
+        <div id="contact-msg-status" style="font-size:11px;text-align:center;min-height:16px"></div>
+      </div>
+
+      <!-- Response time note -->
+      <div style="margin-top:12px;padding:10px 12px;background:rgba(52,211,153,0.04);border:1px solid rgba(52,211,153,0.1);border-radius:8px;font-size:11px;color:#475569;line-height:1.6">
+        ⏱ <strong style="color:#34d399">Typical response: 24–48 hours.</strong>
+        For urgent issues, email directly: <a href="mailto:structlearnpro@gmail.com" style="color:#38bdf8">structlearnpro@gmail.com</a>
+      </div>
+    </div>
+
     <!-- Subscription -->
     <div class="acc-card">
       <div class="acc-ct">Subscription</div>
@@ -951,55 +1001,6 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
         </select>
       </div>
       <div id="acc-settings-msg" style="margin-top:8px;font-size:11px;color:#34d399;display:none">✅ Settings saved</div>
-    </div>
-
-
-    <!-- CONTACT US -->
-    <div class="acc-card" style="border-color:rgba(56,189,248,0.2)">
-      <div class="acc-ct" style="color:#38bdf8">Contact Us</div>
-
-      <!-- Quick contact options -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px">
-        <a href="mailto:structlearnpro@gmail.com" style="text-decoration:none">
-          <div style="background:rgba(56,189,248,0.06);border:1px solid rgba(56,189,248,0.15);border-radius:10px;padding:12px;text-align:center;cursor:pointer;transition:all 0.2s">
-            <div style="font-size:20px;margin-bottom:4px">📧</div>
-            <div style="font-size:11px;font-weight:700;color:#38bdf8">Email Us</div>
-            <div style="font-size:9px;color:#475569;margin-top:2px">structlearnpro@gmail.com</div>
-          </div>
-        </a>
-        <a href="https://structlearnpro.vercel.app" target="_blank" style="text-decoration:none">
-          <div style="background:rgba(167,139,250,0.06);border:1px solid rgba(167,139,250,0.15);border-radius:10px;padding:12px;text-align:center;cursor:pointer">
-            <div style="font-size:20px;margin-bottom:4px">🌐</div>
-            <div style="font-size:11px;font-weight:700;color:#a78bfa">Website</div>
-            <div style="font-size:9px;color:#475569;margin-top:2px">structlearnpro.vercel.app</div>
-          </div>
-        </a>
-      </div>
-
-      <!-- Message form -->
-      <div style="font-size:11px;font-weight:700;color:#94a3b8;letter-spacing:0.5px;margin-bottom:8px">SEND A MESSAGE</div>
-      <div style="display:flex;flex-direction:column;gap:8px">
-        <select id="contact-topic" style="padding:9px 12px;background:var(--bg2);border:1px solid var(--b1);border-radius:8px;color:var(--txt);font-size:12px;font-family:inherit;outline:none">
-          <option value="">Select topic...</option>
-          <option value="bug">🐛 Found a calculation error</option>
-          <option value="feature">💡 Feature request / suggestion</option>
-          <option value="billing">💳 Billing or subscription issue</option>
-          <option value="course">📚 Question about learning modules</option>
-          <option value="collab">🤝 Partnership / collaboration</option>
-          <option value="other">💬 Other</option>
-        </select>
-        <textarea id="contact-msg" rows="4" placeholder="Describe your issue or question in detail. If it's a calculation error, please include the member name, the value shown, and what you expected..." style="padding:10px 12px;background:var(--bg2);border:1px solid var(--b1);border-radius:8px;color:var(--txt);font-size:12px;font-family:inherit;resize:vertical;outline:none;line-height:1.6"></textarea>
-        <button onclick="sendContactMessage()" style="width:100%;padding:11px;background:linear-gradient(135deg,#1d4ed8,#38bdf8);border:none;border-radius:8px;color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">
-          Send Message →
-        </button>
-        <div id="contact-msg-status" style="font-size:11px;text-align:center;min-height:16px"></div>
-      </div>
-
-      <!-- Response time note -->
-      <div style="margin-top:12px;padding:10px 12px;background:rgba(52,211,153,0.04);border:1px solid rgba(52,211,153,0.1);border-radius:8px;font-size:11px;color:#475569;line-height:1.6">
-        ⏱ <strong style="color:#34d399">Typical response: 24–48 hours.</strong>
-        For urgent issues, email directly: <a href="mailto:structlearnpro@gmail.com" style="color:#38bdf8">structlearnpro@gmail.com</a>
-      </div>
     </div>
 
     <!-- ACCOUNT ACTIONS -->
@@ -1644,6 +1645,11 @@ function updTop(){
   ch.textContent=plan==='free'?'FREE':'PRO ✓';
   ch.className='chip '+(plan==='free'?'free':'pro');
   document.getElementById('t-up').style.display=plan==='free'?'':'none';
+  // Re-send plan to iframe immediately so pro benefits apply
+  try {
+    var fr=document.getElementById('app-iframe');
+    if(fr&&fr.contentWindow&&P) fr.contentWindow.postMessage({type:'USER_PLAN',plan:plan,user:P},'*');
+  } catch(e){}
 }
 function tellIframe(){
   [300, 800, 2000].forEach(function(delay){

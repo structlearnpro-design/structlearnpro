@@ -1684,8 +1684,12 @@ async function viewUser(id) {
       </div>`:''}
     </div>
   `);
+  const isAlreadyPro = u.plan === 'pro' && u.plan_expires_at && new Date(u.plan_expires_at) > new Date();
+  const upgradeBtn = isAlreadyPro
+    ? `<button class="btn-sm" style="background:rgba(52,211,153,0.1);border:1px solid #34d399;color:#34d399;cursor:default" disabled>✅ Already Pro (expires ${new Date(u.plan_expires_at).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'})})</button>`
+    : `<button class="btn-sm btn-purple" onclick="upgradeUserModal('${u.id}');closeModal('user-modal')">⚡ Upgrade to Pro</button>`;
   setHTML('user-modal-btns', `
-    <button class="btn-sm btn-purple" onclick="upgradeUserModal('${u.id}');closeModal('user-modal')">⚡ Upgrade to Pro</button>
+    ${upgradeBtn}
     <button class="btn-sm btn-gray" onclick="changeRole('${u.id}')">Change Role</button>
     <button class="btn-sm btn-red" onclick="deactivateUser('${u.id}')">Deactivate</button>
   `);
