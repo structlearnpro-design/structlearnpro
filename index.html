@@ -254,6 +254,41 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
 .ai-quick-q:hover{border-color:#3b82f6;color:var(--txt2)}
 @keyframes aipulse{0%,100%{opacity:1}50%{opacity:0.4}}
 .ai-loading{color:#7c3aed;font-size:12px;padding:8px 0;animation:aipulse 1.2s infinite}
+
+/* ── ONBOARDING TOUR ────────────────────────────────────────── */
+.tour-overlay{position:fixed;inset:0;z-index:99000;background:rgba(2,6,18,0.88);backdrop-filter:blur(2px);display:flex;align-items:center;justify-content:center;}
+.tour-modal{background:#0a1628;border:1px solid rgba(56,189,248,0.2);border-radius:20px;max-width:580px;width:90%;padding:40px;box-shadow:0 0 80px rgba(56,189,248,0.1),0 32px 80px rgba(0,0,0,0.6);animation:tourIn 0.35s cubic-bezier(0.34,1.56,0.64,1);position:relative;}
+@keyframes tourIn{from{opacity:0;transform:translateY(30px) scale(0.95)}to{opacity:1;transform:translateY(0) scale(1)}}
+.tour-dots{display:flex;gap:6px;margin-bottom:28px;}
+.tour-dot{width:28px;height:4px;border-radius:2px;background:rgba(56,189,248,0.15);transition:background 0.3s;}
+.tour-dot.active{background:#38bdf8;} .tour-dot.done{background:rgba(56,189,248,0.4);}
+.tour-icon{font-size:48px;margin-bottom:16px;}
+.tour-title{font-size:24px;font-weight:900;font-family:Arial Black,sans-serif;color:#f1f5f9;margin-bottom:10px;line-height:1.2;}
+.tour-title em{color:#38bdf8;font-style:normal;}
+.tour-body{font-size:14px;color:#94a3b8;line-height:1.8;margin-bottom:24px;}
+.tour-body strong{color:#e2e8f0;}
+.tour-feat{display:flex;gap:12px;align-items:center;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:11px 14px;margin-bottom:8px;}
+.tour-feat-icon{font-size:20px;flex-shrink:0;}
+.tour-feat-text{font-size:12px;color:#94a3b8;}
+.tour-feat-text strong{color:#e2e8f0;font-size:13px;display:block;margin-bottom:1px;}
+.tour-btns{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:28px;}
+.tour-btn-primary{flex:1;background:linear-gradient(135deg,#1d4ed8,#38bdf8);border:none;border-radius:10px;color:#fff;font-size:14px;font-weight:700;padding:13px 24px;cursor:pointer;font-family:inherit;box-shadow:0 6px 24px rgba(56,189,248,0.25);}
+.tour-btn-skip{background:none;border:none;color:#475569;font-size:12px;cursor:pointer;font-family:inherit;padding:4px 8px;}
+.tour-highlight{position:fixed;z-index:98999;border:2px solid #38bdf8;border-radius:10px;box-shadow:0 0 0 4000px rgba(2,6,18,0.7),0 0 40px rgba(56,189,248,0.3);pointer-events:none;transition:all 0.4s ease;animation:ringPulse 2s infinite;}
+@keyframes ringPulse{0%,100%{box-shadow:0 0 0 4000px rgba(2,6,18,0.7),0 0 30px rgba(56,189,248,0.15)}50%{box-shadow:0 0 0 4000px rgba(2,6,18,0.75),0 0 50px rgba(56,189,248,0.3)}}
+.tour-tooltip{position:fixed;z-index:99001;background:#0a1628;border:1px solid rgba(56,189,248,0.3);border-radius:12px;padding:16px 18px;max-width:280px;box-shadow:0 8px 32px rgba(0,0,0,0.5);animation:tourIn 0.3s ease-out;}
+.tour-tt-step{font-size:9px;color:#38bdf8;font-weight:700;letter-spacing:1px;margin-bottom:6px;}
+.tour-tt-title{font-size:14px;font-weight:700;color:#f1f5f9;margin-bottom:5px;}
+.tour-tt-body{font-size:12px;color:#94a3b8;line-height:1.6;margin-bottom:12px;}
+.tour-tt-btns{display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.tour-tt-next{background:#1d4ed8;border:none;border-radius:7px;color:#fff;font-size:11px;font-weight:700;padding:7px 14px;cursor:pointer;font-family:inherit;flex:1;}
+.tour-tt-skip{background:none;border:none;color:#334155;font-size:11px;cursor:pointer;font-family:inherit;}
+.tour-celebrate{position:fixed;top:60px;left:50%;transform:translateX(-50%);z-index:99002;min-width:340px;max-width:500px;background:linear-gradient(135deg,#0a1628,#0f2040);border:1px solid rgba(52,211,153,0.35);border-radius:14px;padding:18px 22px;box-shadow:0 8px 40px rgba(52,211,153,0.15);display:flex;gap:14px;align-items:flex-start;animation:tourIn 0.4s cubic-bezier(0.34,1.56,0.64,1);}
+.tc-icon{font-size:28px;flex-shrink:0;}
+.tc-title{font-size:13px;font-weight:700;color:#34d399;margin-bottom:4px;}
+.tc-body{font-size:11px;color:#94a3b8;line-height:1.6;}
+.tc-close{background:none;border:none;color:#475569;cursor:pointer;font-size:16px;padding:0;flex-shrink:0;}
+
 </style>
 </head>
 <body>
@@ -1430,6 +1465,7 @@ async function verifyOTP(){
       updTop();
       goTo('projects');
       toast('Welcome back, ' + (P.full_name||mob) + '! 👋');
+      maybeShowTour(); // show if they never completed the tour
     } else {
       // New user — go to role selection screen
       regMobile = mob;
@@ -1470,6 +1506,7 @@ async function doSignup(mob, sessionToken){
     updTop();
     goTo('projects');
     toast('Welcome to StructLearn Pro! Your ID: '+result.uniqueId+' 🎉');
+    maybeShowTour(); // first-time welcome modal
   }catch(e){
     console.error('doSignup error:', e);
     setMsg('o-msg','Network error creating profile. Please try again.','err');
@@ -2159,6 +2196,16 @@ window.addEventListener('message', function(ev){
     if(_aiPanelOpen && _aiCurrentTab==='explain') buildMemberList();
     // Show AI nudge banner after analysis
     setTimeout(showAINudge, 1200);
+    // First analysis celebration (if tour was done but no project yet)
+    if(localStorage.getItem('slp_tour_done')==='1' && !localStorage.getItem('slp_first_analysis')){
+      localStorage.setItem('slp_first_analysis','1');
+      setTimeout(function(){
+        var d=document.createElement('div'); d.className='tour-celebrate';
+        d.innerHTML='<div class="tc-icon">✨</div><div style="flex:1"><div class="tc-title">First analysis complete!</div><div class="tc-body">Now explore the <strong>Full Report</strong>, download the <strong>12-sheet PDF drawings</strong>, or ask the <strong>AI</strong> to explain any result.</div></div><button class="tc-close" onclick="this.parentElement.remove()">&#10005;</button>';
+        document.body.appendChild(d);
+        setTimeout(function(){if(d.parentElement){d.style.opacity='0';d.style.transition='opacity 0.5s';setTimeout(function(){d.remove();},500);}},10000);
+      },1500);
+    }
     return;
   }
   // Legacy handlers
@@ -4019,6 +4066,169 @@ goTo = function(tab){
   if(tab === 'app') { showAIBtn(); refreshAIContext(); }
   else { hideAIBtn(); }
 };
+
+</script>
+<script>
+
+// ══════════════════════════════════════════════════════════════
+// ONBOARDING TOUR
+// ══════════════════════════════════════════════════════════════
+var _tourActive = false;
+var _tourStep = 0;
+var _tourHighlight = null;
+var _tourTooltip  = null;
+
+var TOUR_STEPS = [
+  {
+    target: 'top-bar',
+    title: 'Your Dashboard',
+    body: 'This is your home base. Create projects, track your learning progress, and access all features from here.',
+    pos: 'bottom'
+  },
+  {
+    target: 'hero-section',
+    title: 'Start a New Project',
+    body: 'Click "+ New Project" to design a complete RC building. Set the spans, floors, materials and run the analysis — all guided.',
+    pos: 'bottom'
+  },
+  {
+    target: 'journey-modules',
+    title: 'Learning Journey',
+    body: 'Three structured modules take you from basics to advanced IS 456 design. Complete quizzes to unlock the next module and earn certificates.',
+    pos: 'top'
+  },
+  {
+    target: 'ai-topbar-btn',
+    title: 'AI That Knows Your Design',
+    body: 'Once you run an analysis, the AI can see every calculated value. Ask it why a beam is failing, what an IS clause means, or how to fix any issue.',
+    pos: 'bottom'
+  }
+];
+
+function startTour() {
+  _tourActive = true;
+  _tourStep = 0;
+  showTourStep(0);
+}
+
+function endTour() {
+  _tourActive = false;
+  removeTourUI();
+  localStorage.setItem('slp_tour_done', '1');
+}
+
+function removeTourUI() {
+  ['_tour-highlight','_tour-tooltip','_tour-overlay'].forEach(function(id){
+    var el = document.getElementById(id);
+    if(el) el.remove();
+  });
+}
+
+function showTourStep(idx) {
+  removeTourUI();
+  if(idx >= TOUR_STEPS.length){ endTour(); showTourCelebration(); return; }
+  _tourStep = idx;
+  var step = TOUR_STEPS[idx];
+  var target = document.getElementById(step.target);
+  if(!target){ showTourStep(idx+1); return; }
+
+  var rect = target.getBoundingClientRect();
+  var pad = 8;
+
+  // Highlight ring
+  var hl = document.createElement('div');
+  hl.id = '_tour-highlight';
+  hl.className = 'tour-highlight';
+  hl.style.left   = (rect.left - pad) + 'px';
+  hl.style.top    = (rect.top  - pad) + 'px';
+  hl.style.width  = (rect.width  + pad*2) + 'px';
+  hl.style.height = (rect.height + pad*2) + 'px';
+  document.body.appendChild(hl);
+
+  // Tooltip
+  var tt = document.createElement('div');
+  tt.id = '_tour-tooltip';
+  tt.className = 'tour-tooltip';
+
+  var dots = '';
+  for(var i=0;i<TOUR_STEPS.length;i++){
+    dots += '<div style="display:inline-block;width:20px;height:3px;border-radius:2px;margin-right:4px;background:'+(i===idx?'#38bdf8':i<idx?'rgba(56,189,248,0.4)':'rgba(56,189,248,0.12)')+'"></div>';
+  }
+
+  tt.innerHTML =
+    '<div class="tour-tt-step">'+dots+'</div>' +
+    '<div class="tour-tt-step" style="margin-top:6px">STEP '+(idx+1)+' OF '+TOUR_STEPS.length+'</div>' +
+    '<div class="tour-tt-title">'+step.title+'</div>' +
+    '<div class="tour-tt-body">'+step.body+'</div>' +
+    '<div class="tour-tt-btns">' +
+      '<button class="tour-tt-next" onclick="showTourStep('+(idx+1)+')">'+(idx===TOUR_STEPS.length-1?'Finish Tour ✓':'Next →')+'</button>' +
+      '<button class="tour-tt-skip" onclick="endTour()">Skip tour</button>' +
+    '</div>';
+
+  document.body.appendChild(tt);
+
+  // Position tooltip
+  var ttW = 280, ttH = 160;
+  var left, top;
+  if(step.pos === 'bottom'){
+    left = Math.min(rect.left, window.innerWidth - ttW - 12);
+    top  = rect.bottom + pad + 10;
+    if(top + ttH > window.innerHeight) top = rect.top - ttH - 16;
+  } else {
+    left = Math.min(rect.left, window.innerWidth - ttW - 12);
+    top  = rect.top - ttH - 16;
+    if(top < 8) top = rect.bottom + pad + 10;
+  }
+  tt.style.left = Math.max(8, left) + 'px';
+  tt.style.top  = Math.max(8, top)  + 'px';
+}
+
+function showWelcomeModal() {
+  if(localStorage.getItem('slp_tour_done') === '1') return;
+  var overlay = document.createElement('div');
+  overlay.id = '_tour-overlay';
+  overlay.className = 'tour-overlay';
+  overlay.innerHTML =
+    '<div class="tour-modal">' +
+      '<div class="tour-dots">' +
+        '<div class="tour-dot active"></div>' +
+        '<div class="tour-dot"></div>' +
+        '<div class="tour-dot"></div>' +
+      '</div>' +
+      '<div class="tour-icon">🏗</div>' +
+      '<div class="tour-title">Welcome to <em>StructLearn Pro</em></div>' +
+      '<div class="tour-body">The complete RC building design tool built for Indian civil engineers and students — every calculation shown, every IS clause cited, full drawing set generated automatically.</div>' +
+      '<div class="tour-feat"><div class="tour-feat-icon">📐</div><div class="tour-feat-text"><strong>Step-by-Step IS Code Calculations</strong>Design beams, columns, slabs, footings & staircases with full working.</div></div>' +
+      '<div class="tour-feat"><div class="tour-feat-icon">📄</div><div class="tour-feat-text"><strong>12-Sheet Structural Drawing Set</strong>Auto-generated — footing layout, beam detail, slab plan, elevation & more.</div></div>' +
+      '<div class="tour-feat"><div class="tour-feat-icon">🤖</div><div class="tour-feat-text"><strong>AI That Knows Your Design</strong>Ask why a member is failing. Get IS clause explanations in plain language.</div></div>' +
+      '<div class="tour-feat"><div class="tour-feat-icon">🏆</div><div class="tour-feat-text"><strong>Learn, Quiz & Get Certified</strong>3 structured modules with quizzes and design-confidence tracking.</div></div>' +
+      '<div class="tour-btns">' +
+        '<button class="tour-btn-primary" onclick="document.getElementById(&quot;_tour-overlay&quot;).remove();setTimeout(startTour,400)">Take a Quick Tour →</button>' +
+        '<button class="tour-btn-skip" onclick="endTour()">Skip, explore myself</button>' +
+      '</div>' +
+    '</div>';
+  document.body.appendChild(overlay);
+}
+
+function showTourCelebration() {
+  var d = document.createElement('div');
+  d.className = 'tour-celebrate';
+  d.innerHTML =
+    '<div class="tc-icon">🎉</div>' +
+    '<div style="flex:1">' +
+      '<div class="tc-title">Tour Complete — You are ready to design!</div>' +
+      '<div class="tc-body">Start by clicking <strong>+ New Project</strong> to design your first RC building. Run the analysis and ask the AI anything about your results.</div>' +
+    '</div>' +
+    '<button class="tc-close" onclick="this.parentElement.remove()">✕</button>';
+  document.body.appendChild(d);
+  setTimeout(function(){ if(d.parentElement) d.style.opacity='0'; d.style.transition='opacity 0.5s'; setTimeout(function(){d.remove();},500); }, 8000);
+}
+
+// ── TRIGGER: show welcome modal on first visit ──
+function maybeShowTour(){
+  if(localStorage.getItem('slp_tour_done') === '1') return;
+  setTimeout(showWelcomeModal, 600);
+}
 
 </script>
 </body>
