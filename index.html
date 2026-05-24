@@ -246,6 +246,21 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
 .ai-tab.active{color:#a78bfa;border-bottom-color:#7c3aed}
 .ai-output{background:#0f172a;border:1px solid #1e3a8a;border-radius:8px;padding:14px;font-size:12px;color:var(--txt2);line-height:1.8;min-height:40px;white-space:pre-wrap;word-break:break-word;margin-top:8px}
 .ai-output:empty{display:none}
+.ai-report-bar{margin-top:8px;display:flex;align-items:center;justify-content:flex-end;gap:8px;opacity:0;transition:opacity 0.3s;}
+.ai-report-bar.visible{opacity:1;}
+.ai-report-btn{background:none;border:1px solid rgba(248,113,113,0.25);border-radius:6px;color:#f87171;font-size:10px;font-weight:700;padding:4px 10px;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:5px;transition:all 0.2s;}
+.ai-report-btn:hover{background:rgba(248,113,113,0.08);border-color:rgba(248,113,113,0.5);}
+.ai-report-modal{position:fixed;inset:0;z-index:99100;background:rgba(2,6,18,0.85);display:flex;align-items:center;justify-content:center;}
+.ai-report-box{background:#0a1628;border:1px solid rgba(248,113,113,0.25);border-radius:16px;padding:28px;max-width:480px;width:90%;box-shadow:0 0 60px rgba(248,113,113,0.08);}
+.ai-report-title{font-size:16px;font-weight:700;color:#f1f5f9;margin-bottom:6px;}
+.ai-report-sub{font-size:12px;color:#64748b;margin-bottom:16px;line-height:1.6;}
+.ai-report-label{font-size:11px;font-weight:700;color:#94a3b8;margin-bottom:6px;letter-spacing:0.5px;}
+.ai-report-textarea{width:100%;background:#060c18;border:1px solid rgba(255,255,255,0.08);border-radius:8px;color:#e2e8f0;font-size:12px;padding:10px 12px;font-family:inherit;resize:vertical;min-height:80px;margin-bottom:16px;}
+.ai-report-textarea:focus{outline:none;border-color:rgba(248,113,113,0.3);}
+.ai-report-btns{display:flex;gap:10px;}
+.ai-report-submit{flex:1;background:rgba(248,113,113,0.1);border:1px solid rgba(248,113,113,0.3);border-radius:8px;color:#f87171;font-size:12px;font-weight:700;padding:10px;cursor:pointer;font-family:inherit;}
+.ai-report-submit:hover{background:rgba(248,113,113,0.18);}
+.ai-report-cancel{background:none;border:1px solid rgba(255,255,255,0.08);border-radius:8px;color:#64748b;font-size:12px;padding:10px 16px;cursor:pointer;font-family:inherit;}
 .ai-member-btn{display:flex;align-items:center;gap:8px;padding:8px 12px;background:#0f172a;border:1px solid #1e3a8a;border-radius:7px;color:var(--txt2);font-size:11px;cursor:pointer;font-family:inherit;text-align:left;transition:all 0.15s;width:100%}
 .ai-member-btn:hover{border-color:#7c3aed;color:var(--txt)}
 .ai-member-btn.fail{border-left:3px solid #f87171}
@@ -3591,7 +3606,9 @@ function buildMemberList(){
 }
 
 // ── CORE AI CALL ────────────────────────────────────────────────
+var lastAIQuestion = '';
 async function callClaude(systemPrompt, userMessage, outputElId){
+  lastAIQuestion = userMessage;
   if(!canUseAI()){
     const el = document.getElementById(outputElId);
     if(el) el.innerHTML = '⚠️ Daily limit reached ('+AI_FREE_LIMIT+' questions). <a href="#" onclick="showUp();return false" style="color:#3b82f6">Upgrade to Pro</a> for unlimited AI assistance.';
@@ -3626,7 +3643,11 @@ async function callClaude(systemPrompt, userMessage, outputElId){
     }
 
     incrementAIUsage();
-    if(el){ el.className='ai-output'; el.innerHTML=formatAIResponse(text); }
+    if(el){
+      el.className='ai-output'; el.innerHTML=formatAIResponse(text);
+      // Add report button after every AI response
+      showAIReportBar(el, text, lastAIQuestion||'');
+    }
     return text;
 
   }catch(e){
@@ -4228,6 +4249,120 @@ function showTourCelebration() {
 function maybeShowTour(){
   if(localStorage.getItem('slp_tour_done') === '1') return;
   setTimeout(showWelcomeModal, 600);
+}
+
+</script>
+<script>
+
+// ══════════════════════════════════════════════════════════════
+// BUG REPORT SYSTEM — Student flags AI responses as incorrect
+// ══════════════════════════════════════════════════════════════
+
+function showAIReportBar(outputEl, aiAnswer, question) {
+  // Remove any existing report bar
+  var existing = outputEl.parentElement.querySelector('.ai-report-bar');
+  if(existing) existing.remove();
+
+  var bar = document.createElement('div');
+  bar.className = 'ai-report-bar';
+  bar.innerHTML =
+    '<span style="font-size:10px;color:#334155">Was this answer incorrect?</span>' +
+    '<button class="ai-report-btn" onclick="openBugReportModal(this)" ' +
+      'data-answer="' + encodeURIComponent(aiAnswer.substring(0,2000)) + '" ' +
+      'data-question="' + encodeURIComponent(question.substring(0,1000)) + '">' +
+      '🚩 Report Incorrect Answer' +
+    '</button>';
+
+  outputEl.parentElement.appendChild(bar);
+  // Fade in after short delay
+  setTimeout(function(){ bar.classList.add('visible'); }, 400);
+}
+
+var _bugAiAnswer = '', _bugQuestion = '';
+function openBugReportModal(btn) {
+  _bugAiAnswer = decodeURIComponent(btn.dataset.answer  || '');
+  _bugQuestion = decodeURIComponent(btn.dataset.question || '');
+  var aiAnswer = _bugAiAnswer, question = _bugQuestion;
+
+  var modal = document.createElement('div');
+  modal.id = '_bug-report-modal';
+  modal.className = 'ai-report-modal';
+  modal.innerHTML =
+    '<div class="ai-report-box">' +
+      '<div class="ai-report-title">🚩 Report Incorrect AI Answer</div>' +
+      '<div class="ai-report-sub">Your report goes directly to the developer. Include what you think is wrong — a specific calculation, IS clause, or formula. This helps improve the engine for everyone.</div>' +
+      '<div class="ai-report-label">WHAT DO YOU THINK IS WRONG? (optional)</div>' +
+      '<textarea class="ai-report-textarea" id="_bug-note" placeholder="e.g. The moment value shown is 0 but my hand calculation gives 38 kN.m for this span and load..."></textarea>' +
+      '<div class="ai-report-btns">' +
+        '<button class="ai-report-submit" id="_bug-submit-btn" onclick="doSubmitBugReport()">Submit Report →</button>' +
+        '<button class="ai-report-cancel" onclick="document.getElementById(&quot;_bug-report-modal&quot;).remove()">Cancel</button>' +
+      '</div>' +
+    '</div>';
+  document.body.appendChild(modal);
+  setTimeout(function(){ document.getElementById('_bug-note') && document.getElementById('_bug-note').focus(); }, 100);
+}
+
+function doSubmitBugReport(){ submitBugReport(); }
+async function submitBugReport() {
+  if(!P) return;
+  var aiAnswer = _bugAiAnswer || '';
+  var question = _bugQuestion || '';
+  var note      = (document.getElementById('_bug-note') || {}).value || '';
+
+  // Gather current design context
+  var designValues = {};
+  try {
+    if(_currentS)   designValues.inputs  = {fck:_currentS.fck, fy:_currentS.fy, zone:_currentS.zone, numFloors:_currentS.numFloors, spansX:_currentS.spansX, spansY:_currentS.spansY};
+    if(_currentRES) designValues.summary = {
+      beams:  (_currentRES.allBeams||[]).length,
+      cols:   (_currentRES.allCols||[]).length,
+      ftgs:   (_currentRES.allFtgs||[]).length,
+      failB:  (_currentRES.allBeams||[]).filter(function(b){return b.shearSafe===false||b.deflOK===false;}).length,
+      failC:  (_currentRES.allCols||[]).filter(function(c){return c.safe===false;}).length
+    };
+  } catch(e){}
+
+  var projectName = (_currentS && _currentS.name) || 'Untitled';
+
+  // Submit button feedback
+  var btn = document.querySelector('.ai-report-submit');
+  if(btn){ btn.textContent = 'Submitting...'; btn.disabled = true; }
+
+  try {
+    var resp = await fetch(SUPA_URL + '/rest/v1/bug_reports', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + SUPA_KEY,
+        'apikey': SUPA_KEY,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify({
+        profile_id:    P.id,
+        ai_question:   question,
+        ai_answer:     aiAnswer,
+        student_note:  note,
+        design_values: designValues,
+        project_name:  projectName,
+        status:        'new'
+      })
+    });
+
+    if(resp.ok || resp.status === 201) {
+      document.getElementById('_bug-report-modal').remove();
+      // Thank you toast
+      var t = document.createElement('div');
+      t.style.cssText = 'position:fixed;bottom:90px;right:24px;z-index:99200;background:#0a1628;border:1px solid rgba(52,211,153,0.3);border-radius:10px;padding:12px 18px;font-size:12px;color:#34d399;font-weight:700;box-shadow:0 4px 20px rgba(0,0,0,0.4);font-family:inherit';
+      t.innerHTML = '✅ Report submitted. Thank you — this helps improve the engine!';
+      document.body.appendChild(t);
+      setTimeout(function(){ t.style.opacity='0'; t.style.transition='opacity 0.5s'; setTimeout(function(){t.remove();},500); }, 4000);
+    } else {
+      throw new Error('Status ' + resp.status);
+    }
+  } catch(e) {
+    console.error('Bug report error:', e);
+    if(btn){ btn.textContent = 'Failed — try again'; btn.disabled = false; }
+  }
 }
 
 </script>
