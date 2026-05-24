@@ -1065,6 +1065,10 @@ tr:hover td{background:rgba(59,130,246,0.04)}
   </div>
 </div>
 
+<div id="page-bugreports" class="page">
+  <div id="bug-list" style="padding:24px"><div style="color:#64748b;font-size:13px">Click 'Bug Reports' to load.</div></div>
+</div>
+
 <script>
 // ═══════════════════════════════════════════════════════════
 // CONFIG
@@ -1239,7 +1243,8 @@ function showPage(id) {
   if(id==='bugreports'){
     document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
     document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
-    document.getElementById('main-content').classList.add('active');
+    var brPage = document.getElementById('page-bugreports');
+    if(brPage) brPage.classList.add('active');
     document.querySelectorAll('.nav-item').forEach(n=>{ if(n.id==='nav-bugreports') n.classList.add('active'); });
     loadBugReports(); return;
   }
@@ -2921,17 +2926,25 @@ async function loadFailedPayments() {
 
 // ── BUG REPORTS ─────────────────────────────────────────────
 async function loadBugReports(){
-  const main = document.getElementById('main-content');
-  main.innerHTML = '<div style="padding:24px"><div style="font-size:18px;font-weight:700;color:#f1f5f9;margin-bottom:4px">🚩 Bug Reports</div><div style="font-size:12px;color:#64748b;margin-bottom:20px">AI responses flagged as incorrect by students. Review and update engine code accordingly.</div><div id="bug-list"><div style="color:#64748b;font-size:13px">Loading...</div></div></div>';
+  // Write header into page-bugreports, results into bug-list
+  var brPage = document.getElementById('page-bugreports');
+  if(brPage) brPage.innerHTML = '<div style="padding:24px"><div style="font-size:18px;font-weight:700;color:#f1f5f9;margin-bottom:4px">🚩 Bug Reports</div><div style="font-size:12px;color:#64748b;margin-bottom:20px">AI responses flagged as incorrect by students. Review and update engine code accordingly.</div><div id="bug-list"><div style="color:#64748b;font-size:13px">Loading...</div></div></div>';
 
   try {
-    const resp = await fetch(SUPA_URL+'/rest/v1/bug_reports?select=*,profiles(full_name,unique_id,role)&order=reported_at.desc&limit=100',{
+    const resp = await fetch(SUPA_URL+'/rest/v1/bug_reports?select=*&order=reported_at.desc&limit=100',{
       headers:{'Authorization':'Bearer '+SUPA_KEY,'apikey':SUPA_KEY}
     });
+    console.log('[BugReports] Status:', resp.status);
     const data = await resp.json();
+    console.log('[BugReports] Data:', data);
+    if(!Array.isArray(data)){ 
+      document.getElementById('bug-list').innerHTML = '<div style="color:#f87171;font-size:12px">Supabase error: '+JSON.stringify(data)+'</div>';
+      return;
+    }
     renderBugReports(data||[]);
   } catch(e){
-    document.getElementById('bug-list').innerHTML = '<div style="color:#f87171">Error loading reports: '+e.message+'</div>';
+    document.getElementById('bug-list').innerHTML = '<div style="color:#f87171">Error: '+e.message+'</div>';
+    console.error('[BugReports] Error:', e);
   }
 }
 
@@ -2957,14 +2970,15 @@ function renderBugReports(reports){
 
   reports.forEach(function(r){
     const sc = statusColors[r.status]||'#64748b';
-    const profile = r.profiles||{};
+    const profile = {}; // no join — using profile_id directly
+    const shortId = (r.profile_id||'').substring(0,8);
     const date = new Date(r.reported_at).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
     html += '<div style="background:#0a1628;border:1px solid rgba(248,113,113,0.12);border-radius:12px;padding:18px;margin-bottom:12px">';
     // Header
     html += '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px;flex-wrap:wrap">';
     html += '<div>';
-    html += '<div style="font-size:13px;font-weight:700;color:#e2e8f0">'+(profile.full_name||'Unknown')+'</div>';
-    html += '<div style="font-size:10px;color:#475569;margin-top:2px">'+(profile.unique_id||'')+(r.project_name?' · Project: '+r.project_name:'')+'</div>';
+    html += '<div style="font-size:13px;font-weight:700;color:#e2e8f0">Report #'+shortId+'</div>';
+    html += '<div style="font-size:10px;color:#475569;margin-top:2px">User: '+shortId+'...'+(r.project_name?' · Project: '+r.project_name:'')+'</div>';
     html += '<div style="font-size:10px;color:#334155;margin-top:1px">'+date+'</div>';
     html += '</div>';
     html += '<div style="display:flex;gap:6px;align-items:center">';
