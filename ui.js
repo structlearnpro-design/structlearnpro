@@ -117,6 +117,17 @@ setTimeout(()=>{
 function p1(){return`
 <div class="card bl">
   <div class="ct">📋 Project Information</div>
+
+  <!-- ── EDITABLE NOTICE ── -->
+  <div style="background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.25);border-radius:8px;padding:10px 14px;margin-bottom:14px;display:flex;align-items:flex-start;gap:10px;">
+    <span style="font-size:18px;flex-shrink:0;margin-top:1px;">✏️</span>
+    <div>
+      <div style="font-size:12px;font-weight:700;color:var(--yellow);margin-bottom:2px;">These fields are for YOU to fill in — tap any field to edit</div>
+      <div style="font-size:11px;color:var(--txt3);line-height:1.6;">The values shown are just <strong style="color:var(--txt2);">example defaults</strong> to guide you. Change every field to match your actual building project.</div>
+    </div>
+  </div>
+  <!-- ── END EDITABLE NOTICE ── -->
+
   <div class="row">
     <div class="col2">
       ${tfld('name','Project Name','Name on report cover',S.name)}

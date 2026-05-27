@@ -197,7 +197,7 @@ function saveToParent(status){
 // =======================================================
 let PAGE=0, RES=null, RSEC='overview', BIDX=0, CIDX=0;
 const S={
-  name:'Sharma Residence',location:'New Delhi',client:'Mr. Arun Sharma',
+  name:'',location:'',client:'',
   zone:'IV',soilType:'II',importance:1.0,
   numFloors:4,floorHt:3.2,buildingL:12,buildingW:9,
   spansX:[4,4,4],spansY:[3,3,3],
@@ -288,7 +288,21 @@ function fld(id,lbl,tip,unit,type,val,opts){
   return`<div class="fld"><label>${lbl} ${t} ${u}</label><input type="number" id="${id}" value="${val}" oninput="sv('${id}',this.value);fldValidate('${id}')"/></div>`;
 }
 
-function tfld(id,lbl,tip,val){return`<div class="fld"><label>${lbl} <span title="${tip}" style="display:inline-block;background:#1e3a8a;color:#93c5fd;border-radius:50%;width:13px;height:13px;font-size:9px;text-align:center;line-height:13px;cursor:default">?</span></label><input type="text" id="${id}" value="${val}" oninput="sv('${id}',this.value)" style="width:100%;background:var(--bg1);color:var(--txt);border:1px solid var(--b2);border-radius:6px;padding:7px 10px;font-size:12px;font-family:var(--mono)"/></div>`;}
+function tfld(id,lbl,tip,val){
+  const ph={'name':'e.g. Sharma Residence','client':'e.g. Mr. Arun Sharma','location':'e.g. New Delhi'}[id]||'Enter value';
+  return`<div class="fld">
+    <label style="display:flex;align-items:center;gap:5px;margin-bottom:4px">
+      <span>${lbl}</span>
+      <span title="${tip}" style="display:inline-block;background:#1e3a8a;color:#93c5fd;border-radius:50%;width:13px;height:13px;font-size:9px;text-align:center;line-height:13px;cursor:default">?</span>
+      <span style="margin-left:auto;font-size:9px;color:var(--yellow);font-weight:700;letter-spacing:0.3px">✏ EDIT THIS</span>
+    </label>
+    <input type="text" id="${id}" value="${val}" placeholder="${ph}" oninput="sv('${id}',this.value)"
+      style="width:100%;background:var(--bg1);color:var(--txt);border:1px solid ${val?'var(--b2)':'rgba(251,191,36,0.4)'};border-radius:6px;padding:8px 10px;font-size:12px;font-family:var(--mono);outline:none;transition:border-color 0.15s;"
+      onfocus="this.style.borderColor='var(--blue)';this.style.boxShadow='0 0 0 3px rgba(96,165,250,0.12)'"
+      onblur="this.style.borderColor=this.value?'var(--b2)':'rgba(251,191,36,0.4)';this.style.boxShadow='none'"
+    />
+  </div>`;
+}
 
 // =======================================================
 // ALL PAGES
