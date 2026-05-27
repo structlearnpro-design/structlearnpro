@@ -1738,17 +1738,72 @@ function closeLogin(){document.getElementById('lmodal').classList.remove('show')
 document.getElementById('lmodal').addEventListener('click',e=>{if(e.target===document.getElementById('lmodal'))closeLogin();});
 function lTab(t){document.getElementById('lf-login').style.display=t==='login'?'block':'none';document.getElementById('lf-signup').style.display=t==='signup'?'block':'none';document.getElementById('lf-otp').style.display='none';document.getElementById('lt-li').classList.toggle('on',t==='login');document.getElementById('lt-su').classList.toggle('on',t==='signup');}
 function selP(b,v){document.querySelectorAll('.purbtn').forEach(x=>x.classList.remove('on'));b.classList.add('on');lpur=v;}
-function lSend(type){const mob=type==='login'?document.getElementById('lm-m').value:document.getElementById('lm-sm').value;const mid=type==='login'?'lmsg-l':'lmsg-s';const msg=document.getElementById(mid);if(mob.length!==10){msg.className='lmsg err';msg.textContent='Enter a valid 10-digit number.';return;}msg.className='lmsg';msg.textContent='Sending OTP...';document.getElementById('lm-ph').textContent='+91 '+mob.slice(0,5)+' '+mob.slice(5);setTimeout(()=>{['lf-login','lf-signup'].forEach(id=>document.getElementById(id).style.display='none');document.getElementById('lf-otp').style.display='block';document.getElementById('lo0').focus();},700);}
+async function lSend(type){
+  const mob=type==='login'?document.getElementById('lm-m').value:document.getElementById('lm-sm').value;
+  const mid=type==='login'?'lmsg-l':'lmsg-s';
+  const msg=document.getElementById(mid);
+  if(mob.length!==10){msg.className='lmsg err';msg.textContent='Enter a valid 10-digit number.';return;}
+  msg.className='lmsg';msg.textContent='Sending OTP...';
+  const btn=document.getElementById(type==='login'?'lbtn-login':'lbtn-signup');
+  if(btn){btn.disabled=true;}
+  try{
+    const resp=await fetch('https://rpjdveuxxjeoeomkwrfx.supabase.co/functions/v1/send-otp',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer sb_publishable_L1RWkjtz41gT5sZKhRRnsw_BB3WfJWI'},
+      body:JSON.stringify({mobile:mob})
+    });
+    const result=await resp.json();
+    if(!resp.ok||result.error){
+      msg.className='lmsg err';
+      msg.textContent=result.error||'Failed to send OTP. Try again.';
+      if(btn)btn.disabled=false;
+      return;
+    }
+    // Success — show OTP screen
+    msg.className='lmsg';msg.textContent='';
+    document.getElementById('lm-ph').textContent='+91 '+mob.slice(0,5)+' '+mob.slice(5);
+    // Store mobile for verification
+    window._lmob=mob; window._ltype=type;
+    ['lf-login','lf-signup'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});
+    const otpEl=document.getElementById('lf-otp');
+    if(otpEl)otpEl.style.display='block';
+    document.getElementById('lo0')?.focus();
+  }catch(e){
+    msg.className='lmsg err';
+    msg.textContent='Network error. Check your connection.';
+    if(btn)btn.disabled=false;
+  }
+}
 function lOI(i){const v=document.getElementById('lo'+i).value;if(v&&i<5)document.getElementById('lo'+(i+1)).focus();}
 function lOK(e,i){if(e.key==='Backspace'&&!document.getElementById('lo'+i).value&&i>0)document.getElementById('lo'+(i-1)).focus();}
-function lVerify(){
-  // In production: verify OTP with Supabase, then redirect
-  // Wire your Supabase OTP verify call here, then:
-  closeLogin();
-  if(/Android|iPhone|iPad/i.test(navigator.userAgent)) showLap();
-  else window.location.href='/dashboard';
+async function lVerify(){
+  const otp=[0,1,2,3,4,5].map(i=>document.getElementById('lo'+i)?.value||'').join('');
+  const msg=document.getElementById('lmsg-o');
+  if(otp.length!==6){if(msg){msg.className='lmsg err';msg.textContent='Enter all 6 digits.';}return;}
+  if(msg){msg.className='lmsg';msg.textContent='Verifying...';}
+  try{
+    const resp=await fetch('https://rpjdveuxxjeoeomkwrfx.supabase.co/functions/v1/verify-otp',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer sb_publishable_L1RWkjtz41gT5sZKhRRnsw_BB3WfJWI'},
+      body:JSON.stringify({mobile:window._lmob, otp:otp, type:window._ltype||'login'})
+    });
+    const result=await resp.json();
+    if(!resp.ok||result.error){
+      if(msg){msg.className='lmsg err';msg.textContent=result.error||'Invalid OTP. Try again.';}
+      return;
+    }
+    if(result.sessionToken){
+      localStorage.setItem('slp_session_mob',window._lmob);
+      localStorage.setItem('slp_session_tok',result.sessionToken);
+    }
+    closeLogin();
+    if(/Android|iPhone|iPad/i.test(navigator.userAgent)) showLap();
+    else window.location.href='/dashboard';
+  }catch(e){
+    if(msg){msg.className='lmsg err';msg.textContent='Network error. Try again.';}
+  }
 }
-function lResend(){document.getElementById('lmsg-o').textContent='OTP resent!';setTimeout(()=>document.getElementById('lmsg-o').textContent='',3000);}
+function lResend(){if(window._lmob){lSend(window._ltype||'login');}}
 function showLap(){document.getElementById('lapmod').classList.add('show');document.body.style.overflow='hidden';}
 function closeLap(){document.getElementById('lapmod').classList.remove('show');document.body.style.overflow='';}
 function goApp(){closeLap();window.location.href='/dashboard';}
