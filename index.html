@@ -373,7 +373,7 @@ footer{background:#080d1c;padding:44px 28px 32px;border-top:1px solid var(--bord
 </head>
 <body>
 
-<button id="atg" onclick="toggleEdit()"><div class="tdot"></div><span id="atgl">Edit</span></button>
+<button id="atg" onclick="toggleEdit()" style="display:none;"><div class="tdot"></div><span id="atgl">Edit</span></button>
 <div id="etb"><span class="etl">EDITING</span><button class="ets" onclick="saveEdits()">Save</button><button class="etd" onclick="discardEdits()">Discard</button></div>
 
 <nav>
@@ -919,8 +919,26 @@ footer{background:#080d1c;padding:44px 28px 32px;border-top:1px solid var(--bord
     setTimeout(runNext, 300);
   };
 
-  // kick off
-  setTimeout(runNext, 500);
+  // kick off — start when section enters viewport, restart every time it re-enters
+  const showcaseSection = document.getElementById('showcase');
+  let hasStarted = false;
+  let wasVisible = false;
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if(entry.isIntersecting && !wasVisible) {
+        // Section just came into view — restart from beginning
+        wasVisible = true;
+        dReplay();
+      } else if(!entry.isIntersecting) {
+        // Section left view — reset flag so next visit restarts
+        wasVisible = false;
+      }
+    });
+  }, { threshold: 0.3 }); // 30% of section must be visible to trigger
+
+  if(showcaseSection) observer.observe(showcaseSection);
+  else setTimeout(runNext, 500); // fallback
 })();
 
 function toggleMobileNav(){
@@ -1698,6 +1716,20 @@ function saveEdits(){const d={};document.querySelectorAll('[data-e]').forEach(el
 function discardEdits(){document.querySelectorAll('[data-e]').forEach(el=>{if(sc[el.dataset.e]!==undefined)el.innerHTML=sc[el.dataset.e];});toggleEdit();}
 function toast(m){const t=document.createElement('div');t.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--bg2);border:1px solid rgba(62,207,142,0.4);color:var(--green);padding:11px 24px;border-radius:100px;font-size:13px;font-weight:600;z-index:99999;white-space:nowrap;font-family:inherit;';t.textContent=m;document.body.appendChild(t);setTimeout(()=>t.remove(),2500);}
 (function(){try{const d=JSON.parse(localStorage.getItem('slp_v7')||'{}');document.querySelectorAll('[data-e]').forEach(el=>{if(d[el.dataset.e])el.innerHTML=d[el.dataset.e];});}catch(e){}})();
+
+// Edit button only visible to admin
+(function(){
+  const params=new URLSearchParams(window.location.search);
+  const btn=document.getElementById('atg');
+  if(!btn) return;
+  // Show if URL has ?edit=true — you visit structlearnpro.com?edit=true
+  if(params.get('edit')==='true'){ btn.style.display='flex'; return; }
+  // Or if admin email is in localStorage
+  try{
+    const u=JSON.parse(localStorage.getItem('slp_user')||'{}');
+    if(u.email==='structlearnpro@gmail.com') btn.style.display='flex';
+  }catch(e){}
+})();
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.hasAttribute('data-e'))e.preventDefault();});
 
 // LOGIN
