@@ -1749,11 +1749,11 @@ async function lSend(type){
   try{
     const resp=await fetch('https://rpjdveuxxjeoeomkwrfx.supabase.co/functions/v1/send-otp',{
       method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer sb_publishable_L1RWkjtz41gT5sZKhRRnsw_BB3WfJWI'},
+      headers:{'Content-Type':'application/json','Authorization':'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJwamR2ZXV4eGplb2VvbWt3cmZ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg5MzY3NzIsImV4cCI6MjA5NDUxMjc3Mn0.3JvvMaCFKg2fB9-l2WJ5JMX5btGIKqvpMj_ZcxSRWaQ'},
       body:JSON.stringify({mobile:mob})
     });
     const result=await resp.json();
-    if(!resp.ok||result.error){
+    if(!result.success){
       msg.className='lmsg err';
       msg.textContent=result.error||'Failed to send OTP. Try again.';
       if(btn)btn.disabled=false;
@@ -1784,11 +1784,11 @@ async function lVerify(){
   try{
     const resp=await fetch('https://rpjdveuxxjeoeomkwrfx.supabase.co/functions/v1/verify-otp',{
       method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer sb_publishable_L1RWkjtz41gT5sZKhRRnsw_BB3WfJWI'},
-      body:JSON.stringify({mobile:window._lmob, otp:otp, type:window._ltype||'login'})
+      headers:{'Content-Type':'application/json','Authorization':'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJwamR2ZXV4eGplb2VvbWt3cmZ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg5MzY3NzIsImV4cCI6MjA5NDUxMjc3Mn0.3JvvMaCFKg2fB9-l2WJ5JMX5btGIKqvpMj_ZcxSRWaQ'},
+      body:JSON.stringify({mobile:window._lmob, otp:otp})
     });
     const result=await resp.json();
-    if(!resp.ok||result.error){
+    if(!result.success){
       if(msg){msg.className='lmsg err';msg.textContent=result.error||'Invalid OTP. Try again.';}
       return;
     }
