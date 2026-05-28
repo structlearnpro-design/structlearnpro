@@ -3191,8 +3191,10 @@ function toast(msg,err=false){const t=document.getElementById('toast');t.textCon
     try{
       // Load profile from Supabase by mobile number
       const mob10 = savedMob.replace(/\D/g,'').slice(-10);
+      // Try both with and without +91 prefix to handle both storage formats
+      const mobQuery = '%2B91'+mob10;
       const resp = await fetch(
-        SUPA_URL+'/rest/v1/profiles?mobile=eq.%2B91'+mob10+'&select=*',
+        SUPA_URL+'/rest/v1/profiles?mobile=eq.'+mobQuery+'&select=*',
         {headers:{'Authorization':'Bearer '+SUPA_KEY,'apikey':SUPA_KEY}}
       );
       const data = resp.ok ? await resp.json() : [];
@@ -4511,6 +4513,12 @@ async function submitBugReport() {
     <button onclick="fpClose()" style="background:rgba(255,255,255,0.08);border:none;color:rgba(255,255,255,0.5);width:26px;height:26px;border-radius:50%;cursor:pointer;font-size:13px;line-height:1;">&#x2715;</button>
   </div>
   <div style="padding:16px 18px;">
+    <!-- Reminder -->
+    <div id="fpReminder" style="display:none;background:rgba(246,195,67,0.07);border:1px solid rgba(246,195,67,0.2);border-radius:9px;padding:10px 12px;margin-bottom:14px;">
+      <div style="font-size:12px;color:#f6c343;font-weight:600;margin-bottom:3px;">✦ A note before you review</div>
+      <div style="font-size:11px;color:rgba(255,255,255,0.55);line-height:1.6;">Please share your experience only after working on a real design. We value genuine feedback — it helps other students make an informed decision.</div>
+    </div>
+
     <div style="margin-bottom:14px;">
       <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:8px;letter-spacing:0.5px;font-weight:600;">RATING</div>
       <div id="fpStars" style="display:flex;gap:6px;">
@@ -4542,6 +4550,9 @@ function fpOpen() {
     var ul = document.getElementById('fpUserLine');
     if (ul) ul.textContent = (P.full_name || '') + ' · ' + (P.purpose || P.role || 'User');
   }
+  // Show reminder
+  var reminder = document.getElementById('fpReminder');
+  if (reminder) reminder.style.display = 'block';
   document.getElementById('fpPanel').style.display = 'block';
   document.getElementById('fpToggle').style.display = 'none';
 }
@@ -4617,15 +4628,11 @@ function fpSubmit() {
 
 // Show the review button only after user has run at least 1 analysis
 function maybeShowReview() {
-  if (typeof P === 'undefined' || !P) return;
-  if ((P.analysis_count || 0) >= 1) {
-    var btn = document.getElementById('fpToggle');
-    if (btn) btn.style.display = 'flex';
-  }
+  var btn = document.getElementById('fpToggle');
+  if (btn) btn.style.display = 'flex';
 }
-// Called after profile loads in the app
 document.addEventListener('DOMContentLoaded', function() {
-  setTimeout(maybeShowReview, 4000);
+  setTimeout(maybeShowReview, 3000);
 });
 </script>
 </body>
