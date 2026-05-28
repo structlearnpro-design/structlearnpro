@@ -1953,14 +1953,26 @@ document.querySelectorAll('.rv').forEach(el=>ro.observe(el));
   var mob = localStorage.getItem('slp_session_mob');
   if (!tok || !mob) return;
 
-  fetch('https://rpjdveuxxjeoeomkwrfx.supabase.co/rest/v1/profiles?mobile=eq.'+mob+'&select=full_name,purpose,analysis_count,project_count', {
+  var mob10 = mob.replace(/\D/g,'').slice(-10);
+  fetch('https://rpjdveuxxjeoeomkwrfx.supabase.co/rest/v1/profiles?mobile=eq.%2B91'+mob10+'&select=*', {
     headers: {'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJwamR2ZXV4eGplb2VvbWt3cmZ4Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3ODkzNjc3MiwiZXhwIjoyMDk0NTEyNzcyfQ._hCmrpMwzCoYwkRRv6dUbs1TmMpR79X4WYQHxZsKwF4', 'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJwamR2ZXV4eGplb2VvbWt3cmZ4Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3ODkzNjc3MiwiZXhwIjoyMDk0NTEyNzcyfQ._hCmrpMwzCoYwkRRv6dUbs1TmMpR79X4WYQHxZsKwF4'}
   }).then(function(r){ return r.json(); }).then(function(data){
     if (!data || !data[0]) return;
     var prof = data[0];
-    var firstName = (prof.full_name || 'there').split(' ')[0];
-    var projects = prof.project_count || 0;
-    var analyses = prof.analysis_count || 0;
+    var firstName = (prof.full_name || prof.name || 'there').split(' ')[0];
+    // Fetch project count from projects table
+    var SERVICE = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJwamR2ZXV4eGplb2VvbWt3cmZ4Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3ODkzNjc3MiwiZXhwIjoyMDk0NTEyNzcyfQ._hCmrpMwzCoYwkRRv6dUbs1TmMpR79X4WYQHxZsKwF4';
+    fetch('https://rpjdveuxxjeoeomkwrfx.supabase.co/rest/v1/projects?profile_id=eq.'+prof.id+'&select=id,analysis_count', {
+      headers: {'apikey': SERVICE, 'Authorization': 'Bearer '+SERVICE}
+    }).then(function(r2){ return r2.json(); }).then(function(projs){
+      var projects = Array.isArray(projs) ? projs.length : 0;
+      var analyses = Array.isArray(projs) ? projs.reduce(function(s,p){ return s+(p.analysis_count||0); }, 0) : 0;
+      showReturningHero(firstName, projects, analyses);
+    }).catch(function(){ showReturningHero(firstName, 0, 0); });
+  }).catch(function(){});
+})();
+
+function showReturningHero(firstName, projects, analyses) {
     var hero = document.getElementById('hero');
     if (!hero) return;
 
@@ -1993,8 +2005,7 @@ document.querySelectorAll('.rv').forEach(el=>ro.observe(el));
     html += '</div></div>';
 
     hero.innerHTML = html;
-  }).catch(function(){});
-})();
+}
 
 function ruSignOut() {
   localStorage.removeItem('slp_session_tok');
