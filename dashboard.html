@@ -311,27 +311,17 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
 <!-- AUTH -->
 <div id="auth-screen" class="screen">
   <div class="auth-box">
-
-    <!-- ── IDENTITY BANNER ── -->
+    <!-- IDENTITY BANNER -->
     <div style="text-align:center;margin-bottom:22px;padding-bottom:20px;border-bottom:1px solid var(--b1);">
-      <div style="font-size:28px;font-weight:900;color:var(--blue);letter-spacing:-0.5px;margin-bottom:4px;">StructLearn Pro</div>
-      <div style="font-size:12px;color:var(--txt2);line-height:1.6;margin-bottom:14px;">
-        Design real RC buildings — step by step.<br>
-        <span style="color:var(--txt3);font-size:11px;">IS 456 · IS 1893 · IS 875 · IS 13920 compliant</span>
-      </div>
+      <div style="font-size:26px;font-weight:900;color:var(--blue);letter-spacing:-0.5px;margin-bottom:4px;">StructLearn Pro</div>
+      <div style="font-size:12px;color:var(--txt2);line-height:1.6;margin-bottom:12px;">Design real RC buildings — step by step.<br><span style="color:var(--txt3);font-size:11px;">IS 456 · IS 1893 · IS 875 · IS 13920</span></div>
       <div style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:12px;">
-        <span style="padding:3px 10px;border-radius:20px;font-size:10px;font-weight:700;background:rgba(96,165,250,0.12);color:var(--blue);border:1px solid rgba(96,165,250,0.25);">🎓 Learn by doing</span>
-        <span style="padding:3px 10px;border-radius:20px;font-size:10px;font-weight:700;background:rgba(74,222,128,0.10);color:var(--green);border:1px solid rgba(74,222,128,0.25);">📐 Real IS code calculations</span>
-        <span style="padding:3px 10px;border-radius:20px;font-size:10px;font-weight:700;background:rgba(251,191,36,0.10);color:var(--yellow);border:1px solid rgba(251,191,36,0.25);">📄 PDF reports & drawings</span>
-      </div>
-      <div style="background:rgba(96,165,250,0.06);border:1px solid rgba(96,165,250,0.15);border-radius:8px;padding:10px 14px;font-size:11px;color:var(--txt3);line-height:1.9;text-align:left;">
-        <strong style="color:var(--txt2);">✅ Students</strong> — Learn structural design with a guided 28-step workflow<br>
-        <strong style="color:var(--txt2);">✅ Professionals</strong> — Run IS 456 compliant analysis &amp; get detailed reports<br>
-        <strong style="color:var(--txt2);">✅ Professors</strong> — Assign real design projects to your class
+        <span style="padding:3px 10px;border-radius:20px;font-size:10px;font-weight:700;background:rgba(96,165,250,0.12);color:#60a5fa;">🎓 Students</span>
+        <span style="padding:3px 10px;border-radius:20px;font-size:10px;font-weight:700;background:rgba(74,222,128,0.10);color:#4ade80;">💼 Professionals</span>
+        <span style="padding:3px 10px;border-radius:20px;font-size:10px;font-weight:700;background:rgba(251,191,36,0.10);color:#fbbf24;">📚 Professors</span>
       </div>
     </div>
-    <!-- ── END IDENTITY BANNER ── -->
-
+    <!-- END IDENTITY BANNER -->
     <div class="tabs">
       <button class="tab-btn on" onclick="switchTab('login')">Sign In</button>
       <button class="tab-btn" onclick="switchTab('signup')">Create Account</button>
@@ -595,8 +585,9 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
     <div class="tlogo">StructLearn Pro</div>
     <div class="tnav">
       <button class="tnav-btn on" id="n-proj" onclick="goTo('projects')">My Projects</button>
-      <button class="tnav-btn" id="n-app"  onclick="_autoSaveProjId?goTo('app'):goTo('projects')" title="Open design tool">Design Tool</button>
+      <button class="tnav-btn" id="n-app"  onclick="goTo('app')" title="Open design tool">Design Tool</button>
       <button class="tnav-btn" id="n-acc"  onclick="goTo('account')">Account</button>
+      <button class="tnav-btn" id="n-fb"   onclick="goTo('feedback')">&#128172; Feedback</button>
     </div>
   </div>
   <div class="tact">
@@ -654,6 +645,25 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
           <button onclick="_autoSaveProjId?goTo('app'):goTo('projects')" style="padding:5px 14px;background:var(--blue2);border:none;border-radius:6px;color:white;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">Open Design Tool →</button>
         </div>
         <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px" id="journey-modules"></div>
+      </div>
+
+      <!-- DESIGN CONFIDENCE PANEL -->
+      <div style="background:var(--bg2);border:1px solid var(--b1);border-radius:12px;padding:18px;margin-bottom:20px;display:flex;gap:20px;align-items:center;flex-wrap:wrap;">
+        <div style="flex:1;min-width:200px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+            <div style="font-size:13px;font-weight:700;color:var(--txt);">🎓 Design Confidence</div>
+            <div id="dash-confidence-pct" style="font-size:13px;font-weight:800;color:#38bdf8;">0%</div>
+          </div>
+          <div style="height:8px;background:var(--b1);border-radius:4px;overflow:hidden;margin-bottom:8px;">
+            <div id="dash-confidence-bar" style="height:100%;width:0%;background:linear-gradient(90deg,#1d4ed8,#38bdf8);border-radius:4px;transition:width 0.6s;"></div>
+          </div>
+          <div id="dash-confidence-hint" style="font-size:11px;color:var(--txt3);line-height:1.6;">Complete lessons to build your design confidence.</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;min-width:160px;">
+          <button onclick="openDesignToolFeature('GUIDED_DESIGN')" style="width:100%;padding:8px 14px;background:rgba(249,115,22,0.12);border:1px solid #f97316;border-radius:8px;color:#f97316;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;text-align:left;">🎯 Guided Design</button>
+          <button onclick="openDesignToolFeature('LEARNING_MODULES')" style="width:100%;padding:8px 14px;background:rgba(167,139,250,0.12);border:1px solid #a78bfa;border-radius:8px;color:#a78bfa;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;text-align:left;">📖 Learning Modules</button>
+          <button onclick="openDesignToolFeature('STUDENT_GUIDE')" style="width:100%;padding:8px 14px;background:rgba(56,189,248,0.12);border:1px solid #38bdf8;border-radius:8px;color:#38bdf8;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;text-align:left;">📚 Student Guide</button>
+        </div>
       </div>
 
       <!-- WHAT YOU CAN DO (shown only when no projects) -->
@@ -853,201 +863,241 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
 </div>
 
 <!-- ACCOUNT -->
-<div id="acc-screen" class="screen" style="flex-direction:column;overflow-y:auto">
-  <div class="acc-body" style="max-width:600px;width:100%;margin:0 auto;padding:24px 16px">
+<div id="acc-screen" class="screen" style="flex-direction:column;overflow-y:auto;">
+  <div style="max-width:1000px;width:100%;margin:0 auto;padding:24px 20px;">
 
-    <!-- Header -->
-    <div style="display:flex;align-items:center;gap:14px;margin-bottom:24px">
-      <div id="acc-avatar" style="width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#1d4ed8,#3b82f6);display:flex;align-items:center;justify-content:center;color:#fff;font-size:22px;font-weight:800;flex-shrink:0">?</div>
-      <div>
-        <div id="acc-name" style="font-size:18px;font-weight:800;color:var(--txt)">—</div>
-        <div id="acc-role-lbl" style="font-size:12px;color:var(--txt3);margin-top:2px">—</div>
-        <div id="acc-mob-lbl" style="font-size:12px;color:var(--txt3)">—</div>
+    <!-- PROFILE HEADER -->
+    <div style="background:linear-gradient(135deg,rgba(29,78,216,0.15),rgba(59,130,246,0.08));border:1px solid rgba(59,130,246,0.2);border-radius:18px;padding:24px;margin-bottom:20px;display:flex;align-items:center;gap:18px;flex-wrap:wrap;">
+      <div id="acc-avatar" style="width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,#1d4ed8,#3b82f6);display:flex;align-items:center;justify-content:center;color:#fff;font-size:26px;font-weight:800;flex-shrink:0;">?</div>
+      <div style="flex:1;min-width:180px;">
+        <div id="acc-name" style="font-size:20px;font-weight:800;color:var(--txt);margin-bottom:3px;">—</div>
+        <div id="acc-role-lbl" style="font-size:13px;color:var(--txt3);margin-bottom:2px;">—</div>
+        <div id="acc-mob-lbl" style="font-size:13px;color:var(--txt3);">—</div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <span id="t-plan-acc" class="chip free" style="font-size:12px;padding:5px 12px;">FREE</span>
+        <button onclick="showUp()" style="padding:8px 16px;background:linear-gradient(135deg,#1d4ed8,#3b82f6);border:none;border-radius:8px;color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;" id="acc-hdr-upgrade">⚡ Upgrade</button>
       </div>
     </div>
 
-    <!-- UNIQUE ID — most prominent -->
-    <div style="background:var(--bg1);border:2px solid #1d4ed8;border-radius:14px;padding:20px;margin-bottom:16px;position:relative;overflow:hidden">
-      <div style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#1d4ed8,#60a5fa)"></div>
-      <div style="font-size:10px;color:var(--txt3);font-weight:700;letter-spacing:1px;margin-bottom:8px">YOUR UNIQUE ID</div>
-      <div id="acc-uid" style="font-size:20px;font-weight:900;color:#60a5fa;letter-spacing:2px;margin-bottom:12px;word-break:break-all">—</div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button onclick="copyAccUID()" style="padding:7px 14px;background:#1e3a8a;border:1px solid #3b82f6;border-radius:7px;color:#60a5fa;font-size:11px;cursor:pointer;font-family:inherit">📋 Copy ID</button>
-        <button onclick="saveAccUIDImage()" style="padding:7px 14px;background:#1e3a8a;border:1px solid #3b82f6;border-radius:7px;color:#60a5fa;font-size:11px;cursor:pointer;font-family:inherit">🖼 Save as Image</button>
-      </div>
-    </div>
+    <!-- TWO COLUMN GRID -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
 
-    <!-- Academic / Professional Info -->
-    <div class="acc-card" id="acc-info-card">
-      <div class="acc-ct" id="acc-info-title">Academic Info</div>
-      <div id="acc-info-rows">—</div>
-    </div>
+      <!-- LEFT COLUMN -->
+      <div style="display:flex;flex-direction:column;gap:14px;">
 
-    <!-- Join Batch (students) -->
-    <div class="acc-card" id="acc-batch-card" style="display:none">
-      <div class="acc-ct">Join a Batch</div>
-      <div style="font-size:12px;color:var(--txt3);margin-bottom:10px">Enter your lecturer's batch code to appear in their admin panel</div>
-      <div style="display:flex;gap:8px">
-        <input type="text" id="acc-batch-input" placeholder="e.g. MSIT-CIVIL-2026-B" style="flex:1;padding:9px 12px;background:var(--bg2);border:1px solid var(--b1);border-radius:8px;color:var(--txt);font-size:12px;outline:none;font-family:inherit">
-        <button onclick="joinBatchAcc()" style="padding:9px 16px;background:#1d4ed8;border:none;border-radius:8px;color:#fff;font-size:12px;cursor:pointer;font-family:inherit">Join</button>
-      </div>
-      <div id="acc-batch-msg" style="margin-top:6px;font-size:11px;color:var(--txt3)"></div>
-    </div>
-
-    <!-- Optional email -->
-    <div class="acc-card">
-      <div class="acc-ct">Email (Optional)</div>
-      <div style="font-size:12px;color:var(--txt3);margin-bottom:10px">For receiving PDF reports and notifications</div>
-      <div style="display:flex;gap:8px">
-        <input type="email" id="acc-email-input" placeholder="your@email.com" style="flex:1;padding:9px 12px;background:var(--bg2);border:1px solid var(--b1);border-radius:8px;color:var(--txt);font-size:12px;outline:none;font-family:inherit">
-        <button onclick="saveAccEmail()" style="padding:9px 16px;background:#1e3a8a;border:1px solid #3b82f6;border-radius:8px;color:#60a5fa;font-size:12px;cursor:pointer;font-family:inherit">Save</button>
-      </div>
-      <div id="acc-email-msg" style="margin-top:6px;font-size:11px;color:var(--txt3)"></div>
-    </div>
-
-
-
-    <!-- CONTACT US -->
-    <div class="acc-card" style="border-color:rgba(56,189,248,0.2)">
-      <div class="acc-ct" style="color:#38bdf8">Contact Us</div>
-
-      <!-- Quick contact options -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px">
-        <a href="mailto:structlearnpro@gmail.com" style="text-decoration:none">
-          <div style="background:rgba(56,189,248,0.06);border:1px solid rgba(56,189,248,0.15);border-radius:10px;padding:12px;text-align:center;cursor:pointer;transition:all 0.2s">
-            <div style="font-size:20px;margin-bottom:4px">📧</div>
-            <div style="font-size:11px;font-weight:700;color:#38bdf8">Email Us</div>
-            <div style="font-size:9px;color:#475569;margin-top:2px">structlearnpro@gmail.com</div>
+        <!-- UNIQUE ID -->
+        <div style="background:var(--bg2);border:1px solid rgba(59,130,246,0.3);border-radius:14px;padding:18px;position:relative;overflow:hidden;">
+          <div style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#1d4ed8,#60a5fa);"></div>
+          <div style="font-size:10px;color:var(--txt3);font-weight:700;letter-spacing:1px;margin-bottom:8px;">YOUR UNIQUE ID</div>
+          <div id="acc-uid" style="font-size:16px;font-weight:900;color:#60a5fa;letter-spacing:1px;margin-bottom:12px;word-break:break-all;">—</div>
+          <div style="display:flex;gap:8px;">
+            <button onclick="copyAccUID()" style="padding:7px 13px;background:rgba(30,58,138,0.5);border:1px solid #3b82f6;border-radius:7px;color:#60a5fa;font-size:11px;cursor:pointer;font-family:inherit;">📋 Copy</button>
+            <button onclick="saveAccUIDImage()" style="padding:7px 13px;background:rgba(30,58,138,0.5);border:1px solid #3b82f6;border-radius:7px;color:#60a5fa;font-size:11px;cursor:pointer;font-family:inherit;">🖼 Save Image</button>
           </div>
-        </a>
-        <a href="https://structlearnpro.vercel.app" target="_blank" style="text-decoration:none">
-          <div style="background:rgba(167,139,250,0.06);border:1px solid rgba(167,139,250,0.15);border-radius:10px;padding:12px;text-align:center;cursor:pointer">
-            <div style="font-size:20px;margin-bottom:4px">🌐</div>
-            <div style="font-size:11px;font-weight:700;color:#a78bfa">Website</div>
-            <div style="font-size:9px;color:#475569;margin-top:2px">structlearnpro.vercel.app</div>
+        </div>
+
+        <!-- SUBSCRIPTION -->
+        <div style="background:var(--bg2);border:1px solid var(--b1);border-radius:14px;padding:18px;">
+          <div style="font-size:11px;font-weight:700;color:var(--txt3);letter-spacing:1px;margin-bottom:14px;">SUBSCRIPTION</div>
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;"><span style="font-size:13px;color:var(--txt3);">Plan</span><span class="acc-val" id="a-plan" style="font-size:13px;font-weight:700;color:var(--txt);">Free</span></div>
+            <div style="display:flex;justify-content:space-between;align-items:center;" id="a-expiry-row" style="display:none;"><span style="font-size:13px;color:var(--txt3);">Valid Until</span><span class="acc-val" id="a-expiry-val" style="font-size:13px;color:var(--txt);">—</span></div>
+            <div style="display:flex;justify-content:space-between;align-items:center;"><span style="font-size:13px;color:var(--txt3);">Projects</span><span class="acc-val" id="a-proj" style="font-size:13px;color:var(--txt);">—</span></div>
           </div>
+          <button class="np-btn" id="a-up-btn" onclick="showUp()" style="width:100%;margin-top:14px;font-size:12px;padding:10px;">⚡ Upgrade to Pro — ₹299/month</button>
+        </div>
+
+        <!-- ACTIVITY -->
+        <div style="background:var(--bg2);border:1px solid var(--b1);border-radius:14px;padding:18px;">
+          <div style="font-size:11px;font-weight:700;color:var(--txt3);letter-spacing:1px;margin-bottom:14px;">MY ACTIVITY</div>
+          <div style="display:flex;flex-direction:column;gap:9px;">
+            <div style="display:flex;justify-content:space-between;"><span style="font-size:12px;color:var(--txt3);">Member since</span><span id="acc-since" style="font-size:12px;color:var(--txt);">—</span></div>
+            <div style="display:flex;justify-content:space-between;"><span style="font-size:12px;color:var(--txt3);">Last active</span><span id="acc-lastactive" style="font-size:12px;color:var(--txt);">—</span></div>
+            <div style="display:flex;justify-content:space-between;"><span style="font-size:12px;color:var(--txt3);">Projects</span><span id="acc-projcount" style="font-size:12px;color:var(--txt);">—</span></div>
+            <div style="display:flex;justify-content:space-between;"><span style="font-size:12px;color:var(--txt3);">Analyses run</span><span id="acc-analyses" style="font-size:12px;color:var(--txt);">—</span></div>
+            <div style="display:flex;justify-content:space-between;"><span style="font-size:12px;color:var(--txt3);">Time spent</span><span id="acc-time" style="font-size:12px;color:var(--txt);">—</span></div>
+            <div style="display:flex;justify-content:space-between;"><span style="font-size:12px;color:var(--txt3);">Snapshots</span><span id="acc-snapshots" style="font-size:12px;color:var(--txt);">—</span></div>
+          </div>
+        </div>
+
+        <!-- BADGES -->
+        <div style="background:var(--bg2);border:1px solid var(--b1);border-radius:14px;padding:18px;">
+          <div style="font-size:11px;font-weight:700;color:var(--txt3);letter-spacing:1px;margin-bottom:14px;">BADGES EARNED</div>
+          <div id="acc-badges" style="display:flex;flex-direction:column;gap:8px;">—</div>
+        </div>
+
+      </div>
+
+      <!-- RIGHT COLUMN -->
+      <div style="display:flex;flex-direction:column;gap:14px;">
+
+        <!-- ACADEMIC INFO -->
+        <div class="acc-card" id="acc-info-card" style="border-radius:14px;margin:0;">
+          <div class="acc-ct" id="acc-info-title" style="font-size:11px;font-weight:700;letter-spacing:1px;">ACADEMIC INFO</div>
+          <div id="acc-info-rows">—</div>
+        </div>
+
+        <!-- BATCH -->
+        <div class="acc-card" id="acc-batch-card" style="display:none;border-radius:14px;margin:0;">
+          <div class="acc-ct" style="font-size:11px;font-weight:700;letter-spacing:1px;">JOIN A BATCH</div>
+          <div style="font-size:12px;color:var(--txt3);margin-bottom:10px;">Enter your lecturer's batch code to appear in their panel</div>
+          <div style="display:flex;gap:8px;">
+            <input type="text" id="acc-batch-input" placeholder="e.g. MSIT-CIVIL-2026-B" style="flex:1;padding:9px 12px;background:var(--bg2);border:1px solid var(--b1);border-radius:8px;color:var(--txt);font-size:12px;outline:none;font-family:inherit;">
+            <button onclick="joinBatchAcc()" style="padding:9px 16px;background:#1d4ed8;border:none;border-radius:8px;color:#fff;font-size:12px;cursor:pointer;font-family:inherit;">Join</button>
+          </div>
+          <div id="acc-batch-msg" style="margin-top:6px;font-size:11px;color:var(--txt3);"></div>
+        </div>
+
+        <!-- EMAIL -->
+        <div style="background:var(--bg2);border:1px solid var(--b1);border-radius:14px;padding:18px;">
+          <div style="font-size:11px;font-weight:700;color:var(--txt3);letter-spacing:1px;margin-bottom:6px;">EMAIL (OPTIONAL)</div>
+          <div style="font-size:12px;color:var(--txt3);margin-bottom:10px;">For PDF reports and notifications</div>
+          <div style="display:flex;gap:8px;">
+            <input type="email" id="acc-email-input" placeholder="your@email.com" style="flex:1;padding:9px 12px;background:var(--bg3);border:1px solid var(--b1);border-radius:8px;color:var(--txt);font-size:12px;outline:none;font-family:inherit;">
+            <button onclick="saveAccEmail()" style="padding:9px 16px;background:rgba(30,58,138,0.5);border:1px solid #3b82f6;border-radius:8px;color:#60a5fa;font-size:12px;cursor:pointer;font-family:inherit;">Save</button>
+          </div>
+          <div id="acc-email-msg" style="margin-top:6px;font-size:11px;color:var(--txt3);"></div>
+        </div>
+
+        <!-- SETTINGS -->
+        <div style="background:var(--bg2);border:1px solid var(--b1);border-radius:14px;padding:18px;">
+          <div style="font-size:11px;font-weight:700;color:var(--txt3);letter-spacing:1px;margin-bottom:14px;">SETTINGS</div>
+          <div style="display:flex;flex-direction:column;gap:12px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <span style="font-size:12px;color:var(--txt2);">Default concrete</span>
+              <select id="acc-fck" onchange="saveSettings()" style="background:var(--bg3);border:1px solid var(--b1);border-radius:7px;color:var(--txt);padding:5px 10px;font-size:12px;font-family:inherit;outline:none;">
+                <option value="20">M20</option><option value="25" selected>M25</option><option value="30">M30</option><option value="35">M35</option><option value="40">M40</option>
+              </select>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <span style="font-size:12px;color:var(--txt2);">Default zone</span>
+              <select id="acc-zone" onchange="saveSettings()" style="background:var(--bg3);border:1px solid var(--b1);border-radius:7px;color:var(--txt);padding:5px 10px;font-size:12px;font-family:inherit;outline:none;">
+                <option value="II">Zone II</option><option value="III">Zone III</option><option value="IV" selected>Zone IV</option><option value="V">Zone V</option>
+              </select>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <span style="font-size:12px;color:var(--txt2);">Default city</span>
+              <input type="text" id="acc-city-default" placeholder="New Delhi" onblur="saveSettings()" style="background:var(--bg3);border:1px solid var(--b1);border-radius:7px;color:var(--txt);padding:5px 10px;font-size:12px;width:110px;font-family:inherit;outline:none;">
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <span style="font-size:12px;color:var(--txt2);">Auto-save</span>
+              <select id="acc-autosave" onchange="saveSettings()" style="background:var(--bg3);border:1px solid var(--b1);border-radius:7px;color:var(--txt);padding:5px 10px;font-size:12px;font-family:inherit;outline:none;">
+                <option value="15">15 sec</option><option value="30" selected>30 sec</option><option value="60">60 sec</option><option value="120">2 min</option>
+              </select>
+            </div>
+          </div>
+          <div id="acc-settings-msg" style="margin-top:8px;font-size:11px;color:#34d399;display:none;">✅ Settings saved</div>
+        </div>
+
+        <!-- ACCOUNT ACTIONS -->
+        <div style="background:var(--bg2);border:1px solid var(--b1);border-radius:14px;padding:18px;">
+          <div style="font-size:11px;font-weight:700;color:var(--txt3);letter-spacing:1px;margin-bottom:14px;">ACCOUNT</div>
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <button onclick="exportMyData()" style="width:100%;padding:10px 14px;background:transparent;border:1px solid var(--b1);border-radius:9px;color:var(--txt2);font-size:12px;cursor:pointer;font-family:inherit;text-align:left;transition:border-color 0.2s;" onmouseover="this.style.borderColor='var(--blue)'" onmouseout="this.style.borderColor='var(--b1)'">📤 Export All My Data</button>
+            <button onclick="doLogout()" style="width:100%;padding:10px 14px;background:transparent;border:1px solid var(--b1);border-radius:9px;color:var(--txt2);font-size:12px;cursor:pointer;font-family:inherit;text-align:left;transition:border-color 0.2s;" onmouseover="this.style.borderColor='var(--blue)'" onmouseout="this.style.borderColor='var(--b1)'">🚪 Logout</button>
+            <button onclick="confirmDeleteAccount()" style="width:100%;padding:10px 14px;background:transparent;border:1px solid rgba(127,29,29,0.5);border-radius:9px;color:#f87171;font-size:12px;cursor:pointer;font-family:inherit;text-align:left;transition:border-color 0.2s;" onmouseover="this.style.borderColor='#f87171'" onmouseout="this.style.borderColor='rgba(127,29,29,0.5)'">🗑 Delete Account</button>
+          </div>
+          <div style="margin-top:14px;display:flex;flex-wrap:wrap;gap:8px;font-size:11px;">
+            <a href="legal.html" target="_blank" style="color:var(--txt3);text-decoration:none;">Disclaimer</a>
+            <span style="color:var(--txt3);">·</span>
+            <a href="legal.html" target="_blank" style="color:var(--txt3);text-decoration:none;">Terms</a>
+            <span style="color:var(--txt3);">·</span>
+            <a href="legal.html" target="_blank" style="color:var(--txt3);text-decoration:none;">Privacy</a>
+            <span style="color:var(--txt3);">·</span>
+            <a href="legal.html" target="_blank" style="color:var(--txt3);text-decoration:none;">Refund Policy</a>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+@media(max-width:640px){
+  #acc-screen [style*="grid-template-columns:1fr 1fr"]{
+    grid-template-columns:1fr!important;
+  }
+}
+</style>
+
+<!-- FEEDBACK SCREEN -->
+<div id="feedback-screen" class="screen" style="flex-direction:column;overflow-y:auto;">
+  <div style="max-width:560px;width:100%;margin:0 auto;padding:24px 16px;">
+    <div style="margin-bottom:24px;">
+      <div style="font-size:22px;font-weight:900;color:var(--txt);margin-bottom:4px;">Feedback & Support</div>
+      <div style="font-size:13px;color:var(--txt3);">Your voice helps us build better for every student.</div>
+    </div>
+
+    <!-- REVIEW -->
+    <div style="background:var(--bg2);border:1px solid var(--b1);border-radius:16px;overflow:hidden;margin-bottom:16px;">
+      <div style="padding:18px 20px;border-bottom:1px solid var(--b1);display:flex;align-items:center;gap:14px;">
+        <div style="width:42px;height:42px;border-radius:12px;background:rgba(246,195,67,0.1);border:1px solid rgba(246,195,67,0.2);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">&#11088;</div>
+        <div>
+          <div style="font-size:15px;font-weight:700;color:var(--txt);">Leave a Review</div>
+          <div style="font-size:12px;color:var(--txt3);margin-top:2px;">Help other students make an informed decision</div>
+        </div>
+      </div>
+      <div style="padding:18px 20px;">
+        <div style="background:rgba(246,195,67,0.06);border:1px solid rgba(246,195,67,0.15);border-radius:10px;padding:12px 14px;margin-bottom:18px;display:flex;gap:10px;align-items:flex-start;">
+          <span style="font-size:16px;flex-shrink:0;">&#128161;</span>
+          <div style="font-size:12px;color:var(--txt2);line-height:1.65;">Please share your experience only after working on a real design. We value genuine feedback — it helps other students make an informed decision.</div>
+        </div>
+        <div id="fbscr-user" style="display:none;background:rgba(62,207,142,0.06);border:1px solid rgba(62,207,142,0.2);border-radius:10px;padding:10px 14px;margin-bottom:16px;align-items:center;gap:10px;">
+          <div id="fbscr-av" style="width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#2563eb,#06b6d4);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;flex-shrink:0;font-family:monospace;"></div>
+          <div style="flex:1;"><div id="fbscr-nm" style="font-size:13px;font-weight:700;color:var(--txt);"></div><div id="fbscr-rl" style="font-size:11px;color:var(--txt3);margin-top:1px;"></div></div>
+          <div style="font-size:9px;background:rgba(62,207,142,0.15);color:#3ecf8e;padding:3px 9px;border-radius:10px;font-family:monospace;font-weight:700;">&#10003; Verified</div>
+        </div>
+        <div id="fbscr-form-area">
+        <div style="margin-bottom:16px;">
+          <div style="font-size:11px;color:var(--txt3);font-weight:600;letter-spacing:0.5px;margin-bottom:10px;">YOUR RATING</div>
+          <div style="display:flex;gap:8px;">
+            <span class="fbscr-s" data-v="1" onclick="fbsRate(1)" style="font-size:34px;cursor:pointer;opacity:0.2;transition:all 0.15s;color:#f6c343;">&#9733;</span>
+            <span class="fbscr-s" data-v="2" onclick="fbsRate(2)" style="font-size:34px;cursor:pointer;opacity:0.2;transition:all 0.15s;color:#f6c343;">&#9733;</span>
+            <span class="fbscr-s" data-v="3" onclick="fbsRate(3)" style="font-size:34px;cursor:pointer;opacity:0.2;transition:all 0.15s;color:#f6c343;">&#9733;</span>
+            <span class="fbscr-s" data-v="4" onclick="fbsRate(4)" style="font-size:34px;cursor:pointer;opacity:0.2;transition:all 0.15s;color:#f6c343;">&#9733;</span>
+            <span class="fbscr-s" data-v="5" onclick="fbsRate(5)" style="font-size:34px;cursor:pointer;opacity:0.2;transition:all 0.15s;color:#f6c343;">&#9733;</span>
+          </div>
+        </div>
+        <div style="margin-bottom:14px;">
+          <div style="font-size:11px;color:var(--txt3);font-weight:600;letter-spacing:0.5px;margin-bottom:8px;">YOUR REVIEW</div>
+          <textarea id="fbscr-text" placeholder="What did you design? How did StructLearn Pro help you? What would you tell another student..." style="width:100%;padding:12px 14px;background:var(--bg3);border:1.5px solid var(--b1);border-radius:10px;color:var(--txt);font-size:13px;font-family:inherit;outline:none;resize:none;height:100px;line-height:1.65;box-sizing:border-box;" onfocus="this.style.borderColor='var(--blue)'" onblur="this.style.borderColor='var(--b1)'"></textarea>
+        </div>
+        <div id="fbscr-msg" style="font-size:12px;text-align:center;margin-bottom:10px;min-height:16px;"></div>
+        <button onclick="fbsSubmit()" id="fbscr-btn" style="width:100%;padding:13px;background:var(--blue);border:none;border-radius:10px;color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">Submit Review</button>
+        </div><!-- end fbscr-form-area -->
+      </div>
+    </div>
+
+    <!-- CONTACT -->
+    <div style="background:var(--bg2);border:1px solid var(--b1);border-radius:16px;overflow:hidden;">
+      <div style="padding:18px 20px;border-bottom:1px solid var(--b1);display:flex;align-items:center;gap:14px;">
+        <div style="width:42px;height:42px;border-radius:12px;background:rgba(56,189,248,0.08);border:1px solid rgba(56,189,248,0.2);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">&#128236;</div>
+        <div>
+          <div style="font-size:15px;font-weight:700;color:var(--txt);">Contact Us</div>
+          <div style="font-size:12px;color:var(--txt3);margin-top:2px;">Questions, bugs, suggestions — we read everything</div>
+        </div>
+      </div>
+      <div style="padding:18px 20px;display:flex;flex-direction:column;gap:10px;">
+        <a href="mailto:structlearnpro@gmail.com" style="display:flex;align-items:center;gap:12px;padding:13px 15px;background:var(--bg3);border:1px solid var(--b1);border-radius:11px;text-decoration:none;transition:border-color 0.2s;" onmouseover="this.style.borderColor='var(--blue)'" onmouseout="this.style.borderColor='var(--b1)'">
+          <div style="width:38px;height:38px;border-radius:10px;background:rgba(79,142,247,0.1);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">&#9993;</div>
+          <div style="flex:1;"><div style="font-size:13px;font-weight:600;color:var(--txt);">Email us</div><div style="font-size:11px;color:var(--txt3);margin-top:2px;">structlearnpro@gmail.com</div></div>
+          <div style="color:var(--txt3);">&#8594;</div>
         </a>
-      </div>
-
-      <!-- Message form -->
-      <div style="font-size:11px;font-weight:700;color:#94a3b8;letter-spacing:0.5px;margin-bottom:8px">SEND A MESSAGE</div>
-      <div style="display:flex;flex-direction:column;gap:8px">
-        <select id="contact-topic" style="padding:9px 12px;background:var(--bg2);border:1px solid var(--b1);border-radius:8px;color:var(--txt);font-size:12px;font-family:inherit;outline:none">
-          <option value="">Select topic...</option>
-          <option value="bug">🐛 Found a calculation error</option>
-          <option value="feature">💡 Feature request / suggestion</option>
-          <option value="billing">💳 Billing or subscription issue</option>
-          <option value="course">📚 Question about learning modules</option>
-          <option value="collab">🤝 Partnership / collaboration</option>
-          <option value="other">💬 Other</option>
-        </select>
-        <textarea id="contact-msg" rows="4" placeholder="Describe your issue or question in detail. If it's a calculation error, please include the member name, the value shown, and what you expected..." style="padding:10px 12px;background:var(--bg2);border:1px solid var(--b1);border-radius:8px;color:var(--txt);font-size:12px;font-family:inherit;resize:vertical;outline:none;line-height:1.6"></textarea>
-        <button onclick="sendContactMessage()" style="width:100%;padding:11px;background:linear-gradient(135deg,#1d4ed8,#38bdf8);border:none;border-radius:8px;color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">
-          Send Message →
-        </button>
-        <div id="contact-msg-status" style="font-size:11px;text-align:center;min-height:16px"></div>
-      </div>
-
-      <!-- Response time note -->
-      <div style="margin-top:12px;padding:10px 12px;background:rgba(52,211,153,0.04);border:1px solid rgba(52,211,153,0.1);border-radius:8px;font-size:11px;color:#475569;line-height:1.6">
-        ⏱ <strong style="color:#34d399">Typical response: 24–48 hours.</strong>
-        For urgent issues, email directly: <a href="mailto:structlearnpro@gmail.com" style="color:#38bdf8">structlearnpro@gmail.com</a>
-      </div>
-    </div>
-
-    <!-- Subscription -->
-    <div class="acc-card">
-      <div class="acc-ct">Subscription</div>
-      <div class="acc-row"><span class="acc-lbl">Plan</span><span class="acc-val" id="a-plan">Free</span></div>
-      <div class="acc-row" id="a-expiry-row" style="display:none"><span class="acc-lbl">Valid Until</span><span class="acc-val" id="a-expiry-val">—</span></div>
-      <div class="acc-row"><span class="acc-lbl">Projects</span><span class="acc-val" id="a-proj">—</span></div>
-      <div style="margin-top:14px">
-        <button class="np-btn" id="a-up-btn" onclick="showUp()">⚡ Upgrade to Pro — ₹299/month</button>
-      </div>
-    </div>
-
-    <!-- MY ACTIVITY -->
-    <div class="acc-card">
-      <div class="acc-ct">My Activity</div>
-      <div class="acc-row"><span class="acc-lbl">Member since</span><span class="acc-val" id="acc-since">—</span></div>
-      <div class="acc-row"><span class="acc-lbl">Last active</span><span class="acc-val" id="acc-lastactive">—</span></div>
-      <div class="acc-row"><span class="acc-lbl">Projects</span><span class="acc-val" id="acc-projcount">—</span></div>
-      <div class="acc-row"><span class="acc-lbl">Analyses run</span><span class="acc-val" id="acc-analyses">—</span></div>
-      <div class="acc-row"><span class="acc-lbl">Time spent</span><span class="acc-val" id="acc-time">—</span></div>
-      <div class="acc-row"><span class="acc-lbl">Snapshots saved</span><span class="acc-val" id="acc-snapshots">—</span></div>
-    </div>
-
-    <!-- BADGES -->
-    <div class="acc-card">
-      <div class="acc-ct">Badges Earned</div>
-      <div id="acc-badges" style="display:flex;flex-direction:column;gap:8px">—</div>
-    </div>
-
-    <!-- SETTINGS -->
-    <div class="acc-card">
-      <div class="acc-ct">Settings</div>
-      <div class="acc-row">
-        <span class="acc-lbl">Default concrete</span>
-        <select id="acc-fck" onchange="saveSettings()" style="background:var(--bg1);border:1px solid var(--b1);border-radius:6px;color:var(--txt);padding:4px 8px;font-size:12px;font-family:inherit">
-          <option value="20">M20</option>
-          <option value="25" selected>M25</option>
-          <option value="30">M30</option>
-          <option value="35">M35</option>
-          <option value="40">M40</option>
-        </select>
-      </div>
-      <div class="acc-row">
-        <span class="acc-lbl">Default zone</span>
-        <select id="acc-zone" onchange="saveSettings()" style="background:var(--bg1);border:1px solid var(--b1);border-radius:6px;color:var(--txt);padding:4px 8px;font-size:12px;font-family:inherit">
-          <option value="II">Zone II</option>
-          <option value="III">Zone III</option>
-          <option value="IV" selected>Zone IV</option>
-          <option value="V">Zone V</option>
-        </select>
-      </div>
-      <div class="acc-row">
-        <span class="acc-lbl">Default city</span>
-        <input type="text" id="acc-city-default" placeholder="New Delhi" onblur="saveSettings()"
-          style="background:var(--bg1);border:1px solid var(--b1);border-radius:6px;color:var(--txt);padding:4px 8px;font-size:12px;width:120px;font-family:inherit;outline:none">
-      </div>
-      <div class="acc-row">
-        <span class="acc-lbl">Auto-save</span>
-        <select id="acc-autosave" onchange="saveSettings()" style="background:var(--bg1);border:1px solid var(--b1);border-radius:6px;color:var(--txt);padding:4px 8px;font-size:12px;font-family:inherit">
-          <option value="15">15 sec</option>
-          <option value="30" selected>30 sec</option>
-          <option value="60">60 sec</option>
-          <option value="120">2 min</option>
-        </select>
-      </div>
-      <div id="acc-settings-msg" style="margin-top:8px;font-size:11px;color:#34d399;display:none">✅ Settings saved</div>
-    </div>
-
-    <!-- ACCOUNT ACTIONS -->
-    <div class="acc-card">
-      <div class="acc-ct">Account</div>
-      <div style="display:flex;flex-direction:column;gap:10px">
-        <button onclick="exportMyData()"
-          style="width:100%;padding:11px;background:transparent;border:1px solid #334155;border-radius:8px;color:#94a3b8;font-size:12px;cursor:pointer;font-family:inherit;text-align:left">
-          📤 Export All My Data
-        </button>
-        <button onclick="confirmDeleteAccount()"
-          style="width:100%;padding:11px;background:transparent;border:1px solid #7f1d1d;border-radius:8px;color:#f87171;font-size:12px;cursor:pointer;font-family:inherit;text-align:left">
-          🗑 Delete Account
-        </button>
-        <button onclick="doLogout()"
-          style="width:100%;padding:11px;background:transparent;border:1px solid #334155;border-radius:8px;color:#64748b;font-size:12px;cursor:pointer;font-family:inherit;text-align:left">
-          🚪 Logout
-        </button>
-      </div>
-      <!-- Legal links -->
-      <div style="margin-top:12px;display:flex;flex-wrap:wrap;gap:8px;font-size:11px">
-        <a href="legal.html" target="_blank" style="color:var(--txt3);text-decoration:none">Disclaimer</a>
-        <span style="color:var(--txt3)">·</span>
-        <a href="legal.html" target="_blank" style="color:var(--txt3);text-decoration:none">Terms</a>
-        <span style="color:var(--txt3)">·</span>
-        <a href="legal.html" target="_blank" style="color:var(--txt3);text-decoration:none">Privacy</a>
-        <span style="color:var(--txt3)">·</span>
-        <a href="legal.html" target="_blank" style="color:var(--txt3);text-decoration:none">Refund Policy</a>
+        <div style="display:flex;align-items:center;gap:12px;padding:13px 15px;background:var(--bg3);border:1px solid var(--b1);border-radius:11px;cursor:pointer;transition:border-color 0.2s;" onclick="toast('Thanks for reporting! We will look into it &#10003;')" onmouseover="this.style.borderColor='#f87171'" onmouseout="this.style.borderColor='var(--b1)'">
+          <div style="width:38px;height:38px;border-radius:10px;background:rgba(248,113,113,0.08);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">&#128027;</div>
+          <div style="flex:1;"><div style="font-size:13px;font-weight:600;color:var(--txt);">Report a bug</div><div style="font-size:11px;color:var(--txt3);margin-top:2px;">Something not working? Let us know</div></div>
+          <div style="color:var(--txt3);">&#8594;</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;padding:13px 15px;background:var(--bg3);border:1px solid var(--b1);border-radius:11px;cursor:pointer;transition:border-color 0.2s;" onclick="toast('Feature noted! Thank you &#128161;')" onmouseover="this.style.borderColor='#3ecf8e'" onmouseout="this.style.borderColor='var(--b1)'">
+          <div style="width:38px;height:38px;border-radius:10px;background:rgba(62,207,142,0.08);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">&#128161;</div>
+          <div style="flex:1;"><div style="font-size:13px;font-weight:600;color:var(--txt);">Suggest a feature</div><div style="font-size:11px;color:var(--txt3);margin-top:2px;">What would make StructLearn Pro better?</div></div>
+          <div style="color:var(--txt3);">&#8594;</div>
+        </div>
+        <div style="padding:10px 13px;background:rgba(52,211,153,0.04);border:1px solid rgba(52,211,153,0.1);border-radius:9px;font-size:11px;color:var(--txt3);line-height:1.6;">
+          &#9203; <strong style="color:#34d399;">Typical response: 24-48 hours.</strong> Email directly: <a href="mailto:structlearnpro@gmail.com" style="color:#38bdf8;">structlearnpro@gmail.com</a>
+        </div>
       </div>
     </div>
 
@@ -1316,14 +1366,19 @@ let pending={mob:'',type:'',name:'',email:'',purpose:'student', projId:null};
 function showScreen(id){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
-  const loggedIn=['dash-screen','app-screen','acc-screen'].includes(id);
+  const loggedIn=['dash-screen','app-screen','acc-screen','feedback-screen'].includes(id);
   document.getElementById('top-bar').style.display=loggedIn?'flex':'none';
 }
 function goTo(tab){
   document.querySelectorAll('.tnav-btn').forEach(b=>b.classList.remove('on'));
   if(tab==='projects'){document.getElementById('n-proj').classList.add('on');showScreen('dash-screen');loadProjects();}
-  else if(tab==='app'){document.getElementById('n-app').classList.add('on');showScreen('app-screen');tellIframe();}
+  else if(tab==='app'){
+    document.getElementById('n-app').classList.add('on');
+    showScreen('app-screen');
+    tellIframe();
+  }
   else if(tab==='account'){document.getElementById('n-acc').classList.add('on');showScreen('acc-screen');renderAcc();}
+  else if(tab==='feedback'){document.getElementById('n-fb').classList.add('on');showScreen('feedback-screen');fbsInit();}
 }
 
 // ── AUTH ─────────────────────────────────────────────────────
@@ -1649,6 +1704,13 @@ function resolvePlan(){
 function updTop(){
   // Always resolve plan fresh from profile
   plan = resolvePlan();
+  // Hide upgrade button if PRO
+  var _upBtn = document.getElementById('t-up');
+  var _upBtn2 = document.getElementById('a-up-btn');
+  var _upBtn3 = document.getElementById('acc-hdr-upgrade');
+  if(_upBtn) _upBtn.style.display = (plan === 'pro') ? 'none' : '';
+  if(_upBtn2) _upBtn2.style.display = (plan === 'pro') ? 'none' : '';
+  if(_upBtn3) _upBtn3.style.display = (plan === 'pro') ? 'none' : '';
   document.getElementById('t-name').textContent=P?.full_name||P?.mobile||'';
   // Update greeting on dashboard
   setTimeout(function(){
@@ -1829,6 +1891,32 @@ function renderJourneyModules(){
 
   var M1done = modDone('M1');
 
+  // Update Design Confidence panel on dashboard
+  // Confidence = behaviors/10 * 100 — matches exactly how ui.js calculates it
+  var behaviorsMap = {};
+  try {
+    var rawProg = sessionStorage.getItem('slp_restore_progress');
+    if(rawProg){ behaviorsMap = JSON.parse(rawProg).behaviors || {}; }
+  } catch(e){}
+  var behaviorCount = Object.keys(behaviorsMap).length;
+  var confPct = Math.min(100, Math.round((behaviorCount / 10) * 100));
+  var confEl = document.getElementById('dash-confidence-pct');
+  var confBar = document.getElementById('dash-confidence-bar');
+  var confHint = document.getElementById('dash-confidence-hint');
+  if(confEl) confEl.textContent = confPct + '%';
+  if(confBar) confBar.style.width = confPct + '%';
+  if(confHint){
+    var hints = [
+      'Start with Module 1 to build your foundation.',
+      'Keep exploring — every lesson builds confidence.',
+      'You are making great progress!',
+      'Almost there — complete all lessons to master IS 456.',
+      'You have mastered IS 456 structural design! 🏆'
+    ];
+    var hintIdx = confPct === 0 ? 0 : confPct < 30 ? 1 : confPct < 60 ? 2 : confPct < 100 ? 3 : 4;
+    confHint.textContent = hints[hintIdx];
+  }
+
   el.innerHTML = modules.map(function(mod, idx){
     const isPro = mod.pro && plan !== 'pro';
     // Module 2 locked until Module 1 done; Module 3 locked until Module 2 done
@@ -1862,45 +1950,35 @@ function renderJourneyModules(){
 }
 
 function goJourneyApp(){
-  // Fallback: open app for any module
   openLearningModule('M1');
 }
 
-function openLearningModule(modId){
-  // If no project open yet, create one first then open the module
-  if(!_autoSaveProjId){
-    // Create a learning project silently, then open module
-    fetch(SUPA_URL+'/rest/v1/projects',{
-      method:'POST',
-      headers:{'Authorization':'Bearer '+SUPA_KEY,'apikey':SUPA_KEY,'Content-Type':'application/json','Prefer':'return=representation'},
-      body:JSON.stringify({profile_id:P.id, name:'Learning Project', analysis_count:0, state_json:{name:'Learning Project'}})
-    }).then(function(r){ return r.json(); }).then(function(data){
-      var p = Array.isArray(data)?data[0]:data;
-      if(p){
-        projects.unshift(p);
-        _autoSaveProjId = p.id;
-        // Open the app and navigate to the Learning Modules tab inside the iframe
-        goTo('app');
-        setTimeout(function(){
-          var fr = document.getElementById('app-iframe');
-          if(fr && fr.contentWindow){
-            fr.contentWindow.postMessage({type:'OPEN_MODULE', modId:modId}, '*');
-          }
-        }, 1200);
-      }
-    }).catch(function(e){ console.error('Learning project create error:',e); goTo('app'); });
-  } else {
-    // Project already open — go to app and open the module
-    goTo('app');
-    setTimeout(function(){
-      var fr = document.getElementById('app-iframe');
-      if(fr && fr.contentWindow){
-        fr.contentWindow.postMessage({type:'OPEN_MODULE', modId:modId}, '*');
-      }
-    }, 600);
+function openDesignToolFeature(feature){
+  goTo('app');
+  setTimeout(function(){ sendFeatureToIframe(feature); }, 800);
+}
+
+function sendFeatureToIframe(feature){
+  var fr = document.getElementById('app-iframe');
+  if(!fr || !fr.contentWindow) return;
+  if(feature === 'GUIDED_DESIGN'){
+    fr.contentWindow.postMessage({type:'OPEN_GUIDED_DESIGN'}, '*');
+  } else if(feature === 'LEARNING_MODULES'){
+    fr.contentWindow.postMessage({type:'OPEN_LEARNING_HUB'}, '*');
+  } else if(feature === 'STUDENT_GUIDE'){
+    fr.contentWindow.postMessage({type:'OPEN_STUDENT_GUIDE'}, '*');
   }
 }
-function filterP(){
+function openLearningModule(modId){
+  // Open Design Tool iframe and send module open command — NO project creation
+  goTo('app');
+  setTimeout(function(){
+    var fr = document.getElementById('app-iframe');
+    if(fr && fr.contentWindow){
+      fr.contentWindow.postMessage({type:'OPEN_MODULE', modId:modId, learningMode:true}, '*');
+    }
+  }, 800);
+}function filterP(){
   const s=document.getElementById('f-search').value.toLowerCase();
   const st=document.getElementById('f-status').value;
   const so=document.getElementById('f-sort').value;
@@ -1976,6 +2054,11 @@ async function createNewProject(){
   if(!nm){
     if(errEl){errEl.textContent='Project name is required';errEl.style.display='block';}
     document.getElementById('np-name')?.focus();
+    return;
+  }
+  if(!city){
+    if(errEl){errEl.textContent='City / Location is required';errEl.style.display='block';}
+    document.getElementById('np-city')?.focus();
     return;
   }
 
@@ -2476,6 +2559,9 @@ async function handleSaveProject(data){
     if(idx>=0) projects[idx] = {...projects[idx], ...payload};
     updateSaveIndicator('just now');
     console.log('[handleSaveProject] saved ✅ allPass:', RES?.allPass);
+    // Update project card on dashboard immediately
+    renderP(projects);
+    updDashStats();
   } else {
     console.error('[handleSaveProject] failed:', resp.status);
   }
@@ -2544,6 +2630,20 @@ function renderAcc(){
   // Load activity stats and badges async
   loadAccActivity();
   loadAccSettings();
+
+  // Hide upgrade button if PRO
+  var _plan = (typeof resolvePlan === 'function') ? resolvePlan() : (typeof plan !== 'undefined' ? plan : 'free');
+  console.log('renderAcc plan:', _plan);
+  var upgBtn = document.getElementById('t-up');
+  var upBtn2 = document.getElementById('a-up-btn');
+  if(upgBtn) upgBtn.style.display = (_plan === 'pro') ? 'none' : '';
+  if(upBtn2) upBtn2.style.display = (_plan === 'pro') ? 'none' : '';
+  // Update plan chip in account header
+  var _planChip = document.getElementById('t-plan-acc');
+  if(_planChip){
+    _planChip.textContent = (_plan === 'pro') ? 'PRO ✓' : 'FREE';
+    _planChip.className = (_plan === 'pro') ? 'chip pro' : 'chip free';
+  }
 }
 
 async function loadAccActivity(){
@@ -3201,8 +3301,10 @@ function toast(msg,err=false){const t=document.getElementById('toast');t.textCon
     try{
       // Load profile from Supabase by mobile number
       const mob10 = savedMob.replace(/\D/g,'').slice(-10);
+      // Try both with and without +91 prefix to handle both storage formats
+      const mobQuery = '%2B91'+mob10;
       const resp = await fetch(
-        SUPA_URL+'/rest/v1/profiles?mobile=eq.%2B91'+mob10+'&select=*',
+        SUPA_URL+'/rest/v1/profiles?mobile=eq.'+mobQuery+'&select=*',
         {headers:{'Authorization':'Bearer '+SUPA_KEY,'apikey':SUPA_KEY}}
       );
       const data = resp.ok ? await resp.json() : [];
@@ -3218,6 +3320,7 @@ function toast(msg,err=false){const t=document.getElementById('toast');t.textCon
         }).catch(()=>{});
         updTop();
         goTo('projects');
+        loadAndRestoreProgress().catch(()=>{});
         // Check for unseen announcements and renewal reminders
         setTimeout(()=>{
           loadPrices();
@@ -4509,6 +4612,106 @@ async function submitBugReport() {
   }
 }
 
+</script>
+
+
+<script>
+var fbsRating = 0;
+var fbsDone = false;
+
+function fbsInit() {
+  if (typeof P === 'undefined' || !P) return;
+  var name = P.full_name || P.name || '';
+  var role = P.purpose || P.role || 'User';
+  var initials = name.split(' ').map(function(w){ return w[0]||''; }).join('').slice(0,2).toUpperCase();
+  var ur = document.getElementById('fbscr-user');
+  var av = document.getElementById('fbscr-av');
+  var nm = document.getElementById('fbscr-nm');
+  var rl = document.getElementById('fbscr-rl');
+  if (ur) ur.style.display = 'flex';
+  if (av) av.textContent = initials;
+  if (nm) nm.textContent = name;
+  if (rl) rl.textContent = role;
+
+  // Check if user already submitted a review — show it read-only
+  if (P.id) {
+    fetch(SUPA_URL + '/rest/v1/reviews?reviewer_id=eq.' + P.id + '&select=*', {
+      headers: {'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJwamR2ZXV4eGplb2VvbWt3cmZ4Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3ODkzNjc3MiwiZXhwIjoyMDk0NTEyNzcyfQ._hCmrpMwzCoYwkRRv6dUbs1TmMpR79X4WYQHxZsKwF4', 'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJwamR2ZXV4eGplb2VvbWt3cmZ4Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3ODkzNjc3MiwiZXhwIjoyMDk0NTEyNzcyfQ._hCmrpMwzCoYwkRRv6dUbs1TmMpR79X4WYQHxZsKwF4'}
+    }).then(function(r){ return r.json(); }).then(function(data){
+      if (data && data.length > 0) {
+        var rev = data[0];
+        // Hide the form, show the existing review
+        var formArea = document.getElementById('fbscr-form-area');
+        if (formArea) {
+          var stars = '';
+          for (var i = 1; i <= 5; i++) stars += '<span style="font-size:24px;color:' + (i <= rev.rating ? '#f6c343' : '#334155') + ';">&#9733;</span>';
+          formArea.innerHTML = '<div style="margin-bottom:16px;">'
+            + '<div style="font-size:11px;color:var(--txt3);font-weight:600;letter-spacing:0.5px;margin-bottom:8px;">YOUR REVIEW</div>'
+            + '<div style="margin-bottom:12px;">' + stars + '</div>'
+            + '<div style="background:var(--bg3);border:1px solid var(--b1);border-radius:10px;padding:14px;color:var(--txt);font-size:13px;line-height:1.65;">' + (rev.review_text || '') + '</div>'
+            + '<div style="margin-top:10px;font-size:11px;color:var(--txt3);">Submitted ' + new Date(rev.created_at).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}) + '</div>'
+            + '<div style="margin-top:4px;font-size:11px;color:' + (rev.status==='approved'?'#3ecf8e':'#f6c343') + ';">Status: ' + (rev.status==='approved'?'Published ✓':'Pending approval') + '</div>'
+            + '</div>'
+            + '<div style="background:rgba(56,189,248,0.06);border:1px solid rgba(56,189,248,0.15);border-radius:10px;padding:12px 14px;font-size:12px;color:var(--txt2);line-height:1.6;">'
+            + '💡 One review per user to maintain authenticity. Thank you for sharing your experience!'
+            + '</div>';
+        }
+      }
+    }).catch(function(){});
+  }
+}
+function fbsRate(v) {
+  fbsRating = v;
+  document.querySelectorAll('.fbscr-s').forEach(function(s) {
+    s.style.opacity = parseInt(s.dataset.v) <= v ? '1' : '0.2';
+    s.style.transform = parseInt(s.dataset.v) <= v ? 'scale(1.1)' : 'scale(1)';
+  });
+}
+
+function fbsSubmit() {
+  if (fbsDone) return;
+  var text = document.getElementById('fbscr-text').value.trim();
+  var msg = document.getElementById('fbscr-msg');
+  var btn = document.getElementById('fbscr-btn');
+  if (!fbsRating) { msg.style.color = '#f87171'; msg.textContent = 'Please select a star rating.'; return; }
+  if (text.length < 20) { msg.style.color = '#f87171'; msg.textContent = 'Please write at least 20 characters.'; return; }
+  btn.textContent = 'Submitting...'; btn.disabled = true; msg.textContent = '';
+  var payload = {
+    reviewer_name: (typeof P !== 'undefined' && P) ? (P.full_name || P.name || 'Anonymous') : 'Anonymous',
+    reviewer_role: (typeof P !== 'undefined' && P) ? (P.purpose || P.role || 'User') : 'User',
+    review_text: text,
+    rating: fbsRating,
+    status: 'pending'
+  };
+  if (typeof P !== 'undefined' && P && P.id) payload.reviewer_id = P.id;
+  if (typeof SUPA_URL === 'undefined') { msg.style.color='#f87171'; msg.textContent='Config error.'; btn.textContent='Submit Review'; btn.disabled=false; return; }
+  fetch(SUPA_URL + '/rest/v1/reviews', {
+    method: 'POST',
+    headers: { 'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJwamR2ZXV4eGplb2VvbWt3cmZ4Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3ODkzNjc3MiwiZXhwIjoyMDk0NTEyNzcyfQ._hCmrpMwzCoYwkRRv6dUbs1TmMpR79X4WYQHxZsKwF4', 'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJwamR2ZXV4eGplb2VvbWt3cmZ4Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3ODkzNjc3MiwiZXhwIjoyMDk0NTEyNzcyfQ._hCmrpMwzCoYwkRRv6dUbs1TmMpR79X4WYQHxZsKwF4', 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+    body: JSON.stringify(payload)
+  }).then(function(res) {
+    if (!res.ok) {
+      return res.text().then(function(err) {
+        if (res.status === 409 || err.indexOf('duplicate') > -1 || err.indexOf('unique') > -1 || err.indexOf('already exists') > -1 || err.indexOf('23505') > -1) {
+          msg.style.color = '#f6c343'; msg.textContent = 'You have already submitted a review. Thank you!';
+          btn.textContent = 'Already submitted &#10003;'; btn.style.background = '#3ecf8e'; fbsDone = true;
+        } else {
+          msg.style.color = '#f87171'; msg.textContent = 'Failed. Please try again.';
+          btn.textContent = 'Submit Review'; btn.disabled = false;
+        }
+      });
+    }
+    fbsDone = true;
+    msg.style.color = '#3ecf8e'; msg.textContent = 'Thank you! Your review will appear after approval.';
+    btn.textContent = 'Submitted &#10003;'; btn.style.background = '#3ecf8e';
+    document.getElementById('fbscr-text').value = '';
+    fbsRating = 0;
+    document.querySelectorAll('.fbscr-s').forEach(function(s){ s.style.opacity = '0.2'; s.style.transform = 'scale(1)'; });
+  }).catch(function() {
+    msg.style.color = '#f87171'; msg.textContent = 'Failed. Please try again.';
+    btn.textContent = 'Submit Review'; btn.disabled = false;
+  });
+}
 </script>
 </body>
 </html>
