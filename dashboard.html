@@ -2600,18 +2600,12 @@ function renderAcc(){
   loadAccActivity();
   loadAccSettings();
 
-  // Hide upgrade buttons if already PRO
-  const isPro = P && P.plan === 'pro';
+  // Hide upgrade buttons if already PRO (use plan variable set by resolvePlan())
+  const _isPro = (typeof plan !== 'undefined') ? plan === 'pro' : false;
   const upgBtn = document.getElementById('acc-upgrade-btn');
   const upBtn2 = document.getElementById('a-up-btn');
-  if(upgBtn) upgBtn.style.display = isPro ? 'none' : '';
-  if(upBtn2) upBtn2.style.display = isPro ? 'none' : '';
-  // Update plan chip color
-  const planChip = document.getElementById('t-plan-acc');
-  if(planChip) {
-    planChip.textContent = isPro ? 'PRO ✓' : 'FREE';
-    planChip.className = isPro ? 'chip pro' : 'chip free';
-  }
+  if(upgBtn) upgBtn.style.display = _isPro ? 'none' : 'flex';
+  if(upBtn2) upBtn2.style.display = _isPro ? 'none' : '';
 }
 
 async function loadAccActivity(){
@@ -4588,19 +4582,30 @@ var fbsRating = 0;
 var fbsDone = false;
 
 function fbsInit() {
-  // Fill user info from P
-  if (typeof P !== 'undefined' && P) {
-    var name = P.full_name || P.name || '';
-    var role = P.purpose || P.role || 'User';
-    var initials = name.split(' ').map(function(w){ return w[0]||''; }).join('').slice(0,2).toUpperCase();
-    var ur = document.getElementById('fbscr-user');
-    var av = document.getElementById('fbscr-av');
-    var nm = document.getElementById('fbscr-nm');
-    var rl = document.getElementById('fbscr-rl');
-    if (ur) ur.style.display = 'flex';
-    if (av) av.textContent = initials;
-    if (nm) nm.textContent = name;
-    if (rl) rl.textContent = role;
+  if (typeof P === 'undefined' || !P) return;
+  var name = P.full_name || P.name || '';
+  var role = P.purpose || P.role || (typeof plan !== 'undefined' && plan === 'pro' ? 'Pro Member' : 'Free Member');
+  var initials = name.split(' ').map(function(w){ return w[0]||''; }).join('').slice(0,2).toUpperCase();
+  var ur = document.getElementById('fbscr-user');
+  var av = document.getElementById('fbscr-av');
+  var nm = document.getElementById('fbscr-nm');
+  var rl = document.getElementById('fbscr-rl');
+  if (ur) { ur.style.display = 'flex'; }
+  if (av) av.textContent = initials;
+  if (nm) nm.textContent = name;
+  if (rl) rl.textContent = role;
+  // Check if already reviewed
+  if (typeof SUPA_URL !== 'undefined' && P.id) {
+    fetch(SUPA_URL + '/rest/v1/reviews?reviewer_id=eq.' + P.id + '&select=id,status', {
+      headers: {'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY}
+    }).then(function(r){ return r.json(); }).then(function(data){
+      if (data && data.length > 0) {
+        var btn = document.getElementById('fbscr-btn');
+        var msg = document.getElementById('fbscr-msg');
+        if (btn) { btn.textContent = 'Already submitted ✓'; btn.disabled = true; btn.style.background = '#3ecf8e'; }
+        if (msg) { msg.style.color = '#f6c343'; msg.textContent = data[0].status === 'approved' ? 'Your review is live!' : 'Your review is pending approval.'; }
+      }
+    }).catch(function(){});
   }
 }
 
@@ -4628,6 +4633,7 @@ function fbsSubmit() {
     status: 'pending'
   };
   if (typeof P !== 'undefined' && P && P.id) payload.reviewer_id = P.id;
+  if (typeof SUPA_URL === 'undefined') { msg.style.color='#f87171'; msg.textContent='Config error.'; btn.textContent='Submit Review'; btn.disabled=false; return; }
   fetch(SUPA_URL + '/rest/v1/reviews', {
     method: 'POST',
     headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
