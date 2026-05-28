@@ -1004,7 +1004,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
 </style>
 
 <!-- FEEDBACK SCREEN -->
-<div id="feedback-screen" class="screen" style="flex-direction:column;overflow-y:auto;display:none;">
+<div id="feedback-screen" class="screen" style="flex-direction:column;overflow-y:auto;">
   <div style="max-width:560px;width:100%;margin:0 auto;padding:24px 16px;">
     <div style="margin-bottom:24px;">
       <div style="font-size:22px;font-weight:900;color:var(--txt);margin-bottom:4px;">Feedback & Support</div>
@@ -1355,27 +1355,6 @@ function goTo(tab){
     document.getElementById('n-app').classList.add('on');
     showScreen('app-screen');
     tellIframe();
-    if(!_autoSaveProjId){
-      const appScreen = document.getElementById('app-screen');
-      if(appScreen && !document.getElementById('no-proj-msg')){
-        const msg = document.createElement('div');
-        msg.id = 'no-proj-msg';
-        msg.style.cssText = 'position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;background:var(--bg);z-index:10;';
-        const d1 = document.createElement('div'); d1.textContent = '📐'; d1.style.fontSize = '48px';
-        const d2 = document.createElement('div'); d2.textContent = 'No project open'; d2.style.cssText = 'font-size:18px;font-weight:700;color:var(--txt);';
-        const d3 = document.createElement('div'); d3.textContent = 'Open a project from My Projects to start designing'; d3.style.cssText = 'font-size:14px;color:var(--txt3);text-align:center;max-width:300px;';
-        const btn = document.createElement('button');
-        btn.textContent = 'Go to My Projects';
-        btn.style.cssText = 'padding:12px 24px;background:var(--blue);border:none;border-radius:10px;color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;';
-        btn.onclick = function(){ goTo('projects'); };
-        msg.appendChild(d1); msg.appendChild(d2); msg.appendChild(d3); msg.appendChild(btn);
-        appScreen.style.position = 'relative';
-        appScreen.appendChild(msg);
-      }
-    } else {
-      const oldMsg = document.getElementById('no-proj-msg');
-      if(oldMsg) oldMsg.remove();
-    }
   }
   else if(tab==='account'){document.getElementById('n-acc').classList.add('on');showScreen('acc-screen');renderAcc();}
   else if(tab==='feedback'){document.getElementById('n-fb').classList.add('on');showScreen('feedback-screen');fbsInit();}
@@ -2600,12 +2579,12 @@ function renderAcc(){
   loadAccActivity();
   loadAccSettings();
 
-  // Hide upgrade buttons if already PRO (use plan variable set by resolvePlan())
-  const _isPro = (typeof plan !== 'undefined') ? plan === 'pro' : false;
-  const upgBtn = document.getElementById('acc-upgrade-btn');
-  const upBtn2 = document.getElementById('a-up-btn');
-  if(upgBtn) upgBtn.style.display = _isPro ? 'none' : 'flex';
-  if(upBtn2) upBtn2.style.display = _isPro ? 'none' : '';
+  // Hide upgrade button if PRO
+  var _plan = (typeof resolvePlan === 'function') ? resolvePlan() : (typeof plan !== 'undefined' ? plan : 'free');
+  var upgBtn = document.getElementById('acc-upgrade-btn');
+  var upBtn2 = document.getElementById('a-up-btn');
+  if(upgBtn) upgBtn.style.display = (_plan === 'pro') ? 'none' : 'flex';
+  if(upBtn2) upBtn2.style.display = (_plan === 'pro') ? 'none' : '';
 }
 
 async function loadAccActivity(){
