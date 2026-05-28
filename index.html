@@ -2086,7 +2086,7 @@ async function lVerify(){
       return;
     }
     if(result.sessionToken){
-      localStorage.setItem('slp_session_mob',window._lmob);
+      localStorage.setItem('slp_session_mob', '+91'+window._lmob);
       localStorage.setItem('slp_session_tok',result.sessionToken);
     }
     closeLogin();
