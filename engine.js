@@ -43,9 +43,10 @@ window.addEventListener('message',(e)=>{
         const isFreshProject = Object.keys(savedS).length <= 5 &&
           !savedS.spansX && !savedS.fck && !savedS.numFloors;
         if(isFreshProject){
-          // Reset all structural inputs to defaults
-          S.spansX=[4,4,4]; S.spansY=[3,3,3];
+          // Reset ALL fields to defaults so previous project data doesn't bleed through
+          S.name=''; S.client=''; S.location='';
           S.numFloors=4; S.floorHt=3.2;
+          S.spansX=[4,4,4]; S.spansY=[3,3,3];
           S.buildingL=12; S.buildingW=9;
           S.fck=25; S.fy=500;
           S.udlLL=3.0; S.udlRoof=1.5;
@@ -54,7 +55,10 @@ window.addEventListener('message',(e)=>{
           S.stairType='dogleg'; S.ftgType='isolated';
           S.slabThk=150; S.coverSlab=20; S.coverBeam=25; S.coverCol=40; S.coverFtg=75;
           S.columns=null; S.floorFinish=1.0; S.wallLoad=10;
-          // Clear overrides and analysis state
+          S.windZone=4; S.terrainCat=2; S.topography=1.0;
+          S.roofLL=1.5; S.floorFinishLoad=1.0; S.partitionLoad=1.0;
+          S.foundationType='isolated'; S.soilBearing=200;
+          // Clear all analysis results and overrides
           window._memberOverrides = {};
           window._nodeChoices = {};
           window._coordMode = false;

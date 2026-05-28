@@ -585,7 +585,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
     <div class="tlogo">StructLearn Pro</div>
     <div class="tnav">
       <button class="tnav-btn on" id="n-proj" onclick="goTo('projects')">My Projects</button>
-      <button class="tnav-btn" id="n-app"  onclick="_autoSaveProjId?goTo('app'):goTo('projects')" title="Open design tool">Design Tool</button>
+      <button class="tnav-btn" id="n-app"  onclick="goTo('app')" title="Open design tool">Design Tool</button>
       <button class="tnav-btn" id="n-acc"  onclick="goTo('account')">Account</button>
       <button class="tnav-btn" id="n-fb"   onclick="goTo('feedback')">&#128172; Feedback</button>
     </div>
@@ -1003,6 +1003,86 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
 }
 </style>
 
+<!-- FEEDBACK SCREEN -->
+<div id="feedback-screen" class="screen" style="flex-direction:column;overflow-y:auto;display:none;">
+  <div style="max-width:560px;width:100%;margin:0 auto;padding:24px 16px;">
+    <div style="margin-bottom:24px;">
+      <div style="font-size:22px;font-weight:900;color:var(--txt);margin-bottom:4px;">Feedback & Support</div>
+      <div style="font-size:13px;color:var(--txt3);">Your voice helps us build better for every student.</div>
+    </div>
+
+    <!-- REVIEW -->
+    <div style="background:var(--bg2);border:1px solid var(--b1);border-radius:16px;overflow:hidden;margin-bottom:16px;">
+      <div style="padding:18px 20px;border-bottom:1px solid var(--b1);display:flex;align-items:center;gap:14px;">
+        <div style="width:42px;height:42px;border-radius:12px;background:rgba(246,195,67,0.1);border:1px solid rgba(246,195,67,0.2);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">&#11088;</div>
+        <div>
+          <div style="font-size:15px;font-weight:700;color:var(--txt);">Leave a Review</div>
+          <div style="font-size:12px;color:var(--txt3);margin-top:2px;">Help other students make an informed decision</div>
+        </div>
+      </div>
+      <div style="padding:18px 20px;">
+        <div style="background:rgba(246,195,67,0.06);border:1px solid rgba(246,195,67,0.15);border-radius:10px;padding:12px 14px;margin-bottom:18px;display:flex;gap:10px;align-items:flex-start;">
+          <span style="font-size:16px;flex-shrink:0;">&#128161;</span>
+          <div style="font-size:12px;color:var(--txt2);line-height:1.65;">Please share your experience only after working on a real design. We value genuine feedback — it helps other students make an informed decision.</div>
+        </div>
+        <div id="fbscr-user" style="display:none;background:rgba(62,207,142,0.06);border:1px solid rgba(62,207,142,0.2);border-radius:10px;padding:10px 14px;margin-bottom:16px;align-items:center;gap:10px;">
+          <div id="fbscr-av" style="width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#2563eb,#06b6d4);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;flex-shrink:0;font-family:monospace;"></div>
+          <div style="flex:1;"><div id="fbscr-nm" style="font-size:13px;font-weight:700;color:var(--txt);"></div><div id="fbscr-rl" style="font-size:11px;color:var(--txt3);margin-top:1px;"></div></div>
+          <div style="font-size:9px;background:rgba(62,207,142,0.15);color:#3ecf8e;padding:3px 9px;border-radius:10px;font-family:monospace;font-weight:700;">&#10003; Verified</div>
+        </div>
+        <div style="margin-bottom:16px;">
+          <div style="font-size:11px;color:var(--txt3);font-weight:600;letter-spacing:0.5px;margin-bottom:10px;">YOUR RATING</div>
+          <div style="display:flex;gap:8px;">
+            <span class="fbscr-s" data-v="1" onclick="fbsRate(1)" style="font-size:34px;cursor:pointer;opacity:0.2;transition:all 0.15s;color:#f6c343;">&#9733;</span>
+            <span class="fbscr-s" data-v="2" onclick="fbsRate(2)" style="font-size:34px;cursor:pointer;opacity:0.2;transition:all 0.15s;color:#f6c343;">&#9733;</span>
+            <span class="fbscr-s" data-v="3" onclick="fbsRate(3)" style="font-size:34px;cursor:pointer;opacity:0.2;transition:all 0.15s;color:#f6c343;">&#9733;</span>
+            <span class="fbscr-s" data-v="4" onclick="fbsRate(4)" style="font-size:34px;cursor:pointer;opacity:0.2;transition:all 0.15s;color:#f6c343;">&#9733;</span>
+            <span class="fbscr-s" data-v="5" onclick="fbsRate(5)" style="font-size:34px;cursor:pointer;opacity:0.2;transition:all 0.15s;color:#f6c343;">&#9733;</span>
+          </div>
+        </div>
+        <div style="margin-bottom:14px;">
+          <div style="font-size:11px;color:var(--txt3);font-weight:600;letter-spacing:0.5px;margin-bottom:8px;">YOUR REVIEW</div>
+          <textarea id="fbscr-text" placeholder="What did you design? How did StructLearn Pro help you? What would you tell another student..." style="width:100%;padding:12px 14px;background:var(--bg3);border:1.5px solid var(--b1);border-radius:10px;color:var(--txt);font-size:13px;font-family:inherit;outline:none;resize:none;height:100px;line-height:1.65;box-sizing:border-box;" onfocus="this.style.borderColor='var(--blue)'" onblur="this.style.borderColor='var(--b1)'"></textarea>
+        </div>
+        <div id="fbscr-msg" style="font-size:12px;text-align:center;margin-bottom:10px;min-height:16px;"></div>
+        <button onclick="fbsSubmit()" id="fbscr-btn" style="width:100%;padding:13px;background:var(--blue);border:none;border-radius:10px;color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">Submit Review</button>
+      </div>
+    </div>
+
+    <!-- CONTACT -->
+    <div style="background:var(--bg2);border:1px solid var(--b1);border-radius:16px;overflow:hidden;">
+      <div style="padding:18px 20px;border-bottom:1px solid var(--b1);display:flex;align-items:center;gap:14px;">
+        <div style="width:42px;height:42px;border-radius:12px;background:rgba(56,189,248,0.08);border:1px solid rgba(56,189,248,0.2);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">&#128236;</div>
+        <div>
+          <div style="font-size:15px;font-weight:700;color:var(--txt);">Contact Us</div>
+          <div style="font-size:12px;color:var(--txt3);margin-top:2px;">Questions, bugs, suggestions — we read everything</div>
+        </div>
+      </div>
+      <div style="padding:18px 20px;display:flex;flex-direction:column;gap:10px;">
+        <a href="mailto:structlearnpro@gmail.com" style="display:flex;align-items:center;gap:12px;padding:13px 15px;background:var(--bg3);border:1px solid var(--b1);border-radius:11px;text-decoration:none;transition:border-color 0.2s;" onmouseover="this.style.borderColor='var(--blue)'" onmouseout="this.style.borderColor='var(--b1)'">
+          <div style="width:38px;height:38px;border-radius:10px;background:rgba(79,142,247,0.1);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">&#9993;</div>
+          <div style="flex:1;"><div style="font-size:13px;font-weight:600;color:var(--txt);">Email us</div><div style="font-size:11px;color:var(--txt3);margin-top:2px;">structlearnpro@gmail.com</div></div>
+          <div style="color:var(--txt3);">&#8594;</div>
+        </a>
+        <div style="display:flex;align-items:center;gap:12px;padding:13px 15px;background:var(--bg3);border:1px solid var(--b1);border-radius:11px;cursor:pointer;transition:border-color 0.2s;" onclick="toast('Thanks for reporting! We will look into it &#10003;')" onmouseover="this.style.borderColor='#f87171'" onmouseout="this.style.borderColor='var(--b1)'">
+          <div style="width:38px;height:38px;border-radius:10px;background:rgba(248,113,113,0.08);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">&#128027;</div>
+          <div style="flex:1;"><div style="font-size:13px;font-weight:600;color:var(--txt);">Report a bug</div><div style="font-size:11px;color:var(--txt3);margin-top:2px;">Something not working? Let us know</div></div>
+          <div style="color:var(--txt3);">&#8594;</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;padding:13px 15px;background:var(--bg3);border:1px solid var(--b1);border-radius:11px;cursor:pointer;transition:border-color 0.2s;" onclick="toast('Feature noted! Thank you &#128161;')" onmouseover="this.style.borderColor='#3ecf8e'" onmouseout="this.style.borderColor='var(--b1)'">
+          <div style="width:38px;height:38px;border-radius:10px;background:rgba(62,207,142,0.08);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">&#128161;</div>
+          <div style="flex:1;"><div style="font-size:13px;font-weight:600;color:var(--txt);">Suggest a feature</div><div style="font-size:11px;color:var(--txt3);margin-top:2px;">What would make StructLearn Pro better?</div></div>
+          <div style="color:var(--txt3);">&#8594;</div>
+        </div>
+        <div style="padding:10px 13px;background:rgba(52,211,153,0.04);border:1px solid rgba(52,211,153,0.1);border-radius:9px;font-size:11px;color:var(--txt3);line-height:1.6;">
+          &#9203; <strong style="color:#34d399;">Typical response: 24-48 hours.</strong> Email directly: <a href="mailto:structlearnpro@gmail.com" style="color:#38bdf8;">structlearnpro@gmail.com</a>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
 <!-- UPGRADE MODAL -->
 <div id="up-modal">
   <div class="up-card">
@@ -1271,7 +1351,32 @@ function showScreen(id){
 function goTo(tab){
   document.querySelectorAll('.tnav-btn').forEach(b=>b.classList.remove('on'));
   if(tab==='projects'){document.getElementById('n-proj').classList.add('on');showScreen('dash-screen');loadProjects();}
-  else if(tab==='app'){document.getElementById('n-app').classList.add('on');showScreen('app-screen');tellIframe();}
+  else if(tab==='app'){
+    document.getElementById('n-app').classList.add('on');
+    showScreen('app-screen');
+    tellIframe();
+    if(!_autoSaveProjId){
+      const appScreen = document.getElementById('app-screen');
+      if(appScreen && !document.getElementById('no-proj-msg')){
+        const msg = document.createElement('div');
+        msg.id = 'no-proj-msg';
+        msg.style.cssText = 'position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;background:var(--bg);z-index:10;';
+        const d1 = document.createElement('div'); d1.textContent = '📐'; d1.style.fontSize = '48px';
+        const d2 = document.createElement('div'); d2.textContent = 'No project open'; d2.style.cssText = 'font-size:18px;font-weight:700;color:var(--txt);';
+        const d3 = document.createElement('div'); d3.textContent = 'Open a project from My Projects to start designing'; d3.style.cssText = 'font-size:14px;color:var(--txt3);text-align:center;max-width:300px;';
+        const btn = document.createElement('button');
+        btn.textContent = 'Go to My Projects';
+        btn.style.cssText = 'padding:12px 24px;background:var(--blue);border:none;border-radius:10px;color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;';
+        btn.onclick = function(){ goTo('projects'); };
+        msg.appendChild(d1); msg.appendChild(d2); msg.appendChild(d3); msg.appendChild(btn);
+        appScreen.style.position = 'relative';
+        appScreen.appendChild(msg);
+      }
+    } else {
+      const oldMsg = document.getElementById('no-proj-msg');
+      if(oldMsg) oldMsg.remove();
+    }
+  }
   else if(tab==='account'){document.getElementById('n-acc').classList.add('on');showScreen('acc-screen');renderAcc();}
   else if(tab==='feedback'){document.getElementById('n-fb').classList.add('on');showScreen('feedback-screen');fbsInit();}
 }
@@ -2494,6 +2599,19 @@ function renderAcc(){
   // Load activity stats and badges async
   loadAccActivity();
   loadAccSettings();
+
+  // Hide upgrade buttons if already PRO
+  const isPro = P && P.plan === 'pro';
+  const upgBtn = document.getElementById('acc-upgrade-btn');
+  const upBtn2 = document.getElementById('a-up-btn');
+  if(upgBtn) upgBtn.style.display = isPro ? 'none' : '';
+  if(upBtn2) upBtn2.style.display = isPro ? 'none' : '';
+  // Update plan chip color
+  const planChip = document.getElementById('t-plan-acc');
+  if(planChip) {
+    planChip.textContent = isPro ? 'PRO ✓' : 'FREE';
+    planChip.className = isPro ? 'chip pro' : 'chip free';
+  }
 }
 
 async function loadAccActivity(){
