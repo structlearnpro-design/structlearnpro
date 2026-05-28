@@ -16148,12 +16148,32 @@ window.addEventListener('message', function(e) {
       var modId = e.data.modId || 'M1';
       if(typeof openLearningHub === 'function') {
         openLearningHub();
-        // After hub renders, open the specific module detail
         setTimeout(function(){
           if(typeof openModuleDetail === 'function') openModuleDetail(modId);
         }, 300);
       }
     } catch(err) { console.warn('OPEN_MODULE error:', err); }
+    return;
+  }
+
+  // ── OPEN_GUIDED_DESIGN: parent asks us to open guided design ──
+  if(e.data && e.data.type === 'OPEN_GUIDED_DESIGN') {
+    try { if(typeof startGuidedDesign === 'function') startGuidedDesign(); }
+    catch(err) { console.warn('OPEN_GUIDED_DESIGN error:', err); }
+    return;
+  }
+
+  // ── OPEN_LEARNING_HUB: parent asks us to open learning modules ──
+  if(e.data && e.data.type === 'OPEN_LEARNING_HUB') {
+    try { if(typeof openLearningHub === 'function') openLearningHub(); }
+    catch(err) { console.warn('OPEN_LEARNING_HUB error:', err); }
+    return;
+  }
+
+  // ── OPEN_STUDENT_GUIDE: parent asks us to open student guide ──
+  if(e.data && e.data.type === 'OPEN_STUDENT_GUIDE') {
+    try { if(typeof openStudentGuide === 'function') openStudentGuide(); }
+    catch(err) { console.warn('OPEN_STUDENT_GUIDE error:', err); }
     return;
   }
 

@@ -660,9 +660,9 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
           <div id="dash-confidence-hint" style="font-size:11px;color:var(--txt3);line-height:1.6;">Complete lessons to build your design confidence.</div>
         </div>
         <div style="display:flex;flex-direction:column;gap:8px;min-width:160px;">
-          <button onclick="openLearningModule('M1')" style="width:100%;padding:8px 14px;background:rgba(249,115,22,0.12);border:1px solid #f97316;border-radius:8px;color:#f97316;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;text-align:left;">🎯 Guided Design</button>
-          <button onclick="openLearningModule('M1')" style="width:100%;padding:8px 14px;background:rgba(167,139,250,0.12);border:1px solid #a78bfa;border-radius:8px;color:#a78bfa;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;text-align:left;">📖 Learning Modules</button>
-          <button onclick="openLearningModule('M1')" style="width:100%;padding:8px 14px;background:rgba(56,189,248,0.12);border:1px solid #38bdf8;border-radius:8px;color:#38bdf8;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;text-align:left;">📚 Student Guide</button>
+          <button onclick="openDesignToolFeature('GUIDED_DESIGN')" style="width:100%;padding:8px 14px;background:rgba(249,115,22,0.12);border:1px solid #f97316;border-radius:8px;color:#f97316;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;text-align:left;">🎯 Guided Design</button>
+          <button onclick="openDesignToolFeature('LEARNING_MODULES')" style="width:100%;padding:8px 14px;background:rgba(167,139,250,0.12);border:1px solid #a78bfa;border-radius:8px;color:#a78bfa;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;text-align:left;">📖 Learning Modules</button>
+          <button onclick="openDesignToolFeature('STUDENT_GUIDE')" style="width:100%;padding:8px 14px;background:rgba(56,189,248,0.12);border:1px solid #38bdf8;border-radius:8px;color:#38bdf8;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;text-align:left;">📚 Student Guide</button>
         </div>
       </div>
 
@@ -1702,6 +1702,11 @@ function resolvePlan(){
 function updTop(){
   // Always resolve plan fresh from profile
   plan = resolvePlan();
+  // Hide upgrade button if PRO
+  var _upBtn = document.getElementById('acc-upgrade-btn');
+  var _upBtn2 = document.getElementById('a-up-btn');
+  if(_upBtn) _upBtn.style.display = (plan === 'pro') ? 'none' : 'flex';
+  if(_upBtn2) _upBtn2.style.display = (plan === 'pro') ? 'none' : '';
   document.getElementById('t-name').textContent=P?.full_name||P?.mobile||'';
   // Update greeting on dashboard
   setTimeout(function(){
@@ -1941,8 +1946,42 @@ function renderJourneyModules(){
 }
 
 function goJourneyApp(){
-  // Fallback: open app for any module
   openLearningModule('M1');
+}
+
+function openDesignToolFeature(feature){
+  // Open Design Tool first
+  if(!_autoSaveProjId){
+    // Create a learning project silently
+    fetch(SUPA_URL+'/rest/v1/projects',{
+      method:'POST',
+      headers:{'Authorization':'Bearer '+SUPA_KEY,'apikey':SUPA_KEY,'Content-Type':'application/json','Prefer':'return=representation'},
+      body:JSON.stringify({profile_id:P.id, name:'Learning Project', analysis_count:0, state_json:{name:'Learning Project'}})
+    }).then(function(r){ return r.json(); }).then(function(data){
+      var p = Array.isArray(data)?data[0]:data;
+      if(p){
+        projects.unshift(p);
+        _autoSaveProjId = p.id;
+        goTo('app');
+        setTimeout(function(){ sendFeatureToIframe(feature); }, 1200);
+      }
+    }).catch(function(e){ goTo('app'); });
+  } else {
+    goTo('app');
+    setTimeout(function(){ sendFeatureToIframe(feature); }, 600);
+  }
+}
+
+function sendFeatureToIframe(feature){
+  var fr = document.getElementById('app-iframe');
+  if(!fr || !fr.contentWindow) return;
+  if(feature === 'GUIDED_DESIGN'){
+    fr.contentWindow.postMessage({type:'OPEN_GUIDED_DESIGN'}, '*');
+  } else if(feature === 'LEARNING_MODULES'){
+    fr.contentWindow.postMessage({type:'OPEN_LEARNING_HUB'}, '*');
+  } else if(feature === 'STUDENT_GUIDE'){
+    fr.contentWindow.postMessage({type:'OPEN_STUDENT_GUIDE'}, '*');
+  }
 }
 
 function openLearningModule(modId){
@@ -4622,7 +4661,7 @@ function fbsInit() {
   // Check if already reviewed
   if (typeof SUPA_URL !== 'undefined' && P.id) {
     fetch(SUPA_URL + '/rest/v1/reviews?reviewer_id=eq.' + P.id + '&select=id,status', {
-      headers: {'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY}
+      headers: {'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJwamR2ZXV4eGplb2VvbWt3cmZ4Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3ODkzNjc3MiwiZXhwIjoyMDk0NTEyNzcyfQ._hCmrpMwzCoYwkRRv6dUbs1TmMpR79X4WYQHxZsKwF4', 'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJwamR2ZXV4eGplb2VvbWt3cmZ4Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3ODkzNjc3MiwiZXhwIjoyMDk0NTEyNzcyfQ._hCmrpMwzCoYwkRRv6dUbs1TmMpR79X4WYQHxZsKwF4'}
     }).then(function(r){ return r.json(); }).then(function(data){
       if (data && data.length > 0) {
         var btn = document.getElementById('fbscr-btn');
@@ -4661,7 +4700,7 @@ function fbsSubmit() {
   if (typeof SUPA_URL === 'undefined') { msg.style.color='#f87171'; msg.textContent='Config error.'; btn.textContent='Submit Review'; btn.disabled=false; return; }
   fetch(SUPA_URL + '/rest/v1/reviews', {
     method: 'POST',
-    headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+    headers: { 'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJwamR2ZXV4eGplb2VvbWt3cmZ4Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3ODkzNjc3MiwiZXhwIjoyMDk0NTEyNzcyfQ._hCmrpMwzCoYwkRRv6dUbs1TmMpR79X4WYQHxZsKwF4', 'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJwamR2ZXV4eGplb2VvbWt3cmZ4Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3ODkzNjc3MiwiZXhwIjoyMDk0NTEyNzcyfQ._hCmrpMwzCoYwkRRv6dUbs1TmMpR79X4WYQHxZsKwF4', 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
     body: JSON.stringify(payload)
   }).then(function(res) {
     if (!res.ok) {
