@@ -1041,6 +1041,61 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
       </div>
     </div>
 
+    <!-- REVIEW & CONTACT -->
+    <div style="margin-top:20px;">
+
+      <!-- REVIEW -->
+      <div style="background:var(--bg2);border:1px solid var(--b1);border-radius:14px;overflow:hidden;margin-bottom:14px;">
+        <div style="padding:14px 18px;border-bottom:1px solid var(--b1);display:flex;align-items:center;justify-content:space-between;cursor:pointer;" onclick="toggleRevForm()">
+          <div>
+            <div style="font-size:14px;font-weight:700;color:var(--txt);">&#11088; Leave a Review</div>
+            <div style="font-size:11px;color:var(--txt3);margin-top:2px;">Share your experience and help other students</div>
+          </div>
+          <span id="revArrow" style="color:var(--txt3);font-size:16px;transition:transform 0.2s;">&#8595;</span>
+        </div>
+        <div id="revForm" style="display:none;padding:16px 18px;">
+          <div style="background:rgba(246,195,67,0.07);border:1px solid rgba(246,195,67,0.2);border-radius:9px;padding:10px 13px;margin-bottom:14px;">
+            <div style="font-size:11px;color:#f6c343;font-weight:600;margin-bottom:3px;">&#10022; A note before you review</div>
+            <div style="font-size:11px;color:var(--txt3);line-height:1.6;">Please share your experience only after working on a real design. We value genuine feedback — it helps other students make an informed decision.</div>
+          </div>
+          <div id="rev-user-row" style="display:none;background:rgba(62,207,142,0.06);border:1px solid rgba(62,207,142,0.2);border-radius:9px;padding:9px 13px;margin-bottom:14px;align-items:center;gap:10px;">
+            <div id="rev-av" style="width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#2563eb,#06b6d4);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0;font-family:monospace;"></div>
+            <div style="flex:1;"><div id="rev-nm" style="font-size:12px;font-weight:700;color:var(--txt);"></div><div id="rev-rl" style="font-size:10px;color:var(--txt3);margin-top:1px;"></div></div>
+            <div style="font-size:9px;background:rgba(62,207,142,0.15);color:#3ecf8e;padding:2px 7px;border-radius:8px;font-family:monospace;font-weight:700;">&#10003; Verified</div>
+          </div>
+          <div style="display:flex;gap:6px;margin-bottom:14px;" id="revStars">
+            <span class="rv-s" data-v="1" onclick="rvRate(1)" style="font-size:28px;cursor:pointer;opacity:0.2;transition:all 0.15s;color:#f6c343;">&#9733;</span>
+            <span class="rv-s" data-v="2" onclick="rvRate(2)" style="font-size:28px;cursor:pointer;opacity:0.2;transition:all 0.15s;color:#f6c343;">&#9733;</span>
+            <span class="rv-s" data-v="3" onclick="rvRate(3)" style="font-size:28px;cursor:pointer;opacity:0.2;transition:all 0.15s;color:#f6c343;">&#9733;</span>
+            <span class="rv-s" data-v="4" onclick="rvRate(4)" style="font-size:28px;cursor:pointer;opacity:0.2;transition:all 0.15s;color:#f6c343;">&#9733;</span>
+            <span class="rv-s" data-v="5" onclick="rvRate(5)" style="font-size:28px;cursor:pointer;opacity:0.2;transition:all 0.15s;color:#f6c343;">&#9733;</span>
+          </div>
+          <textarea id="rvText" placeholder="What did you design? How did StructLearn Pro help you?" style="width:100%;padding:10px 12px;background:var(--bg3);border:1.5px solid var(--b1);border-radius:9px;color:var(--txt);font-size:13px;font-family:inherit;outline:none;resize:none;height:85px;line-height:1.6;margin-bottom:10px;box-sizing:border-box;" onfocus="this.style.borderColor='var(--blue)'" onblur="this.style.borderColor='var(--b1)'"></textarea>
+          <div id="rvMsg" style="font-size:12px;text-align:center;margin-bottom:8px;min-height:15px;"></div>
+          <button onclick="rvSubmit()" id="rvBtn" style="width:100%;padding:11px;background:var(--blue);border:none;border-radius:9px;color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;">Submit Review</button>
+        </div>
+      </div>
+
+      <!-- CONTACT -->
+      <div style="background:var(--bg2);border:1px solid var(--b1);border-radius:14px;overflow:hidden;">
+        <div style="padding:14px 18px;border-bottom:1px solid var(--b1);">
+          <div style="font-size:14px;font-weight:700;color:var(--txt);">&#128236; Contact Us</div>
+          <div style="font-size:11px;color:var(--txt3);margin-top:2px;">Questions, bugs, suggestions — we read everything</div>
+        </div>
+        <div style="padding:14px 18px;display:flex;flex-direction:column;gap:10px;">
+          <a href="mailto:structlearnpro@gmail.com" style="display:flex;align-items:center;gap:12px;padding:11px 13px;background:var(--bg3);border:1px solid var(--b1);border-radius:10px;text-decoration:none;transition:border-color 0.2s;" onmouseover="this.style.borderColor='var(--blue)'" onmouseout="this.style.borderColor='var(--b1)'">
+            <div style="width:34px;height:34px;border-radius:9px;background:rgba(79,142,247,0.12);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">&#9993;</div>
+            <div><div style="font-size:13px;font-weight:600;color:var(--txt);">Email us</div><div style="font-size:11px;color:var(--txt3);margin-top:1px;">structlearnpro@gmail.com</div></div>
+          </a>
+          <div style="display:flex;align-items:center;gap:12px;padding:11px 13px;background:var(--bg3);border:1px solid var(--b1);border-radius:10px;cursor:pointer;transition:border-color 0.2s;" onclick="toast('Thanks for reporting! We will look into it. &#10003;')" onmouseover="this.style.borderColor='#f87171'" onmouseout="this.style.borderColor='var(--b1)'">
+            <div style="width:34px;height:34px;border-radius:9px;background:rgba(248,113,113,0.1);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">&#128027;</div>
+            <div><div style="font-size:13px;font-weight:600;color:var(--txt);">Report a bug</div><div style="font-size:11px;color:var(--txt3);margin-top:1px;">Something not working? Let us know</div></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
   </div>
 </div>
 
@@ -1311,6 +1366,9 @@ function showScreen(id){
 }
 function goTo(tab){
   document.querySelectorAll('.tnav-btn').forEach(b=>b.classList.remove('on'));
+  // Show/hide feedback section based on tab
+  var fbSec = document.getElementById('feedback-section');
+  if(fbSec) fbSec.style.display = (id === 'account') ? 'block' : 'none';
   if(tab==='projects'){document.getElementById('n-proj').classList.add('on');showScreen('dash-screen');loadProjects();}
   else if(tab==='app'){document.getElementById('n-app').classList.add('on');showScreen('app-screen');tellIframe();}
   else if(tab==='account'){document.getElementById('n-acc').classList.add('on');showScreen('acc-screen');renderAcc();}
@@ -4503,90 +4561,57 @@ async function submitBugReport() {
 }
 
 </script>
-<!-- FEEDBACK PANEL -->
-<div id="fpPanel" style="display:none;position:fixed;bottom:80px;right:24px;width:320px;background:#1a2545;border:1px solid rgba(255,255,255,0.14);border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,0.5);z-index:9000;overflow:hidden;">
-  <div style="padding:16px 18px;border-bottom:1px solid rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:space-between;">
-    <div>
-      <div style="font-size:14px;font-weight:700;color:#fff;">Leave a Review</div>
-      <div id="fpUserLine" style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:2px;"></div>
-    </div>
-    <button onclick="fpClose()" style="background:rgba(255,255,255,0.08);border:none;color:rgba(255,255,255,0.5);width:26px;height:26px;border-radius:50%;cursor:pointer;font-size:13px;line-height:1;">&#x2715;</button>
-  </div>
-  <div style="padding:16px 18px;">
-    <!-- Reminder -->
-    <div id="fpReminder" style="display:none;background:rgba(246,195,67,0.07);border:1px solid rgba(246,195,67,0.2);border-radius:9px;padding:10px 12px;margin-bottom:14px;">
-      <div style="font-size:12px;color:#f6c343;font-weight:600;margin-bottom:3px;">✦ A note before you review</div>
-      <div style="font-size:11px;color:rgba(255,255,255,0.55);line-height:1.6;">Please share your experience only after working on a real design. We value genuine feedback — it helps other students make an informed decision.</div>
-    </div>
-
-    <div style="margin-bottom:14px;">
-      <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:8px;letter-spacing:0.5px;font-weight:600;">RATING</div>
-      <div id="fpStars" style="display:flex;gap:6px;">
-        <span class="fps" data-v="1" onclick="fpRate(1)" style="font-size:28px;cursor:pointer;opacity:0.2;transition:all 0.15s;color:#f6c343;">&#9733;</span>
-        <span class="fps" data-v="2" onclick="fpRate(2)" style="font-size:28px;cursor:pointer;opacity:0.2;transition:all 0.15s;color:#f6c343;">&#9733;</span>
-        <span class="fps" data-v="3" onclick="fpRate(3)" style="font-size:28px;cursor:pointer;opacity:0.2;transition:all 0.15s;color:#f6c343;">&#9733;</span>
-        <span class="fps" data-v="4" onclick="fpRate(4)" style="font-size:28px;cursor:pointer;opacity:0.2;transition:all 0.15s;color:#f6c343;">&#9733;</span>
-        <span class="fps" data-v="5" onclick="fpRate(5)" style="font-size:28px;cursor:pointer;opacity:0.2;transition:all 0.15s;color:#f6c343;">&#9733;</span>
-      </div>
-    </div>
-    <textarea id="fpText" placeholder="What did you design? How did StructLearn Pro help you?" style="width:100%;padding:10px 12px;background:rgba(255,255,255,0.05);border:1.5px solid rgba(255,255,255,0.1);border-radius:9px;color:#e8edf8;font-size:13px;font-family:inherit;outline:none;resize:none;height:90px;line-height:1.6;margin-bottom:10px;box-sizing:border-box;" onfocus="this.style.borderColor='#4f8ef7'" onblur="this.style.borderColor='rgba(255,255,255,0.1)'"></textarea>
-    <div id="fpMsg" style="font-size:11px;text-align:center;margin-bottom:8px;min-height:15px;"></div>
-    <button onclick="fpSubmit()" id="fpBtn" style="width:100%;padding:11px;background:#4f8ef7;border:none;border-radius:9px;color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;transition:background 0.2s;">Submit Review</button>
-  </div>
-</div>
-
-<!-- FEEDBACK TOGGLE -->
-<button id="fpToggle" onclick="fpOpen()" style="display:none;position:fixed;bottom:24px;right:24px;background:linear-gradient(135deg,#4f8ef7,#b794f4);border:none;border-radius:100px;padding:11px 18px;color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;box-shadow:0 6px 20px rgba(79,142,247,0.4);z-index:8999;align-items:center;gap:7px;">
-  &#128172; Review
-</button>
-
 <script>
-var fpRating = 0;
-var fpSubmitted = false;
+var revRating = 0;
+var revSubmitted = false;
 
-function fpOpen() {
-  // Fill user line from P (profile already loaded by app)
-  if (typeof P !== 'undefined' && P) {
-    var ul = document.getElementById('fpUserLine');
-    if (ul) ul.textContent = (P.full_name || '') + ' · ' + (P.purpose || P.role || 'User');
-  }
-  // Show reminder
-  var reminder = document.getElementById('fpReminder');
-  if (reminder) reminder.style.display = 'block';
-  document.getElementById('fpPanel').style.display = 'block';
-  document.getElementById('fpToggle').style.display = 'none';
+function toggleFeedbackForm() {
+  var form = document.getElementById('feedbackForm');
+  var arrow = document.getElementById('feedbackArrow');
+  if (!form) return;
+  var open = form.style.display === 'block';
+  form.style.display = open ? 'none' : 'block';
+  if (arrow) arrow.style.transform = open ? '' : 'rotate(180deg)';
+  if (!open) revFillUser();
 }
 
-function fpClose() {
-  document.getElementById('fpPanel').style.display = 'none';
-  document.getElementById('fpToggle').style.display = 'flex';
+function revFillUser() {
+  if (typeof P === 'undefined' || !P) return;
+  var name = P.full_name || P.name || '';
+  var role = P.purpose || P.role || 'User';
+  var initials = name.split(' ').map(function(w){ return w[0]||''; }).join('').slice(0,2).toUpperCase();
+  var av = document.getElementById('rev-avatar');
+  var nm = document.getElementById('rev-name');
+  var rl = document.getElementById('rev-role');
+  if (av) av.textContent = initials;
+  if (nm) nm.textContent = name;
+  if (rl) rl.textContent = role;
 }
 
-function fpRate(v) {
-  fpRating = v;
-  document.querySelectorAll('.fps').forEach(function(s) {
+function revRate(v) {
+  revRating = v;
+  document.querySelectorAll('.rev-star').forEach(function(s) {
     s.style.opacity = parseInt(s.dataset.v) <= v ? '1' : '0.2';
   });
 }
 
-function fpSubmit() {
-  if (fpSubmitted) return;
-  var text = document.getElementById('fpText').value.trim();
-  var msg = document.getElementById('fpMsg');
-  var btn = document.getElementById('fpBtn');
-  if (!fpRating) { msg.style.color = '#f87171'; msg.textContent = 'Please select a rating.'; return; }
+function revSubmit() {
+  if (revSubmitted) return;
+  var text = document.getElementById('revText').value.trim();
+  var msg = document.getElementById('revMsg');
+  var btn = document.getElementById('revBtn');
+  if (!revRating) { msg.style.color = '#f87171'; msg.textContent = 'Please select a star rating.'; return; }
   if (text.length < 20) { msg.style.color = '#f87171'; msg.textContent = 'Please write at least 20 characters.'; return; }
   btn.textContent = 'Submitting...'; btn.disabled = true; msg.textContent = '';
 
-  var profile = (typeof P !== 'undefined') ? P : {};
   var payload = {
-    reviewer_name: profile.full_name || profile.name || 'Anonymous',
-    reviewer_role: profile.purpose || profile.role || 'User',
+    reviewer_name: (typeof P !== 'undefined' && P) ? (P.full_name || P.name || 'Anonymous') : 'Anonymous',
+    reviewer_role: (typeof P !== 'undefined' && P) ? (P.purpose || P.role || 'User') : 'User',
     review_text: text,
-    rating: fpRating,
+    rating: revRating,
     status: 'pending'
   };
-  if (profile.id) payload.reviewer_id = profile.id;
+  if (typeof P !== 'undefined' && P && P.id) payload.reviewer_id = P.id;
 
   fetch(SUPA_URL + '/rest/v1/reviews', {
     method: 'POST',
@@ -4601,39 +4626,107 @@ function fpSubmit() {
     if (!res.ok) {
       return res.text().then(function(err) {
         if (err.indexOf('duplicate') > -1 || err.indexOf('unique') > -1) {
-          msg.style.color = '#f6c343';
-          msg.textContent = 'You have already submitted a review!';
-          btn.textContent = 'Already submitted';
-          btn.style.background = '#3ecf8e';
-          fpSubmitted = true;
+          msg.style.color = '#f6c343'; msg.textContent = 'You have already submitted a review. Thank you!';
+          btn.textContent = 'Already submitted ✓'; btn.style.background = '#3ecf8e';
+          revSubmitted = true;
         } else {
-          throw new Error();
+          msg.style.color = '#f87171'; msg.textContent = 'Failed to submit. Please try again.';
+          btn.textContent = 'Submit Review'; btn.disabled = false;
         }
       });
     } else {
-      fpSubmitted = true;
-      msg.style.color = '#3ecf8e';
-      msg.textContent = 'Thank you! Will appear after approval.';
-      btn.textContent = 'Submitted ✓';
-      btn.style.background = '#3ecf8e';
-      document.getElementById('fpText').value = '';
-      fpRating = 0;
-      document.querySelectorAll('.fps').forEach(function(s){ s.style.opacity = '0.2'; });
+      revSubmitted = true;
+      msg.style.color = '#3ecf8e'; msg.textContent = 'Thank you! Your review will appear after approval.';
+      btn.textContent = 'Submitted ✓'; btn.style.background = '#3ecf8e';
+      document.getElementById('revText').value = '';
+      revRating = 0;
+      document.querySelectorAll('.rev-star').forEach(function(s){ s.style.opacity = '0.2'; });
     }
+  }).catch(function() {
+    msg.style.color = '#f87171'; msg.textContent = 'Failed to submit. Please try again.';
+    btn.textContent = 'Submit Review'; btn.disabled = false;
+  });
+}
+</script>
+<script>
+var rvRating = 0;
+var rvDone = false;
+
+function toggleRevForm() {
+  var form = document.getElementById('revForm');
+  var arrow = document.getElementById('revArrow');
+  if (!form) return;
+  var open = form.style.display === 'block';
+  form.style.display = open ? 'none' : 'block';
+  if (arrow) arrow.style.transform = open ? '' : 'rotate(180deg)';
+  if (!open) {
+    // Fill user info from P
+    if (typeof P !== 'undefined' && P) {
+      var name = P.full_name || P.name || '';
+      var role = P.purpose || P.role || 'User';
+      var initials = name.split(' ').map(function(w){ return w[0]||''; }).join('').slice(0,2).toUpperCase();
+      var ur = document.getElementById('rev-user-row');
+      var av = document.getElementById('rev-av');
+      var nm = document.getElementById('rev-nm');
+      var rl = document.getElementById('rev-rl');
+      if (ur) ur.style.display = 'flex';
+      if (av) av.textContent = initials;
+      if (nm) nm.textContent = name;
+      if (rl) rl.textContent = role;
+    }
+  }
+}
+
+function rvRate(v) {
+  rvRating = v;
+  document.querySelectorAll('.rv-s').forEach(function(s) {
+    s.style.opacity = parseInt(s.dataset.v) <= v ? '1' : '0.2';
+  });
+}
+
+function rvSubmit() {
+  if (rvDone) return;
+  var text = document.getElementById('rvText').value.trim();
+  var msg = document.getElementById('rvMsg');
+  var btn = document.getElementById('rvBtn');
+  if (!rvRating) { msg.style.color = '#f87171'; msg.textContent = 'Please select a star rating.'; return; }
+  if (text.length < 20) { msg.style.color = '#f87171'; msg.textContent = 'Please write at least 20 characters.'; return; }
+  btn.textContent = 'Submitting...'; btn.disabled = true; msg.textContent = '';
+  var payload = {
+    reviewer_name: (typeof P !== 'undefined' && P) ? (P.full_name || P.name || 'Anonymous') : 'Anonymous',
+    reviewer_role: (typeof P !== 'undefined' && P) ? (P.purpose || P.role || 'User') : 'User',
+    review_text: text,
+    rating: rvRating,
+    status: 'pending'
+  };
+  if (typeof P !== 'undefined' && P && P.id) payload.reviewer_id = P.id;
+  fetch(SUPA_URL + '/rest/v1/reviews', {
+    method: 'POST',
+    headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+    body: JSON.stringify(payload)
+  }).then(function(res) {
+    if (!res.ok) {
+      return res.text().then(function(err) {
+        if (err.indexOf('duplicate') > -1 || err.indexOf('unique') > -1) {
+          msg.style.color = '#f6c343'; msg.textContent = 'You have already submitted a review. Thank you!';
+          btn.textContent = 'Already submitted'; btn.style.background = '#3ecf8e'; rvDone = true;
+        } else {
+          msg.style.color = '#f87171'; msg.textContent = 'Failed. Please try again.';
+          btn.textContent = 'Submit Review'; btn.disabled = false;
+        }
+      });
+    }
+    rvDone = true;
+    msg.style.color = '#3ecf8e'; msg.textContent = 'Thank you! Will appear after approval.';
+    btn.textContent = 'Submitted'; btn.style.background = '#3ecf8e';
+    document.getElementById('rvText').value = '';
+    rvRating = 0;
+    document.querySelectorAll('.rv-s').forEach(function(s){ s.style.opacity = '0.2'; });
   }).catch(function() {
     msg.style.color = '#f87171'; msg.textContent = 'Failed. Please try again.';
     btn.textContent = 'Submit Review'; btn.disabled = false;
   });
 }
-
-// Show the review button only after user has run at least 1 analysis
-function maybeShowReview() {
-  var btn = document.getElementById('fpToggle');
-  if (btn) btn.style.display = 'flex';
-}
-document.addEventListener('DOMContentLoaded', function() {
-  setTimeout(maybeShowReview, 3000);
-});
 </script>
 </body>
 </html>
