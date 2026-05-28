@@ -1049,6 +1049,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
           <div style="flex:1;"><div id="fbscr-nm" style="font-size:13px;font-weight:700;color:var(--txt);"></div><div id="fbscr-rl" style="font-size:11px;color:var(--txt3);margin-top:1px;"></div></div>
           <div style="font-size:9px;background:rgba(62,207,142,0.15);color:#3ecf8e;padding:3px 9px;border-radius:10px;font-family:monospace;font-weight:700;">&#10003; Verified</div>
         </div>
+        <div id="fbscr-form-area">
         <div style="margin-bottom:16px;">
           <div style="font-size:11px;color:var(--txt3);font-weight:600;letter-spacing:0.5px;margin-bottom:10px;">YOUR RATING</div>
           <div style="display:flex;gap:8px;">
@@ -1065,6 +1066,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
         </div>
         <div id="fbscr-msg" style="font-size:12px;text-align:center;margin-bottom:10px;min-height:16px;"></div>
         <button onclick="fbsSubmit()" id="fbscr-btn" style="width:100%;padding:13px;background:var(--blue);border:none;border-radius:10px;color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">Submit Review</button>
+        </div><!-- end fbscr-form-area -->
       </div>
     </div>
 
@@ -1952,26 +1954,8 @@ function goJourneyApp(){
 }
 
 function openDesignToolFeature(feature){
-  // Open Design Tool first
-  if(!_autoSaveProjId){
-    // Create a learning project silently
-    fetch(SUPA_URL+'/rest/v1/projects',{
-      method:'POST',
-      headers:{'Authorization':'Bearer '+SUPA_KEY,'apikey':SUPA_KEY,'Content-Type':'application/json','Prefer':'return=representation'},
-      body:JSON.stringify({profile_id:P.id, name:'Learning Project', analysis_count:0, state_json:{name:'Learning Project'}})
-    }).then(function(r){ return r.json(); }).then(function(data){
-      var p = Array.isArray(data)?data[0]:data;
-      if(p){
-        projects.unshift(p);
-        _autoSaveProjId = p.id;
-        goTo('app');
-        setTimeout(function(){ sendFeatureToIframe(feature); }, 1200);
-      }
-    }).catch(function(e){ goTo('app'); });
-  } else {
-    goTo('app');
-    setTimeout(function(){ sendFeatureToIframe(feature); }, 600);
-  }
+  goTo('app');
+  setTimeout(function(){ sendFeatureToIframe(feature); }, 800);
 }
 
 function sendFeatureToIframe(feature){
@@ -1985,42 +1969,16 @@ function sendFeatureToIframe(feature){
     fr.contentWindow.postMessage({type:'OPEN_STUDENT_GUIDE'}, '*');
   }
 }
-
 function openLearningModule(modId){
-  // If no project open yet, create one first then open the module
-  if(!_autoSaveProjId){
-    // Create a learning project silently, then open module
-    fetch(SUPA_URL+'/rest/v1/projects',{
-      method:'POST',
-      headers:{'Authorization':'Bearer '+SUPA_KEY,'apikey':SUPA_KEY,'Content-Type':'application/json','Prefer':'return=representation'},
-      body:JSON.stringify({profile_id:P.id, name:'Learning Project', analysis_count:0, state_json:{name:'Learning Project'}})
-    }).then(function(r){ return r.json(); }).then(function(data){
-      var p = Array.isArray(data)?data[0]:data;
-      if(p){
-        projects.unshift(p);
-        _autoSaveProjId = p.id;
-        // Open the app and navigate to the Learning Modules tab inside the iframe
-        goTo('app');
-        setTimeout(function(){
-          var fr = document.getElementById('app-iframe');
-          if(fr && fr.contentWindow){
-            fr.contentWindow.postMessage({type:'OPEN_MODULE', modId:modId}, '*');
-          }
-        }, 1200);
-      }
-    }).catch(function(e){ console.error('Learning project create error:',e); goTo('app'); });
-  } else {
-    // Project already open — go to app and open the module
-    goTo('app');
-    setTimeout(function(){
-      var fr = document.getElementById('app-iframe');
-      if(fr && fr.contentWindow){
-        fr.contentWindow.postMessage({type:'OPEN_MODULE', modId:modId}, '*');
-      }
-    }, 600);
-  }
-}
-function filterP(){
+  // Open Design Tool iframe and send module open command — NO project creation
+  goTo('app');
+  setTimeout(function(){
+    var fr = document.getElementById('app-iframe');
+    if(fr && fr.contentWindow){
+      fr.contentWindow.postMessage({type:'OPEN_MODULE', modId:modId, learningMode:true}, '*');
+    }
+  }, 800);
+}function filterP(){
   const s=document.getElementById('f-search').value.toLowerCase();
   const st=document.getElementById('f-status').value;
   const so=document.getElementById('f-sort').value;
@@ -2096,6 +2054,11 @@ async function createNewProject(){
   if(!nm){
     if(errEl){errEl.textContent='Project name is required';errEl.style.display='block';}
     document.getElementById('np-name')?.focus();
+    return;
+  }
+  if(!city){
+    if(errEl){errEl.textContent='City / Location is required';errEl.style.display='block';}
+    document.getElementById('np-city')?.focus();
     return;
   }
 
@@ -2596,6 +2559,9 @@ async function handleSaveProject(data){
     if(idx>=0) projects[idx] = {...projects[idx], ...payload};
     updateSaveIndicator('just now');
     console.log('[handleSaveProject] saved ✅ allPass:', RES?.allPass);
+    // Update project card on dashboard immediately
+    renderP(projects);
+    updDashStats();
   } else {
     console.error('[handleSaveProject] failed:', resp.status);
   }
@@ -2672,6 +2638,12 @@ function renderAcc(){
   var upBtn2 = document.getElementById('a-up-btn');
   if(upgBtn) upgBtn.style.display = (_plan === 'pro') ? 'none' : '';
   if(upBtn2) upBtn2.style.display = (_plan === 'pro') ? 'none' : '';
+  // Update plan chip in account header
+  var _planChip = document.getElementById('t-plan-acc');
+  if(_planChip){
+    _planChip.textContent = (_plan === 'pro') ? 'PRO ✓' : 'FREE';
+    _planChip.className = (_plan === 'pro') ? 'chip pro' : 'chip free';
+  }
 }
 
 async function loadAccActivity(){
@@ -4650,31 +4622,44 @@ var fbsDone = false;
 function fbsInit() {
   if (typeof P === 'undefined' || !P) return;
   var name = P.full_name || P.name || '';
-  var role = P.purpose || P.role || (typeof plan !== 'undefined' && plan === 'pro' ? 'Pro Member' : 'Free Member');
+  var role = P.purpose || P.role || 'User';
   var initials = name.split(' ').map(function(w){ return w[0]||''; }).join('').slice(0,2).toUpperCase();
   var ur = document.getElementById('fbscr-user');
   var av = document.getElementById('fbscr-av');
   var nm = document.getElementById('fbscr-nm');
   var rl = document.getElementById('fbscr-rl');
-  if (ur) { ur.style.display = 'flex'; }
+  if (ur) ur.style.display = 'flex';
   if (av) av.textContent = initials;
   if (nm) nm.textContent = name;
   if (rl) rl.textContent = role;
-  // Check if already reviewed
-  if (typeof SUPA_URL !== 'undefined' && P.id) {
-    fetch(SUPA_URL + '/rest/v1/reviews?reviewer_id=eq.' + P.id + '&select=id,status', {
+
+  // Check if user already submitted a review — show it read-only
+  if (P.id) {
+    fetch(SUPA_URL + '/rest/v1/reviews?reviewer_id=eq.' + P.id + '&select=*', {
       headers: {'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJwamR2ZXV4eGplb2VvbWt3cmZ4Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3ODkzNjc3MiwiZXhwIjoyMDk0NTEyNzcyfQ._hCmrpMwzCoYwkRRv6dUbs1TmMpR79X4WYQHxZsKwF4', 'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJwamR2ZXV4eGplb2VvbWt3cmZ4Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3ODkzNjc3MiwiZXhwIjoyMDk0NTEyNzcyfQ._hCmrpMwzCoYwkRRv6dUbs1TmMpR79X4WYQHxZsKwF4'}
     }).then(function(r){ return r.json(); }).then(function(data){
       if (data && data.length > 0) {
-        var btn = document.getElementById('fbscr-btn');
-        var msg = document.getElementById('fbscr-msg');
-        if (btn) { btn.textContent = 'Already submitted ✓'; btn.disabled = true; btn.style.background = '#3ecf8e'; }
-        if (msg) { msg.style.color = '#f6c343'; msg.textContent = data[0].status === 'approved' ? 'Your review is live!' : 'Your review is pending approval.'; }
+        var rev = data[0];
+        // Hide the form, show the existing review
+        var formArea = document.getElementById('fbscr-form-area');
+        if (formArea) {
+          var stars = '';
+          for (var i = 1; i <= 5; i++) stars += '<span style="font-size:24px;color:' + (i <= rev.rating ? '#f6c343' : '#334155') + ';">&#9733;</span>';
+          formArea.innerHTML = '<div style="margin-bottom:16px;">'
+            + '<div style="font-size:11px;color:var(--txt3);font-weight:600;letter-spacing:0.5px;margin-bottom:8px;">YOUR REVIEW</div>'
+            + '<div style="margin-bottom:12px;">' + stars + '</div>'
+            + '<div style="background:var(--bg3);border:1px solid var(--b1);border-radius:10px;padding:14px;color:var(--txt);font-size:13px;line-height:1.65;">' + (rev.review_text || '') + '</div>'
+            + '<div style="margin-top:10px;font-size:11px;color:var(--txt3);">Submitted ' + new Date(rev.created_at).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}) + '</div>'
+            + '<div style="margin-top:4px;font-size:11px;color:' + (rev.status==='approved'?'#3ecf8e':'#f6c343') + ';">Status: ' + (rev.status==='approved'?'Published ✓':'Pending approval') + '</div>'
+            + '</div>'
+            + '<div style="background:rgba(56,189,248,0.06);border:1px solid rgba(56,189,248,0.15);border-radius:10px;padding:12px 14px;font-size:12px;color:var(--txt2);line-height:1.6;">'
+            + '💡 One review per user to maintain authenticity. Thank you for sharing your experience!'
+            + '</div>';
+        }
       }
     }).catch(function(){});
   }
 }
-
 function fbsRate(v) {
   fbsRating = v;
   document.querySelectorAll('.fbscr-s').forEach(function(s) {

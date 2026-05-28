@@ -16146,6 +16146,13 @@ window.addEventListener('message', function(e) {
   if(e.data && e.data.type === 'OPEN_MODULE') {
     try {
       var modId = e.data.modId || 'M1';
+      // Hide sidebar in learning mode for cleaner view
+      if(e.data.learningMode) {
+        var sidebar = document.querySelector('.sidebar, #sidebar, nav');
+        if(sidebar) sidebar.style.display = 'none';
+        var mainArea = document.querySelector('.main, #main, .content');
+        if(mainArea) mainArea.style.marginLeft = '0';
+      }
       if(typeof openLearningHub === 'function') {
         openLearningHub();
         setTimeout(function(){
