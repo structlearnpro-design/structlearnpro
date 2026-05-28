@@ -1921,6 +1921,51 @@ document.addEventListener('DOMContentLoaded',()=>{
 const ro = new IntersectionObserver(e=>e.forEach(el=>{if(el.isIntersecting)el.target.classList.add('in');}),{threshold:0.08});
 document.querySelectorAll('.rv').forEach(el=>ro.observe(el));
 
+// ── RETURNING USER EXPERIENCE ──
+async function checkReturningUser(){
+  const tok=localStorage.getItem('slp_session_tok');
+  const mob=localStorage.getItem('slp_session_mob');
+  if(!tok||!mob) return;
+  try{
+    const res=await fetch(`https://rpjdveuxxjeoeomkwrfx.supabase.co/rest/v1/profiles?mobile=eq.${mob}&select=full_name,purpose,analysis_count,project_count`,{
+      headers:{'apikey':'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJwamR2ZXV4eGplb2VvbWt3cmZ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg5MzY3NzIsImV4cCI6MjA5NDUxMjc3Mn0.3JvvMaCFKg2fB9-l2WJ5JMX5btGIKqvpMj_ZcxSRWaQ','Authorization':`Bearer ${tok}`}
+    });
+    const data=await res.json();
+    if(!data||!data[0]) return;
+    const P=data[0];
+    const name=(P.full_name||'').split(' ')[0];
+    const analyses=P.analysis_count||0;
+    const projects=P.project_count||0;
+    const hero=document.getElementById('hero');
+    if(!hero) return;
+    hero.innerHTML=`
+      <div style="position:absolute;inset:0;background:radial-gradient(ellipse 90% 70% at 50% -5%,rgba(79,142,247,0.18) 0%,transparent 60%);pointer-events:none;"></div>
+      <div style="position:relative;z-index:1;text-align:center;max-width:680px;margin:0 auto;animation:fu 0.6s ease both;">
+        <div style="display:inline-flex;align-items:center;gap:10px;background:rgba(62,207,142,0.1);border:1px solid rgba(62,207,142,0.25);border-radius:100px;padding:8px 20px 8px 10px;margin-bottom:32px;">
+          <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--blue),var(--purple));display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#fff;font-family:'JetBrains Mono',monospace;">${name[0]||'U'}</div>
+          <span style="font-size:13px;font-weight:600;color:var(--green);">Welcome back, ${name}! 👋</span>
+        </div>
+        <h1 style="font-family:'Familjen Grotesk',sans-serif;font-size:clamp(38px,8vw,76px);font-weight:700;line-height:0.95;letter-spacing:-3px;color:#fff;margin-bottom:20px;">Ready to design<br><span style="background:linear-gradient(135deg,var(--blue2),var(--cyan),var(--green));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">something great?</span></h1>
+        <p style="font-size:18px;color:var(--txt2);line-height:1.7;margin-bottom:36px;">Your projects and progress are right where you left them.</p>
+        <div style="display:flex;gap:12px;justify-content:center;margin-bottom:36px;flex-wrap:wrap;">
+          <div style="background:rgba(255,255,255,0.05);border:1px solid var(--border2);border-radius:12px;padding:14px 24px;text-align:center;"><div style="font-family:'Familjen Grotesk',sans-serif;font-size:28px;font-weight:700;color:#fff;letter-spacing:-1px;">${projects}</div><div style="font-size:11px;color:var(--txt3);margin-top:2px;">Project${projects!==1?'s':''}</div></div>
+          <div style="background:rgba(255,255,255,0.05);border:1px solid var(--border2);border-radius:12px;padding:14px 24px;text-align:center;"><div style="font-family:'Familjen Grotesk',sans-serif;font-size:28px;font-weight:700;color:#fff;letter-spacing:-1px;">${analyses}</div><div style="font-size:11px;color:var(--txt3);margin-top:2px;">Anal${analyses!==1?'yses':'ysis'}</div></div>
+          <div style="background:rgba(62,207,142,0.08);border:1px solid rgba(62,207,142,0.2);border-radius:12px;padding:14px 24px;text-align:center;"><div style="font-size:22px;">🏆</div><div style="font-size:11px;color:var(--green);margin-top:2px;font-weight:600;">IS 456 Designer</div></div>
+        </div>
+        <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+          <button onclick="window.location.href='/dashboard.html'" style="padding:16px 36px;border-radius:12px;font-size:16px;font-weight:700;cursor:pointer;font-family:inherit;background:#fff;border:none;color:#0f1629;transition:all 0.2s;box-shadow:0 4px 32px rgba(255,255,255,0.12);">Continue designing →</button>
+          <button onclick="signOutUser()" style="padding:16px 20px;border-radius:12px;font-size:14px;font-weight:500;cursor:pointer;font-family:inherit;background:rgba(255,255,255,0.06);border:1.5px solid rgba(255,255,255,0.15);color:var(--txt2);">Sign out</button>
+        </div>
+      </div>`;
+  }catch(e){}
+}
+function signOutUser(){
+  localStorage.removeItem('slp_session_tok');
+  localStorage.removeItem('slp_session_mob');
+  window.location.reload();
+}
+document.addEventListener('DOMContentLoaded',checkReturningUser);
+
 // EDIT MODE
 let em=false,sc={},lpur='student';
 function toggleEdit(){em=!em;document.getElementById('atg').classList.toggle('on',em);document.getElementById('etb').classList.toggle('show',em);document.getElementById('atgl').textContent=em?'Exit':'Edit';document.body.classList.toggle('em',em);document.querySelectorAll('[data-e]').forEach(el=>{el.contentEditable=em?'true':'false';if(em&&!sc[el.dataset.e])sc[el.dataset.e]=el.innerHTML;});}

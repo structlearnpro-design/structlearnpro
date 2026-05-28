@@ -311,7 +311,6 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
 <!-- AUTH -->
 <div id="auth-screen" class="screen">
   <div class="auth-box">
-
     <!-- ── IDENTITY BANNER ── -->
     <div style="text-align:center;margin-bottom:22px;padding-bottom:20px;border-bottom:1px solid var(--b1);">
       <div style="font-size:28px;font-weight:900;color:var(--blue);letter-spacing:-0.5px;margin-bottom:4px;">StructLearn Pro</div>
@@ -320,18 +319,17 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
         <span style="color:var(--txt3);font-size:11px;">IS 456 · IS 1893 · IS 875 · IS 13920 compliant</span>
       </div>
       <div style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:12px;">
-        <span style="padding:3px 10px;border-radius:20px;font-size:10px;font-weight:700;background:rgba(96,165,250,0.12);color:var(--blue);border:1px solid rgba(96,165,250,0.25);">🎓 Learn by doing</span>
-        <span style="padding:3px 10px;border-radius:20px;font-size:10px;font-weight:700;background:rgba(74,222,128,0.10);color:var(--green);border:1px solid rgba(74,222,128,0.25);">📐 Real IS code calculations</span>
-        <span style="padding:3px 10px;border-radius:20px;font-size:10px;font-weight:700;background:rgba(251,191,36,0.10);color:var(--yellow);border:1px solid rgba(251,191,36,0.25);">📄 PDF reports & drawings</span>
+        <span style="padding:3px 10px;border-radius:20px;font-size:10px;font-weight:700;background:rgba(96,165,250,0.12);color:#60a5fa;">🎓 Students</span>
+        <span style="padding:3px 10px;border-radius:20px;font-size:10px;font-weight:700;background:rgba(74,222,128,0.10);color:#4ade80;">💼 Professionals</span>
+        <span style="padding:3px 10px;border-radius:20px;font-size:10px;font-weight:700;background:rgba(251,191,36,0.10);color:#fbbf24;">📚 Professors</span>
       </div>
-      <div style="background:rgba(96,165,250,0.06);border:1px solid rgba(96,165,250,0.15);border-radius:8px;padding:10px 14px;font-size:11px;color:var(--txt3);line-height:1.9;text-align:left;">
+      <div style="background:rgba(96,165,250,0.06);border:1px solid rgba(96,165,250,0.15);border-radius:8px;padding:10px 12px;font-size:11px;color:var(--txt2);line-height:1.7;text-align:left;">
         <strong style="color:var(--txt2);">✅ Students</strong> — Learn structural design with a guided 28-step workflow<br>
         <strong style="color:var(--txt2);">✅ Professionals</strong> — Run IS 456 compliant analysis &amp; get detailed reports<br>
         <strong style="color:var(--txt2);">✅ Professors</strong> — Assign real design projects to your class
       </div>
     </div>
     <!-- ── END IDENTITY BANNER ── -->
-
     <div class="tabs">
       <button class="tab-btn on" onclick="switchTab('login')">Sign In</button>
       <button class="tab-btn" onclick="switchTab('signup')">Create Account</button>
@@ -4511,6 +4509,142 @@ async function submitBugReport() {
   }
 }
 
+</script>
+<!-- FEEDBACK PANEL -->
+<div id="feedbackPanel" style="display:none;position:fixed;bottom:24px;right:24px;width:340px;background:#1a2545;border:1px solid rgba(255,255,255,0.14);border-radius:18px;box-shadow:0 24px 60px rgba(0,0,0,0.5);z-index:9000;overflow:hidden;">
+  <div style="background:linear-gradient(135deg,rgba(79,142,247,0.15),rgba(183,148,244,0.1));padding:16px 18px;border-bottom:1px solid rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:space-between;">
+    <div>
+      <div style="font-size:14px;font-weight:700;color:#fff;margin-bottom:1px;">Share your feedback &#128172;</div>
+      <div style="font-size:11px;color:rgba(255,255,255,0.5);">Help other students learn</div>
+    </div>
+    <button onclick="closeFeedback()" style="background:rgba(255,255,255,0.08);border:none;color:rgba(255,255,255,0.5);width:26px;height:26px;border-radius:50%;cursor:pointer;font-size:13px;">&#x2715;</button>
+  </div>
+  <div style="padding:16px 18px;">
+    <div style="margin-bottom:12px;">
+      <div style="font-size:10px;font-weight:600;color:rgba(255,255,255,0.4);margin-bottom:7px;letter-spacing:1px;">YOUR RATING</div>
+      <div id="fpStars" style="display:flex;gap:5px;">
+        <span class="fp-star" data-v="1" onclick="fpRate(1)" style="font-size:26px;cursor:pointer;opacity:0.2;transition:all 0.15s;">&#9733;</span>
+        <span class="fp-star" data-v="2" onclick="fpRate(2)" style="font-size:26px;cursor:pointer;opacity:0.2;transition:all 0.15s;">&#9733;</span>
+        <span class="fp-star" data-v="3" onclick="fpRate(3)" style="font-size:26px;cursor:pointer;opacity:0.2;transition:all 0.15s;">&#9733;</span>
+        <span class="fp-star" data-v="4" onclick="fpRate(4)" style="font-size:26px;cursor:pointer;opacity:0.2;transition:all 0.15s;">&#9733;</span>
+        <span class="fp-star" data-v="5" onclick="fpRate(5)" style="font-size:26px;cursor:pointer;opacity:0.2;transition:all 0.15s;">&#9733;</span>
+      </div>
+    </div>
+    <div id="fpUserInfo" style="display:none;background:rgba(62,207,142,0.06);border:1px solid rgba(62,207,142,0.2);border-radius:8px;padding:8px 11px;margin-bottom:10px;align-items:center;gap:8px;">
+      <div id="fpAvatar" style="width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#2563eb,#06b6d4);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;flex-shrink:0;font-family:monospace;"></div>
+      <div style="flex:1;"><div id="fpName" style="font-size:12px;font-weight:700;color:#fff;"></div><div id="fpRole" style="font-size:10px;color:rgba(255,255,255,0.4);margin-top:1px;"></div></div>
+      <div style="font-size:9px;background:rgba(62,207,142,0.15);color:#3ecf8e;padding:2px 6px;border-radius:8px;font-weight:700;">&#10003; Verified</div>
+    </div>
+    <textarea id="fpText" placeholder="What did you design? How did it help you? What would you tell another student..." style="width:100%;padding:10px 12px;background:rgba(255,255,255,0.05);border:1.5px solid rgba(255,255,255,0.1);border-radius:9px;color:#e8edf8;font-size:12px;font-family:inherit;outline:none;resize:none;height:85px;line-height:1.6;margin-bottom:10px;box-sizing:border-box;"></textarea>
+    <div id="fpMsg" style="font-size:11px;text-align:center;margin-bottom:8px;min-height:15px;"></div>
+    <button onclick="fpSubmit()" id="fpBtn" style="width:100%;padding:11px;background:#4f8ef7;border:none;border-radius:9px;color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;">Submit Review</button>
+  </div>
+</div>
+
+<button id="feedbackToggle" onclick="toggleFeedback()" style="display:none;position:fixed;bottom:24px;right:24px;background:linear-gradient(135deg,#4f8ef7,#b794f4);border:none;border-radius:100px;padding:11px 18px;color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;box-shadow:0 8px 24px rgba(79,142,247,0.4);z-index:8999;align-items:center;gap:7px;">
+  &#128172; Leave a Review
+</button>
+
+<script>
+var fpRating = 0;
+var fpOpen = false;
+
+function fpFillUser(profile) {
+  if (!profile) return;
+  var name = profile.full_name || profile.name || '';
+  var role = profile.purpose || profile.role || 'User';
+  var initials = name.split(' ').map(function(w){ return w[0]||''; }).join('').slice(0,2).toUpperCase();
+  var ui = document.getElementById('fpUserInfo');
+  var av = document.getElementById('fpAvatar');
+  var nm = document.getElementById('fpName');
+  var rl = document.getElementById('fpRole');
+  if (ui) ui.style.display = 'flex';
+  if (av) av.textContent = initials;
+  if (nm) nm.textContent = name;
+  if (rl) rl.textContent = role;
+}
+
+function fpRate(v) {
+  fpRating = v;
+  document.querySelectorAll('.fp-star').forEach(function(s) {
+    var on = parseInt(s.dataset.v) <= v;
+    s.style.opacity = on ? '1' : '0.2';
+    s.style.color = on ? '#f6c343' : '';
+  });
+}
+
+function toggleFeedback() {
+  fpOpen = !fpOpen;
+  var panel = document.getElementById('feedbackPanel');
+  var btn = document.getElementById('feedbackToggle');
+  if (panel) panel.style.display = fpOpen ? 'block' : 'none';
+  if (btn) btn.style.display = fpOpen ? 'none' : 'flex';
+  if (fpOpen && typeof P !== 'undefined' && P && P.id) {
+    fpFillUser(P);
+  }
+}
+
+function closeFeedback() {
+  fpOpen = false;
+  var panel = document.getElementById('feedbackPanel');
+  var btn = document.getElementById('feedbackToggle');
+  if (panel) panel.style.display = 'none';
+  if (btn) btn.style.display = 'flex';
+}
+
+function fpSubmit() {
+  var text = document.getElementById('fpText').value.trim();
+  var msg = document.getElementById('fpMsg');
+  var btn = document.getElementById('fpBtn');
+  if (!fpRating) { msg.style.color = '#f87171'; msg.textContent = 'Please select a star rating.'; return; }
+  if (text.length < 30) { msg.style.color = '#f87171'; msg.textContent = 'Please write at least 30 characters.'; return; }
+  btn.textContent = 'Submitting...'; btn.disabled = true; msg.textContent = '';
+  var profile = (typeof P !== 'undefined') ? P : null;
+  var payload = {
+    reviewer_name: profile ? (profile.full_name || profile.name || 'Anonymous') : 'Anonymous',
+    reviewer_role: profile ? (profile.purpose || profile.role || 'User') : 'User',
+    review_text: text,
+    rating: fpRating,
+    status: 'pending'
+  };
+  if (profile && profile.id) payload.reviewer_id = profile.id;
+  fetch(SUPA_URL + '/rest/v1/reviews', {
+    method: 'POST',
+    headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+    body: JSON.stringify(payload)
+  }).then(function(res) {
+    if (!res.ok) {
+      return res.text().then(function(err) {
+        if (err.indexOf('duplicate') > -1 || err.indexOf('unique') > -1) {
+          msg.style.color = '#f6c343'; msg.textContent = 'You have already submitted a review!';
+          btn.textContent = 'Already submitted'; btn.style.background = '#3ecf8e';
+        } else { throw new Error('failed'); }
+      });
+    }
+    msg.style.color = '#3ecf8e'; msg.textContent = 'Thank you! Will appear after approval.';
+    btn.textContent = 'Submitted'; btn.style.background = '#3ecf8e';
+    document.getElementById('fpText').value = '';
+    fpRating = 0;
+    document.querySelectorAll('.fp-star').forEach(function(s){ s.style.opacity = '0.2'; s.style.color = ''; });
+  }).catch(function() {
+    msg.style.color = '#f87171'; msg.textContent = 'Failed to submit. Try again.';
+    btn.textContent = 'Submit Review'; btn.disabled = false;
+  });
+}
+
+function maybeShowFeedback() {
+  var btn = document.getElementById('feedbackToggle');
+  if (!btn) return;
+  if (typeof P !== 'undefined' && P && (P.analysis_count || 0) >= 1) {
+    btn.style.display = 'flex';
+  } else {
+    setTimeout(function(){ var b = document.getElementById('feedbackToggle'); if(b) b.style.display = 'flex'; }, 120000);
+  }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  setTimeout(maybeShowFeedback, 3000);
+});
 </script>
 </body>
 </html>
