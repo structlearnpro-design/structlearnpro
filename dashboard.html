@@ -876,7 +876,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
         <span id="t-plan-acc" class="chip free" style="font-size:12px;padding:5px 12px;">FREE</span>
-        <button onclick="showUp()" style="padding:8px 16px;background:linear-gradient(135deg,#1d4ed8,#3b82f6);border:none;border-radius:8px;color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">⚡ Upgrade</button>
+        <button onclick="showUp()" style="padding:8px 16px;background:linear-gradient(135deg,#1d4ed8,#3b82f6);border:none;border-radius:8px;color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;" id="acc-hdr-upgrade">⚡ Upgrade</button>
       </div>
     </div>
 
@@ -1703,10 +1703,12 @@ function updTop(){
   // Always resolve plan fresh from profile
   plan = resolvePlan();
   // Hide upgrade button if PRO
-  var _upBtn = document.getElementById('acc-upgrade-btn');
+  var _upBtn = document.getElementById('t-up');
   var _upBtn2 = document.getElementById('a-up-btn');
-  if(_upBtn) _upBtn.style.display = (plan === 'pro') ? 'none' : 'flex';
+  var _upBtn3 = document.getElementById('acc-hdr-upgrade');
+  if(_upBtn) _upBtn.style.display = (plan === 'pro') ? 'none' : '';
   if(_upBtn2) _upBtn2.style.display = (plan === 'pro') ? 'none' : '';
+  if(_upBtn3) _upBtn3.style.display = (plan === 'pro') ? 'none' : '';
   document.getElementById('t-name').textContent=P?.full_name||P?.mobile||'';
   // Update greeting on dashboard
   setTimeout(function(){
@@ -2666,9 +2668,9 @@ function renderAcc(){
   // Hide upgrade button if PRO
   var _plan = (typeof resolvePlan === 'function') ? resolvePlan() : (typeof plan !== 'undefined' ? plan : 'free');
   console.log('renderAcc plan:', _plan);
-  var upgBtn = document.getElementById('acc-upgrade-btn');
+  var upgBtn = document.getElementById('t-up');
   var upBtn2 = document.getElementById('a-up-btn');
-  if(upgBtn) upgBtn.style.display = (_plan === 'pro') ? 'none' : 'flex';
+  if(upgBtn) upgBtn.style.display = (_plan === 'pro') ? 'none' : '';
   if(upBtn2) upBtn2.style.display = (_plan === 'pro') ? 'none' : '';
 }
 
@@ -4705,7 +4707,7 @@ function fbsSubmit() {
   }).then(function(res) {
     if (!res.ok) {
       return res.text().then(function(err) {
-        if (err.indexOf('duplicate') > -1 || err.indexOf('unique') > -1) {
+        if (res.status === 409 || err.indexOf('duplicate') > -1 || err.indexOf('unique') > -1 || err.indexOf('already exists') > -1 || err.indexOf('23505') > -1) {
           msg.style.color = '#f6c343'; msg.textContent = 'You have already submitted a review. Thank you!';
           btn.textContent = 'Already submitted &#10003;'; btn.style.background = '#3ecf8e'; fbsDone = true;
         } else {
