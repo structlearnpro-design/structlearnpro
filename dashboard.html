@@ -1883,9 +1883,14 @@ function renderJourneyModules(){
   var M1done = modDone('M1');
 
   // Update Design Confidence panel on dashboard
-  var totalLessons = 11; // M1:4 + M2:4 + M3:3
-  var doneLessons = Object.keys(lessonsDoneMap).filter(function(k){ return lessonsDoneMap[k]; }).length;
-  var confPct = Math.min(100, Math.round(doneLessons / totalLessons * 100));
+  // Confidence = behaviors/10 * 100 — matches exactly how ui.js calculates it
+  var behaviorsMap = {};
+  try {
+    var rawProg = sessionStorage.getItem('slp_restore_progress');
+    if(rawProg){ behaviorsMap = JSON.parse(rawProg).behaviors || {}; }
+  } catch(e){}
+  var behaviorCount = Object.keys(behaviorsMap).length;
+  var confPct = Math.min(100, Math.round((behaviorCount / 10) * 100));
   var confEl = document.getElementById('dash-confidence-pct');
   var confBar = document.getElementById('dash-confidence-bar');
   var confHint = document.getElementById('dash-confidence-hint');
