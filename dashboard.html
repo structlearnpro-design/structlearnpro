@@ -1345,7 +1345,7 @@ let pending={mob:'',type:'',name:'',email:'',purpose:'student', projId:null};
 function showScreen(id){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
-  const loggedIn=['dash-screen','app-screen','acc-screen'].includes(id);
+  const loggedIn=['dash-screen','app-screen','acc-screen','feedback-screen'].includes(id);
   document.getElementById('top-bar').style.display=loggedIn?'flex':'none';
 }
 function goTo(tab){
@@ -2581,6 +2581,7 @@ function renderAcc(){
 
   // Hide upgrade button if PRO
   var _plan = (typeof resolvePlan === 'function') ? resolvePlan() : (typeof plan !== 'undefined' ? plan : 'free');
+  console.log('renderAcc plan:', _plan);
   var upgBtn = document.getElementById('acc-upgrade-btn');
   var upBtn2 = document.getElementById('a-up-btn');
   if(upgBtn) upgBtn.style.display = (_plan === 'pro') ? 'none' : 'flex';
