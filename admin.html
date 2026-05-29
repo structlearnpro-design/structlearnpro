@@ -3071,11 +3071,11 @@ function renderReviewsAdmin(reviews){
     html += '<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">';
     html += '<span style="font-size:11px;font-weight:700;color:'+sc+'">'+r.status.toUpperCase()+'</span>';
     if(r.status==='pending'){
-      html += '<button onclick="approveReview(''+r.id+'')" style="padding:5px 12px;background:rgba(52,211,153,0.1);border:1px solid #34d399;border-radius:6px;color:#34d399;font-size:10px;font-weight:700;cursor:pointer;font-family:inherit">✓ Approve</button>';
-      html += '<button onclick="openEditReview(''+r.id+'',this)" style="padding:5px 12px;background:rgba(56,189,248,0.1);border:1px solid #38bdf8;border-radius:6px;color:#38bdf8;font-size:10px;font-weight:700;cursor:pointer;font-family:inherit">✎ Edit & Approve</button>';
-      html += '<button onclick="rejectReview(''+r.id+'')" style="padding:5px 12px;background:rgba(248,113,113,0.08);border:1px solid #f87171;border-radius:6px;color:#f87171;font-size:10px;font-weight:700;cursor:pointer;font-family:inherit">✗ Reject</button>';
+      html += '<button data-rid="'+r.id+'" onclick="approveReview(this.dataset.rid)" style="padding:5px 12px;background:rgba(52,211,153,0.1);border:1px solid #34d399;border-radius:6px;color:#34d399;font-size:10px;font-weight:700;cursor:pointer;font-family:inherit">&#10003; Approve</button>';
+      html += '<button data-rid="'+r.id+'" onclick="openEditReview(this.dataset.rid,this)" style="padding:5px 12px;background:rgba(56,189,248,0.1);border:1px solid #38bdf8;border-radius:6px;color:#38bdf8;font-size:10px;font-weight:700;cursor:pointer;font-family:inherit">&#9998; Edit &amp; Approve</button>';
+      html += '<button data-rid="'+r.id+'" onclick="rejectReview(this.dataset.rid)" style="padding:5px 12px;background:rgba(248,113,113,0.08);border:1px solid #f87171;border-radius:6px;color:#f87171;font-size:10px;font-weight:700;cursor:pointer;font-family:inherit">&#10007; Reject</button>';
     } else if(r.status==='approved'){
-      html += '<button onclick="rejectReview(''+r.id+'')" style="padding:5px 10px;background:rgba(248,113,113,0.06);border:1px solid rgba(248,113,113,0.3);border-radius:6px;color:#f87171;font-size:10px;cursor:pointer;font-family:inherit">Unpublish</button>';
+      html += '<button data-rid="'+r.id+'" onclick="rejectReview(this.dataset.rid)" style="padding:5px 10px;background:rgba(248,113,113,0.06);border:1px solid rgba(248,113,113,0.3);border-radius:6px;color:#f87171;font-size:10px;cursor:pointer;font-family:inherit">Unpublish</button>';
     }
     html += '</div></div>';
     html += '<div style="margin-bottom:8px">'+stars+'</div>';
@@ -3084,8 +3084,8 @@ function renderReviewsAdmin(reviews){
     html += '<div id="edit-box-'+r.id+'" style="display:none;margin-top:10px">';
     html += '<textarea id="edit-ta-'+r.id+'" style="width:100%;background:#060c18;border:1px solid rgba(56,189,248,0.2);border-radius:6px;color:#e2e8f0;font-size:12px;padding:8px 10px;font-family:inherit;resize:vertical;min-height:60px">'+(r.review_text||'')+'</textarea>';
     html += '<div style="display:flex;gap:6px;margin-top:6px">';
-    html += '<button onclick="approveEdited(''+r.id+'')" style="padding:6px 14px;background:#34d399;border:none;border-radius:6px;color:#071027;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">Approve with edits</button>';
-    html += '<button onclick="document.getElementById('edit-box-'+r.id+'').style.display='none'" style="padding:6px 12px;background:none;border:1px solid rgba(255,255,255,0.1);border-radius:6px;color:#64748b;font-size:11px;cursor:pointer;font-family:inherit">Cancel</button>';
+    html += '<button data-rid="'+r.id+'" onclick="approveEdited(this.dataset.rid)" style="padding:6px 14px;background:#34d399;border:none;border-radius:6px;color:#071027;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">Approve with edits</button>';
+    html += '<button data-rid="'+r.id+'" onclick="document.getElementById(&quot;edit-box-&quot;+this.dataset.rid).style.display=&quot;none&quot;" style="padding:6px 12px;background:none;border:1px solid rgba(255,255,255,0.1);border-radius:6px;color:#64748b;font-size:11px;cursor:pointer;font-family:inherit">Cancel</button>';
     html += '</div></div></div>';
   });
   el.innerHTML = html;
