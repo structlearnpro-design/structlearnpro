@@ -1867,6 +1867,84 @@ document.addEventListener('DOMContentLoaded',()=>{
 <section id="cta"><div class="si rv" style="max-width:620px;"><div class="ey" style="justify-content:center;color:rgba(255,255,255,0.4);" data-e="cta-ey" contenteditable="false" spellcheck="false">Get started today</div><h2 class="cta-h" data-e="cta-h" contenteditable="false" spellcheck="false">Your first design is completely free.</h2><p class="cta-p" data-e="cta-p" contenteditable="false" spellcheck="false">No installation. No credit card. Create an account and start your first IS 456 building design in under 2 minutes.</p><div class="cta-btns"><button class="cbp" onclick="showLogin('signup')" data-e="cta-b1" contenteditable="false" spellcheck="false">Start designing free →</button><button class="cbs" onclick="showLogin('login')" data-e="cta-b2" contenteditable="false" spellcheck="false">Sign in</button></div></div></section>
 
 <!-- FOOTER -->
+
+
+<!-- LIVE USER REVIEWS SECTION -->
+<section id="live-reviews" style="padding:80px 24px;background:var(--bg1);border-top:1px solid var(--border)">
+  <div style="max-width:1100px;margin:0 auto">
+
+    <!-- Header -->
+    <div style="text-align:center;margin-bottom:48px">
+      <div style="font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;color:var(--blue2);letter-spacing:2px;text-transform:uppercase;margin-bottom:12px">VERIFIED USER REVIEWS</div>
+      <h2 style="font-family:'Familjen Grotesk',sans-serif;font-size:clamp(28px,5vw,44px);font-weight:700;letter-spacing:-1.5px;color:var(--txt);margin-bottom:12px">What engineers & students say</h2>
+      <!-- Aggregate rating — filled by JS -->
+      <div id="agg-rating" style="display:inline-flex;align-items:center;gap:10px;background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.2);border-radius:100px;padding:8px 20px;font-size:14px;color:#fbbf24;font-weight:700"></div>
+    </div>
+
+    <!-- Review cards grid — filled by JS -->
+    <div id="reviews-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px">
+      <div style="text-align:center;padding:40px;color:var(--txt3);grid-column:1/-1">Loading reviews...</div>
+    </div>
+
+  </div>
+</section>
+
+<script>
+(async function loadLiveReviews(){
+  var SUPA_URL = 'https://rpjdveuxxjeoeomkwrfx.supabase.co';
+  var SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJwamR2ZXV4eGplb2VvbWt3cmZ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg5MzY3NzIsImV4cCI6MjA5NDUxMjc3Mn0.3JvvMaCFKg2fB9-l2WJ5JMX5btGIKqvpMj_ZcxSRWaQ';
+
+  try {
+    var resp = await fetch(SUPA_URL+'/rest/v1/reviews?status=eq.approved&select=*&order=rating.desc,approved_at.desc&limit=12',{
+      headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}
+    });
+    var data = await resp.json();
+    if(!Array.isArray(data) || !data.length){
+      document.getElementById('reviews-grid').innerHTML = '<div style="text-align:center;padding:40px;color:#475569;grid-column:1/-1;font-size:14px">Be the first to review StructLearn Pro! Sign up and share your experience.</div>';
+      document.getElementById('agg-rating').textContent = 'No reviews yet';
+      return;
+    }
+
+    // Aggregate rating
+    var avg = (data.reduce(function(a,r){return a+r.rating;},0)/data.length).toFixed(1);
+    var aggEl = document.getElementById('agg-rating');
+    var stars='';for(var i=1;i<=5;i++) stars+='<span>'+(i<=Math.round(avg)?'★':'☆')+'</span>';
+    aggEl.innerHTML = stars + ' <span>' + avg + '</span> <span style="color:#94a3b8;font-weight:400">based on '+data.length+' review'+(data.length!==1?'s':'')+'</span>';
+
+    // Role display names
+    var roleNames = {student:'Student',lecturer:'Lecturer',engineer:'Structural Engineer',admin:'Admin'};
+
+    var grid = document.getElementById('reviews-grid');
+    grid.innerHTML = data.map(function(r){
+      var stars='';for(var i=1;i<=5;i++) stars+='<span style="color:'+(i<=r.rating?'#fbbf24':'#334155')+'">★</span>';
+      var displayText = r.edited_text || r.review_text || '';
+      var name = r.user_name || 'Anonymous';
+      var initial = name.charAt(0).toUpperCase();
+      var role = roleNames[r.user_role] || r.user_role || '';
+      return '<div style="background:var(--card);border:1px solid var(--border2);border-radius:14px;padding:20px;display:flex;flex-direction:column;gap:12px">'+
+        '<div style="display:flex;align-items:center;justify-content:space-between">'+
+          '<div style="display:flex;align-items:center;gap:10px">'+
+            '<div style="width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#1d4ed8,#7c3aed);display:flex;align-items:center;justify-content:center;color:#fff;font-size:15px;font-weight:700;flex-shrink:0">'+initial+'</div>'+
+            '<div>'+
+              '<div style="font-size:13px;font-weight:700;color:var(--txt)">'+name+'</div>'+
+              '<div style="font-size:11px;color:var(--txt3)">'+role+'</div>'+
+            '</div>'+
+          '</div>'+
+          '<div style="display:inline-flex;align-items:center;gap:4px;background:rgba(52,211,153,0.08);border:1px solid rgba(52,211,153,0.2);border-radius:20px;padding:3px 8px;font-size:10px;font-weight:700;color:#34d399">✓ Verified</div>'+
+        '</div>'+
+        '<div style="font-size:14px">'+stars+'</div>'+
+        '<div style="font-size:13px;color:var(--txt2);line-height:1.7;flex:1;font-style:italic">"'+displayText.replace(/</g,'&lt;').replace(/>/g,'&gt;')+'"</div>'+
+        '<div style="font-size:10px;color:var(--txt4)">'+new Date(r.approved_at).toLocaleDateString('en-IN',{month:'short',year:'numeric'})+'</div>'+
+      '</div>';
+    }).join('');
+
+  } catch(e){
+    document.getElementById('reviews-grid').innerHTML = '<div style="text-align:center;padding:40px;color:#475569;grid-column:1/-1">Could not load reviews.</div>';
+    document.getElementById('agg-rating').style.display='none';
+  }
+})();
+</script>
+
 <footer><div class="fi-row"><div style="display:flex;align-items:center;gap:10px;"><div class="fmark">SL</div><div><div class="fname" data-e="f-nm" contenteditable="false" spellcheck="false">StructLearn Pro</div><div style="font-size:11px;color:var(--txt4);font-family:'JetBrains Mono',monospace;margin-top:1px;" data-e="f-tg" contenteditable="false" spellcheck="false">IS 456 · IS 1893 · IS 875 · IS 13920</div></div></div><div class="flinks"><a href="#" data-e="fl1" contenteditable="false" spellcheck="false">Privacy</a><a href="#" data-e="fl2" contenteditable="false" spellcheck="false">Terms</a><a href="#" data-e="fl3" contenteditable="false" spellcheck="false">Refunds</a><a href="mailto:structlearnpro@gmail.com" data-e="fl4" contenteditable="false" spellcheck="false">structlearnpro@gmail.com</a></div></div><div class="fcopy" data-e="f-cp" contenteditable="false" spellcheck="false">© 2026 StructLearn Pro · Made in India 🇮🇳</div></footer>
 
 <!-- LOGIN MODAL -->
