@@ -1,0 +1,3126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>StructLearn Pro — Admin Panel</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0b0f1a;--bg1:#111827;--bg2:#1a2236;--bg3:#243047;
+  --txt:#e2e8f0;--txt2:#94a3b8;--txt3:#64748b;
+  --blue:#3b82f6;--blue2:#1d4ed8;--green:#34d399;
+  --red:#f87171;--yellow:#fbbf24;--purple:#a78bfa;
+  --b1:#1e3a8a;--b2:#243047;
+}
+body{background:var(--bg);color:var(--txt);font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh}
+
+/* ── TOP BAR ── */
+.topbar{display:flex;align-items:center;gap:16px;padding:0 24px;height:52px;
+  background:var(--bg1);border-bottom:1px solid var(--b1);position:sticky;top:0;z-index:100}
+.logo{font-size:16px;font-weight:900;color:var(--txt);letter-spacing:-0.5px}
+.logo span{color:var(--blue)}
+.admin-badge{font-size:10px;background:#7c3aed;color:#fff;padding:2px 8px;border-radius:10px;font-weight:700}
+.topbar-right{margin-left:auto;display:flex;align-items:center;gap:12px;font-size:12px;color:var(--txt3)}
+
+/* ── LAYOUT ── */
+.layout{display:flex;min-height:calc(100vh - 52px)}
+.sidebar{width:220px;background:var(--bg1);border-right:1px solid var(--b1);
+  padding:16px 0;flex-shrink:0;position:sticky;top:52px;height:calc(100vh - 52px);overflow-y:auto}
+.nav-section{font-size:10px;font-weight:700;color:var(--txt3);letter-spacing:1px;
+  padding:12px 20px 6px;text-transform:uppercase}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 20px;cursor:pointer;
+  font-size:13px;color:var(--txt2);transition:all 0.15s;border-left:3px solid transparent}
+.nav-item:hover{background:var(--bg2);color:var(--txt)}
+.nav-item.active{background:var(--bg2);color:var(--blue);border-left-color:var(--blue);font-weight:600}
+.nav-item .icon{font-size:16px;width:20px;text-align:center}
+
+/* ── MAIN ── */
+.main{flex:1;padding:24px;overflow-x:hidden}
+.page{display:none}.page.active{display:block}
+.page-title{font-size:22px;font-weight:800;margin-bottom:4px}
+.page-sub{font-size:13px;color:var(--txt3);margin-bottom:24px}
+
+/* ── STAT CARDS ── */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px;margin-bottom:24px}
+.stat-card{background:var(--bg2);border:1px solid var(--b1);border-radius:12px;padding:18px}
+.stat-val{font-size:28px;font-weight:900;margin-bottom:4px}
+.stat-lbl{font-size:11px;color:var(--txt3);text-transform:uppercase;letter-spacing:0.5px}
+.stat-delta{font-size:11px;margin-top:6px}
+.stat-delta.up{color:var(--green)}.stat-delta.down{color:var(--red)}
+
+/* ── REVENUE CARDS ── */
+.rev-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;margin-bottom:24px}
+.rev-card{background:var(--bg2);border:1px solid var(--b1);border-radius:12px;padding:20px}
+.rev-card.monthly{border-color:#1d4ed8}.rev-card.annual{border-color:#7c3aed}.rev-card.total{border-color:#059669}
+.rev-title{font-size:11px;font-weight:700;color:var(--txt3);letter-spacing:1px;margin-bottom:12px;text-transform:uppercase}
+.rev-main{font-size:28px;font-weight:900;margin-bottom:4px}
+.rev-sub{font-size:12px;color:var(--txt3);margin-bottom:12px}
+.rev-row{display:flex;justify-content:space-between;font-size:12px;padding:5px 0;border-bottom:1px solid var(--b1)}
+.rev-row:last-child{border:none}
+
+/* ── TABLE ── */
+.table-wrap{background:var(--bg2);border:1px solid var(--b1);border-radius:12px;overflow:hidden}
+.table-toolbar{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--b1);flex-wrap:wrap}
+.table-toolbar input,.table-toolbar select{
+  padding:7px 12px;background:var(--bg3);border:1px solid var(--b1);border-radius:7px;
+  color:var(--txt);font-size:12px;outline:none;font-family:inherit}
+.table-toolbar input{width:200px}
+.btn-sm{padding:6px 14px;border:none;border-radius:7px;font-size:12px;cursor:pointer;font-family:inherit;font-weight:600;transition:opacity 0.15s}
+.btn-sm:hover{opacity:0.85}
+.btn-blue{background:var(--blue2);color:#fff}
+.btn-green{background:#059669;color:#fff}
+.btn-red{background:#dc2626;color:#fff}
+.btn-purple{background:#7c3aed;color:#fff}
+.btn-gray{background:var(--bg3);color:var(--txt2);border:1px solid var(--b1)}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{text-align:left;padding:10px 14px;font-size:10px;font-weight:700;color:var(--txt3);
+   text-transform:uppercase;letter-spacing:0.5px;border-bottom:1px solid var(--b1);
+   background:var(--bg1);white-space:nowrap;cursor:pointer;user-select:none}
+th:hover{color:var(--blue)}
+td{padding:10px 14px;border-bottom:1px solid var(--b2);vertical-align:middle}
+tr:last-child td{border:none}
+tr:hover td{background:rgba(59,130,246,0.04)}
+.badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700}
+.badge-free{background:rgba(100,116,139,0.2);color:#94a3b8}
+.badge-pro{background:rgba(59,130,246,0.2);color:#60a5fa}
+.badge-admin{background:rgba(124,58,237,0.2);color:#a78bfa}
+.badge-student{background:rgba(16,185,129,0.15);color:#34d399}
+.badge-lecturer{background:rgba(251,191,36,0.15);color:#fbbf24}
+.badge-engineer{background:rgba(249,115,22,0.15);color:#fb923c}
+.badge-active{background:rgba(52,211,153,0.15);color:#34d399}
+.badge-inactive{background:rgba(248,113,113,0.15);color:#f87171}
+.badge-monthly{background:rgba(59,130,246,0.15);color:#60a5fa}
+.badge-annual{background:rgba(124,58,237,0.15);color:#a78bfa}
+.badge-lifetime{background:rgba(251,191,36,0.15);color:#fbbf24}
+.pagination{display:flex;align-items:center;gap:8px;padding:12px 16px;justify-content:flex-end;border-top:1px solid var(--b1)}
+.page-btn{padding:5px 12px;background:var(--bg3);border:1px solid var(--b1);border-radius:6px;
+  color:var(--txt2);font-size:12px;cursor:pointer;font-family:inherit}
+.page-btn.active{background:var(--blue2);color:#fff;border-color:var(--blue2)}
+
+/* ── MODAL ── */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:9999;
+  align-items:center;justify-content:center;padding:20px}
+.modal-overlay.show{display:flex}
+.modal{background:var(--bg1);border:1px solid var(--b1);border-radius:16px;
+  padding:28px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto}
+.modal h3{font-size:16px;font-weight:800;margin-bottom:16px}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:11px;color:var(--txt3);font-weight:600;
+  letter-spacing:0.5px;margin-bottom:5px;text-transform:uppercase}
+.field input,.field select,.field textarea{
+  width:100%;padding:10px 12px;background:var(--bg2);border:1.5px solid var(--b1);
+  border-radius:8px;color:var(--txt);font-size:13px;outline:none;font-family:inherit}
+.field input:focus,.field select:focus{border-color:var(--blue)}
+.modal-btns{display:flex;gap:10px;margin-top:20px;justify-content:flex-end}
+
+/* ── CHART ── */
+.chart-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px;margin-bottom:24px}
+.chart-card{background:var(--bg2);border:1px solid var(--b1);border-radius:12px;padding:18px}
+.chart-title{font-size:13px;font-weight:700;margin-bottom:14px}
+.chart-wrap{height:220px;position:relative}
+
+/* ── MISC ── */
+.empty{text-align:center;padding:40px;color:var(--txt3);font-size:13px}
+.loading{text-align:center;padding:20px;color:var(--txt3);font-size:13px}
+.section-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px}
+.section-title{font-size:15px;font-weight:700}
+.expiry-alert{background:rgba(251,191,36,0.1);border:1px solid #f59e0b;border-radius:8px;padding:12px 16px;margin-bottom:16px;font-size:12px;color:#fbbf24}
+.info-row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--b2);font-size:12px}
+.info-row:last-child{border:none}
+.info-lbl{color:var(--txt3)}
+.info-val{font-weight:600}
+</style>
+</head>
+<body>
+
+<!-- LOGIN SCREEN -->
+<div id="admin-login" style="display:none;position:fixed;inset:0;background:#0b0f1a;z-index:99999;
+  display:flex;align-items:center;justify-content:center;font-family:'Segoe UI',system-ui,sans-serif">
+  <div style="width:100%;max-width:380px;padding:20px">
+    <div style="text-align:center;margin-bottom:32px">
+      <div style="font-size:32px;margin-bottom:8px">🔐</div>
+      <div style="font-size:22px;font-weight:900;color:#e2e8f0">Admin Panel</div>
+      <div style="font-size:12px;color:#64748b;margin-top:4px">StructLearn Pro</div>
+    </div>
+    <div style="background:#111827;border:1px solid #1e3a8a;border-radius:16px;padding:28px">
+      <div style="margin-bottom:14px">
+        <label style="font-size:11px;color:#94a3b8;font-weight:600;display:block;margin-bottom:5px">MOBILE NUMBER</label>
+        <input id="login-mob" type="tel" maxlength="10" placeholder="10-digit mobile"
+          style="width:100%;padding:11px 14px;background:#0b0f1a;border:1.5px solid #1e3a8a;border-radius:8px;
+          color:#e2e8f0;font-size:14px;outline:none;font-family:inherit;box-sizing:border-box"
+          onkeydown="if(event.key==='Enter')document.getElementById('login-pass').focus()">
+      </div>
+      <div style="margin-bottom:20px">
+        <label style="font-size:11px;color:#94a3b8;font-weight:600;display:block;margin-bottom:5px">PASSWORD</label>
+        <input id="login-pass" type="password" placeholder="Admin password"
+          style="width:100%;padding:11px 14px;background:#0b0f1a;border:1.5px solid #1e3a8a;border-radius:8px;
+          color:#e2e8f0;font-size:14px;outline:none;font-family:inherit;box-sizing:border-box"
+          onkeydown="if(event.key==='Enter')adminLogin()">
+      </div>
+      <div id="login-err" style="display:none;margin-bottom:12px;padding:10px;background:rgba(248,113,113,0.1);
+        border:1px solid #f87171;border-radius:8px;font-size:12px;color:#f87171;text-align:center"></div>
+      <button onclick="adminLogin()" id="login-btn"
+        style="width:100%;padding:13px;background:linear-gradient(135deg,#1d4ed8,#2563eb);border:none;
+        border-radius:10px;color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">
+        Login →
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- TOP BAR -->
+<div class="topbar" id="admin-topbar" style="display:none">
+  <div class="logo">StructLearn <span>Pro</span></div>
+  <div class="admin-badge">ADMIN</div>
+  <div class="topbar-right">
+    <span id="admin-name">Loading...</span>
+    <span id="admin-time" style="color:var(--txt3)"></span>
+    <button onclick="adminLogout()" style="background:none;border:1px solid #334155;border-radius:6px;
+      padding:4px 12px;color:#94a3b8;font-size:11px;cursor:pointer">Logout</button>
+    <a href="/dashboard.html" style="color:var(--blue);text-decoration:none;font-size:12px">← Back to App</a>
+  </div>
+</div>
+
+<div class="layout" id="admin-layout" style="display:none">
+<!-- SIDEBAR -->
+<div class="sidebar">
+  <div class="nav-section">Overview</div>
+  <div class="nav-item active" onclick="showPage('dashboard')"><span class="icon">📊</span>Dashboard</div>
+  <div class="nav-item" onclick="showPage('analytics')"><span class="icon">📈</span>Analytics</div>
+
+  <div class="nav-section">People</div>
+  <div class="nav-item" onclick="showPage('users')"><span class="icon">👥</span>All Users</div>
+  <div class="nav-item" onclick="showPage('batches')"><span class="icon">🎓</span>Batches</div>
+  <div class="nav-item" onclick="showPage('leaderboard')"><span class="icon">🏆</span>Leaderboard</div>
+  <div class="nav-item" onclick="showPage('atrisk')"><span class="icon">⚠️</span>At-Risk Students</div>
+  <div class="nav-item" onclick="showPage('bulk')"><span class="icon">📣</span>Bulk Actions</div>
+
+  <div class="nav-section">Finance</div>
+  <div class="nav-item" onclick="showPage('revenue')"><span class="icon">💰</span>Revenue</div>
+  <div class="nav-item" onclick="showPage('coupons')"><span class="icon">🎟</span>Coupons</div>
+  <div class="nav-item" onclick="showPage('forecast')"><span class="icon">📈</span>Revenue Forecast</div>
+  <div class="nav-item" onclick="showPage('bugreports')" id="nav-bugreports"><span class="icon">🚩</span>Bug Reports</div>
+  <div class="nav-item" onclick="showPage('contactmessages')" id="nav-contact"><span class="icon">📬</span>Contact Messages</div>
+
+  <div class="nav-section">Content</div>
+  <div class="nav-item" onclick="showPage('projects')"><span class="icon">🏗</span>All Projects</div>
+  <div class="nav-item" onclick="showPage('content')"><span class="icon">📚</span>Content Performance</div>
+
+  <div class="nav-section">System</div>
+  <div class="nav-item" onclick="showPage('settings')"><span class="icon">⚙️</span>Settings</div>
+  <div class="nav-item" onclick="showPage('features')"><span class="icon">🎛</span>Feature Flags</div>
+</div>
+
+<!-- MAIN CONTENT -->
+<div class="main">
+
+<!-- ═══════════════════════════════════════════════════════
+     PAGE: DASHBOARD
+═══════════════════════════════════════════════════════ -->
+<div id="page-dashboard" class="page active">
+  <div class="page-title">Dashboard</div>
+  <div class="page-sub" id="dash-updated">Loading data...</div>
+
+  <!-- Stat cards -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-val" id="s-users" style="color:var(--blue)">—</div>
+      <div class="stat-lbl">Total Users</div>
+      <div class="stat-delta up" id="s-users-delta"></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-val" id="s-projects" style="color:var(--green)">—</div>
+      <div class="stat-lbl">Total Projects</div>
+      <div class="stat-delta up" id="s-projects-delta"></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-val" id="s-analyses" style="color:var(--yellow)">—</div>
+      <div class="stat-lbl">Total Analyses</div>
+      <div class="stat-delta" id="s-analyses-delta"></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-val" id="s-pro" style="color:var(--purple)">—</div>
+      <div class="stat-lbl">Pro Subscribers</div>
+      <div class="stat-delta" id="s-pro-delta"></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-val" id="s-active" style="color:var(--green)">—</div>
+      <div class="stat-lbl">Active Today</div>
+      <div class="stat-delta" id="s-active-delta"></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-val" id="s-snapshots" style="color:#38bdf8">—</div>
+      <div class="stat-lbl">Total Snapshots</div>
+    </div>
+  </div>
+
+  <!-- Revenue summary -->
+  <div class="section-header">
+    <div class="section-title">💰 Revenue Summary</div>
+    <button class="btn-sm btn-gray" onclick="showPage('revenue')">Full Revenue Report →</button>
+  </div>
+  <div class="rev-grid">
+    <div class="rev-card monthly">
+      <div class="rev-title">Monthly Subscribers</div>
+      <div class="rev-main" id="rev-monthly-val" style="color:#60a5fa">₹0</div>
+      <div class="rev-sub" id="rev-monthly-count">0 subscribers × ₹299/month</div>
+      <div class="rev-row"><span class="info-lbl">Actual this month</span><span id="rev-monthly-actual" class="info-val">₹0</span></div>
+      <div class="rev-row"><span class="info-lbl">Expected next month</span><span id="rev-monthly-expected" class="info-val">₹0</span></div>
+    </div>
+    <div class="rev-card annual">
+      <div class="rev-title">Annual Subscribers</div>
+      <div class="rev-main" id="rev-annual-val" style="color:#a78bfa">₹0</div>
+      <div class="rev-sub" id="rev-annual-count">0 subscribers × ₹2,990/year</div>
+      <div class="rev-row"><span class="info-lbl">Monthly equivalent</span><span id="rev-annual-monthly" class="info-val">₹0</span></div>
+      <div class="rev-row"><span class="info-lbl">Renewals this month</span><span id="rev-annual-renewals" class="info-val">₹0</span></div>
+    </div>
+    <div class="rev-card total">
+      <div class="rev-title">Total Revenue</div>
+      <div class="rev-main" id="rev-total-val" style="color:#34d399">₹0</div>
+      <div class="rev-sub">All time collected</div>
+      <div class="rev-row"><span class="info-lbl">This month</span><span id="rev-this-month" class="info-val">₹0</span></div>
+      <div class="rev-row"><span class="info-lbl">Expected next month</span><span id="rev-next-month" class="info-val">₹0</span></div>
+      <div class="rev-row"><span class="info-lbl">Conversion rate</span><span id="rev-conversion" class="info-val">0%</span></div>
+    </div>
+  </div>
+
+  <!-- Expiry alerts -->
+  <div id="expiry-alert-section" style="display:none">
+    <div class="section-header"><div class="section-title">⚠️ Expiring Soon</div></div>
+    <div class="expiry-alert" id="expiry-list"></div>
+  </div>
+
+  <!-- Risk Alerts -->
+  <div id="risk-alert-banner" style="display:none;margin-bottom:16px"></div>
+
+  <!-- Engagement Funnel -->
+  <div class="section-header">
+    <div class="section-title">🎯 Engagement Funnel</div>
+    <button class="btn-sm btn-gray" onclick="showPage('atrisk')">View At-Risk →</button>
+  </div>
+  <div id="funnel-wrap" style="background:var(--bg2);border:1px solid var(--b1);border-radius:12px;padding:20px;margin-bottom:16px">
+    <div id="funnel-bars">Loading...</div>
+  </div>
+
+  <!-- Recent registrations -->
+  <div class="section-header">
+    <div class="section-title">🆕 Recent Registrations</div>
+    <button class="btn-sm btn-gray" onclick="showPage('users')">View All →</button>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr>
+        <th>Name</th><th>Mobile</th><th>Role</th><th>City</th><th>Joined</th>
+      </tr></thead>
+      <tbody id="recent-users-tbody"><tr><td colspan="5" class="loading">Loading...</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     PAGE: USERS
+═══════════════════════════════════════════════════════ -->
+<div id="page-users" class="page">
+  <div class="page-title">All Users</div>
+  <div class="page-sub">Manage all registered users</div>
+  <div class="table-wrap">
+    <div class="table-toolbar">
+      <input type="text" id="user-search" placeholder="🔍 Search name, mobile, ID..." oninput="filterUsers()">
+      <select id="user-role-filter" onchange="filterUsers()">
+        <option value="">All Roles</option>
+        <option value="student">Student</option>
+        <option value="lecturer">Lecturer</option>
+        <option value="engineer">Engineer</option>
+        <option value="admin">Admin</option>
+      </select>
+      <select id="user-plan-filter" onchange="filterUsers()">
+        <option value="">All Plans</option>
+        <option value="free">Free</option>
+        <option value="monthly">Monthly Pro</option>
+        <option value="annual">Annual Pro</option>
+        <option value="lifetime">Lifetime</option>
+      </select>
+      <select id="user-state-filter" onchange="filterUsers()">
+        <option value="">All States</option>
+      </select>
+      <button class="btn-sm btn-green" onclick="exportUsers()">📥 Export CSV</button>
+    </div>
+    <table>
+      <thead><tr>
+        <th onclick="sortUsers('full_name')">Name ↕</th>
+        <th onclick="sortUsers('unique_id')">Unique ID ↕</th>
+        <th>Mobile</th>
+        <th onclick="sortUsers('role')">Role ↕</th>
+        <th onclick="sortUsers('plan')">Plan ↕</th>
+        <th>City / State</th>
+        <th onclick="sortUsers('created_at')">Joined ↕</th>
+        <th onclick="sortUsers('last_active')">Last Active ↕</th>
+        <th>Actions</th>
+      </tr></thead>
+      <tbody id="users-tbody"><tr><td colspan="9" class="loading">Loading...</td></tr></tbody>
+    </table>
+    <div class="pagination" id="users-pagination"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     PAGE: REVENUE
+═══════════════════════════════════════════════════════ -->
+<div id="page-revenue" class="page">
+  <div class="page-title">Revenue</div>
+  <div class="page-sub">Detailed breakdown of all subscription revenue</div>
+
+  <!-- Summary cards -->
+  <div class="rev-grid" id="revenue-summary-cards">
+    <div class="rev-card monthly">
+      <div class="rev-title">Monthly Pro</div>
+      <div class="rev-main" id="rev2-monthly" style="color:#60a5fa">₹0</div>
+      <div class="rev-sub" id="rev2-monthly-sub">0 active subscribers</div>
+      <div class="rev-row"><span>Active subscribers</span><span id="rev2-m-count">0</span></div>
+      <div class="rev-row"><span>Price per user</span><span>₹299/month</span></div>
+      <div class="rev-row"><span>Actual this month</span><span id="rev2-m-actual">₹0</span></div>
+      <div class="rev-row"><span>Expected next month</span><span id="rev2-m-expected">₹0</span></div>
+    </div>
+    <div class="rev-card annual">
+      <div class="rev-title">Annual Pro</div>
+      <div class="rev-main" id="rev2-annual" style="color:#a78bfa">₹0</div>
+      <div class="rev-sub" id="rev2-annual-sub">0 active subscribers</div>
+      <div class="rev-row"><span>Active subscribers</span><span id="rev2-a-count">0</span></div>
+      <div class="rev-row"><span>Price per user</span><span>₹2,990/year</span></div>
+      <div class="rev-row"><span>Monthly equivalent</span><span id="rev2-a-monthly">₹0</span></div>
+      <div class="rev-row"><span>Renewals this month</span><span id="rev2-a-renew">₹0</span></div>
+    </div>
+    <div class="rev-card total">
+      <div class="rev-title">Combined</div>
+      <div class="rev-main" id="rev2-total" style="color:#34d399">₹0</div>
+      <div class="rev-sub">All time revenue</div>
+      <div class="rev-row"><span>This month received</span><span id="rev2-this-month">₹0</span></div>
+      <div class="rev-row"><span>Next month expected</span><span id="rev2-next-month">₹0</span></div>
+      <div class="rev-row"><span>Churn (expired)</span><span id="rev2-churn" style="color:var(--red)">0</span></div>
+    </div>
+  </div>
+
+  <!-- Monthly Pro subscribers table -->
+  <div class="section-header" style="margin-top:24px">
+    <div class="section-title" style="color:#60a5fa">📅 Monthly Subscribers</div>
+    <span id="monthly-sub-count" style="font-size:12px;color:var(--txt3)"></span>
+  </div>
+  <div class="table-wrap" style="margin-bottom:20px">
+    <table>
+      <thead><tr><th>Name</th><th>Mobile</th><th>Unique ID</th><th>Payment Date</th><th>Next Renewal</th><th>Amount</th><th>Status</th><th>Actions</th></tr></thead>
+      <tbody id="monthly-subs-tbody"><tr><td colspan="8" class="loading">Loading...</td></tr></tbody>
+    </table>
+  </div>
+
+  <!-- Annual Pro subscribers table -->
+  <div class="section-header">
+    <div class="section-title" style="color:#a78bfa">📆 Annual Subscribers</div>
+    <span id="annual-sub-count" style="font-size:12px;color:var(--txt3)"></span>
+  </div>
+  <div class="table-wrap" style="margin-bottom:20px">
+    <table>
+      <thead><tr><th>Name</th><th>Mobile</th><th>Unique ID</th><th>Payment Date</th><th>Renewal Date</th><th>Amount Paid</th><th>Monthly Equiv.</th><th>Status</th></tr></thead>
+      <tbody id="annual-subs-tbody"><tr><td colspan="8" class="loading">Loading...</td></tr></tbody>
+    </table>
+  </div>
+
+  <!-- Churned / Expired -->
+  <div class="section-header">
+    <div class="section-title" style="color:var(--red)">❌ Churned / Expired</div>
+  </div>
+  <div class="table-wrap" style="margin-bottom:20px">
+    <table>
+      <thead><tr><th>Name</th><th>Mobile</th><th>Was On</th><th>Expired</th><th>Days Ago</th><th>Actions</th></tr></thead>
+      <tbody id="churned-tbody"><tr><td colspan="6" class="loading">Loading...</td></tr></tbody>
+    </table>
+  </div>
+
+  <!-- Payment history -->
+  <div class="section-header">
+    <div class="section-title">🧾 Payment History</div>
+    <button class="btn-sm btn-green" onclick="exportPayments()">📥 Export CSV</button>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Date</th><th>Name</th><th>Mobile</th><th>Plan</th><th>Amount</th><th>Razorpay ID</th><th>Coupon</th></tr></thead>
+      <tbody id="payments-tbody"><tr><td colspan="7" class="loading">Loading...</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     PAGE: PROJECTS
+═══════════════════════════════════════════════════════ -->
+<div id="page-projects" class="page">
+  <div class="page-title">All Projects</div>
+  <div class="page-sub">View all projects across all users</div>
+  <div class="table-wrap">
+    <div class="table-toolbar">
+      <input type="text" id="proj-search" placeholder="🔍 Search project name..." oninput="filterProjects()">
+      <select id="proj-status-filter" onchange="filterProjects()">
+        <option value="">All Status</option>
+        <option value="pass">All Pass</option>
+        <option value="fail">Has Failures</option>
+        <option value="draft">Not Analysed</option>
+      </select>
+      <button class="btn-sm btn-green" onclick="exportProjects()">📥 Export CSV</button>
+    </div>
+    <table>
+      <thead><tr>
+        <th>Project Name</th><th>User</th><th>Grid</th><th>Floors</th>
+        <th>Analyses</th><th>Safety</th><th>Last Edited</th>
+      </tr></thead>
+      <tbody id="projects-tbody"><tr><td colspan="7" class="loading">Loading...</td></tr></tbody>
+    </table>
+    <div class="pagination" id="projects-pagination"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     PAGE: BATCHES
+═══════════════════════════════════════════════════════ -->
+<div id="page-batches" class="page">
+  <div class="page-title">Batches</div>
+  <div class="page-sub">Manage lecturer batches and student enrollments</div>
+  <div class="section-header">
+    <div class="section-title">All Batches</div>
+    <button class="btn-sm btn-blue" onclick="showCreateBatch()">+ Create Batch</button>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Batch Code</th><th>Batch Name</th><th>Lecturer</th><th>College</th><th>Students</th><th>Created</th><th>Actions</th></tr></thead>
+      <tbody id="batches-tbody"><tr><td colspan="7" class="loading">Loading...</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     PAGE: ANALYTICS
+═══════════════════════════════════════════════════════ -->
+<div id="page-analytics" class="page">
+  <div class="page-title">Analytics</div>
+  <div class="page-sub">Platform usage and growth metrics</div>
+  <div class="chart-grid">
+    <div class="chart-card">
+      <div class="chart-title">Registrations — Last 30 Days</div>
+      <div class="chart-wrap"><canvas id="chart-registrations"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Users by Role</div>
+      <div class="chart-wrap"><canvas id="chart-roles"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Users by State</div>
+      <div class="chart-wrap"><canvas id="chart-states"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Free vs Pro</div>
+      <div class="chart-wrap"><canvas id="chart-plans"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Top users by engagement -->
+  <div class="section-header">
+    <div class="section-title">🏆 Top Users by Engagement</div>
+  </div>
+  <div class="table-wrap" style="margin-bottom:20px">
+    <table>
+      <thead><tr><th>Rank</th><th>Name</th><th>Role</th><th>Projects</th><th>Analyses</th><th>Snapshots</th><th>Plan</th></tr></thead>
+      <tbody id="top-users-tbody"><tr><td colspan="7" class="loading">Loading...</td></tr></tbody>
+    </table>
+  </div>
+
+  <!-- Conversion funnel -->
+  <div class="section-header">
+    <div class="section-title">🎯 Upgrade Targets (Free users with 2+ analyses)</div>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Name</th><th>Mobile</th><th>Projects</th><th>Analyses</th><th>Last Active</th><th>Action</th></tr></thead>
+      <tbody id="targets-tbody"><tr><td colspan="6" class="loading">Loading...</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     PAGE: COUPONS
+═══════════════════════════════════════════════════════ -->
+<div id="page-coupons" class="page">
+  <div class="page-title">Coupon Codes</div>
+  <div class="page-sub">Create and manage discount coupons</div>
+  <div class="section-header">
+    <div class="section-title">Active Coupons</div>
+    <button class="btn-sm btn-blue" onclick="showCreateCoupon()">+ New Coupon</button>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Code</th><th>Discount</th><th>Applies To</th><th>Used</th><th>Max Uses</th><th>Valid Until</th><th>Status</th><th>Actions</th></tr></thead>
+      <tbody id="coupons-tbody"><tr><td colspan="8" class="loading">Loading...</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     PAGE: SETTINGS
+═══════════════════════════════════════════════════════ -->
+<div id="page-settings" class="page">
+  <div class="page-title">Platform Settings</div>
+  <div class="page-sub">Configure pricing and platform-wide settings</div>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px">
+    <!-- Pricing -->
+    <div class="table-wrap" style="padding:20px">
+      <div class="section-title" style="margin-bottom:16px">💰 Pricing</div>
+      <div class="field">
+        <label>Monthly Price (₹)</label>
+        <input type="number" id="price-monthly" placeholder="299">
+      </div>
+      <div class="field">
+        <label>Annual Price (₹)</label>
+        <input type="number" id="price-annual" placeholder="2990">
+      </div>
+      <button class="btn-sm btn-blue" onclick="savePricing()">Save Prices</button>
+      <div id="pricing-msg" style="margin-top:8px;font-size:12px;color:var(--green);display:none">✅ Saved</div>
+    </div>
+
+    <!-- Manual upgrade -->
+    <div class="table-wrap" style="padding:20px">
+      <div class="section-title" style="margin-bottom:16px">⚡ Manual Upgrade</div>
+      <div class="field">
+        <label>Mobile Number</label>
+        <input type="text" id="upgrade-mobile" placeholder="9818176157">
+      </div>
+      <div class="field">
+        <label>Plan Type</label>
+        <select id="upgrade-plan">
+          <option value="monthly">Monthly Pro</option>
+          <option value="annual">Annual Pro</option>
+          <option value="lifetime">Lifetime Pro</option>
+        </select>
+      </div>
+      <button class="btn-sm btn-purple" onclick="manualUpgrade()">Upgrade User</button>
+      <div id="upgrade-msg" style="margin-top:8px;font-size:12px"></div>
+    </div>
+
+    <!-- Delete / Reset user -->
+    <div class="table-wrap" style="padding:20px">
+      <div class="section-title" style="margin-bottom:16px">🗑 User Management</div>
+      <div class="field">
+        <label>Mobile Number</label>
+        <input type="text" id="mgmt-mobile" placeholder="9818176157">
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn-sm btn-gray" onclick="resetUserProgress()">🔄 Reset Progress</button>
+        <button class="btn-sm btn-red" onclick="deleteUserPermanently()">🗑 Delete User</button>
+      </div>
+      <div id="mgmt-msg" style="margin-top:8px;font-size:12px"></div>
+    </div>
+  </div>
+
+  <!-- Announcement -->
+  <div style="margin-top:16px">
+    <div class="section-title" style="margin-bottom:12px">📢 Send Announcement to All Users</div>
+    <div class="table-wrap" style="padding:20px">
+      <div class="field">
+        <label>Announcement Title</label>
+        <input type="text" id="ann-title" placeholder="e.g. New feature launched!">
+      </div>
+      <div class="field">
+        <label>Message</label>
+        <textarea id="ann-msg" rows="4" placeholder="Write your message here..."
+          style="width:100%;padding:10px 12px;background:var(--bg2);border:1.5px solid var(--b1);
+          border-radius:8px;color:var(--txt);font-size:13px;outline:none;font-family:inherit;resize:vertical"></textarea>
+      </div>
+      <div class="field">
+        <label>Target</label>
+        <select id="ann-target">
+          <option value="all">All Users</option>
+          <option value="free">Free Users Only</option>
+          <option value="pro">Pro Users Only</option>
+          <option value="student">Students Only</option>
+          <option value="lecturer">Lecturers Only</option>
+          <option value="engineer">Engineers Only</option>
+        </select>
+      </div>
+      <button class="btn-sm btn-blue" onclick="sendAnnouncement()" style="margin-right:8px">📢 Send Announcement</button>
+      <div id="ann-result" style="margin-top:10px;font-size:12px"></div>
+
+      <!-- Previous announcements -->
+      <div style="margin-top:20px">
+        <div style="font-size:12px;font-weight:700;color:var(--txt3);margin-bottom:10px">PREVIOUS ANNOUNCEMENTS</div>
+        <div id="ann-history" class="loading">Loading...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Failed payments -->
+  <div style="margin-top:16px">
+    <div class="section-title" style="margin-bottom:12px">❌ Failed Payments</div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Date</th><th>User</th><th>Mobile</th><th>Plan</th><th>Amount</th><th>Reason</th></tr></thead>
+        <tbody id="failed-payments-tbody"><tr><td colspan="6" class="loading">Loading...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+
+<div id="page-features" class="page">
+  <div class="page-title">🎛 Feature Flags</div>
+  <div class="page-sub">Hide or show any tab for all users instantly. No deployment needed.</div>
+
+  <div style="background:#0a1628;border:1px solid #1e3a8a;border-radius:8px;padding:12px 16px;margin-bottom:16px;font-size:12px;color:#94a3b8;line-height:1.8">
+    <strong style="color:#38bdf8">How it works:</strong> Toggle any tab ON or OFF. OFF = completely hidden from all users. Changes save to Supabase instantly and apply to users within 60 seconds (on next login or page refresh). Core Design Steps cannot be hidden.
+  </div>
+
+  <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+    <button class="btn-sm btn-blue" onclick="applyPreset('minimal')">📦 Launch Mode (minimal)</button>
+    <button class="btn-sm btn-purple" onclick="applyPreset('standard')">⭐ Standard</button>
+    <button class="btn-sm btn-green" onclick="applyPreset('full')">✅ All On</button>
+    <button class="btn-sm btn-gray" onclick="loadFeatures()" style="margin-left:auto">🔄 Refresh from DB</button>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr>
+        <th style="padding:10px 12px;text-align:left">Tab Name</th>
+        <th style="padding:10px 12px;text-align:left">Category</th>
+        <th style="padding:10px 12px;text-align:left">Visible to Users</th>
+        <th style="padding:10px 12px;text-align:left">Note</th>
+      </tr></thead>
+      <tbody id="features-tbody"><tr><td colspan="4" style="padding:6px 12px;background:var(--bg1);font-size:10px;font-weight:800;color:#38bdf8;letter-spacing:1px;border-top:2px solid var(--b1)">DESIGN STEPS</td></tr>
+<tr id="flag-row-n0"><td style="padding:8px 12px;font-size:12px">🏠 Welcome</td><td style="padding:8px 12px;font-size:11px;color:var(--txt3)">Design Steps</td><td style="padding:8px 12px"><label style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="flag-n0" checked disabled title="Core tab — cannot be hidden" style="width:16px;height:16px"><span id="flag-status-n0" style="font-size:11px;font-weight:700;color:#34d399">ON</span></label></td><td style="padding:8px 12px;font-size:10px;color:var(--txt3)">CORE — always visible</td></tr>
+<tr id="flag-row-n1"><td style="padding:8px 12px;font-size:12px">📋 Project Info</td><td style="padding:8px 12px;font-size:11px;color:var(--txt3)">Design Steps</td><td style="padding:8px 12px"><label style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="flag-n1" checked disabled title="Core tab — cannot be hidden" style="width:16px;height:16px"><span id="flag-status-n1" style="font-size:11px;font-weight:700;color:#34d399">ON</span></label></td><td style="padding:8px 12px;font-size:10px;color:var(--txt3)">CORE — always visible</td></tr>
+<tr id="flag-row-n2"><td style="padding:8px 12px;font-size:12px">📐 Plan & Spans</td><td style="padding:8px 12px;font-size:11px;color:var(--txt3)">Design Steps</td><td style="padding:8px 12px"><label style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="flag-n2" checked disabled title="Core tab — cannot be hidden" style="width:16px;height:16px"><span id="flag-status-n2" style="font-size:11px;font-weight:700;color:#34d399">ON</span></label></td><td style="padding:8px 12px;font-size:10px;color:var(--txt3)">CORE — always visible</td></tr>
+<tr id="flag-row-n3"><td style="padding:8px 12px;font-size:12px">⬇️ Loads</td><td style="padding:8px 12px;font-size:11px;color:var(--txt3)">Design Steps</td><td style="padding:8px 12px"><label style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="flag-n3" checked disabled title="Core tab — cannot be hidden" style="width:16px;height:16px"><span id="flag-status-n3" style="font-size:11px;font-weight:700;color:#34d399">ON</span></label></td><td style="padding:8px 12px;font-size:10px;color:var(--txt3)">CORE — always visible</td></tr>
+<tr id="flag-row-n4"><td style="padding:8px 12px;font-size:12px">🧱 Materials</td><td style="padding:8px 12px;font-size:11px;color:var(--txt3)">Design Steps</td><td style="padding:8px 12px"><label style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="flag-n4" checked disabled title="Core tab — cannot be hidden" style="width:16px;height:16px"><span id="flag-status-n4" style="font-size:11px;font-weight:700;color:#34d399">ON</span></label></td><td style="padding:8px 12px;font-size:10px;color:var(--txt3)">CORE — always visible</td></tr>
+<tr id="flag-row-n5"><td style="padding:8px 12px;font-size:12px">🌍 Soil & Site</td><td style="padding:8px 12px;font-size:11px;color:var(--txt3)">Design Steps</td><td style="padding:8px 12px"><label style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="flag-n5" checked disabled title="Core tab — cannot be hidden" style="width:16px;height:16px"><span id="flag-status-n5" style="font-size:11px;font-weight:700;color:#34d399">ON</span></label></td><td style="padding:8px 12px;font-size:10px;color:var(--txt3)">CORE — always visible</td></tr>
+<tr id="flag-row-n6"><td style="padding:8px 12px;font-size:12px">⚙️ Run Analysis</td><td style="padding:8px 12px;font-size:11px;color:var(--txt3)">Design Steps</td><td style="padding:8px 12px"><label style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="flag-n6" checked disabled title="Core tab — cannot be hidden" style="width:16px;height:16px"><span id="flag-status-n6" style="font-size:11px;font-weight:700;color:#34d399">ON</span></label></td><td style="padding:8px 12px;font-size:10px;color:var(--txt3)">CORE — always visible</td></tr>
+<tr><td colspan="4" style="padding:6px 12px;background:var(--bg1);font-size:10px;font-weight:800;color:#38bdf8;letter-spacing:1px;border-top:2px solid var(--b1)">RESULTS</td></tr>
+<tr id="flag-row-n7"><td style="padding:8px 12px;font-size:12px">📊 Full Report</td><td style="padding:8px 12px;font-size:11px;color:var(--txt3)">Results</td><td style="padding:8px 12px"><label style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="flag-n7" checked disabled title="Core tab — cannot be hidden" style="width:16px;height:16px"><span id="flag-status-n7" style="font-size:11px;font-weight:700;color:#34d399">ON</span></label></td><td style="padding:8px 12px;font-size:10px;color:var(--txt3)">CORE — always visible</td></tr>
+<tr id="flag-row-n18"><td style="padding:8px 12px;font-size:12px">📋 Design Summary</td><td style="padding:8px 12px;font-size:11px;color:var(--txt3)">Results</td><td style="padding:8px 12px"><label style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="flag-n18" checked onchange="saveTabFlag('n18')" style="width:16px;height:16px"><span id="flag-status-n18" style="font-size:11px;font-weight:700;color:#34d399">ON</span></label></td><td style="padding:8px 12px;font-size:10px;color:var(--txt3)"></td></tr>
+<tr id="flag-row-n19"><td style="padding:8px 12px;font-size:12px">🔬 Parametric Explorer</td><td style="padding:8px 12px;font-size:11px;color:var(--txt3)">Results</td><td style="padding:8px 12px"><label style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="flag-n19" onchange="saveTabFlag('n19')" style="width:16px;height:16px"><span id="flag-status-n19" style="font-size:11px;font-weight:700;color:#f87171">OFF</span></label></td><td style="padding:8px 12px;font-size:10px;color:var(--txt3)"></td></tr>
+<tr id="flag-row-n20"><td style="padding:8px 12px;font-size:12px">📝 Analysis Discussion</td><td style="padding:8px 12px;font-size:11px;color:var(--txt3)">Results</td><td style="padding:8px 12px"><label style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="flag-n20" onchange="saveTabFlag('n20')" style="width:16px;height:16px"><span id="flag-status-n20" style="font-size:11px;font-weight:700;color:#f87171">OFF</span></label></td><td style="padding:8px 12px;font-size:10px;color:var(--txt3)"></td></tr>
+<tr id="flag-row-n15"><td style="padding:8px 12px;font-size:12px">📐 Cross-Sections</td><td style="padding:8px 12px;font-size:11px;color:var(--txt3)">Results</td><td style="padding:8px 12px"><label style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="flag-n15" checked onchange="saveTabFlag('n15')" style="width:16px;height:16px"><span id="flag-status-n15" style="font-size:11px;font-weight:700;color:#34d399">ON</span></label></td><td style="padding:8px 12px;font-size:10px;color:var(--txt3)"></td></tr>
+<tr id="flag-row-n16"><td style="padding:8px 12px;font-size:12px">🔗 Joint Types</td><td style="padding:8px 12px;font-size:11px;color:var(--txt3)">Results</td><td style="padding:8px 12px"><label style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="flag-n16" onchange="saveTabFlag('n16')" style="width:16px;height:16px"><span id="flag-status-n16" style="font-size:11px;font-weight:700;color:#f87171">OFF</span></label></td><td style="padding:8px 12px;font-size:10px;color:var(--txt3)"></td></tr>
+<tr id="flag-row-n17"><td style="padding:8px 12px;font-size:12px">💡 Improvements</td><td style="padding:8px 12px;font-size:11px;color:var(--txt3)">Results</td><td style="padding:8px 12px"><label style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="flag-n17" checked onchange="saveTabFlag('n17')" style="width:16px;height:16px"><span id="flag-status-n17" style="font-size:11px;font-weight:700;color:#34d399">ON</span></label></td><td style="padding:8px 12px;font-size:10px;color:var(--txt3)"></td></tr>
+<tr><td colspan="4" style="padding:6px 12px;background:var(--bg1);font-size:10px;font-weight:800;color:#38bdf8;letter-spacing:1px;border-top:2px solid var(--b1)">ADVANCED TOPICS</td></tr>
+<tr id="flag-row-n9"><td style="padding:8px 12px;font-size:12px">📊 P-M Interaction</td><td style="padding:8px 12px;font-size:11px;color:var(--txt3)">Advanced Topics</td><td style="padding:8px 12px"><label style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="flag-n9" onchange="saveTabFlag('n9')" style="width:16px;height:16px"><span id="flag-status-n9" style="font-size:11px;font-weight:700;color:#f87171">OFF</span></label></td><td style="padding:8px 12px;font-size:10px;color:var(--txt3)"></td></tr>
+<tr id="flag-row-n10"><td style="padding:8px 12px;font-size:12px">🔄 Continuous Beams</td><td style="padding:8px 12px;font-size:11px;color:var(--txt3)">Advanced Topics</td><td style="padding:8px 12px"><label style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="flag-n10" onchange="saveTabFlag('n10')" style="width:16px;height:16px"><span id="flag-status-n10" style="font-size:11px;font-weight:700;color:#f87171">OFF</span></label></td><td style="padding:8px 12px;font-size:10px;color:var(--txt3)"></td></tr>
+<tr id="flag-row-n11"><td style="padding:8px 12px;font-size:12px">↔️ Seismic Drift</td><td style="padding:8px 12px;font-size:11px;color:var(--txt3)">Advanced Topics</td><td style="padding:8px 12px"><label style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="flag-n11" onchange="saveTabFlag('n11')" style="width:16px;height:16px"><span id="flag-status-n11" style="font-size:11px;font-weight:700;color:#f87171">OFF</span></label></td><td style="padding:8px 12px;font-size:10px;color:var(--txt3)"></td></tr>
+<tr id="flag-row-n12"><td style="padding:8px 12px;font-size:12px">🔲 Slab Edge Conditions</td><td style="padding:8px 12px;font-size:11px;color:var(--txt3)">Advanced Topics</td><td style="padding:8px 12px"><label style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="flag-n12" onchange="saveTabFlag('n12')" style="width:16px;height:16px"><span id="flag-status-n12" style="font-size:11px;font-weight:700;color:#f87171">OFF</span></label></td><td style="padding:8px 12px;font-size:10px;color:var(--txt3)"></td></tr>
+<tr id="flag-row-n13"><td style="padding:8px 12px;font-size:12px">🧱 Retaining Wall</td><td style="padding:8px 12px;font-size:11px;color:var(--txt3)">Advanced Topics</td><td style="padding:8px 12px"><label style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="flag-n13" onchange="saveTabFlag('n13')" style="width:16px;height:16px"><span id="flag-status-n13" style="font-size:11px;font-weight:700;color:#f87171">OFF</span></label></td><td style="padding:8px 12px;font-size:10px;color:var(--txt3)"></td></tr>
+<tr id="flag-row-n14"><td style="padding:8px 12px;font-size:12px">🔥 Fire Resistance</td><td style="padding:8px 12px;font-size:11px;color:var(--txt3)">Advanced Topics</td><td style="padding:8px 12px"><label style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="flag-n14" onchange="saveTabFlag('n14')" style="width:16px;height:16px"><span id="flag-status-n14" style="font-size:11px;font-weight:700;color:#f87171">OFF</span></label></td><td style="padding:8px 12px;font-size:10px;color:var(--txt3)"></td></tr>
+<tr><td colspan="4" style="padding:6px 12px;background:var(--bg1);font-size:10px;font-weight:800;color:#38bdf8;letter-spacing:1px;border-top:2px solid var(--b1)">LEARNING</td></tr>
+<tr id="flag-row-n8"><td style="padding:8px 12px;font-size:12px">🎓 Reference Design</td><td style="padding:8px 12px;font-size:11px;color:var(--txt3)">Learning</td><td style="padding:8px 12px"><label style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="flag-n8" checked onchange="saveTabFlag('n8')" style="width:16px;height:16px"><span id="flag-status-n8" style="font-size:11px;font-weight:700;color:#34d399">ON</span></label></td><td style="padding:8px 12px;font-size:10px;color:var(--txt3)"></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div id="features-msg" style="margin-top:12px;font-size:13px;font-weight:700;color:var(--green);display:none">✅ Saved to Supabase</div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════
+     PAGE: LEADERBOARD
+═══════════════════════════════════════════════════════ -->
+<div id="page-leaderboard" class="page">
+  <div class="page-title">🏆 Student Leaderboard</div>
+  <div class="page-sub">Ranked by Design Confidence and learning progress</div>
+
+  <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+    <select id="lb-filter-role" onchange="renderLeaderboard()" style="padding:6px 10px;background:var(--bg2);border:1.5px solid var(--b1);border-radius:8px;color:var(--txt);font-size:12px">
+      <option value="">All Roles</option>
+      <option value="student">Students</option>
+      <option value="lecturer">Lecturers</option>
+      <option value="engineer">Engineers</option>
+    </select>
+    <select id="lb-filter-plan" onchange="renderLeaderboard()" style="padding:6px 10px;background:var(--bg2);border:1.5px solid var(--b1);border-radius:8px;color:var(--txt);font-size:12px">
+      <option value="">All Plans</option>
+      <option value="free">Free</option>
+      <option value="pro">Pro</option>
+    </select>
+    <select id="lb-sort" onchange="renderLeaderboard()" style="padding:6px 10px;background:var(--bg2);border:1.5px solid var(--b1);border-radius:8px;color:var(--txt);font-size:12px">
+      <option value="confidence">Sort: Design Confidence</option>
+      <option value="analyses">Sort: Analyses Run</option>
+      <option value="lessons">Sort: Lessons Done</option>
+      <option value="quizzes">Sort: Quizzes Passed</option>
+    </select>
+    <button class="btn-sm btn-gray" onclick="loadLeaderboard()">🔄 Refresh</button>
+    <button class="btn-sm btn-blue" onclick="exportLeaderboard()">📥 Export CSV</button>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr>
+        <th style="width:40px">Rank</th>
+        <th>Name</th>
+        <th>Role</th>
+        <th>Plan</th>
+        <th>Design Confidence</th>
+        <th>Behaviors</th>
+        <th>Lessons</th>
+        <th>Quizzes Passed</th>
+        <th>Analyses</th>
+        <th>Last Active</th>
+      </tr></thead>
+      <tbody id="leaderboard-tbody"><tr><td colspan="10" class="loading">Loading...</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     PAGE: AT-RISK STUDENTS
+═══════════════════════════════════════════════════════ -->
+<div id="page-atrisk" class="page">
+  <div class="page-title">⚠️ At-Risk Students</div>
+  <div class="page-sub">Students who need attention — inactive, struggling, or about to churn</div>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-bottom:20px">
+    <div class="stat-card" style="cursor:pointer;border-color:rgba(248,113,113,0.4)" onclick="filterRisk('inactive7')">
+      <div class="stat-val" id="risk-inactive7" style="color:#f87171">—</div>
+      <div class="stat-lbl">No login 7+ days</div>
+    </div>
+    <div class="stat-card" style="cursor:pointer;border-color:rgba(251,191,36,0.4)" onclick="filterRisk('neveranalysed')">
+      <div class="stat-val" id="risk-never" style="color:#fbbf24">—</div>
+      <div class="stat-lbl">Signed up, never analysed</div>
+    </div>
+    <div class="stat-card" style="cursor:pointer;border-color:rgba(167,139,250,0.4)" onclick="filterRisk('expiring')">
+      <div class="stat-val" id="risk-expiring" style="color:#a78bfa">—</div>
+      <div class="stat-lbl">Pro expiring in 7 days</div>
+    </div>
+    <div class="stat-card" style="cursor:pointer;border-color:rgba(56,189,248,0.4)" onclick="filterRisk('zeroprogress')">
+      <div class="stat-val" id="risk-zero" style="color:#38bdf8">—</div>
+      <div class="stat-lbl">Zero learning progress</div>
+    </div>
+  </div>
+
+  <div class="section-header">
+    <div class="section-title" id="risk-table-title">All At-Risk Students</div>
+    <div style="display:flex;gap:8px">
+      <button class="btn-sm btn-gray" onclick="filterRisk('all')">Show All</button>
+      <button class="btn-sm btn-blue" onclick="bulkWhatsApp()">📱 WhatsApp All</button>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr>
+        <th><input type="checkbox" id="risk-select-all" onchange="toggleRiskSelect(this)"></th>
+        <th>Name</th><th>Mobile</th><th>Plan</th><th>Risk Reason</th>
+        <th>Last Active</th><th>Analyses</th><th>Actions</th>
+      </tr></thead>
+      <tbody id="atrisk-tbody"><tr><td colspan="8" class="loading">Loading...</td></tr></tbody>
+    </table>
+  </div>
+  <div id="risk-bulk-bar" style="display:none;margin-top:12px;padding:12px;background:var(--bg2);border:1px solid var(--b1);border-radius:8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+    <span id="risk-selected-count" style="font-size:12px;color:var(--txt3)">0 selected</span>
+    <button class="btn-sm btn-purple" onclick="bulkUpgradeSelected()">⚡ Upgrade Selected</button>
+    <button class="btn-sm btn-blue" onclick="bulkMessageSelected()">📢 Message Selected</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     PAGE: BULK ACTIONS
+═══════════════════════════════════════════════════════ -->
+<div id="page-bulk" class="page">
+  <div class="page-title">📣 Bulk Actions</div>
+  <div class="page-sub">Take actions on multiple users at once</div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+
+    <!-- Bulk Message -->
+    <div class="table-wrap" style="padding:20px">
+      <div class="section-title" style="margin-bottom:16px">📱 WhatsApp Bulk Message</div>
+      <div class="field">
+        <label>Target Audience</label>
+        <select id="bulk-msg-target" style="width:100%;padding:8px;background:var(--bg2);border:1.5px solid var(--b1);border-radius:8px;color:var(--txt);font-size:12px">
+          <option value="all">All Users</option>
+          <option value="free">Free Users Only</option>
+          <option value="pro">Pro Users Only</option>
+          <option value="inactive7">Inactive 7+ days</option>
+          <option value="inactive30">Inactive 30+ days</option>
+          <option value="neveranalysed">Never Run Analysis</option>
+          <option value="expiring7">Pro Expiring in 7 days</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Message Template</label>
+        <textarea id="bulk-msg-text" rows="4" placeholder="Hi {name}, ..."
+          style="width:100%;padding:10px;background:var(--bg2);border:1.5px solid var(--b1);border-radius:8px;color:var(--txt);font-size:12px;font-family:inherit;resize:vertical"></textarea>
+        <div style="font-size:10px;color:var(--txt3);margin-top:4px">Use {name} for student name, {mobile} for mobile number</div>
+      </div>
+      <div id="bulk-preview" style="font-size:11px;color:var(--txt3);margin-bottom:12px"></div>
+      <button class="btn-sm btn-blue" onclick="previewBulkMsg()">👁 Preview</button>
+      <button class="btn-sm btn-green" onclick="sendBulkMsg()" style="margin-left:8px">📱 Send to All</button>
+      <div id="bulk-msg-result" style="margin-top:10px;font-size:12px"></div>
+    </div>
+
+    <!-- Bulk Upgrade -->
+    <div class="table-wrap" style="padding:20px">
+      <div class="section-title" style="margin-bottom:16px">⚡ Bulk Upgrade to Pro</div>
+      <div class="field">
+        <label>Target</label>
+        <select id="bulk-upgrade-target" style="width:100%;padding:8px;background:var(--bg2);border:1.5px solid var(--b1);border-radius:8px;color:var(--txt);font-size:12px">
+          <option value="batch">Specific Batch (College Deal)</option>
+          <option value="city">Specific City</option>
+          <option value="role">Specific Role</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Value</label>
+        <input type="text" id="bulk-upgrade-value" placeholder="e.g. batch code, city name, student">
+      </div>
+      <div class="field">
+        <label>Plan Type</label>
+        <select id="bulk-upgrade-plan" style="width:100%;padding:8px;background:var(--bg2);border:1.5px solid var(--b1);border-radius:8px;color:var(--txt);font-size:12px">
+          <option value="monthly">Monthly Pro (30 days)</option>
+          <option value="annual">Annual Pro (365 days)</option>
+          <option value="lifetime">Lifetime Pro</option>
+        </select>
+      </div>
+      <button class="btn-sm btn-purple" onclick="previewBulkUpgrade()">👁 Preview Users</button>
+      <div id="bulk-upgrade-preview" style="margin-top:10px;font-size:12px;color:var(--txt3)"></div>
+      <button class="btn-sm btn-green" id="bulk-upgrade-go" style="margin-top:10px;display:none" onclick="executeBulkUpgrade()">⚡ Upgrade All</button>
+      <div id="bulk-upgrade-result" style="margin-top:10px;font-size:12px"></div>
+    </div>
+
+    <!-- Export by segment -->
+    <div class="table-wrap" style="padding:20px">
+      <div class="section-title" style="margin-bottom:16px">📥 Export by Segment</div>
+      <div class="field">
+        <label>Segment</label>
+        <select id="export-segment" style="width:100%;padding:8px;background:var(--bg2);border:1.5px solid var(--b1);border-radius:8px;color:var(--txt);font-size:12px">
+          <option value="all">All Users</option>
+          <option value="free">Free Users</option>
+          <option value="pro">Pro Users</option>
+          <option value="students">Students Only</option>
+          <option value="lecturers">Lecturers Only</option>
+          <option value="inactive30">Inactive 30+ days</option>
+          <option value="highengagement">High Engagement (5+ analyses)</option>
+        </select>
+      </div>
+      <button class="btn-sm btn-blue" onclick="exportSegment()">📥 Export CSV</button>
+      <div id="export-result" style="margin-top:8px;font-size:12px;color:var(--txt3)"></div>
+    </div>
+
+    <!-- Role change bulk -->
+    <div class="table-wrap" style="padding:20px">
+      <div class="section-title" style="margin-bottom:16px">🎭 Bulk Role Change</div>
+      <div class="field">
+        <label>Change users in batch</label>
+        <input type="text" id="bulk-role-batch" placeholder="Batch code (e.g. NITK2024)">
+      </div>
+      <div class="field">
+        <label>New Role</label>
+        <select id="bulk-role-new" style="width:100%;padding:8px;background:var(--bg2);border:1.5px solid var(--b1);border-radius:8px;color:var(--txt);font-size:12px">
+          <option value="student">Student</option>
+          <option value="lecturer">Lecturer</option>
+          <option value="engineer">Engineer</option>
+        </select>
+      </div>
+      <button class="btn-sm btn-purple" onclick="executeBulkRoleChange()">✅ Apply Role Change</button>
+      <div id="bulk-role-result" style="margin-top:8px;font-size:12px"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     PAGE: REVENUE FORECAST
+═══════════════════════════════════════════════════════ -->
+<div id="page-forecast" class="page">
+  <div class="page-title">📈 Revenue Forecast</div>
+  <div class="page-sub">3-month projection based on current conversion and churn rates</div>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-bottom:20px">
+    <div class="stat-card"><div class="stat-val" id="fc-mrr" style="color:#34d399">—</div><div class="stat-lbl">Current MRR</div></div>
+    <div class="stat-card"><div class="stat-val" id="fc-conv" style="color:#60a5fa">—</div><div class="stat-lbl">Conversion Rate</div></div>
+    <div class="stat-card"><div class="stat-val" id="fc-churn" style="color:#f87171">—</div><div class="stat-lbl">Monthly Churn</div></div>
+    <div class="stat-card"><div class="stat-val" id="fc-ltv" style="color:#a78bfa">—</div><div class="stat-lbl">Avg LTV</div></div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px">
+    <div class="chart-card">
+      <div class="chart-title">MRR Forecast — Next 3 Months</div>
+      <div class="chart-wrap"><canvas id="chart-forecast-mrr"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Subscriber Growth Forecast</div>
+      <div class="chart-wrap"><canvas id="chart-forecast-subs"></canvas></div>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Month</th><th>Projected Subscribers</th><th>Projected MRR</th><th>New Signups Needed</th><th>Scenario</th></tr></thead>
+      <tbody id="forecast-tbody"><tr><td colspan="5" class="loading">Loading...</td></tr></tbody>
+    </table>
+  </div>
+
+  <div style="margin-top:16px;padding:14px;background:var(--bg2);border:1px solid var(--b1);border-radius:8px;font-size:12px;color:var(--txt3)">
+    <strong style="color:var(--txt)">Assumptions:</strong> Conversion rate = free users who become pro within 30 days.
+    Churn = pro users who don't renew. LTV = average revenue per pro user before churn.
+    Forecasts assume current rates continue. Add college deals to significantly improve numbers.
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     PAGE: CONTENT PERFORMANCE
+═══════════════════════════════════════════════════════ -->
+<div id="page-content" class="page">
+  <div class="page-title">📚 Content Performance</div>
+  <div class="page-sub">Which features students use most, quiz difficulty, drop-off points</div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px">
+    <div class="chart-card">
+      <div class="chart-title">Tab Usage (how many students reached each step)</div>
+      <div class="chart-wrap"><canvas id="chart-tab-usage"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Quiz Pass Rates by Topic</div>
+      <div class="chart-wrap"><canvas id="chart-quiz-rates"></canvas></div>
+    </div>
+  </div>
+
+  <div class="section-header"><div class="section-title">📋 Feature Adoption</div></div>
+  <div id="feature-adoption-wrap" class="table-wrap">
+    <table>
+      <thead><tr><th>Feature / Tab</th><th>Users Reached</th><th>% of All Users</th><th>Avg Time Spent</th><th>Drop-off</th></tr></thead>
+      <tbody id="feature-adoption-tbody"><tr><td colspan="5" class="loading">Loading...</td></tr></tbody>
+    </table>
+  </div>
+
+  <div class="section-header" style="margin-top:20px"><div class="section-title">🧠 Hardest Quiz Questions</div></div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Quiz Topic</th><th>Attempts</th><th>Pass Rate</th><th>Avg Score</th><th>Status</th></tr></thead>
+      <tbody id="quiz-hard-tbody"><tr><td colspan="5" class="loading">Loading...</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+</div><!-- end main -->
+</div><!-- end layout -->
+
+<!-- ═══ MODALS ═══ -->
+
+<!-- User detail modal -->
+<div class="modal-overlay" id="user-modal">
+  <div class="modal">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <h3 id="user-modal-title">User Details</h3>
+      <button onclick="closeModal('user-modal')" style="background:none;border:none;color:var(--txt3);cursor:pointer;font-size:18px">✕</button>
+    </div>
+    <div id="user-modal-content"></div>
+    <div class="modal-btns" id="user-modal-btns"></div>
+  </div>
+</div>
+
+<!-- Create Batch modal -->
+<div class="modal-overlay" id="batch-modal">
+  <div class="modal">
+    <h3>Create New Batch</h3>
+    <div class="field"><label>Lecturer Mobile</label><input type="text" id="batch-lecturer-mob" placeholder="9876543210"></div>
+    <div class="field"><label>Batch Code (unique)</label><input type="text" id="batch-code" placeholder="MSIT-CIVIL-2026-A" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase()"></div>
+    <div class="field"><label>Batch Name</label><input type="text" id="batch-name" placeholder="B.Tech Civil 2026 Section A"></div>
+    <div class="field"><label>College</label><input type="text" id="batch-college" placeholder="MSIT Delhi"></div>
+    <div id="batch-msg" style="font-size:12px;margin-top:8px"></div>
+    <div class="modal-btns">
+      <button class="btn-sm btn-gray" onclick="closeModal('batch-modal')">Cancel</button>
+      <button class="btn-sm btn-blue" onclick="createBatch()">Create Batch</button>
+    </div>
+  </div>
+</div>
+
+<!-- Create Coupon modal -->
+<div class="modal-overlay" id="coupon-modal">
+  <div class="modal">
+    <h3>Create Coupon</h3>
+    <div class="field"><label>Coupon Code</label><input type="text" id="coupon-code" placeholder="LAUNCH50" oninput="this.value=this.value.toUpperCase()"></div>
+    <div class="field">
+      <label>Discount Type</label>
+      <select id="coupon-type">
+        <option value="percentage">Percentage (%)</option>
+        <option value="fixed">Fixed Amount (₹)</option>
+      </select>
+    </div>
+    <div class="field"><label>Discount Value</label><input type="number" id="coupon-value" placeholder="50"></div>
+    <div class="field">
+      <label>Applies To</label>
+      <select id="coupon-applies">
+        <option value="both">Both Plans</option>
+        <option value="monthly">Monthly Only</option>
+        <option value="annual">Annual Only</option>
+      </select>
+    </div>
+    <div class="field"><label>Max Uses (0 = unlimited)</label><input type="number" id="coupon-max" placeholder="0"></div>
+    <div class="field"><label>Valid Until (leave blank = forever)</label><input type="date" id="coupon-valid"></div>
+    <div id="coupon-msg" style="font-size:12px;margin-top:8px"></div>
+    <div class="modal-btns">
+      <button class="btn-sm btn-gray" onclick="closeModal('coupon-modal')">Cancel</button>
+      <button class="btn-sm btn-blue" onclick="createCoupon()">Create Coupon</button>
+    </div>
+  </div>
+</div>
+
+<div id="page-contactmessages" class="page">
+  <div id="contact-list" style="padding:24px"><div style="color:#64748b;font-size:13px">Loading...</div></div>
+</div>
+
+<div id="page-bugreports" class="page">
+  <div id="bug-list" style="padding:24px"><div style="color:#64748b;font-size:13px">Click 'Bug Reports' to load.</div></div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// CONFIG
+// ═══════════════════════════════════════════════════════════
+const SUPA_URL = 'https://rpjdveuxxjeoeomkwrfx.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJwamR2ZXV4eGplb2VvbWt3cmZ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg5MzY3NzIsImV4cCI6MjA5NDUxMjc3Mn0.3JvvMaCFKg2fB9-l2WJ5JMX5btGIKqvpMj_ZcxSRWaQ';
+const PRICES = { monthly: 299, annual: 2990 };
+
+// ═══════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════
+let adminProfile = null;
+let allUsers = [], allProjects = [], allPayments = [], allBatches = [], allCoupons = [];
+let filteredUsers = [], filteredProjects = [];
+let userPage = 1, projPage = 1;
+const PAGE_SIZE = 25;
+let userSortKey = 'created_at', userSortDir = -1;
+let charts = {};
+
+// ═══════════════════════════════════════════════════════════
+// API HELPER
+// ═══════════════════════════════════════════════════════════
+async function api(path, opts={}) {
+  const resp = await fetch(SUPA_URL + '/rest/v1/' + path, {
+    ...opts,
+    headers: {
+      'Authorization': 'Bearer ' + SUPA_KEY,
+      'apikey': SUPA_KEY,
+      'Content-Type': 'application/json',
+      'Prefer': 'return=representation',
+      ...(opts.headers||{})
+    }
+  });
+  if(!resp.ok) { console.error('API error', path, resp.status); return null; }
+  const ct = resp.headers.get('content-type')||'';
+  return ct.includes('json') ? resp.json() : null;
+}
+
+async function apiCount(path) {
+  const resp = await fetch(SUPA_URL + '/rest/v1/' + path, {
+    headers: { 'Authorization':'Bearer '+SUPA_KEY, 'apikey':SUPA_KEY, 'Prefer':'count=exact', 'Range':'0-0' }
+  });
+  const cr = resp.headers.get('content-range') || '0/0';
+  return parseInt(cr.split('/')[1]) || 0;
+}
+
+// ═══════════════════════════════════════════════════════════
+// ADMIN AUTH — Mobile + Password
+// ═══════════════════════════════════════════════════════════
+const ADMIN_SESSION_KEY = 'slp_admin_session';
+
+// Simple hash function for password
+async function hashPassword(password) {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(password + 'slp_admin_salt_2026');
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function adminLogin() {
+  const mob  = el('login-mob')?.value?.trim();
+  const pass = el('login-pass')?.value?.trim();
+  const btn  = el('login-btn');
+  const err  = el('login-err');
+
+  if(!mob || mob.length !== 10) { showLoginErr('Enter valid 10-digit mobile'); return; }
+  if(!pass) { showLoginErr('Enter password'); return; }
+
+  btn.disabled = true;
+  btn.textContent = 'Checking...';
+
+  try {
+    const mob10 = mob.replace(/\D/g,'').slice(-10);
+    const data = await api('profiles?mobile=eq.%2B91'+mob10+'&select=*');
+    
+    if(!data || !data[0]) { showLoginErr('Mobile not found'); btn.disabled=false; btn.textContent='Login →'; return; }
+    
+    const profile = data[0];
+    
+    if(profile.role !== 'admin') { showLoginErr('Access denied. Not an admin account.'); btn.disabled=false; btn.textContent='Login →'; return; }
+
+    // Check password
+    const hashedInput = await hashPassword(pass);
+    
+    // First time login — if no password set, set it now
+    if(!profile.admin_password) {
+      // Set the password for first time
+      await api('profiles?id=eq.'+profile.id, {
+        method: 'PATCH',
+        body: JSON.stringify({ admin_password: hashedInput })
+      });
+      profile.admin_password = hashedInput;
+    }
+    
+    if(profile.admin_password !== hashedInput) {
+      showLoginErr('Wrong password');
+      btn.disabled=false; btn.textContent='Login →';
+      return;
+    }
+
+    // Success — save session
+    const sessionToken = Date.now().toString(36) + Math.random().toString(36).slice(2);
+    sessionStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify({
+      profileId: profile.id,
+      mobile: mob10,
+      token: sessionToken,
+      loginTime: Date.now()
+    }));
+
+    adminProfile = profile;
+    showAdminPanel();
+
+  } catch(e) {
+    showLoginErr('Error: ' + e.message);
+    btn.disabled=false; btn.textContent='Login →';
+  }
+}
+
+function showLoginErr(msg) {
+  const err = el('login-err');
+  if(err) { err.textContent = msg; err.style.display = 'block'; }
+}
+
+function showAdminPanel() {
+  el('admin-login').style.display = 'none';
+  el('admin-topbar').style.display = 'flex';
+  el('admin-layout').style.display = 'flex';
+  el('admin-name').textContent = adminProfile.full_name || 'Admin';
+  setInterval(()=>{
+    el('admin-time').textContent = new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+  }, 1000);
+  loadDashboard();
+}
+
+function adminLogout() {
+  sessionStorage.removeItem(ADMIN_SESSION_KEY);
+  el('admin-topbar').style.display = 'none';
+  el('admin-layout').style.display = 'none';
+  el('admin-login').style.display = 'flex';
+  el('login-mob').value = '';
+  el('login-pass').value = '';
+}
+
+async function checkAdminAccess() {
+  // Check existing session
+  const session = sessionStorage.getItem(ADMIN_SESSION_KEY);
+  if(session) {
+    try {
+      const sess = JSON.parse(session);
+      // Session valid for 8 hours
+      if(Date.now() - sess.loginTime < 8*60*60*1000) {
+        const data = await api('profiles?id=eq.'+sess.profileId+'&select=*');
+        if(data && data[0] && data[0].role === 'admin') {
+          adminProfile = data[0];
+          showAdminPanel();
+          return true;
+        }
+      }
+    } catch(e) {}
+    sessionStorage.removeItem(ADMIN_SESSION_KEY);
+  }
+  // Show login screen
+  el('admin-login').style.display = 'flex';
+  return false;
+}
+
+// ═══════════════════════════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════════════════════════
+function showPage(id) {
+  if(id==='contactmessages'){
+    document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+    var cmPage = document.getElementById('page-contactmessages');
+    if(cmPage) cmPage.classList.add('active');
+    document.querySelectorAll('.nav-item').forEach(n=>{ if(n.id==='nav-contact') n.classList.add('active'); });
+    loadContactMessages(); return;
+  }
+  if(id==='bugreports'){
+    document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+    var brPage = document.getElementById('page-bugreports');
+    if(brPage) brPage.classList.add('active');
+    document.querySelectorAll('.nav-item').forEach(n=>{ if(n.id==='nav-bugreports') n.classList.add('active'); });
+    loadBugReports(); return;
+  }
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+id)?.classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n=>{
+    if(n.textContent.toLowerCase().includes(id.slice(0,4))) n.classList.add('active');
+  });
+  // Load page data
+  const loaders = {
+    dashboard: loadDashboard,
+    users:     loadUsers,
+    revenue:   loadRevenue,
+    projects:  loadProjects,
+    batches:   loadBatches,
+    analytics: loadAnalytics,
+    coupons:   loadCoupons,
+    settings:    loadSettings,
+    features:    loadFeatures,
+    leaderboard: loadLeaderboard,
+    atrisk:      loadAtRisk,
+    bulk:        loadBulk,
+    forecast:    loadForecast,
+    content:     loadContent,
+    bugreports:  loadBugReports,
+  };
+  if(loaders[id]) loaders[id]();
+}
+
+// ═══════════════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════════════
+function fmt(n) { return '₹'+(n||0).toLocaleString('en-IN'); }
+function fmtDate(ts) {
+  if(!ts) return '—';
+  const d = new Date(ts);
+  return d.toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'});
+}
+function timeAgo(ts) {
+  if(!ts) return '—';
+  const s = Math.floor((Date.now()-new Date(ts))/1000);
+  if(s<60) return 'just now';
+  if(s<3600) return Math.floor(s/60)+'m ago';
+  if(s<86400) return Math.floor(s/3600)+'h ago';
+  if(s<604800) return Math.floor(s/86400)+'d ago';
+  return fmtDate(ts);
+}
+function planBadge(p) {
+  const type = p.plan_type || (p.plan==='pro'?'monthly':'free');
+  if(p.plan!=='pro') return '<span class="badge badge-free">Free</span>';
+  if(type==='annual') return '<span class="badge badge-annual">Annual Pro</span>';
+  if(type==='lifetime') return '<span class="badge badge-lifetime">Lifetime</span>';
+  return '<span class="badge badge-monthly">Monthly Pro</span>';
+}
+function roleBadge(r) {
+  const map={student:'badge-student',lecturer:'badge-lecturer',engineer:'badge-engineer',admin:'badge-admin'};
+  return `<span class="badge ${map[r]||''}">${r||'—'}</span>`;
+}
+function isExpired(p) {
+  if(p.plan!=='pro') return false;
+  if(!p.plan_expires_at) return false;
+  const yr = new Date(p.plan_expires_at).getFullYear();
+  return yr < 2099 && new Date(p.plan_expires_at) < new Date();
+}
+function isActive(p) { return p.plan==='pro' && !isExpired(p); }
+function daysUntil(ts) {
+  return Math.ceil((new Date(ts)-new Date())/86400000);
+}
+function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+function showModal(id)   { document.getElementById(id).classList.add('show'); }
+function el(id) { return document.getElementById(id); }
+function setText(id,v) { const e=el(id); if(e) e.textContent=v; }
+function setHTML(id,v) { const e=el(id); if(e) e.innerHTML=v; }
+
+// ═══════════════════════════════════════════════════════════
+// DASHBOARD
+// ═══════════════════════════════════════════════════════════
+async function loadDashboard() {
+  const now = new Date();
+  el('dash-updated').textContent = 'Last updated: ' + now.toLocaleTimeString('en-IN');
+
+  // Load all data in parallel
+  const [users, projects, payments, snapshots] = await Promise.all([
+    api('profiles?select=id,full_name,mobile,role,plan,plan_type,plan_expires_at,city,state,created_at,last_active,is_active&order=created_at.desc'),
+    api('projects?select=id,profile_id,name,analysis_count,all_checks_pass,safety_score,created_at,updated_at&deleted_at=is.null&order=updated_at.desc'),
+    api('payment_history?select=*&order=created_at.desc'),
+    api('snapshots?select=id&limit=1', {headers:{'Prefer':'count=exact'}}),
+  ]);
+
+  allUsers    = users    || [];
+  allProjects = projects || [];
+  allPayments = payments || [];
+
+  // Count stats
+  const weekAgo = new Date(Date.now()-7*86400000).toISOString();
+  const today   = new Date(); today.setHours(0,0,0,0);
+
+  const totalUsers     = allUsers.length;
+  const newThisWeek    = allUsers.filter(u=>u.created_at>weekAgo).length;
+  const totalProjects  = allProjects.length;
+  const newProjsWeek   = allProjects.filter(p=>p.created_at>weekAgo).length;
+  const totalAnalyses  = allProjects.reduce((s,p)=>s+(p.analysis_count||0),0);
+  const proUsers       = allUsers.filter(u=>u.plan==='pro' && !isExpired(u));
+  const activeToday    = allUsers.filter(u=>u.last_active && new Date(u.last_active)>=today).length;
+
+  setText('s-users',     totalUsers);
+  setText('s-users-delta', '↑ '+newThisWeek+' this week');
+  setText('s-projects',  totalProjects);
+  setText('s-projects-delta','↑ '+newProjsWeek+' this week');
+  setText('s-analyses',  totalAnalyses);
+  setText('s-pro',       proUsers.length);
+  setText('s-active',    activeToday);
+
+  // Snapshots count
+  const snapResp = await fetch(SUPA_URL+'/rest/v1/snapshots?select=id', {
+    headers:{'Authorization':'Bearer '+SUPA_KEY,'apikey':SUPA_KEY,'Prefer':'count=exact','Range':'0-0'}
+  });
+  const snapCR = snapResp.headers.get('content-range')||'0/0';
+  setText('s-snapshots', parseInt(snapCR.split('/')[1])||0);
+
+  // Revenue calculation
+  calcRevenue(allUsers, allPayments);
+
+  // Expiry alerts (next 7 days)
+  const expiringUsers = allUsers.filter(u=>{
+    if(!u.plan_expires_at || u.plan!=='pro') return false;
+    const yr = new Date(u.plan_expires_at).getFullYear();
+    if(yr>=2099) return false;
+    const days = daysUntil(u.plan_expires_at);
+    return days>=0 && days<=7;
+  });
+  if(expiringUsers.length>0) {
+    el('expiry-alert-section').style.display='block';
+    el('expiry-list').innerHTML = expiringUsers.map(u=>
+      `⚠️ <strong>${u.full_name}</strong> (${u.mobile}) — ${u.plan_type||'Pro'} expires in ${daysUntil(u.plan_expires_at)} day(s)`
+    ).join('<br>');
+  }
+
+  // Recent registrations
+  const recent = allUsers.slice(0,8);
+  setHTML('recent-users-tbody', recent.length ? recent.map(u=>`
+    <tr>
+      <td><strong>${u.full_name||'—'}</strong></td>
+      <td>${u.mobile||'—'}</td>
+      <td>${roleBadge(u.role)}</td>
+      <td>${u.city||'—'}</td>
+      <td>${fmtDate(u.created_at)}</td>
+    </tr>`).join('') : '<tr><td colspan="5" class="empty">No users yet</td></tr>');
+}
+
+function calcRevenue(users, payments) {
+  const now = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+
+  // Active monthly and annual subscribers
+  const monthlyActive = users.filter(u=>isActive(u) && (u.plan_type==='monthly'||(!u.plan_type&&u.plan==='pro')));
+  const annualActive  = users.filter(u=>isActive(u) && u.plan_type==='annual');
+  const lifetimeActive= users.filter(u=>isActive(u) && u.plan_type==='lifetime');
+
+  const monthlyRev  = monthlyActive.length * PRICES.monthly;
+  const annualRev   = annualActive.length  * PRICES.annual;
+  const monthlyEquivAnnual = annualActive.length * Math.round(PRICES.annual/12);
+
+  // Payments this month
+  const thisMonthPayments = payments.filter(p=>p.created_at>=monthStart);
+  const thisMonthTotal    = thisMonthPayments.reduce((s,p)=>s+Math.round((p.amount||0)/100),0);
+
+  // Renewals due this month (annual subscribers)
+  const annualRenewalsThisMonth = annualActive.filter(u=>{
+    if(!u.plan_expires_at) return false;
+    const exp = new Date(u.plan_expires_at);
+    return exp.getFullYear()===now.getFullYear() && exp.getMonth()===now.getMonth();
+  });
+  const annualRenewalAmt = annualRenewalsThisMonth.length * PRICES.annual;
+
+  // Expected next month = current monthly subs + annual equivalent
+  const expectedNextMonth = monthlyRev + monthlyEquivAnnual;
+
+  // All time
+  const allTimeTotal = payments.reduce((s,p)=>s+Math.round((p.amount||0)/100),0);
+
+  // Conversion
+  const conversion = users.length > 0 ? Math.round((users.filter(u=>u.plan==='pro').length/users.length)*100) : 0;
+
+  // Update dashboard
+  setText('rev-monthly-val',      fmt(monthlyRev));
+  setText('rev-monthly-count',    monthlyActive.length+' subscribers × ₹'+PRICES.monthly+'/month');
+  setText('rev-monthly-actual',   fmt(thisMonthPayments.filter(p=>p.plan==='monthly').reduce((s,p)=>s+Math.round((p.amount||0)/100),0)));
+  setText('rev-monthly-expected', fmt(monthlyRev));
+  setText('rev-annual-val',       fmt(annualRev));
+  setText('rev-annual-count',     annualActive.length+' subscribers × ₹'+PRICES.annual+'/year');
+  setText('rev-annual-monthly',   fmt(monthlyEquivAnnual));
+  setText('rev-annual-renewals',  fmt(annualRenewalAmt)+' ('+annualRenewalsThisMonth.length+' renewals)');
+  setText('rev-total-val',        fmt(allTimeTotal));
+  setText('rev-this-month',       fmt(thisMonthTotal));
+  setText('rev-next-month',       fmt(expectedNextMonth));
+  setText('rev-conversion',       conversion+'%');
+}
+
+// ═══════════════════════════════════════════════════════════
+// USERS
+// ═══════════════════════════════════════════════════════════
+async function loadUsers() {
+  if(!allUsers.length) {
+    allUsers = await api('profiles?select=*&order=created_at.desc') || [];
+  }
+  // Populate state filter
+  const states = [...new Set(allUsers.map(u=>u.state).filter(Boolean))].sort();
+  el('user-state-filter').innerHTML = '<option value="">All States</option>' +
+    states.map(s=>`<option value="${s}">${s}</option>`).join('');
+  filterUsers();
+}
+
+function filterUsers() {
+  const q     = (el('user-search')?.value||'').toLowerCase();
+  const role  = el('user-role-filter')?.value||'';
+  const plan  = el('user-plan-filter')?.value||'';
+  const state = el('user-state-filter')?.value||'';
+
+  filteredUsers = allUsers.filter(u=>{
+    if(q && !`${u.full_name} ${u.mobile} ${u.unique_id} ${u.email}`.toLowerCase().includes(q)) return false;
+    if(role  && u.role!==role) return false;
+    if(state && u.state!==state) return false;
+    if(plan) {
+      if(plan==='free' && u.plan!=='free') return false;
+      if(plan==='monthly' && !(u.plan==='pro' && (u.plan_type==='monthly'||!u.plan_type))) return false;
+      if(plan==='annual' && !(u.plan==='pro' && u.plan_type==='annual')) return false;
+      if(plan==='lifetime' && u.plan_type!=='lifetime') return false;
+    }
+    return true;
+  });
+
+  // Sort
+  filteredUsers.sort((a,b)=>{
+    let va=a[userSortKey]||'', vb=b[userSortKey]||'';
+    return userSortDir * (va<vb?-1:va>vb?1:0);
+  });
+
+  userPage = 1;
+  renderUsers();
+}
+
+function sortUsers(key) {
+  if(userSortKey===key) userSortDir*=-1;
+  else { userSortKey=key; userSortDir=-1; }
+  renderUsers();
+}
+
+function renderUsers() {
+  const start = (userPage-1)*PAGE_SIZE;
+  const page  = filteredUsers.slice(start, start+PAGE_SIZE);
+
+  setHTML('users-tbody', page.length ? page.map(u=>{
+    const expired = isExpired(u);
+    const lastAct = timeAgo(u.last_active);
+    return `<tr>
+      <td><strong>${u.full_name||'—'}</strong><br><span style="font-size:10px;color:var(--txt3)">${u.unique_id||''}</span></td>
+      <td>${u.unique_id||'—'}</td>
+      <td style="font-family:monospace">${u.mobile||'—'}</td>
+      <td>${roleBadge(u.role)}</td>
+      <td>${planBadge(u)} ${expired?'<span style="color:var(--red);font-size:10px">EXPIRED</span>':''}</td>
+      <td>${u.city||'—'}${u.state?', '+u.state:''}</td>
+      <td>${fmtDate(u.created_at)}</td>
+      <td>${lastAct}</td>
+      <td>
+        <button class="btn-sm btn-gray" onclick="viewUser('${u.id}')" style="margin-right:4px">View</button>
+        <button class="btn-sm btn-purple" onclick="upgradeUserModal('${u.id}')">⚡ Pro</button>
+      </td>
+    </tr>`;
+  }).join('') : '<tr><td colspan="9" class="empty">No users found</td></tr>');
+
+  // Pagination
+  const total = filteredUsers.length;
+  const pages = Math.ceil(total/PAGE_SIZE);
+  el('users-pagination').innerHTML = `
+    <span style="font-size:12px;color:var(--txt3)">${total} users</span>
+    ${Array.from({length:Math.min(pages,10)},(_,i)=>`
+      <button class="page-btn ${i+1===userPage?'active':''}" onclick="userPage=${i+1};renderUsers()">${i+1}</button>
+    `).join('')}
+  `;
+}
+
+async function viewUser(id) {
+  // Always fetch fresh full profile so all fields (college, unique_id etc) are present
+  const fresh = await api('profiles?id=eq.'+id+'&select=*');
+  const u = (fresh && fresh[0]) || allUsers.find(x=>x.id===id);
+  if(!u) return;
+
+  // Load user's projects, activity, and learning progress in parallel
+  if(!allProjects.length) allProjects = await api('projects?select=*&deleted_at=is.null') || [];
+  const [progressData, snapCount] = await Promise.all([
+    api('progress?profile_id=eq.'+id+'&select=*'),
+    apiCount('snapshots?profile_id=eq.'+id),
+  ]);
+  const prog = progressData && progressData[0];
+  const projs = allProjects.filter(p=>p.profile_id===id);
+  const totalAnalyses = projs.reduce((s,p)=>s+(p.analysis_count||0),0);
+  const lastProject = projs.sort((a,b)=>new Date(b.updated_at)-new Date(a.updated_at))[0];
+
+  // Parse learning progress
+  const lessons      = prog ? (prog.topics_completed || {}) : {};
+  const behaviors    = prog ? (prog.badges           || {}) : {};
+  const quizScores   = prog ? (prog.quiz_scores      || {}) : {};
+  const lessonsCount = Object.values(lessons).filter(Boolean).length;
+  const behaviorsCount = Object.values(behaviors).filter(Boolean).length;
+  const quizCount    = Object.keys(quizScores).length;
+  const quizPassCount= Object.values(quizScores).filter(s=>s>=70).length;
+  const designConf   = Math.min(100, behaviorsCount * 10);
+
+  el('user-modal-title').textContent = u.full_name || '—';
+  setHTML('user-modal-content', `
+    <!-- IDENTITY -->
+    <div style="font-size:9px;font-weight:800;color:#38bdf8;letter-spacing:1px;margin-bottom:6px">IDENTITY</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:14px">
+      <div class="info-row"><span class="info-lbl">Unique ID</span><span class="info-val" style="font-family:monospace;color:#38bdf8">${u.unique_id||'—'}</span></div>
+      <div class="info-row"><span class="info-lbl">Full Name</span><span class="info-val">${u.full_name||'—'}</span></div>
+      <div class="info-row"><span class="info-lbl">Mobile</span><span class="info-val" style="font-family:monospace">${u.mobile||'—'}</span></div>
+      <div class="info-row"><span class="info-lbl">Email</span><span class="info-val">${u.email||'—'}</span></div>
+      <div class="info-row"><span class="info-lbl">Role</span><span class="info-val">${roleBadge(u.role)}</span></div>
+      <div class="info-row"><span class="info-lbl">Status</span><span class="info-val" style="color:${u.is_active===false?'#f87171':'#34d399'}">${u.is_active===false?'⛔ Deactivated':'✅ Active'}</span></div>
+      <div class="info-row"><span class="info-lbl">City</span><span class="info-val">${u.city||'—'}</span></div>
+      <div class="info-row"><span class="info-lbl">State</span><span class="info-val">${u.state||'—'}</span></div>
+      <div class="info-row"><span class="info-lbl">Joined</span><span class="info-val">${fmtDate(u.created_at)}</span></div>
+      <div class="info-row"><span class="info-lbl">Last Active</span><span class="info-val">${timeAgo(u.last_active)}</span></div>
+    </div>
+
+    <!-- ROLE-SPECIFIC PROFILE -->
+    ${u.role==='student'?`
+    <div style="font-size:9px;font-weight:800;color:#34d399;letter-spacing:1px;margin-bottom:6px">STUDENT PROFILE</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:14px">
+      <div class="info-row"><span class="info-lbl">College</span><span class="info-val">${u.college||'—'}</span></div>
+      <div class="info-row"><span class="info-lbl">Course</span><span class="info-val">${u.course||'—'}</span></div>
+      <div class="info-row"><span class="info-lbl">Year of Study</span><span class="info-val">${u.year_of_study?'Year '+u.year_of_study:'—'}</span></div>
+      <div class="info-row"><span class="info-lbl">Batch</span><span class="info-val" style="font-family:monospace">${u.batch||'—'}</span></div>
+    </div>`:u.role==='lecturer'?`
+    <div style="font-size:9px;font-weight:800;color:#a78bfa;letter-spacing:1px;margin-bottom:6px">LECTURER PROFILE</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:14px">
+      <div class="info-row"><span class="info-lbl">Institution</span><span class="info-val">${u.college||'—'}</span></div>
+      <div class="info-row"><span class="info-lbl">Department</span><span class="info-val">${u.department||'—'}</span></div>
+      <div class="info-row"><span class="info-lbl">Designation</span><span class="info-val">${u.designation||'—'}</span></div>
+    </div>`:u.role==='engineer'?`
+    <div style="font-size:9px;font-weight:800;color:#f59e0b;letter-spacing:1px;margin-bottom:6px">ENGINEER PROFILE</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:14px">
+      <div class="info-row"><span class="info-lbl">Firm / Company</span><span class="info-val">${u.firm_name||'—'}</span></div>
+      <div class="info-row"><span class="info-lbl">Role Title</span><span class="info-val">${u.role_title||'—'}</span></div>
+      <div class="info-row"><span class="info-lbl">Experience</span><span class="info-val">${u.experience||'—'}</span></div>
+    </div>`:''}
+
+    <!-- SUBSCRIPTION -->
+    <div style="font-size:9px;font-weight:800;color:#60a5fa;letter-spacing:1px;margin-bottom:6px">SUBSCRIPTION</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:14px">
+      <div class="info-row"><span class="info-lbl">Plan</span><span class="info-val">${planBadge(u)}</span></div>
+      <div class="info-row"><span class="info-lbl">Plan Type</span><span class="info-val">${u.plan_type||'—'}</span></div>
+      ${u.plan_expires_at && u.plan==='pro'?`<div class="info-row"><span class="info-lbl">Expires</span><span class="info-val" style="color:${daysUntil(u.plan_expires_at)<7?'#f87171':'#34d399'}">${fmtDate(u.plan_expires_at)} (${daysUntil(u.plan_expires_at)}d)</span></div>`:''}
+      ${u.payment_date?`<div class="info-row"><span class="info-lbl">Last Payment</span><span class="info-val">${fmtDate(u.payment_date)}</span></div>`:''}
+    </div>
+    <div style="background:var(--bg2);border-radius:8px;padding:14px;font-size:12px;margin-bottom:10px">
+      <div style="font-weight:700;margin-bottom:8px;color:var(--txt3);font-size:10px;letter-spacing:1px">ACTIVITY</div>
+      <div class="info-row"><span>Projects</span><span style="font-weight:700">${projs.length}</span></div>
+      <div class="info-row"><span>Analyses Run</span><span style="font-weight:700">${totalAnalyses}</span></div>
+      <div class="info-row"><span>Snapshots Saved</span><span style="font-weight:700">${snapCount}</span></div>
+      ${lastProject?`<div class="info-row"><span>Last Project</span><span style="font-weight:700;color:var(--blue)">${lastProject.name||'Untitled'}</span></div>`:''}
+      ${lastProject?`<div class="info-row"><span>Last Edited</span><span>${timeAgo(lastProject.updated_at)}</span></div>`:''}
+    </div>
+    ${projs.length?`<div style="background:var(--bg2);border-radius:8px;padding:14px;font-size:12px;margin-bottom:10px">
+      <div style="font-weight:700;margin-bottom:8px;color:var(--txt3);font-size:10px;letter-spacing:1px">PROJECTS</div>
+      ${projs.slice(0,5).map(p=>`<div class="info-row"><span style="color:var(--blue)">${p.name||'Untitled'}</span><span style="color:var(--txt3)">${fmtDate(p.updated_at)}</span></div>`).join('')}
+      ${projs.length>5?`<div style="font-size:10px;color:var(--txt3);margin-top:4px">+ ${projs.length-5} more projects</div>`:''}
+    </div>`:''}
+
+    <div style="background:var(--bg2);border-radius:8px;padding:14px;font-size:12px;margin-bottom:10px">
+      <div style="font-weight:700;margin-bottom:10px;color:var(--txt3);font-size:10px;letter-spacing:1px">🎓 LEARNING PROGRESS</div>
+
+      <!-- Design Confidence bar -->
+      <div style="margin-bottom:12px">
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+          <span style="font-size:11px;color:#94a3b8">Design Confidence</span>
+          <span style="font-size:12px;font-weight:800;color:#38bdf8">${designConf}%</span>
+        </div>
+        <div style="height:8px;background:#0f172a;border-radius:4px;overflow:hidden">
+          <div style="height:100%;width:${designConf}%;background:linear-gradient(90deg,#1d4ed8,#38bdf8);border-radius:4px;transition:width 0.5s"></div>
+        </div>
+        <div style="font-size:10px;color:#475569;margin-top:3px">${behaviorsCount}/10 learning behaviors completed</div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px">
+        <div style="padding:8px;background:#0f172a;border-radius:6px;text-align:center">
+          <div style="font-size:18px;font-weight:800;color:#34d399">${lessonsCount}</div>
+          <div style="font-size:9px;color:#475569">Lessons Done</div>
+        </div>
+        <div style="padding:8px;background:#0f172a;border-radius:6px;text-align:center">
+          <div style="font-size:18px;font-weight:800;color:#a78bfa">${quizCount}</div>
+          <div style="font-size:9px;color:#475569">Quizzes Taken</div>
+        </div>
+        <div style="padding:8px;background:#0f172a;border-radius:6px;text-align:center">
+          <div style="font-size:18px;font-weight:800;color:#f59e0b">${quizPassCount}</div>
+          <div style="font-size:9px;color:#475569">Quizzes Passed</div>
+        </div>
+      </div>
+
+      ${behaviorsCount>0?`
+      <div style="margin-bottom:8px">
+        <div style="font-size:10px;font-weight:700;color:#64748b;margin-bottom:5px">BEHAVIORS COMPLETED</div>
+        <div style="display:flex;flex-wrap:wrap;gap:4px">
+          ${Object.entries(behaviors).filter(([k,v])=>v).map(([k])=>`
+            <span style="padding:2px 8px;background:rgba(52,211,153,0.1);border:1px solid rgba(52,211,153,0.3);border-radius:10px;font-size:9px;color:#34d399">${k}</span>
+          `).join('')}
+        </div>
+      </div>`:'<div style="font-size:10px;color:#475569">No behaviors tracked yet — student has not started exploring the app.</div>'}
+
+      ${quizCount>0?`
+      <div>
+        <div style="font-size:10px;font-weight:700;color:#64748b;margin-bottom:5px">QUIZ SCORES</div>
+        <table style="width:100%;border-collapse:collapse;font-size:10px">
+          ${Object.entries(quizScores).slice(0,8).map(([k,v])=>`
+          <tr>
+            <td style="padding:3px 6px;border:1px solid var(--b1);color:#94a3b8">${k}</td>
+            <td style="padding:3px 6px;border:1px solid var(--b1);text-align:center;font-weight:700;color:${v>=70?'#34d399':'#f87171'}">${v}%</td>
+            <td style="padding:3px 6px;border:1px solid var(--b1);font-size:9px;color:${v>=70?'#34d399':'#f87171'}">${v>=70?'PASS':'FAIL'}</td>
+          </tr>`).join('')}
+        </table>
+        ${Object.keys(quizScores).length>8?`<div style="font-size:9px;color:#475569;margin-top:3px">+ ${Object.keys(quizScores).length-8} more quizzes</div>`:''}
+      </div>`:''}
+    </div>
+  `);
+  const isAlreadyPro = u.plan === 'pro' && u.plan_expires_at && new Date(u.plan_expires_at) > new Date();
+  const upgradeBtn = isAlreadyPro
+    ? `<button class="btn-sm" style="background:rgba(52,211,153,0.1);border:1px solid #34d399;color:#34d399;cursor:default" disabled>✅ Already Pro (expires ${new Date(u.plan_expires_at).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'})})</button>`
+    : `<button class="btn-sm btn-purple" onclick="upgradeUserModal('${u.id}');closeModal('user-modal')">⚡ Upgrade to Pro</button>`;
+  setHTML('user-modal-btns', `
+    ${upgradeBtn}
+    <button class="btn-sm btn-gray" onclick="changeRole('${u.id}')">Change Role</button>
+    <button class="btn-sm btn-red" onclick="deactivateUser('${u.id}')">Deactivate</button>
+  `);
+  showModal('user-modal');
+}
+
+async function upgradeUserModal(id) {
+  const u = allUsers.find(x=>x.id===id);
+  if(!u) return;
+  const planType = prompt(`Upgrade ${u.full_name} to Pro.\nEnter plan type:\n  monthly\n  annual\n  lifetime`, 'monthly');
+  if(!planType) return;
+  await upgradeToPro(id, planType.toLowerCase().trim());
+}
+
+async function upgradeToPro(id, planType) {
+  const months = planType==='annual'?12:planType==='lifetime'?1200:1;
+  const exp = new Date();
+  exp.setMonth(exp.getMonth()+months);
+  const expiry = planType==='lifetime' ? '2099-12-31T00:00:00Z' : exp.toISOString();
+  
+  const result = await api('profiles?id=eq.'+id, {
+    method:'PATCH',
+    body: JSON.stringify({
+      plan:            'pro',
+      plan_type:       planType,
+      plan_expires_at: expiry,
+      payment_date:    new Date().toISOString(),
+    })
+  });
+
+  // Update local cache
+  const idx = allUsers.findIndex(u=>u.id===id);
+  if(idx>=0) {
+    allUsers[idx].plan='pro';
+    allUsers[idx].plan_type=planType;
+    allUsers[idx].plan_expires_at=expiry;
+  }
+  filterUsers();
+  alert('✅ User upgraded to '+planType+' Pro\nExpiry: '+new Date(expiry).toLocaleDateString('en-IN'));
+}
+
+async function changeRole(id) {
+  const u = allUsers.find(x=>x.id===id);
+  if(!u) return;
+  const newRole = prompt(`Change role for ${u.full_name}.\nCurrent: ${u.role}\nEnter new role: student | lecturer | engineer | admin`, u.role);
+  if(!newRole || !['student','lecturer','engineer','admin'].includes(newRole)) return;
+  await api('profiles?id=eq.'+id, {method:'PATCH', body:JSON.stringify({role:newRole})});
+  const idx = allUsers.findIndex(u=>u.id===id);
+  if(idx>=0) allUsers[idx].role=newRole;
+  filterUsers();
+  closeModal('user-modal');
+  alert('✅ Role changed to '+newRole);
+}
+
+async function deactivateUser(id) {
+  if(!confirm('Deactivate this user? They will not be able to log in.')) return;
+  await api('profiles?id=eq.'+id, {method:'PATCH', body:JSON.stringify({is_active:false})});
+  const idx = allUsers.findIndex(u=>u.id===id);
+  if(idx>=0) allUsers[idx].is_active=false;
+  filterUsers();
+  closeModal('user-modal');
+  alert('✅ User deactivated');
+}
+
+function exportUsers() {
+  const rows = [['Name','Unique ID','Mobile','Role','Plan','Plan Type','City','State','College','Joined','Last Active']];
+  filteredUsers.forEach(u=>rows.push([
+    u.full_name,u.unique_id,u.mobile,u.role,u.plan,u.plan_type||'',u.city,u.state,u.college||'',
+    fmtDate(u.created_at),fmtDate(u.last_active)
+  ]));
+  downloadCSV(rows, 'users_'+new Date().toISOString().slice(0,10)+'.csv');
+}
+
+// ═══════════════════════════════════════════════════════════
+// REVENUE
+// ═══════════════════════════════════════════════════════════
+async function loadRevenue() {
+  if(!allUsers.length) allUsers = await api('profiles?select=*&order=created_at.desc') || [];
+  if(!allPayments.length) allPayments = await api('payment_history?select=*&order=created_at.desc') || [];
+
+  const now = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+
+  const monthlyActive = allUsers.filter(u=>isActive(u)&&(u.plan_type==='monthly'||(!u.plan_type&&u.plan==='pro')));
+  const annualActive  = allUsers.filter(u=>isActive(u)&&u.plan_type==='annual');
+  const churned       = allUsers.filter(u=>u.plan==='pro'&&isExpired(u));
+
+  const monthlyRev = monthlyActive.length*PRICES.monthly;
+  const annualRev  = annualActive.length *PRICES.annual;
+  const monthlyEquiv = Math.round(annualRev/12);
+
+  // Payments this month
+  const thisMonthPay = allPayments.filter(p=>p.created_at>=monthStart);
+  const thisMonthTotal = thisMonthPay.reduce((s,p)=>s+Math.round((p.amount||0)/100),0);
+  const allTimeTotal   = allPayments.reduce((s,p)=>s+Math.round((p.amount||0)/100),0);
+
+  // Annual renewals this month
+  const annualRenew = annualActive.filter(u=>{
+    if(!u.plan_expires_at) return false;
+    const exp = new Date(u.plan_expires_at);
+    return exp.getFullYear()===now.getFullYear()&&exp.getMonth()===now.getMonth();
+  });
+
+  // Update revenue page
+  setText('rev2-monthly',     fmt(monthlyRev));
+  setText('rev2-monthly-sub', monthlyActive.length+' active subscribers');
+  setText('rev2-m-count',     monthlyActive.length);
+  setText('rev2-m-actual',    fmt(thisMonthPay.filter(p=>p.plan==='monthly').reduce((s,p)=>s+Math.round((p.amount||0)/100),0)));
+  setText('rev2-m-expected',  fmt(monthlyRev));
+  setText('rev2-annual',      fmt(annualRev));
+  setText('rev2-annual-sub',  annualActive.length+' active subscribers');
+  setText('rev2-a-count',     annualActive.length);
+  setText('rev2-a-monthly',   fmt(monthlyEquiv)+'/month');
+  setText('rev2-a-renew',     fmt(annualRenew.length*PRICES.annual)+' ('+annualRenew.length+' renewals)');
+  setText('rev2-total',       fmt(allTimeTotal));
+  setText('rev2-this-month',  fmt(thisMonthTotal));
+  setText('rev2-next-month',  fmt(monthlyRev+monthlyEquiv));
+  setText('rev2-churn',       churned.length+' users');
+
+  setText('monthly-sub-count', monthlyActive.length+' subscribers');
+  setText('annual-sub-count',  annualActive.length+' subscribers');
+
+  // Monthly subs table
+  setHTML('monthly-subs-tbody', monthlyActive.length ? monthlyActive.map(u=>{
+    const daysLeft = u.plan_expires_at ? daysUntil(u.plan_expires_at) : '—';
+    const expiring = typeof daysLeft==='number' && daysLeft<=7;
+    return `<tr>
+      <td><strong>${u.full_name||'—'}</strong></td>
+      <td>${u.mobile||'—'}</td>
+      <td style="font-size:11px;color:var(--txt3)">${u.unique_id||'—'}</td>
+      <td>${fmtDate(u.payment_date||u.created_at)}</td>
+      <td style="color:${expiring?'var(--red)':'inherit'}">${fmtDate(u.plan_expires_at)} ${expiring?'⚠️':''}</td>
+      <td>${fmt(PRICES.monthly)}</td>
+      <td><span class="badge badge-active">Active</span></td>
+      <td><button class="btn-sm btn-purple" onclick="upgradeUserModal('${u.id}')">Extend</button></td>
+    </tr>`;
+  }).join('') : '<tr><td colspan="8" class="empty">No monthly subscribers</td></tr>');
+
+  // Annual subs table
+  setHTML('annual-subs-tbody', annualActive.length ? annualActive.map(u=>{
+    return `<tr>
+      <td><strong>${u.full_name||'—'}</strong></td>
+      <td>${u.mobile||'—'}</td>
+      <td style="font-size:11px;color:var(--txt3)">${u.unique_id||'—'}</td>
+      <td>${fmtDate(u.payment_date||u.created_at)}</td>
+      <td>${fmtDate(u.plan_expires_at)}</td>
+      <td>${fmt(PRICES.annual)}</td>
+      <td style="color:var(--txt3)">${fmt(Math.round(PRICES.annual/12))}/month</td>
+      <td><span class="badge badge-annual">Active</span></td>
+    </tr>`;
+  }).join('') : '<tr><td colspan="8" class="empty">No annual subscribers</td></tr>');
+
+  // Churned table
+  setHTML('churned-tbody', churned.length ? churned.map(u=>{
+    const daysAgo = u.plan_expires_at ? Math.abs(daysUntil(u.plan_expires_at)) : '—';
+    return `<tr>
+      <td><strong>${u.full_name||'—'}</strong></td>
+      <td>${u.mobile||'—'}</td>
+      <td>${u.plan_type||'Pro'}</td>
+      <td>${fmtDate(u.plan_expires_at)}</td>
+      <td style="color:var(--red)">${daysAgo} days ago</td>
+      <td><button class="btn-sm btn-purple" onclick="upgradeUserModal('${u.id}')">Re-activate</button></td>
+    </tr>`;
+  }).join('') : '<tr><td colspan="6" class="empty">No churned users</td></tr>');
+
+  // Payment history
+  setHTML('payments-tbody', allPayments.length ? allPayments.slice(0,50).map(p=>{
+    const user = allUsers.find(u=>u.id===p.profile_id||u.id===p.user_id);
+    return `<tr>
+      <td>${fmtDate(p.created_at)}</td>
+      <td>${user?.full_name||'—'}</td>
+      <td>${user?.mobile||'—'}</td>
+      <td><span class="badge ${p.plan==='annual'?'badge-annual':'badge-monthly'}">${p.plan||'—'}</span></td>
+      <td style="font-weight:700;color:var(--green)">${fmt(Math.round((p.amount||0)/100))}</td>
+      <td style="font-size:10px;color:var(--txt3)">${p.razorpay_payment_id||'—'}</td>
+      <td>${p.coupon_used||'—'}</td>
+    </tr>`;
+  }).join('') : '<tr><td colspan="7" class="empty">No payments yet</td></tr>');
+}
+
+function exportPayments() {
+  const rows = [['Date','Name','Mobile','Plan','Amount (₹)','Razorpay ID','Coupon']];
+  allPayments.forEach(p=>{
+    const user = allUsers.find(u=>u.id===p.profile_id||u.id===p.user_id);
+    rows.push([fmtDate(p.created_at),user?.full_name||'—',user?.mobile||'—',p.plan,Math.round((p.amount||0)/100),p.razorpay_payment_id||'',p.coupon_used||'']);
+  });
+  downloadCSV(rows, 'payments_'+new Date().toISOString().slice(0,10)+'.csv');
+}
+
+// ═══════════════════════════════════════════════════════════
+// PROJECTS
+// ═══════════════════════════════════════════════════════════
+async function loadProjects() {
+  if(!allProjects.length) allProjects = await api('projects?select=*&deleted_at=is.null&order=updated_at.desc') || [];
+  if(!allUsers.length)    allUsers    = await api('profiles?select=id,full_name,mobile&order=created_at.desc') || [];
+  filteredProjects = [...allProjects];
+  renderProjects();
+}
+
+function filterProjects() {
+  const q = (el('proj-search')?.value||'').toLowerCase();
+  const s = el('proj-status-filter')?.value||'';
+  filteredProjects = allProjects.filter(p=>{
+    if(q && !((p.name||'').toLowerCase().includes(q))) return false;
+    if(s==='pass' && !p.all_checks_pass) return false;
+    if(s==='fail' && (p.all_checks_pass || p.safety_score===null)) return false;
+    if(s==='draft' && p.safety_score!==null) return false;
+    return true;
+  });
+  projPage=1; renderProjects();
+}
+
+function renderProjects() {
+  const start = (projPage-1)*PAGE_SIZE;
+  const page  = filteredProjects.slice(start, start+PAGE_SIZE);
+  const userMap = Object.fromEntries(allUsers.map(u=>[u.id,u]));
+
+  setHTML('projects-tbody', page.length ? page.map(p=>{
+    const user = userMap[p.profile_id];
+    const safety = p.all_checks_pass ? '<span style="color:var(--green)">✅ All Pass</span>'
+                 : p.safety_score!==null ? `<span style="color:var(--red)">⚠️ ${Math.round(p.safety_score)}%</span>`
+                 : '<span style="color:var(--txt3)">—</span>';
+    const grid = (p.grid_x&&p.grid_y) ? p.grid_x+'×'+p.grid_y : '—';
+    return `<tr>
+      <td><strong>${p.name||'Untitled'}</strong></td>
+      <td>${user?.full_name||'—'}<br><span style="font-size:10px;color:var(--txt3)">${user?.mobile||''}</span></td>
+      <td>${grid}</td>
+      <td>${p.floors ? 'G+'+(p.floors-1) : '—'}</td>
+      <td>${p.analysis_count||0}</td>
+      <td>${safety}</td>
+      <td>${timeAgo(p.updated_at)}</td>
+    </tr>`;
+  }).join('') : '<tr><td colspan="7" class="empty">No projects found</td></tr>');
+
+  const pages = Math.ceil(filteredProjects.length/PAGE_SIZE);
+  el('projects-pagination').innerHTML = `
+    <span style="font-size:12px;color:var(--txt3)">${filteredProjects.length} projects</span>
+    ${Array.from({length:Math.min(pages,10)},(_,i)=>`
+      <button class="page-btn ${i+1===projPage?'active':''}" onclick="projPage=${i+1};renderProjects()">${i+1}</button>
+    `).join('')}
+  `;
+}
+
+function exportProjects() {
+  const userMap = Object.fromEntries(allUsers.map(u=>[u.id,u]));
+  const rows=[['Project','User','Mobile','Grid','Floors','Analyses','Safety Score','Last Edited']];
+  filteredProjects.forEach(p=>{
+    const u=userMap[p.profile_id];
+    rows.push([p.name,u?.full_name||'—',u?.mobile||'—',
+      (p.grid_x&&p.grid_y)?p.grid_x+'×'+p.grid_y:'—',p.floors||'—',
+      p.analysis_count||0, p.safety_score!==null?Math.round(p.safety_score)+'%':'—',fmtDate(p.updated_at)]);
+  });
+  downloadCSV(rows, 'projects_'+new Date().toISOString().slice(0,10)+'.csv');
+}
+
+// ═══════════════════════════════════════════════════════════
+// BATCHES
+// ═══════════════════════════════════════════════════════════
+async function loadBatches() {
+  allBatches = await api('batches?select=*,profiles(full_name,mobile)&order=created_at.desc') || [];
+  const members = await api('batch_members?select=batch_id') || [];
+  const memberCount = {};
+  members.forEach(m=>{ memberCount[m.batch_id]=(memberCount[m.batch_id]||0)+1; });
+
+  setHTML('batches-tbody', allBatches.length ? allBatches.map(b=>`
+    <tr>
+      <td><code style="background:var(--bg3);padding:2px 6px;border-radius:4px">${b.batch_code}</code></td>
+      <td><strong>${b.batch_name}</strong></td>
+      <td>${b.profiles?.full_name||'—'}<br><span style="font-size:10px;color:var(--txt3)">${b.profiles?.mobile||''}</span></td>
+      <td>${b.college||'—'}</td>
+      <td>${memberCount[b.id]||0} students</td>
+      <td>${fmtDate(b.created_at)}</td>
+      <td>
+        <button class="btn-sm btn-gray" onclick="viewBatchStudents('${b.id}','${b.batch_name}')">View Students</button>
+        <button class="btn-sm btn-red" style="margin-left:4px" onclick="deleteBatch('${b.id}')">Delete</button>
+      </td>
+    </tr>`).join('') : '<tr><td colspan="7" class="empty">No batches yet</td></tr>');
+}
+
+async function viewBatchStudents(batchId, batchName) {
+  const members = await api('batch_members?batch_id=eq.'+batchId+'&select=*,profiles(full_name,mobile,unique_id,city,last_active)') || [];
+  el('user-modal-title').textContent = batchName+' — Students ('+members.length+')';
+  setHTML('user-modal-content', members.length ? `
+    <table style="width:100%;font-size:12px">
+      <thead><tr style="color:var(--txt3)"><th style="text-align:left;padding:6px">Name</th><th>Mobile</th><th>ID</th><th>Last Active</th></tr></thead>
+      <tbody>${members.map(m=>`<tr>
+        <td style="padding:6px">${m.profiles?.full_name||'—'}</td>
+        <td>${m.profiles?.mobile||'—'}</td>
+        <td style="font-size:10px">${m.profiles?.unique_id||'—'}</td>
+        <td>${timeAgo(m.profiles?.last_active)}</td>
+      </tr>`).join('')}</tbody>
+    </table>` : '<div class="empty">No students in this batch yet</div>');
+  setHTML('user-modal-btns', '<button class="btn-sm btn-gray" onclick="closeModal(\'user-modal\')">Close</button>');
+  showModal('user-modal');
+}
+
+function showCreateBatch() { showModal('batch-modal'); }
+
+async function createBatch() {
+  const mob    = el('batch-lecturer-mob')?.value?.trim();
+  const code   = el('batch-code')?.value?.trim();
+  const name   = el('batch-name')?.value?.trim();
+  const college= el('batch-college')?.value?.trim();
+  if(!mob||!code||!name){ el('batch-msg').textContent='All fields required'; el('batch-msg').style.color='var(--red)'; return; }
+
+  // Find lecturer profile
+  const mob10 = mob.replace(/\D/g,'').slice(-10);
+  const lecturers = await api('profiles?mobile=eq.%2B91'+mob10+'&select=id,full_name');
+  if(!lecturers||!lecturers[0]){ el('batch-msg').textContent='Lecturer not found'; el('batch-msg').style.color='var(--red)'; return; }
+
+  const result = await api('batches', {method:'POST', body:JSON.stringify({
+    profile_id: lecturers[0].id, batch_code:code, batch_name:name, college:college||null
+  })});
+  if(result){
+    closeModal('batch-modal');
+    loadBatches();
+    alert('✅ Batch created: '+code);
+  }
+}
+
+async function deleteBatch(id) {
+  if(!confirm('Delete this batch?')) return;
+  await api('batches?id=eq.'+id, {method:'DELETE'});
+  loadBatches();
+}
+
+// ═══════════════════════════════════════════════════════════
+// ANALYTICS
+// ═══════════════════════════════════════════════════════════
+async function loadAnalytics() {
+  if(!allUsers.length) allUsers = await api('profiles?select=*&order=created_at.desc') || [];
+  if(!allProjects.length) allProjects = await api('projects?select=*&deleted_at=is.null') || [];
+
+  // Chart: Registrations last 30 days
+  const days30 = Array.from({length:30},(_,i)=>{
+    const d = new Date(Date.now()-(29-i)*86400000);
+    return d.toISOString().slice(0,10);
+  });
+  const regByDay = {};
+  allUsers.forEach(u=>{ const d=(u.created_at||'').slice(0,10); if(regByDay[d]!==undefined||days30.includes(d)) regByDay[d]=(regByDay[d]||0)+1; });
+
+  makeChart('chart-registrations','line',
+    days30.map(d=>d.slice(5)),
+    days30.map(d=>regByDay[d]||0),
+    'Registrations','#3b82f6'
+  );
+
+  // Chart: Roles
+  const roleCounts = {};
+  allUsers.forEach(u=>{ roleCounts[u.role||'unknown']=(roleCounts[u.role||'unknown']||0)+1; });
+  makeChart('chart-roles','doughnut',Object.keys(roleCounts),Object.values(roleCounts),
+    'Users by Role',['#34d399','#fbbf24','#f87171','#a78bfa']);
+
+  // Chart: States (top 8)
+  const stateCounts = {};
+  allUsers.forEach(u=>{ if(u.state) stateCounts[u.state]=(stateCounts[u.state]||0)+1; });
+  const topStates = Object.entries(stateCounts).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  makeChart('chart-states','bar',topStates.map(s=>s[0]),topStates.map(s=>s[1]),'Users','#60a5fa');
+
+  // Chart: Free vs Pro
+  const freeCnt = allUsers.filter(u=>u.plan!=='pro').length;
+  const proCnt  = allUsers.filter(u=>u.plan==='pro').length;
+  makeChart('chart-plans','doughnut',['Free','Pro'],[freeCnt,proCnt],'Plan Distribution',['#334155','#3b82f6']);
+
+  // Top users by engagement
+  const userEngagement = allUsers.map(u=>{
+    const projs = allProjects.filter(p=>p.profile_id===u.id);
+    const analyses = projs.reduce((s,p)=>s+(p.analysis_count||0),0);
+    return {...u, _projs:projs.length, _analyses:analyses};
+  }).sort((a,b)=>b._analyses-a._analyses).slice(0,10);
+
+  setHTML('top-users-tbody', userEngagement.map((u,i)=>`<tr>
+    <td><strong>#${i+1}</strong></td>
+    <td>${u.full_name||'—'}</td>
+    <td>${roleBadge(u.role)}</td>
+    <td>${u._projs}</td>
+    <td><strong>${u._analyses}</strong></td>
+    <td>—</td>
+    <td>${planBadge(u)}</td>
+  </tr>`).join(''));
+
+  // Conversion targets: free users with 2+ analyses
+  const targets = allUsers
+    .filter(u=>u.plan!=='pro')
+    .map(u=>{
+      const projs = allProjects.filter(p=>p.profile_id===u.id);
+      const analyses = projs.reduce((s,p)=>s+(p.analysis_count||0),0);
+      return {...u, _projs:projs.length, _analyses:analyses};
+    })
+    .filter(u=>u._analyses>=2)
+    .sort((a,b)=>b._analyses-a._analyses)
+    .slice(0,20);
+
+  setHTML('targets-tbody', targets.length ? targets.map(u=>`<tr>
+    <td>${u.full_name||'—'}</td>
+    <td>${u.mobile||'—'}</td>
+    <td>${u._projs}</td>
+    <td><strong>${u._analyses}</strong></td>
+    <td>${timeAgo(u.last_active)}</td>
+    <td><button class="btn-sm btn-purple" onclick="upgradeUserModal('${u.id}')">⚡ Upgrade</button></td>
+  </tr>`).join('') : '<tr><td colspan="6" class="empty">No upgrade targets yet</td></tr>');
+}
+
+function makeChart(canvasId, type, labels, data, label, color) {
+  const ctx = document.getElementById(canvasId)?.getContext('2d');
+  if(!ctx) return;
+  if(charts[canvasId]) charts[canvasId].destroy();
+  const isDoughnut = type==='doughnut';
+  charts[canvasId] = new Chart(ctx, {
+    type,
+    data: {
+      labels,
+      datasets:[{
+        label,
+        data,
+        backgroundColor: Array.isArray(color) ? color
+          : isDoughnut ? ['#1e3a8a','#3b82f6'] : color+'33',
+        borderColor: Array.isArray(color) ? color : color,
+        borderWidth: isDoughnut?0:2,
+        fill: !isDoughnut,
+        tension: 0.4,
+        pointRadius: type==='line'?3:0,
+      }]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:isDoughnut,labels:{color:'#94a3b8',font:{size:11}}} },
+      scales: isDoughnut ? {} : {
+        x:{ticks:{color:'#64748b',font:{size:10}},grid:{color:'#1e3a8a33'}},
+        y:{ticks:{color:'#64748b',font:{size:10}},grid:{color:'#1e3a8a33'},beginAtZero:true}
+      }
+    }
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+// COUPONS
+// ═══════════════════════════════════════════════════════════
+async function loadCoupons() {
+  allCoupons = await api('coupons?select=*&order=created_at.desc') || [];
+  setHTML('coupons-tbody', allCoupons.length ? allCoupons.map(c=>`<tr>
+    <td><code style="background:var(--bg3);padding:2px 6px;border-radius:4px;font-size:13px">${c.code}</code></td>
+    <td>${c.discount_type==='percentage'?c.discount_value+'% off':'₹'+c.discount_value+' off'}</td>
+    <td>${c.applies_to==='both'?'All plans':c.applies_to}</td>
+    <td>${c.used_count||0}</td>
+    <td>${c.max_uses||'∞'}</td>
+    <td>${c.valid_until?fmtDate(c.valid_until):'No expiry'}</td>
+    <td><span class="badge ${c.is_active?'badge-active':'badge-inactive'}">${c.is_active?'Active':'Inactive'}</span></td>
+    <td>
+      <button class="btn-sm btn-gray" onclick="toggleCoupon('${c.id}',${!c.is_active})">${c.is_active?'Disable':'Enable'}</button>
+      <button class="btn-sm btn-red" style="margin-left:4px" onclick="deleteCoupon('${c.id}')">Delete</button>
+    </td>
+  </tr>`).join('') : '<tr><td colspan="8" class="empty">No coupons yet</td></tr>');
+}
+
+function showCreateCoupon() { showModal('coupon-modal'); }
+
+async function createCoupon() {
+  const code  = el('coupon-code')?.value?.trim();
+  const type  = el('coupon-type')?.value;
+  const val   = parseInt(el('coupon-value')?.value||'0');
+  const apply = el('coupon-applies')?.value;
+  const max   = parseInt(el('coupon-max')?.value||'0');
+  const valid = el('coupon-valid')?.value;
+  if(!code||!val){ el('coupon-msg').textContent='Code and value required'; el('coupon-msg').style.color='var(--red)'; return; }
+  await api('coupons',{method:'POST',body:JSON.stringify({
+    code,discount_type:type,discount_value:val,applies_to:apply,
+    max_uses:max,valid_until:valid||null,is_active:true
+  })});
+  closeModal('coupon-modal');
+  loadCoupons();
+}
+
+async function toggleCoupon(id, active) {
+  await api('coupons?id=eq.'+id,{method:'PATCH',body:JSON.stringify({is_active:active})});
+  loadCoupons();
+}
+
+async function deleteCoupon(id) {
+  if(!confirm('Delete this coupon?')) return;
+  await api('coupons?id=eq.'+id,{method:'DELETE'});
+  loadCoupons();
+}
+
+// ═══════════════════════════════════════════════════════════
+// SETTINGS
+// ═══════════════════════════════════════════════════════════
+async function loadSettings() {
+  const settings = await api('platform_settings?select=*') || [];
+  const map = Object.fromEntries(settings.map(s=>[s.key,s.value]));
+  if(el('price-monthly')) el('price-monthly').value = map.price_monthly_display || '299';
+  if(el('price-annual'))  el('price-annual').value  = map.price_annual_display  || '2990';
+  // Load announcements history and failed payments
+  if(!allUsers.length) allUsers = await api('profiles?select=*&order=created_at.desc') || [];
+  loadAnnouncementHistory();
+  loadFailedPayments();
+}
+
+// ═══════════════════════════════════════════════════════════
+// DASHBOARD: RISK ALERTS + ENGAGEMENT FUNNEL
+// ═══════════════════════════════════════════════════════════
+function buildRiskAlerts(users, projects) {
+  const now = Date.now();
+  const day7  = new Date(now - 7*86400000).toISOString();
+  const day1  = new Date(now - 86400000).toISOString();
+
+  const inactive7     = users.filter(u=>u.last_active && u.last_active < day7 && u.plan!=='pro');
+  const neverAnalysed = users.filter(u=>{ const p=projects.filter(pr=>pr.profile_id===u.id); return !p.length || p.reduce((s,pr)=>s+(pr.analysis_count||0),0)===0; });
+  const expiring      = users.filter(u=>u.plan==='pro' && u.plan_expires_at && daysUntil(u.plan_expires_at)>=0 && daysUntil(u.plan_expires_at)<=7);
+  const newToday      = users.filter(u=>u.created_at > day1);
+
+  const alerts = [];
+  if(inactive7.length)     alerts.push({ color:'#f87171', icon:'😴', msg:`${inactive7.length} free users haven't logged in for 7+ days — at risk of churning. <button class="btn-sm btn-gray" onclick="showPage('atrisk')" style="margin-left:8px">View →</button>` });
+  if(neverAnalysed.length) alerts.push({ color:'#fbbf24', icon:'🆕', msg:`${neverAnalysed.length} users signed up but never ran an analysis. They need a nudge. <button class="btn-sm btn-gray" onclick="filterRisk('neveranalysed');showPage('atrisk')" style="margin-left:8px">View →</button>` });
+  if(expiring.length)      alerts.push({ color:'#a78bfa', icon:'⏰', msg:`${expiring.length} Pro users expiring within 7 days — reach out now for renewals. <button class="btn-sm btn-gray" onclick="filterRisk('expiring');showPage('atrisk')" style="margin-left:8px">View →</button>` });
+  if(newToday.length)      alerts.push({ color:'#34d399', icon:'🎉', msg:`${newToday.length} new signup${newToday.length>1?'s':''} today!` });
+
+  const banner = document.getElementById('risk-alert-banner');
+  if(!banner) return;
+  if(alerts.length) {
+    banner.style.display = 'block';
+    banner.innerHTML = alerts.map(a=>`
+      <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:${a.color}18;border:1px solid ${a.color}55;border-radius:8px;margin-bottom:8px;font-size:12px;color:${a.color}">
+        <span style="font-size:16px">${a.icon}</span><span>${a.msg}</span>
+      </div>`).join('');
+  }
+}
+
+function buildFunnel(users, projects) {
+  const wrap = document.getElementById('funnel-wrap');
+  if(!wrap) return;
+  const total = users.length;
+  if(!total){ wrap.innerHTML='<div style="color:var(--txt3);font-size:12px">No users yet.</div>'; return; }
+
+  const ran     = users.filter(u=>{ const ps=projects.filter(p=>p.profile_id===u.id); return ps.reduce((s,p)=>s+(p.analysis_count||0),0)>0; }).length;
+  const snapshot= projects.filter(p=>p.all_checks_pass).length; // proxy: projects that passed
+  const pro     = users.filter(u=>u.plan==='pro' && !isExpired(u)).length;
+
+  const steps = [
+    { label:'Signed Up',     count:total, color:'#3b82f6' },
+    { label:'Ran Analysis',  count:ran,   color:'#34d399' },
+    { label:'Project Passed',count:Math.min(snapshot,ran), color:'#a78bfa' },
+    { label:'Converted Pro', count:pro,   color:'#f59e0b' },
+  ];
+
+  wrap.innerHTML = '<div style="display:flex;flex-direction:column;gap:8px">' +
+    steps.map((s,i)=>{
+      const pct = total ? Math.round(s.count/total*100) : 0;
+      const drop = i>0 ? Math.round((steps[i-1].count - s.count)/steps[i-1].count*100) : 0;
+      return `<div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:3px;font-size:11px">
+          <span style="color:var(--txt2)">${s.label}</span>
+          <span style="color:${s.color};font-weight:700">${s.count} (${pct}%)${i>0?' <span style="color:#f87171;font-size:10px">↓ '+drop+'% drop-off</span>':''}</span>
+        </div>
+        <div style="height:24px;background:#0f172a;border-radius:4px;overflow:hidden">
+          <div style="height:100%;width:${pct}%;background:${s.color};border-radius:4px;display:flex;align-items:center;padding-left:8px;font-size:10px;color:#fff;font-weight:700;transition:width 0.5s">${s.count>0?s.count:''}</div>
+        </div>
+      </div>`;
+    }).join('') + '</div>';
+}
+
+// Extend loadDashboard to call these
+const _origLoadDashboard = loadDashboard;
+loadDashboard = async function() {
+  await _origLoadDashboard();
+  buildRiskAlerts(allUsers, allProjects);
+  buildFunnel(allUsers, allProjects);
+};
+
+// ═══════════════════════════════════════════════════════════
+// LEADERBOARD
+// ═══════════════════════════════════════════════════════════
+let _lbData = [];
+
+async function loadLeaderboard() {
+  if(!allUsers.length) allUsers = await api('profiles?select=*&order=created_at.desc') || [];
+  if(!allProjects.length) allProjects = await api('projects?select=*&deleted_at=is.null') || [];
+
+  // Fetch all progress in one shot
+  const allProgress = await api('progress?select=*') || [];
+  const progMap = Object.fromEntries(allProgress.map(p=>[p.profile_id, p]));
+
+  _lbData = allUsers.map(u => {
+    const prog     = progMap[u.id] || {};
+    const lessons  = Object.values(prog.topics_completed||{}).filter(Boolean).length;
+    const behaviors= Object.values(prog.badges||{}).filter(Boolean).length;
+    const quizzes  = Object.values(prog.quiz_scores||{}).filter(s=>s>=70).length;
+    const analyses = allProjects.filter(p=>p.profile_id===u.id).reduce((s,p)=>s+(p.analysis_count||0),0);
+    return { ...u, _lessons:lessons, _behaviors:behaviors, _quizzes:quizzes, _analyses:analyses, _conf:Math.min(100,behaviors*10) };
+  });
+
+  renderLeaderboard();
+}
+
+function renderLeaderboard() {
+  const roleF = document.getElementById('lb-filter-role')?.value || '';
+  const planF = document.getElementById('lb-filter-plan')?.value || '';
+  const sortK  = document.getElementById('lb-sort')?.value || 'confidence';
+
+  let data = _lbData.filter(u =>
+    (!roleF || u.role===roleF) &&
+    (!planF || (planF==='pro'?u.plan==='pro':u.plan!=='pro'))
+  );
+
+  const sortMap = { confidence:'_conf', analyses:'_analyses', lessons:'_lessons', quizzes:'_quizzes' };
+  data.sort((a,b)=>b[sortMap[sortK]]-a[sortMap[sortK]]);
+
+  const medals = ['🥇','🥈','🥉'];
+  setHTML('leaderboard-tbody', data.length ? data.map((u,i)=>`<tr>
+    <td style="text-align:center;font-size:16px">${medals[i]||'#'+(i+1)}</td>
+    <td><strong>${u.full_name||'—'}</strong><br><span style="font-size:10px;color:var(--txt3)">${u.city||''}</span></td>
+    <td>${roleBadge(u.role)}</td>
+    <td>${planBadge(u)}</td>
+    <td>
+      <div style="display:flex;align-items:center;gap:6px">
+        <div style="flex:1;height:6px;background:#0f172a;border-radius:3px">
+          <div style="height:100%;width:${u._conf}%;background:linear-gradient(90deg,#1d4ed8,#38bdf8);border-radius:3px"></div>
+        </div>
+        <span style="font-size:11px;font-weight:700;color:#38bdf8;min-width:32px">${u._conf}%</span>
+      </div>
+    </td>
+    <td style="text-align:center">${u._behaviors}/10</td>
+    <td style="text-align:center">${u._lessons}</td>
+    <td style="text-align:center">${u._quizzes}</td>
+    <td style="text-align:center">${u._analyses}</td>
+    <td>${timeAgo(u.last_active)}</td>
+  </tr>`).join('') : '<tr><td colspan="10" class="empty">No data</td></tr>');
+}
+
+function exportLeaderboard() {
+  const rows = [['Rank','Name','Mobile','Role','Plan','Design Confidence %','Behaviors','Lessons','Quizzes Passed','Analyses','Last Active']];
+  _lbData.forEach((u,i)=>rows.push([i+1,u.full_name,u.mobile,u.role,u.plan,u._conf,u._behaviors,u._lessons,u._quizzes,u._analyses,timeAgo(u.last_active)]));
+  downloadCSV(rows,'leaderboard.csv');
+}
+
+// ═══════════════════════════════════════════════════════════
+// AT-RISK STUDENTS
+// ═══════════════════════════════════════════════════════════
+let _riskData = [], _riskFilter = 'all';
+
+async function loadAtRisk() {
+  if(!allUsers.length) allUsers = await api('profiles?select=*&order=created_at.desc') || [];
+  if(!allProjects.length) allProjects = await api('projects?select=*&deleted_at=is.null') || [];
+
+  const now = Date.now();
+  const day7  = new Date(now-7*86400000).toISOString();
+  const day30 = new Date(now-30*86400000).toISOString();
+
+  _riskData = allUsers.map(u=>{
+    const projs    = allProjects.filter(p=>p.profile_id===u.id);
+    const analyses = projs.reduce((s,p)=>s+(p.analysis_count||0),0);
+    const reasons  = [];
+    if(!u.last_active || u.last_active < day7)  reasons.push('Inactive 7+ days');
+    if(!u.last_active || u.last_active < day30) reasons.push('Inactive 30+ days');
+    if(analyses===0) reasons.push('Never analysed');
+    if(u.plan==='pro' && u.plan_expires_at && daysUntil(u.plan_expires_at)>=0 && daysUntil(u.plan_expires_at)<=7) reasons.push('Expiring soon');
+    return { ...u, _analyses:analyses, _reasons:reasons };
+  }).filter(u=>u._reasons.length>0);
+
+  // Update stat cards
+  setText('risk-inactive7', _riskData.filter(u=>u._reasons.includes('Inactive 7+ days')).length);
+  setText('risk-never',     _riskData.filter(u=>u._reasons.includes('Never analysed')).length);
+  setText('risk-expiring',  _riskData.filter(u=>u._reasons.includes('Expiring soon')).length);
+  setText('risk-zero',      _riskData.filter(u=>u._analyses===0).length);
+
+  renderRiskTable();
+}
+
+function filterRisk(type) {
+  _riskFilter = type;
+  if(document.getElementById('atrisk-tbody')) renderRiskTable();
+}
+
+function renderRiskTable() {
+  const filters = {
+    inactive7:     u=>u._reasons.includes('Inactive 7+ days'),
+    neveranalysed: u=>u._reasons.includes('Never analysed'),
+    expiring:      u=>u._reasons.includes('Expiring soon'),
+    zeroprogress:  u=>u._analyses===0,
+    all:           ()=>true,
+  };
+  const data = _riskData.filter(filters[_riskFilter]||filters.all);
+  const titles = { inactive7:'Inactive 7+ Days', neveranalysed:'Never Analysed', expiring:'Pro Expiring Soon', zeroprogress:'Zero Progress', all:'All At-Risk Students' };
+  setText('risk-table-title', (titles[_riskFilter]||'All At-Risk')+' ('+data.length+')');
+
+  setHTML('atrisk-tbody', data.length ? data.map(u=>`<tr>
+    <td><input type="checkbox" class="risk-chk" data-id="${u.id}" data-mobile="${u.mobile}" onchange="updateRiskSelection()"></td>
+    <td><strong>${u.full_name||'—'}</strong></td>
+    <td style="font-family:monospace">${u.mobile||'—'}</td>
+    <td>${planBadge(u)}</td>
+    <td>${u._reasons.map(r=>`<span style="padding:1px 6px;border-radius:10px;font-size:9px;font-weight:700;background:rgba(248,113,113,0.15);color:#f87171;margin-right:3px">${r}</span>`).join('')}</td>
+    <td>${timeAgo(u.last_active)}</td>
+    <td>${u._analyses}</td>
+    <td>
+      <button class="btn-sm btn-purple" onclick="upgradeUserModal('${u.id}')">⚡ Pro</button>
+    </td>
+  </tr>`).join('') : '<tr><td colspan="8" class="empty">No at-risk students in this category</td></tr>');
+}
+
+function toggleRiskSelect(cb) {
+  document.querySelectorAll('.risk-chk').forEach(c=>c.checked=cb.checked);
+  updateRiskSelection();
+}
+
+function updateRiskSelection() {
+  const sel = document.querySelectorAll('.risk-chk:checked');
+  const bar = document.getElementById('risk-bulk-bar');
+  const cnt = document.getElementById('risk-selected-count');
+  if(bar) bar.style.display = sel.length>0?'flex':'none';
+  if(cnt) cnt.textContent = sel.length+' selected';
+}
+
+function bulkUpgradeSelected() {
+  const sel = Array.from(document.querySelectorAll('.risk-chk:checked')).map(c=>c.dataset.id);
+  if(!sel.length){alert('No students selected');return;}
+  const plan = prompt('Plan type? (monthly/annual/lifetime)','monthly');
+  if(!plan) return;
+  Promise.all(sel.map(id=>upgradeToPro(id,plan))).then(()=>{
+    alert('✅ '+sel.length+' students upgraded to Pro ('+plan+')');
+    loadAtRisk();
+  });
+}
+
+function bulkWhatsApp() {
+  const mobiles = _riskData.map(u=>u.mobile).filter(Boolean);
+  const msg = encodeURIComponent('Hi, we noticed you haven\'t logged into StructLearn Pro recently. Jump back in and complete your building design!');
+  window.open('https://wa.me/?text='+msg);
+  alert('WhatsApp opened. Copy the message and send to these '+mobiles.length+' numbers:\n\n'+mobiles.join('\n'));
+}
+
+function bulkMessageSelected() {
+  const sel = Array.from(document.querySelectorAll('.risk-chk:checked')).map(c=>c.dataset.mobile).filter(Boolean);
+  if(!sel.length){alert('No students selected');return;}
+  alert('Selected mobile numbers ('+sel.length+'):\n\n'+sel.join('\n')+'\n\nCopy and use in WhatsApp Broadcast.');
+}
+
+// ═══════════════════════════════════════════════════════════
+// BULK ACTIONS
+// ═══════════════════════════════════════════════════════════
+let _bulkUpgradeUsers = [];
+
+async function loadBulk() {
+  if(!allUsers.length) allUsers = await api('profiles?select=*&order=created_at.desc') || [];
+  if(!allProjects.length) allProjects = await api('projects?select=*&deleted_at=is.null') || [];
+}
+
+function previewBulkMsg() {
+  const target = document.getElementById('bulk-msg-target')?.value;
+  const text   = document.getElementById('bulk-msg-text')?.value;
+  const preview= document.getElementById('bulk-preview');
+  if(!text){alert('Enter a message first');return;}
+
+  const now=Date.now();
+  const segments = {
+    all:           allUsers,
+    free:          allUsers.filter(u=>u.plan!=='pro'),
+    pro:           allUsers.filter(u=>u.plan==='pro'),
+    inactive7:     allUsers.filter(u=>u.last_active && u.last_active<new Date(now-7*86400000).toISOString()),
+    inactive30:    allUsers.filter(u=>u.last_active && u.last_active<new Date(now-30*86400000).toISOString()),
+    neveranalysed: allUsers.filter(u=>allProjects.filter(p=>p.profile_id===u.id).reduce((s,p)=>s+(p.analysis_count||0),0)===0),
+    expiring7:     allUsers.filter(u=>u.plan==='pro'&&u.plan_expires_at&&daysUntil(u.plan_expires_at)>=0&&daysUntil(u.plan_expires_at)<=7),
+  };
+  const users = segments[target]||[];
+  const sample = users[0];
+  const sampleMsg = sample ? text.replace('{name}',sample.full_name||'Student').replace('{mobile}',sample.mobile||'') : text;
+  if(preview) preview.innerHTML = `<strong style="color:var(--blue)">${users.length} users</strong> will receive this message.<br><div style="margin-top:6px;padding:8px;background:var(--bg2);border-radius:6px;font-size:11px">Preview: "${sampleMsg}"</div>`;
+}
+
+function sendBulkMsg() {
+  const target = document.getElementById('bulk-msg-target')?.value;
+  const text   = document.getElementById('bulk-msg-text')?.value;
+  const result = document.getElementById('bulk-msg-result');
+  if(!text){alert('Enter a message first');return;}
+  if(!confirm('Send this message to the selected group?')) return;
+  // In a real system this would call a WhatsApp API endpoint
+  // For now, export numbers and open WhatsApp
+  const segments = {
+    all: allUsers, free: allUsers.filter(u=>u.plan!=='pro'), pro: allUsers.filter(u=>u.plan==='pro'),
+    inactive7: allUsers.filter(u=>u.last_active&&u.last_active<new Date(Date.now()-7*86400000).toISOString()),
+    inactive30: allUsers.filter(u=>u.last_active&&u.last_active<new Date(Date.now()-30*86400000).toISOString()),
+    neveranalysed: allUsers.filter(u=>allProjects.filter(p=>p.profile_id===u.id).reduce((s,p)=>s+(p.analysis_count||0),0)===0),
+    expiring7: allUsers.filter(u=>u.plan==='pro'&&u.plan_expires_at&&daysUntil(u.plan_expires_at)>=0&&daysUntil(u.plan_expires_at)<=7),
+  };
+  const users = segments[target]||[];
+  const nums = users.map(u=>u.mobile).filter(Boolean);
+  downloadCSV([['Name','Mobile','Message'],...users.map(u=>[u.full_name,u.mobile,text.replace('{name}',u.full_name||'Student').replace('{mobile}',u.mobile||'')])], 'bulk_message_'+target+'.csv');
+  if(result) result.innerHTML = `<span style="color:var(--green)">✅ Exported ${nums.length} contacts with personalized messages. Use WhatsApp Broadcast or your SMS gateway.</span>`;
+}
+
+async function previewBulkUpgrade() {
+  const targetType  = document.getElementById('bulk-upgrade-target')?.value;
+  const targetValue = document.getElementById('bulk-upgrade-value')?.value?.trim();
+  const previewEl   = document.getElementById('bulk-upgrade-preview');
+  const goBtn       = document.getElementById('bulk-upgrade-go');
+  if(!targetValue){alert('Enter a value to filter by');return;}
+
+  if(!allUsers.length) allUsers = await api('profiles?select=*&order=created_at.desc')||[];
+
+  if(targetType==='batch') {
+    const members = await api('batch_members?select=*,batches(batch_code)') || [];
+    const batchMembers = members.filter(m=>m.batches?.batch_code?.toUpperCase()===targetValue.toUpperCase());
+    _bulkUpgradeUsers = batchMembers.map(m=>allUsers.find(u=>u.id===m.profile_id)).filter(Boolean);
+  } else if(targetType==='city') {
+    _bulkUpgradeUsers = allUsers.filter(u=>(u.city||'').toLowerCase()===targetValue.toLowerCase());
+  } else if(targetType==='role') {
+    _bulkUpgradeUsers = allUsers.filter(u=>u.role===targetValue.toLowerCase());
+  }
+
+  if(previewEl) previewEl.innerHTML = `<strong style="color:var(--blue)">${_bulkUpgradeUsers.length} users</strong> match: ${_bulkUpgradeUsers.slice(0,5).map(u=>u.full_name).join(', ')}${_bulkUpgradeUsers.length>5?'...':''}`;
+  if(goBtn) goBtn.style.display = _bulkUpgradeUsers.length ? 'inline-block' : 'none';
+}
+
+async function executeBulkUpgrade() {
+  if(!_bulkUpgradeUsers.length){alert('No users to upgrade');return;}
+  const plan = document.getElementById('bulk-upgrade-plan')?.value || 'monthly';
+  if(!confirm(`Upgrade ${_bulkUpgradeUsers.length} users to ${plan} Pro?`)) return;
+  const result = document.getElementById('bulk-upgrade-result');
+  if(result) result.textContent = 'Upgrading...';
+  await Promise.all(_bulkUpgradeUsers.map(u=>upgradeToPro(u.id,plan)));
+  if(result) result.innerHTML = `<span style="color:var(--green)">✅ ${_bulkUpgradeUsers.length} users upgraded to ${plan} Pro.</span>`;
+}
+
+function exportSegment() {
+  const seg = document.getElementById('export-segment')?.value;
+  const now = Date.now();
+  const segments = {
+    all:           allUsers,
+    free:          allUsers.filter(u=>u.plan!=='pro'),
+    pro:           allUsers.filter(u=>u.plan==='pro'),
+    students:      allUsers.filter(u=>u.role==='student'),
+    lecturers:     allUsers.filter(u=>u.role==='lecturer'),
+    inactive30:    allUsers.filter(u=>!u.last_active||u.last_active<new Date(now-30*86400000).toISOString()),
+    highengagement:allUsers.filter(u=>allProjects.filter(p=>p.profile_id===u.id).reduce((s,p)=>s+(p.analysis_count||0),0)>=5),
+  };
+  const data = segments[seg]||[];
+  downloadCSV([['Name','Mobile','Email','Role','Plan','City','State','College','Joined'],
+    ...data.map(u=>[u.full_name,u.mobile,u.email||'',u.role,u.plan,u.city,u.state,u.college||'',fmtDate(u.created_at)])],
+    'export_'+seg+'.csv');
+  const result = document.getElementById('export-result');
+  if(result) result.textContent = '✅ Exported '+data.length+' users.';
+}
+
+async function executeBulkRoleChange() {
+  const batchCode = document.getElementById('bulk-role-batch')?.value?.trim();
+  const newRole   = document.getElementById('bulk-role-new')?.value;
+  const result    = document.getElementById('bulk-role-result');
+  if(!batchCode){alert('Enter a batch code');return;}
+
+  const members = await api('batch_members?select=*,batches(batch_code)') || [];
+  const batchMembers = members.filter(m=>m.batches?.batch_code?.toUpperCase()===batchCode.toUpperCase());
+  if(!batchMembers.length){if(result)result.textContent='No batch found with code '+batchCode;return;}
+
+  if(!confirm(`Change role to "${newRole}" for ${batchMembers.length} students in batch ${batchCode}?`)) return;
+  await Promise.all(batchMembers.map(m=>api('profiles?id=eq.'+m.profile_id,{method:'PATCH',body:JSON.stringify({role:newRole})})));
+  if(result) result.innerHTML = `<span style="color:var(--green)">✅ ${batchMembers.length} users updated to role: ${newRole}</span>`;
+}
+
+// ═══════════════════════════════════════════════════════════
+// REVENUE FORECAST
+// ═══════════════════════════════════════════════════════════
+async function loadForecast() {
+  if(!allUsers.length)    allUsers    = await api('profiles?select=*&order=created_at.desc') || [];
+  if(!allPayments.length) allPayments = await api('payment_history?select=*&order=created_at.desc') || [];
+
+  const proUsers   = allUsers.filter(u=>u.plan==='pro'&&!isExpired(u));
+  const freeUsers  = allUsers.filter(u=>u.plan!=='pro');
+  const now        = new Date();
+  const month30ago = new Date(now-30*86400000).toISOString();
+  const month60ago = new Date(now-60*86400000).toISOString();
+
+  // Conversion rate: free users who became pro in last 30 days
+  const newProLast30 = allUsers.filter(u=>u.plan==='pro' && u.payment_date && u.payment_date>month30ago).length;
+  const convRate     = freeUsers.length > 0 ? (newProLast30/Math.max(freeUsers.length,1)*100).toFixed(1) : 0;
+
+  // Churn: pro users who expired in last 30 days
+  const churned = allUsers.filter(u=>u.plan_expires_at && u.plan_expires_at>month30ago && u.plan_expires_at<now.toISOString() && new Date(u.plan_expires_at).getFullYear()<2099).length;
+  const churnRate= proUsers.length > 0 ? (churned/Math.max(proUsers.length,1)*100).toFixed(1) : 0;
+
+  // MRR
+  const monthlyPro = allUsers.filter(u=>u.plan==='pro'&&(u.plan_type==='monthly'||!u.plan_type)&&!isExpired(u)).length;
+  const annualPro  = allUsers.filter(u=>u.plan==='pro'&&u.plan_type==='annual'&&!isExpired(u)).length;
+  const mrr        = monthlyPro*PRICES.monthly_display + annualPro*(PRICES.annual_display/12);
+  const ltv        = parseFloat(churnRate)>0 ? Math.round(PRICES.monthly_display*100/parseFloat(churnRate)) : PRICES.monthly_display*12;
+
+  setText('fc-mrr',  fmt(Math.round(mrr)));
+  setText('fc-conv', convRate+'%');
+  setText('fc-churn',churnRate+'%');
+  setText('fc-ltv',  fmt(ltv));
+
+  // 3-month forecast
+  const months    = ['This Month','Month 2','Month 3'];
+  const newSignups= allUsers.filter(u=>u.created_at>month30ago).length;
+  const rows = [];
+  let subs = proUsers.length, mrrNow = mrr;
+  for(let i=0;i<3;i++){
+    const newConv  = Math.round(newSignups*(parseFloat(convRate)/100));
+    const churnNum = Math.round(subs*(parseFloat(churnRate)/100));
+    subs = Math.max(0, subs + newConv - churnNum);
+    mrrNow = subs*PRICES.monthly_display;
+    rows.push({ month:months[i], subs, mrr:Math.round(mrrNow), needed:Math.max(0,churnNum+1) });
+  }
+
+  setHTML('forecast-tbody', rows.map(r=>`<tr>
+    <td><strong>${r.month}</strong></td>
+    <td>${r.subs} subscribers</td>
+    <td><strong>${fmt(r.mrr)}</strong></td>
+    <td>${r.needed} new conversions to maintain</td>
+    <td><span style="color:${r.mrr>mrr?'#34d399':'#fbbf24'}">${r.mrr>mrr?'📈 Growth':'⚠️ Stable'}</span></td>
+  </tr>`).join(''));
+
+  makeChart('chart-forecast-mrr','line',['Now',...months],[Math.round(mrr),...rows.map(r=>r.mrr)],'MRR (₹)','#34d399');
+  makeChart('chart-forecast-subs','line',['Now',...months],[proUsers.length,...rows.map(r=>r.subs)],'Subscribers','#3b82f6');
+}
+
+// ═══════════════════════════════════════════════════════════
+// CONTENT PERFORMANCE
+// ═══════════════════════════════════════════════════════════
+async function loadContent() {
+  if(!allUsers.length)    allUsers    = await api('profiles?select=*&order=created_at.desc') || [];
+  if(!allProjects.length) allProjects = await api('projects?select=*&deleted_at=is.null') || [];
+
+  const allProgress = await api('progress?select=*') || [];
+
+  // Feature adoption: how many users have run analysis (proxy for tab usage)
+  const ranAnalysis  = allUsers.filter(u=>allProjects.filter(p=>p.profile_id===u.id).reduce((s,p)=>s+(p.analysis_count||0),0)>0).length;
+  const hasSnapshots = allUsers.filter(u=>allProjects.some(p=>p.profile_id===u.id&&p.all_checks_pass)).length;
+  const hasProgress  = allProgress.length;
+  const total        = allUsers.length||1;
+
+  const featureSteps = [
+    ['Signed Up',           allUsers.length],
+    ['Ran Analysis',        ranAnalysis],
+    ['Passed All Checks',   hasSnapshots],
+    ['Started Learning',    hasProgress],
+    ['Completed a Quiz',    allProgress.filter(p=>Object.keys(p.quiz_scores||{}).length>0).length],
+    ['Reached 50% Conf',    allProgress.filter(p=>Object.values(p.badges||{}).filter(Boolean).length>=5).length],
+    ['Completed All Steps', allProgress.filter(p=>Object.values(p.badges||{}).filter(Boolean).length>=10).length],
+  ];
+
+  setHTML('feature-adoption-tbody', featureSteps.map(([label,count],i)=>{
+    const pct = Math.round(count/total*100);
+    const drop = i>0 ? Math.round((featureSteps[i-1][1]-count)/Math.max(featureSteps[i-1][1],1)*100) : 0;
+    return `<tr>
+      <td>${label}</td>
+      <td><strong>${count}</strong></td>
+      <td>
+        <div style="display:flex;align-items:center;gap:6px">
+          <div style="flex:1;height:8px;background:#0f172a;border-radius:4px;overflow:hidden">
+            <div style="height:100%;width:${pct}%;background:#3b82f6;border-radius:4px"></div>
+          </div>
+          <span style="font-size:11px;color:#60a5fa">${pct}%</span>
+        </div>
+      </td>
+      <td>—</td>
+      <td style="color:${drop>50?'#f87171':drop>20?'#fbbf24':'#34d399'}">${i>0?'↓ '+drop+'%':'—'}</td>
+    </tr>`;
+  }).join(''));
+
+  makeChart('chart-tab-usage','bar',featureSteps.map(s=>s[0]),featureSteps.map(s=>s[1]),'Users','#3b82f6');
+
+  // Quiz performance
+  const quizAgg = {};
+  allProgress.forEach(p=>{
+    Object.entries(p.quiz_scores||{}).forEach(([k,v])=>{
+      if(!quizAgg[k]) quizAgg[k]={total:0,sum:0,pass:0};
+      quizAgg[k].total++;
+      quizAgg[k].sum+=v;
+      if(v>=70) quizAgg[k].pass++;
+    });
+  });
+  const quizRows = Object.entries(quizAgg).sort((a,b)=>(a[1].pass/a[1].total)-(b[1].pass/b[1].total)).slice(0,10);
+
+  setHTML('quiz-hard-tbody', quizRows.length ? quizRows.map(([k,v])=>{
+    const passRate = Math.round(v.pass/v.total*100);
+    const avg = Math.round(v.sum/v.total);
+    return `<tr>
+      <td>${k}</td>
+      <td>${v.total}</td>
+      <td style="font-weight:700;color:${passRate<50?'#f87171':passRate<70?'#fbbf24':'#34d399'}">${passRate}%</td>
+      <td>${avg}%</td>
+      <td>${passRate<50?'<span style="color:#f87171">⚠️ Hard — review content</span>':passRate<70?'<span style="color:#fbbf24">Moderate</span>':'<span style="color:#34d399">Good</span>'}</td>
+    </tr>`;
+  }).join('') : '<tr><td colspan="5" class="empty">No quiz data yet</td></tr>');
+
+  if(quizRows.length) makeChart('chart-quiz-rates','bar',quizRows.map(r=>r[0]),quizRows.map(r=>Math.round(r[1].pass/r[1].total*100)),'Pass Rate %',quizRows.map(r=>r[1].pass/r[1].total<0.5?'#f87171':r[1].pass/r[1].total<0.7?'#fbbf24':'#34d399'));
+}
+
+// ═══════════════════════════════════════════════════════════
+// FEATURE FLAGS
+// ═══════════════════════════════════════════════════════════
+
+// All tabs that CAN be toggled (core tabs are always on)
+const TOGGLEABLE_TABS = ['n18','n19','n20','n15','n16','n17','n9','n10','n11','n12','n13','n14','n8'];
+const CORE_TABS       = ['n0','n1','n2','n3','n4','n5','n6','n7'];
+
+async function loadFeatures() {
+  // Load current disabled tabs from Supabase platform_settings
+  const data = await api('platform_settings?key=eq.disabled_tabs&select=value') || [];
+  let disabledTabs = [];
+  if (data.length && data[0].value) {
+    try { disabledTabs = JSON.parse(data[0].value); } catch(e) { disabledTabs = []; }
+  }
+
+  // Update all checkboxes and status labels
+  TOGGLEABLE_TABS.forEach(tid => {
+    const chk = document.getElementById('flag-' + tid);
+    const lbl = document.getElementById('flag-status-' + tid);
+    if (!chk || !lbl) return;
+    const isOn = !disabledTabs.includes(tid);
+    chk.checked = isOn;
+    lbl.textContent = isOn ? 'ON' : 'OFF';
+    lbl.style.color = isOn ? '#34d399' : '#f87171';
+  });
+}
+
+async function saveTabFlag(tid) {
+  const chk = document.getElementById('flag-' + tid);
+  const lbl = document.getElementById('flag-status-' + tid);
+  const msg = document.getElementById('features-msg');
+  if (!chk || !lbl) return;
+
+  const isOn = chk.checked;
+  lbl.textContent = isOn ? 'ON' : 'OFF';
+  lbl.style.color  = isOn ? '#34d399' : '#f87171';
+
+  // Read current disabled tabs, then update
+  const data = await api('platform_settings?key=eq.disabled_tabs&select=value') || [];
+  let disabledTabs = [];
+  if (data.length && data[0].value) {
+    try { disabledTabs = JSON.parse(data[0].value); } catch(e) { disabledTabs = []; }
+  }
+
+  if (isOn) {
+    disabledTabs = disabledTabs.filter(t => t !== tid);
+  } else {
+    if (!disabledTabs.includes(tid)) disabledTabs.push(tid);
+  }
+
+  await saveDisabledTabs(disabledTabs);
+
+  if (msg) { msg.style.display='block'; setTimeout(()=>msg.style.display='none', 2500); }
+}
+
+async function saveDisabledTabs(disabledTabs) {
+  const payload = JSON.stringify({ value: JSON.stringify(disabledTabs), updated_at: new Date().toISOString() });
+  // Try PATCH first (update existing row), then POST (insert new row)
+  const existing = await api('platform_settings?key=eq.disabled_tabs&select=key') || [];
+  if (existing.length) {
+    await api('platform_settings?key=eq.disabled_tabs', { method:'PATCH', body: payload });
+  } else {
+    await api('platform_settings', { method:'POST', body: JSON.stringify({ key:'disabled_tabs', value: JSON.stringify(disabledTabs) }) });
+  }
+}
+
+async function applyPreset(preset) {
+  const presets = {
+    minimal:  ['n18','n19','n20','n15','n16','n17','n9','n10','n11','n12','n13','n14'],  // hide all results except full report
+    standard: ['n19','n20','n16','n9','n10','n11','n12','n13','n14'],                     // hide advanced + discussion + parametric
+    full:     [],  // nothing disabled
+  };
+  const disabledTabs = presets[preset] || [];
+
+  // Save to Supabase
+  await saveDisabledTabs(disabledTabs);
+
+  // Refresh the UI
+  await loadFeatures();
+
+  const msg = document.getElementById('features-msg');
+  const names = {minimal:'Launch Mode',standard:'Standard',full:'All On'};
+  if(msg){ msg.textContent='✅ Preset "'+names[preset]+'" applied'; msg.style.display='block'; setTimeout(()=>{ msg.style.display='none'; msg.textContent='✅ Saved to Supabase'; },3000); }
+}
+
+async function savePricing() {
+  const monthly = parseInt(el('price-monthly')?.value||'299');
+  const annual  = parseInt(el('price-annual')?.value||'2990');
+  await Promise.all([
+    api('platform_settings?key=eq.price_monthly_display',{method:'PATCH',body:JSON.stringify({value:String(monthly),updated_at:new Date().toISOString()})}),
+    api('platform_settings?key=eq.price_annual_display', {method:'PATCH',body:JSON.stringify({value:String(annual),updated_at:new Date().toISOString()})}),
+    api('platform_settings?key=eq.price_monthly',{method:'PATCH',body:JSON.stringify({value:String(monthly*100),updated_at:new Date().toISOString()})}),
+    api('platform_settings?key=eq.price_annual', {method:'PATCH',body:JSON.stringify({value:String(annual*100),updated_at:new Date().toISOString()})}),
+  ]);
+  PRICES.monthly = monthly;
+  PRICES.annual  = annual;
+  el('pricing-msg').style.display='block';
+  setTimeout(()=>el('pricing-msg').style.display='none',2000);
+}
+
+async function manualUpgrade() {
+  const mob  = el('upgrade-mobile')?.value?.trim();
+  const plan = el('upgrade-plan')?.value;
+  const msg  = el('upgrade-msg');
+  if(!mob){ msg.textContent='Enter mobile number'; msg.style.color='var(--red)'; return; }
+  const mob10 = mob.replace(/\D/g,'').slice(-10);
+  const users = await api('profiles?mobile=eq.%2B91'+mob10+'&select=id,full_name');
+  if(!users||!users[0]){ msg.textContent='User not found'; msg.style.color='var(--red)'; return; }
+  await upgradeToPro(users[0].id, plan);
+  msg.textContent='✅ '+users[0].full_name+' upgraded to '+plan;
+  msg.style.color='var(--green)';
+}
+
+// ═══════════════════════════════════════════════════════════
+// CSV EXPORT
+// ═══════════════════════════════════════════════════════════
+function downloadCSV(rows, filename) {
+  const csv = rows.map(r=>r.map(v=>'"'+(v||'').toString().replace(/"/g,'""')+'"').join(',')).join('\n');
+  const blob = new Blob([csv],{type:'text/csv'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+}
+
+// ═══════════════════════════════════════════════════════════
+// ANNOUNCEMENTS
+// ═══════════════════════════════════════════════════════════
+async function sendAnnouncement() {
+  const title  = el('ann-title')?.value?.trim();
+  const msg    = el('ann-msg')?.value?.trim();
+  const target = el('ann-target')?.value || 'all';
+  const result = el('ann-result');
+
+  if(!title || !msg) { result.textContent='Title and message are required'; result.style.color='var(--red)'; return; }
+
+  // Count target users
+  let targetUsers = allUsers;
+  if(target !== 'all') {
+    if(['free','pro'].includes(target)) targetUsers = allUsers.filter(u=>u.plan===target);
+    else targetUsers = allUsers.filter(u=>u.role===target);
+  }
+
+  if(!confirm(`Send announcement to ${targetUsers.length} users?`)) return;
+
+  // Save announcement to platform_settings as a record
+  const ann = {
+    id: Date.now().toString(36),
+    title,
+    message: msg,
+    target,
+    sent_to: targetUsers.length,
+    sent_at: new Date().toISOString(),
+    sent_by: adminProfile?.full_name || 'Admin'
+  };
+
+  // Get existing announcements
+  const existing = await api('platform_settings?key=eq.announcements&select=value');
+  let anns = [];
+  try { anns = JSON.parse(existing?.[0]?.value || '[]'); } catch(e) {}
+  anns.unshift(ann);
+  // Keep last 20
+  anns = anns.slice(0, 20);
+
+  // Save back
+  const payload = JSON.stringify({ key:'announcements', value:JSON.stringify(anns), updated_at:new Date().toISOString() });
+  const check = await api('platform_settings?key=eq.announcements&select=key');
+  if(check && check.length) {
+    await api('platform_settings?key=eq.announcements', {method:'PATCH', body:JSON.stringify({value:JSON.stringify(anns),updated_at:new Date().toISOString()})});
+  } else {
+    await api('platform_settings', {method:'POST', body:payload});
+  }
+
+  result.textContent = `✅ Announcement saved — will show to ${targetUsers.length} users on their next login`;
+  result.style.color = 'var(--green)';
+  el('ann-title').value = '';
+  el('ann-msg').value = '';
+  loadAnnouncementHistory();
+}
+
+async function loadAnnouncementHistory() {
+  const data = await api('platform_settings?key=eq.announcements&select=value');
+  let anns = [];
+  try { anns = JSON.parse(data?.[0]?.value || '[]'); } catch(e) {}
+  const histEl = el('ann-history');
+  if(!histEl) return;
+  if(!anns.length) { histEl.innerHTML='<div style="color:var(--txt3);font-size:12px">No announcements sent yet</div>'; return; }
+  histEl.innerHTML = anns.map(a=>`
+    <div style="padding:10px;background:var(--bg3);border-radius:8px;margin-bottom:8px;font-size:12px">
+      <div style="font-weight:700;margin-bottom:4px">${a.title}</div>
+      <div style="color:var(--txt3);margin-bottom:4px">${a.message}</div>
+      <div style="color:var(--txt3);font-size:10px">Sent to: ${a.target} users (${a.sent_to} people) · ${fmtDate(a.sent_at)} · by ${a.sent_by}</div>
+    </div>`).join('');
+}
+
+// ═══════════════════════════════════════════════════════════
+// USER MANAGEMENT — Delete + Reset
+// ═══════════════════════════════════════════════════════════
+async function resetUserProgress() {
+  const mob = el('mgmt-mobile')?.value?.trim();
+  const msg = el('mgmt-msg');
+  if(!mob) { msg.textContent='Enter mobile number'; msg.style.color='var(--red)'; return; }
+  const mob10 = mob.replace(/\D/g,'').slice(-10);
+  const users = await api('profiles?mobile=eq.%2B91'+mob10+'&select=id,full_name');
+  if(!users||!users[0]) { msg.textContent='User not found'; msg.style.color='var(--red)'; return; }
+  if(!confirm(`Reset all progress for ${users[0].full_name}? This clears quiz scores, badges and lesson progress.`)) return;
+  await api('progress?profile_id=eq.'+users[0].id, {
+    method:'PATCH',
+    body:JSON.stringify({quiz_scores:{},topics_completed:{},badges:{},updated_at:new Date().toISOString()})
+  });
+  msg.textContent='✅ Progress reset for '+users[0].full_name;
+  msg.style.color='var(--green)';
+}
+
+async function deleteUserPermanently() {
+  const mob = el('mgmt-mobile')?.value?.trim();
+  const msg = el('mgmt-msg');
+  if(!mob) { msg.textContent='Enter mobile number'; msg.style.color='var(--red)'; return; }
+  const mob10 = mob.replace(/\D/g,'').slice(-10);
+  const users = await api('profiles?mobile=eq.%2B91'+mob10+'&select=id,full_name');
+  if(!users||!users[0]) { msg.textContent='User not found'; msg.style.color='var(--red)'; return; }
+  const confirm1 = confirm(`Permanently delete ${users[0].full_name}? This deletes ALL their data including projects, snapshots, and payments.`);
+  if(!confirm1) return;
+  const confirm2 = prompt('Type DELETE to confirm:', '');
+  if(confirm2 !== 'DELETE') { msg.textContent='Cancelled'; return; }
+
+  // Delete in order (cascade should handle most)
+  await api('snapshots?profile_id=eq.'+users[0].id, {method:'DELETE'});
+  await api('projects?profile_id=eq.'+users[0].id,  {method:'DELETE'});
+  await api('progress?profile_id=eq.'+users[0].id,   {method:'DELETE'});
+  await api('profiles?id=eq.'+users[0].id,           {method:'DELETE'});
+
+  // Remove from local cache
+  allUsers = allUsers.filter(u=>u.id!==users[0].id);
+  msg.textContent='✅ User permanently deleted';
+  msg.style.color='var(--green)';
+}
+
+// ═══════════════════════════════════════════════════════════
+// FAILED PAYMENTS
+// ═══════════════════════════════════════════════════════════
+async function loadFailedPayments() {
+  const failed = await api('payment_history?status=eq.failed&select=*&order=created_at.desc&limit=50') || [];
+  setHTML('failed-payments-tbody', failed.length ? failed.map(p=>{
+    const user = allUsers.find(u=>u.id===p.profile_id);
+    return `<tr>
+      <td>${fmtDate(p.created_at)}</td>
+      <td>${user?.full_name||'—'}</td>
+      <td>${user?.mobile||'—'}</td>
+      <td>${p.plan||'—'}</td>
+      <td>${fmt(Math.round((p.amount||0)/100))}</td>
+      <td style="color:var(--red)">${p.failure_reason||'Unknown'}</td>
+    </tr>`;
+  }).join('') : '<tr><td colspan="6" class="empty">No failed payments ✅</td></tr>');
+}
+
+// ═══════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════
+(async()=>{
+  await checkAdminAccess();
+})();
+
+
+// ── CONTACT MESSAGES ─────────────────────────────────────────
+async function loadContactMessages(){
+  var pg = document.getElementById('page-contactmessages');
+  if(pg) pg.innerHTML = '<div style="padding:24px"><div style="font-size:18px;font-weight:700;color:#f1f5f9;margin-bottom:4px">📬 Contact Messages</div><div style="font-size:12px;color:#64748b;margin-bottom:20px">Messages sent by users via the Contact Us form in the app.</div><div id="contact-list"><div style="color:#64748b;font-size:13px">Loading...</div></div></div>';
+
+  try {
+    const resp = await fetch(SUPA_URL+'/rest/v1/contact_messages?select=*&order=sent_at.desc&limit=100',{
+      headers:{'Authorization':'Bearer '+SUPA_KEY,'apikey':SUPA_KEY}
+    });
+    const data = await resp.json();
+    if(!Array.isArray(data)){ document.getElementById('contact-list').innerHTML='<div style="color:#f87171;font-size:12px">Error: '+JSON.stringify(data)+'</div>'; return; }
+    renderContactMessages(data);
+  } catch(e){
+    document.getElementById('contact-list').innerHTML = '<div style="color:#f87171">Error: '+e.message+'</div>';
+  }
+}
+
+function renderContactMessages(msgs){
+  const el = document.getElementById('contact-list');
+  const topicColors = {bug:'#f87171', feature:'#a78bfa', billing:'#fbbf24', course:'#38bdf8', collab:'#34d399', other:'#94a3b8'};
+
+  if(!msgs.length){
+    el.innerHTML = '<div style="text-align:center;padding:40px;color:#475569"><div style="font-size:32px;margin-bottom:8px">📭</div><div>No contact messages yet.</div></div>';
+    return;
+  }
+
+  // Count by status
+  var newCount = msgs.filter(function(m){return m.status==='new';}).length;
+  var html = '<div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap">';
+  html += '<div style="background:rgba(248,113,113,0.1);border:1px solid rgba(248,113,113,0.2);border-radius:8px;padding:10px 18px;text-align:center"><div style="font-size:20px;font-weight:800;color:#f87171">'+newCount+'</div><div style="font-size:9px;color:#64748b">UNREAD</div></div>';
+  html += '<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:10px 18px;text-align:center"><div style="font-size:20px;font-weight:800;color:#94a3b8">'+msgs.length+'</div><div style="font-size:9px;color:#64748b">TOTAL</div></div>';
+  html += '</div>';
+
+  msgs.forEach(function(m){
+    const tc = topicColors[m.topic]||'#94a3b8';
+    const date = new Date(m.sent_at).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+    html += '<div style="background:#0a1628;border:1px solid rgba(56,189,248,0.1);border-radius:12px;padding:16px;margin-bottom:10px">';
+    html += '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:10px;flex-wrap:wrap">';
+    html += '<div>';
+    html += '<div style="font-size:13px;font-weight:700;color:#e2e8f0">'+(m.user_name||'Unknown')+'</div>';
+    html += '<div style="font-size:10px;color:#475569;margin-top:2px">'+(m.user_mobile||'')+(m.plan?' · '+m.plan.toUpperCase()+' plan':'')+'</div>';
+    html += '<div style="font-size:10px;color:#334155">'+date+'</div>';
+    html += '</div>';
+    html += '<div style="display:flex;gap:6px;align-items:center">';
+    html += '<span style="font-size:9px;font-weight:700;padding:3px 9px;border-radius:4px;background:rgba('+hexToRgb(tc)+',0.1);color:'+tc+'">'+( m.topic_label||m.topic )+'</span>';
+    html += '<select data-mid="'+m.id+'" onchange="updateContactStatus(this.dataset.mid,this.value)" style="background:#060c18;border:1px solid rgba(255,255,255,0.1);border-radius:6px;color:#94a3b8;font-size:10px;padding:3px 7px;font-family:inherit;cursor:pointer">';
+    ['new','read','replied','resolved'].forEach(function(s){
+      html += '<option value="'+s+'"'+(m.status===s?' selected':'')+'>'+s.charAt(0).toUpperCase()+s.slice(1)+'</option>';
+    });
+    html += '</select></div></div>';
+    html += '<div style="font-size:12px;color:#94a3b8;line-height:1.7;background:rgba(255,255,255,0.02);border-radius:6px;padding:10px 12px;white-space:pre-wrap">'+escH(m.message)+'</div>';
+    html += '<div style="margin-top:8px"><a href="mailto:'+escH(m.user_mobile||'structlearnpro@gmail.com')+'?subject=Re: '+escH(m.topic_label||m.topic)+' — StructLearn Pro" style="font-size:11px;color:#38bdf8;text-decoration:none">↳ Reply via Email</a></div>';
+    html += '</div>';
+  });
+
+  el.innerHTML = html;
+}
+
+async function updateContactStatus(id, status){
+  try {
+    await fetch(SUPA_URL+'/rest/v1/contact_messages?id=eq.'+id,{
+      method:'PATCH',
+      headers:{'Authorization':'Bearer '+SUPA_KEY,'apikey':SUPA_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},
+      body: JSON.stringify({status:status})
+    });
+  } catch(e){ console.error('Contact status update failed:',e); }
+}
+
+function hexToRgb(hex){ hex=hex.replace('#',''); var r=parseInt(hex.substring(0,2),16),g=parseInt(hex.substring(2,4),16),b=parseInt(hex.substring(4,6),16); return r+','+g+','+b; }
+
+// ── BUG REPORTS ─────────────────────────────────────────────
+async function loadBugReports(){
+  // Write header into page-bugreports, results into bug-list
+  var brPage = document.getElementById('page-bugreports');
+  if(brPage) brPage.innerHTML = '<div style="padding:24px"><div style="font-size:18px;font-weight:700;color:#f1f5f9;margin-bottom:4px">🚩 Bug Reports</div><div style="font-size:12px;color:#64748b;margin-bottom:20px">AI responses flagged as incorrect by students. Review and update engine code accordingly.</div><div id="bug-list"><div style="color:#64748b;font-size:13px">Loading...</div></div></div>';
+
+  try {
+    const resp = await fetch(SUPA_URL+'/rest/v1/bug_reports?select=*&order=reported_at.desc&limit=100',{
+      headers:{'Authorization':'Bearer '+SUPA_KEY,'apikey':SUPA_KEY}
+    });
+    console.log('[BugReports] Status:', resp.status);
+    const data = await resp.json();
+    console.log('[BugReports] Data:', data);
+    if(!Array.isArray(data)){ 
+      document.getElementById('bug-list').innerHTML = '<div style="color:#f87171;font-size:12px">Supabase error: '+JSON.stringify(data)+'</div>';
+      return;
+    }
+    renderBugReports(data||[]);
+  } catch(e){
+    document.getElementById('bug-list').innerHTML = '<div style="color:#f87171">Error: '+e.message+'</div>';
+    console.error('[BugReports] Error:', e);
+  }
+}
+
+function renderBugReports(reports){
+  const statusColors = {new:'#f87171', reviewing:'#fbbf24', fixed:'#34d399', dismissed:'#475569'};
+  const el = document.getElementById('bug-list');
+  if(!reports.length){
+    el.innerHTML = '<div style="text-align:center;padding:40px;color:#475569"><div style="font-size:32px;margin-bottom:8px">🎉</div><div>No bug reports yet — great sign!</div></div>';
+    return;
+  }
+
+  // Summary counts
+  const counts = {new:0,reviewing:0,fixed:0,dismissed:0};
+  reports.forEach(function(r){ counts[r.status]=(counts[r.status]||0)+1; });
+
+  let html = '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:20px">';
+  [['new','New',statusColors.new],['reviewing','Reviewing',statusColors.reviewing],['fixed','Fixed',statusColors.fixed],['dismissed','Dismissed',statusColors.dismissed]].forEach(function(s){
+    html += '<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:14px;text-align:center">';
+    html += '<div style="font-size:24px;font-weight:800;color:'+s[2]+'">'+(counts[s[0]]||0)+'</div>';
+    html += '<div style="font-size:10px;color:#64748b;margin-top:3px">'+s[1].toUpperCase()+'</div></div>';
+  });
+  html += '</div>';
+
+  reports.forEach(function(r){
+    const sc = statusColors[r.status]||'#64748b';
+    const profile = {}; // no join — using profile_id directly
+    const shortId = (r.profile_id||'').substring(0,8);
+    const date = new Date(r.reported_at).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+    html += '<div style="background:#0a1628;border:1px solid rgba(248,113,113,0.12);border-radius:12px;padding:18px;margin-bottom:12px">';
+    // Header
+    html += '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px;flex-wrap:wrap">';
+    html += '<div>';
+    html += '<div style="font-size:13px;font-weight:700;color:#e2e8f0">Report #'+shortId+'</div>';
+    html += '<div style="font-size:10px;color:#475569;margin-top:2px">User: '+shortId+'...'+(r.project_name?' · Project: '+r.project_name:'')+'</div>';
+    html += '<div style="font-size:10px;color:#334155;margin-top:1px">'+date+'</div>';
+    html += '</div>';
+    html += '<div style="display:flex;gap:6px;align-items:center">';
+    html += '<select data-rid="'+r.id+'" onchange="updateBugStatus(this.dataset.rid,this.value)" style="background:#060c18;border:1px solid rgba(255,255,255,0.1);border-radius:6px;color:'+sc+';font-size:10px;padding:4px 8px;font-family:inherit;cursor:pointer">';
+    ['new','reviewing','fixed','dismissed'].forEach(function(s){
+      html += '<option value="'+s+'"'+(r.status===s?' selected':'')+'>'+s.charAt(0).toUpperCase()+s.slice(1)+'</option>';
+    });
+    html += '</select></div></div>';
+
+    // Question
+    if(r.ai_question){
+      html += '<div style="margin-bottom:8px">';
+      html += '<div style="font-size:9px;font-weight:700;color:#38bdf8;letter-spacing:1px;margin-bottom:4px">STUDENT QUESTION</div>';
+      html += '<div style="font-size:12px;color:#94a3b8;background:rgba(56,189,248,0.04);border:1px solid rgba(56,189,248,0.08);border-radius:6px;padding:8px 10px;line-height:1.6">'+escH(r.ai_question.substring(0,400))+'</div></div>';
+    }
+
+    // AI Answer (collapsible)
+    if(r.ai_answer){
+      html += '<div style="margin-bottom:8px">';
+      html += '<div style="font-size:9px;font-weight:700;color:#a78bfa;letter-spacing:1px;margin-bottom:4px">AI ANSWER (flagged)</div>';
+      html += '<div style="font-size:11px;color:#64748b;background:rgba(167,139,250,0.03);border:1px solid rgba(167,139,250,0.08);border-radius:6px;padding:8px 10px;line-height:1.6;max-height:80px;overflow:hidden">'+escH(r.ai_answer.substring(0,500))+'</div></div>';
+    }
+
+    // Student note
+    if(r.student_note){
+      html += '<div style="margin-bottom:8px">';
+      html += '<div style="font-size:9px;font-weight:700;color:#f87171;letter-spacing:1px;margin-bottom:4px">STUDENT SAYS IS WRONG</div>';
+      html += '<div style="font-size:12px;color:#fca5a5;background:rgba(248,113,113,0.05);border:1px solid rgba(248,113,113,0.15);border-radius:6px;padding:8px 10px;line-height:1.6">'+escH(r.student_note)+'</div></div>';
+    }
+
+    // Design values
+    if(r.design_values && r.design_values.inputs){
+      const inp = r.design_values.inputs;
+      html += '<div style="font-size:10px;color:#334155;margin-top:8px">Design: M'+inp.fck+' · Fe'+inp.fy+' · Zone '+inp.zone+' · G+'+(inp.numFloors-1)+' · '+((inp.spansX||[]).join('+'))+'m × '+((inp.spansY||[]).join('+'))+'m</div>';
+    }
+    html += '</div>';
+  });
+
+  el.innerHTML = html;
+}
+
+async function updateBugStatus(id, status){
+  try {
+    await fetch(SUPA_URL+'/rest/v1/bug_reports?id=eq.'+id,{
+      method:'PATCH',
+      headers:{'Authorization':'Bearer '+SUPA_KEY,'apikey':SUPA_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},
+      body: JSON.stringify({status:status})
+    });
+  } catch(e){ console.error('Status update failed:',e); }
+}
+
+function escH(str){ return (str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// ── END ADMIN FUNCTIONS
+</script>
+</body>
+</html>

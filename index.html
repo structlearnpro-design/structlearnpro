@@ -1,0 +1,2163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>StructLearn Pro — Free IS 456 RC Building Design Software for Civil Engineering Students India</title>
+<meta name="description" content="Free IS 456 compliant RC building design platform for civil engineering students and professionals. Guided 28-step workflow, seismic analysis, PDF reports, construction drawings. Used by students from IITs, NITs across India.">
+<meta name="keywords" content="IS 456 building design software, RC building design India, civil engineering students, structural design software free, IS 1893 seismic analysis, beam column design India">
+<meta property="og:title" content="StructLearn Pro — Free IS 456 Building Design for Civil Engineers">
+<meta property="og:description" content="Design real RC buildings step by step. IS 456, IS 1893, IS 875 compliant. Free for students.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://structlearnpro.com">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="StructLearn Pro — Free IS 456 Building Design">
+<meta name="twitter:description" content="Guided RC building design for civil engineering students. IS 456 compliant, free to start.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@400;500;600;700&family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#0f1629;--bg1:#141d35;--bg2:#1a2545;--bg3:#1e2d52;--card:#182040;
+  --border:rgba(255,255,255,0.08);--border2:rgba(255,255,255,0.14);
+  --blue:#4f8ef7;--blue2:#7eb0ff;--cyan:#34d4f0;--green:#3ecf8e;
+  --amber:#f6c343;--red:#f87171;--purple:#b794f4;
+  --txt:#e8edf8;--txt2:#a8b8d8;--txt3:#637594;--txt4:#3a4d6a;
+}
+html{scroll-behavior:smooth;}
+body{font-family:'Instrument Sans',sans-serif;background:var(--bg);color:var(--txt);overflow-x:hidden;-webkit-font-smoothing:antialiased;}
+body.em [data-e]{outline:2px dashed rgba(246,195,67,0.5);outline-offset:3px;cursor:text;border-radius:2px;}
+body.em [data-e]:focus{outline-color:var(--amber);background:rgba(246,195,67,0.08);}
+#etb{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--bg2);border:1px solid rgba(246,195,67,0.3);border-radius:100px;padding:10px 20px;display:flex;align-items:center;gap:12px;z-index:9999;box-shadow:0 20px 60px rgba(0,0,0,0.4);opacity:0;pointer-events:none;transition:all 0.25s;white-space:nowrap;}
+#etb.show{opacity:1;pointer-events:all;}
+.etl{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--amber);letter-spacing:1.5px;font-weight:600;}
+.ets{padding:7px 16px;border-radius:100px;font-size:12px;font-weight:600;cursor:pointer;border:none;background:var(--green);color:#0f1629;font-family:inherit;}
+.etd{padding:7px 14px;border-radius:100px;font-size:12px;cursor:pointer;border:1px solid var(--border2);background:transparent;color:var(--txt3);font-family:inherit;}
+#atg{position:fixed;top:16px;right:16px;z-index:10000;background:var(--bg2);border:1px solid var(--border2);border-radius:100px;padding:7px 14px;font-size:11px;font-weight:600;cursor:pointer;color:var(--txt3);font-family:'JetBrains Mono',monospace;display:flex;align-items:center;gap:6px;transition:all 0.2s;}
+#atg:hover,#atg.on{border-color:rgba(246,195,67,0.5);color:var(--amber);}
+.tdot{width:7px;height:7px;border-radius:50%;background:var(--txt4);}
+#atg.on .tdot{background:var(--amber);}
+
+/* NAV */
+nav{position:fixed;top:0;left:0;right:0;z-index:200;height:60px;padding:0 28px;display:flex;align-items:center;justify-content:space-between;background:rgba(15,22,41,0.92);backdrop-filter:blur(24px);border-bottom:1px solid var(--border);}
+.nlogo{display:flex;align-items:center;gap:10px;text-decoration:none;}
+.nmark{width:30px;height:30px;background:var(--blue);border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:#fff;flex-shrink:0;}
+.nname{font-family:'Familjen Grotesk',sans-serif;font-size:16px;font-weight:700;color:var(--txt);}
+.nname em{color:var(--blue2);font-style:normal;}
+.nlinks{display:none;}
+@media(min-width:768px){.nlinks{display:flex;gap:2px;list-style:none;}.nlinks a{padding:6px 14px;border-radius:8px;color:var(--txt3);text-decoration:none;font-size:14px;font-weight:500;transition:all 0.15s;}.nlinks a:hover{color:var(--txt);background:var(--border);}}
+.ncta{display:flex;gap:8px;}
+.nbg{padding:8px 16px;border:1px solid var(--border2);border-radius:9px;background:transparent;color:var(--txt2);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:all 0.15s;}
+.nbg:hover{border-color:var(--blue2);color:var(--blue2);}
+.nbp{padding:9px 18px;background:var(--blue);border:none;border-radius:9px;color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;transition:all 0.15s;}
+.nbp:hover{background:#3d7ef5;box-shadow:0 0 24px rgba(79,142,247,0.4);}
+@media(max-width:700px){
+  #nav-signin{display:none!important;}
+  #nav-signup{display:none!important;}
+  #nav-hamburger{display:flex!important;align-items:center;justify-content:center;}
+  .nlinks{display:none!important;}
+}
+
+/* HERO */
+#hero{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:100px 24px 72px;position:relative;overflow:hidden;}
+#hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 90% 70% at 50% -5%,rgba(79,142,247,0.18) 0%,transparent 60%),radial-gradient(ellipse 50% 40% at 10% 80%,rgba(52,212,240,0.07) 0%,transparent 50%);pointer-events:none;}
+#hero::after{content:'';position:absolute;inset:0;background-image:linear-gradient(rgba(79,142,247,0.05) 1px,transparent 1px),linear-gradient(90deg,rgba(79,142,247,0.05) 1px,transparent 1px);background-size:60px 60px;mask-image:radial-gradient(ellipse 70% 60% at 50% 40%,black,transparent);-webkit-mask-image:radial-gradient(ellipse 70% 60% at 50% 40%,black,transparent);pointer-events:none;}
+.hero-badge{display:inline-flex;align-items:center;gap:8px;padding:6px 16px 6px 8px;border-radius:100px;background:rgba(79,142,247,0.1);border:1px solid rgba(79,142,247,0.25);font-size:12px;color:var(--blue2);font-family:'JetBrains Mono',monospace;font-weight:500;letter-spacing:0.3px;margin-bottom:32px;position:relative;z-index:1;animation:fu 0.6s 0.1s both ease-out;}
+.live{width:22px;height:22px;border-radius:50%;background:rgba(62,207,142,0.12);border:1px solid rgba(62,207,142,0.3);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.ld{width:7px;height:7px;border-radius:50%;background:var(--green);animation:lp 2s infinite;}
+@keyframes lp{0%,100%{box-shadow:0 0 0 0 rgba(62,207,142,0.5);}70%{box-shadow:0 0 0 7px rgba(62,207,142,0);}}
+@keyframes fu{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+h1{font-family:'Familjen Grotesk',sans-serif;font-size:clamp(46px,10vw,96px);font-weight:700;line-height:0.93;letter-spacing:-3px;margin-bottom:24px;position:relative;z-index:1;animation:fu 0.7s 0.2s both ease-out;}
+.grad{background:linear-gradient(135deg,var(--blue2) 0%,var(--cyan) 45%,var(--green) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.hero-sub{font-size:clamp(15px,2.2vw,19px);color:var(--txt2);line-height:1.7;max-width:520px;margin:0 auto 40px;font-weight:400;position:relative;z-index:1;animation:fu 0.7s 0.35s both ease-out;}
+.hero-cta{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-bottom:60px;position:relative;z-index:1;animation:fu 0.7s 0.5s both ease-out;}
+.hbp{padding:16px 34px;border-radius:12px;font-size:16px;font-weight:700;cursor:pointer;font-family:inherit;background:#fff;border:none;color:#0f1629;letter-spacing:-0.3px;transition:all 0.2s;box-shadow:0 4px 32px rgba(255,255,255,0.12);}
+.hbp:hover{transform:translateY(-2px);box-shadow:0 8px 40px rgba(255,255,255,0.2);}
+.hbs{padding:16px 26px;border-radius:12px;font-size:16px;font-weight:500;cursor:pointer;font-family:inherit;background:rgba(255,255,255,0.06);border:1.5px solid rgba(255,255,255,0.15);color:var(--txt2);transition:all 0.2s;}
+.hbs:hover{background:rgba(255,255,255,0.1);}
+.hstats{display:grid;grid-template-columns:repeat(2,1fr);gap:1px;background:var(--border);border:1px solid var(--border);border-radius:16px;overflow:hidden;max-width:500px;margin:0 auto;position:relative;z-index:1;animation:fu 0.7s 0.65s both ease-out;}
+@media(min-width:480px){.hstats{grid-template-columns:repeat(4,1fr);}}
+.hstat{background:rgba(255,255,255,0.03);padding:20px 14px;text-align:center;transition:background 0.15s;}
+.hstat:hover{background:rgba(79,142,247,0.08);}
+.hn{font-family:'Familjen Grotesk',sans-serif;font-size:26px;font-weight:700;color:#fff;letter-spacing:-1px;}
+.hl{font-size:11px;color:var(--txt3);margin-top:3px;}
+
+/* ═══════════════════════════════════════
+   SCROLL SHOWCASE — Adobe-style
+   Left: sticky text panels
+   Right: sticky app window that "plays"
+═══════════════════════════════════════ */
+#showcase{
+  position:relative;
+  /* 5 steps × 100vh each */
+}
+
+/* THE STICKY CONTAINER that holds both columns */
+.showcase-sticky-container{
+  position:sticky;
+  top:60px; /* below nav */
+  height:calc(100vh - 60px);
+  display:flex;
+  align-items:stretch;
+  overflow:hidden;
+  pointer-events:none;
+}
+
+/* LEFT COLUMN: text panels fade in/out */
+.text-column{
+  width:45%;
+  position:relative;
+  display:flex;
+  align-items:center;
+  padding:0 40px 0 60px;
+  pointer-events:none;
+}
+@media(max-width:900px){.text-column{display:none;}}
+
+.text-panel{
+  position:absolute;
+  width:100%;
+  padding-right:20px;
+  opacity:0;
+  transform:translateY(30px);
+  transition:opacity 0.5s ease, transform 0.5s ease;
+  pointer-events:none;
+}
+.text-panel.active{
+  opacity:1;
+  transform:translateY(0);
+  pointer-events:auto;
+}
+.text-panel.exit{
+  opacity:0;
+  transform:translateY(-30px);
+}
+
+.tp-step{font-size:12px;color:var(--txt3);font-family:'JetBrains Mono',monospace;margin-bottom:10px;}
+.tp-tag{display:flex;align-items:center;gap:8px;font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;letter-spacing:2px;text-transform:uppercase;margin-bottom:16px;}
+.tp-tag::before{content:'';width:20px;height:1.5px;background:currentColor;}
+.tp-h{font-family:'Familjen Grotesk',sans-serif;font-size:clamp(28px,3.5vw,46px);font-weight:700;line-height:1.05;letter-spacing:-1.5px;color:#fff;margin-bottom:16px;}
+.tp-p{font-size:15px;color:var(--txt2);line-height:1.75;margin-bottom:24px;max-width:380px;}
+.tp-checks{list-style:none;display:flex;flex-direction:column;gap:10px;}
+.tp-checks li{font-size:14px;color:var(--txt2);display:flex;align-items:flex-start;gap:10px;line-height:1.5;}
+.ck{width:20px;height:20px;border-radius:6px;flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center;}
+
+/* RIGHT COLUMN: sticky app window */
+.app-column{
+  width:55%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:20px 60px 20px 20px;
+  pointer-events:none;
+}
+@media(max-width:900px){.app-column{width:100%;padding:20px;}}
+
+/* THE APP WINDOW */
+.app-window{
+  width:100%;
+  max-width:520px;
+  background:var(--bg2);
+  border:1px solid var(--border2);
+  border-radius:16px;
+  overflow:hidden;
+  box-shadow:0 40px 100px rgba(0,0,0,0.5),0 0 0 1px rgba(255,255,255,0.04);
+  pointer-events:none;
+}
+.aw-chrome{
+  background:rgba(255,255,255,0.04);
+  border-bottom:1px solid var(--border);
+  padding:11px 16px;
+  display:flex;align-items:center;gap:10px;
+}
+.aw-dots{display:flex;gap:5px;}
+.aw-dot{width:10px;height:10px;border-radius:50%;}
+.aw-title{font-size:11px;color:var(--txt3);font-family:'JetBrains Mono',monospace;flex:1;}
+.aw-tag{font-size:9px;padding:3px 9px;border-radius:10px;font-family:'JetBrains Mono',monospace;font-weight:600;white-space:nowrap;}
+
+/* SCREEN PANELS inside app */
+.screen{display:none;padding:22px;animation:screenIn 0.45s cubic-bezier(0.16,1,0.3,1) both;}
+.screen.active{display:block;}
+@keyframes screenIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+/* SCROLLABLE STEPS (invisible, just for scroll tracking) */
+.scroll-steps{position:relative;z-index:1;}
+.scroll-step{height:100vh;display:flex;align-items:center;padding:0 24px;}
+/* Mobile: show content inline */
+.mobile-step-content{display:none;max-width:500px;margin:0 auto;}
+@media(max-width:900px){
+  .mobile-step-content{display:block;}
+  .scroll-step{height:auto;min-height:100vh;flex-direction:column;justify-content:center;padding:80px 24px 60px;}
+}
+
+/* PROGRESS BAR */
+.showcase-progress{position:sticky;top:60px;z-index:150;background:rgba(20,29,53,0.97);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);padding:0 24px;}
+.progress-inner{max-width:900px;margin:0 auto;display:flex;}
+.prog-step{flex:1;padding:13px 10px;display:flex;align-items:center;gap:8px;border-bottom:2px solid transparent;cursor:pointer;transition:all 0.2s;opacity:0.35;}
+.prog-step.active{border-bottom-color:var(--blue);opacity:1;}
+.prog-num{width:22px;height:22px;border-radius:50%;background:rgba(255,255,255,0.06);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;font-family:'JetBrains Mono',monospace;color:var(--txt3);flex-shrink:0;transition:all 0.2s;}
+.prog-step.active .prog-num{background:var(--blue);border-color:var(--blue);color:#fff;}
+.prog-label{font-size:12px;font-weight:600;color:var(--txt2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:none;}
+@media(min-width:500px){.prog-label{display:block;font-size:11px;}}
+@media(min-width:700px){.prog-label{font-size:12px;}}
+
+/* CHIPS */
+.chip{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:10px;font-weight:600;font-family:'JetBrains Mono',monospace;}
+.cg{background:rgba(62,207,142,0.12);color:var(--green);border:1px solid rgba(62,207,142,0.25);}
+.cb{background:rgba(79,142,247,0.12);color:var(--blue2);border:1px solid rgba(79,142,247,0.25);}
+.cy{background:rgba(246,195,67,0.12);color:var(--amber);border:1px solid rgba(246,195,67,0.25);}
+.cr{background:rgba(248,113,113,0.12);color:var(--red);border:1px solid rgba(248,113,113,0.25);}
+.cc{background:rgba(52,212,240,0.1);color:var(--cyan);border:1px solid rgba(52,212,240,0.2);}
+
+/* FORM ELEMENTS */
+.fi{background:rgba(79,142,247,0.06);border:1.5px solid rgba(79,142,247,0.35);border-radius:9px;padding:10px 13px;font-size:13px;font-family:'JetBrains Mono',monospace;color:var(--blue2);}
+.fi-label{font-size:10px;color:var(--txt3);font-family:'JetBrains Mono',monospace;margin-bottom:5px;letter-spacing:0.5px;}
+.auto-tag{font-size:9px;background:rgba(62,207,142,0.15);color:var(--green);padding:1px 6px;border-radius:8px;font-family:'JetBrains Mono',monospace;margin-left:4px;}
+.pb{height:5px;background:rgba(255,255,255,0.07);border-radius:3px;overflow:hidden;margin:5px 0 16px;}
+.pbf{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--blue),var(--cyan));}
+
+/* ANALYSIS STEPS */
+.an{display:flex;align-items:center;gap:11px;padding:10px 13px;border-radius:10px;background:rgba(255,255,255,0.02);border:1px solid var(--border);margin-bottom:8px;}
+.an.done{border-color:rgba(62,207,142,0.25);background:rgba(62,207,142,0.04);}
+.an.run{border-color:rgba(79,142,247,0.3);background:rgba(79,142,247,0.05);}
+.an-ic{width:26px;height:26px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;}
+.an-lbl{font-size:13px;font-weight:600;color:var(--txt);}
+.an-sub{font-size:10px;color:var(--txt3);margin-top:1px;font-family:'JetBrains Mono',monospace;}
+.spin{animation:spin 1s linear infinite;display:inline-block;}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* RESULT CARDS */
+.rg{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:12px;}
+.rc{background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:10px;padding:12px;}
+.rc.pass{border-color:rgba(62,207,142,0.25);background:rgba(62,207,142,0.04);}
+.rc.warn{border-color:rgba(246,195,67,0.25);background:rgba(246,195,67,0.04);}
+.rc-lbl{font-size:9px;font-weight:600;color:var(--txt3);font-family:'JetBrains Mono',monospace;letter-spacing:1px;text-transform:uppercase;margin-bottom:7px;}
+.rc-val{font-family:'Familjen Grotesk',sans-serif;font-size:21px;font-weight:700;color:#fff;letter-spacing:-0.5px;}
+.rc-sub{font-size:10px;color:var(--txt3);margin-top:2px;font-family:'JetBrains Mono',monospace;}
+.bar-row{margin-bottom:9px;}
+.bar-lbl{font-size:11px;color:var(--txt3);display:flex;justify-content:space-between;margin-bottom:4px;}
+.bar-bg{height:6px;background:rgba(255,255,255,0.06);border-radius:3px;overflow:hidden;}
+.bar-fill{height:100%;border-radius:3px;}
+.bfg{background:linear-gradient(90deg,#059669,#3ecf8e);}
+.bfb{background:linear-gradient(90deg,#1a3a8a,#4f8ef7);}
+.bfy{background:linear-gradient(90deg,#b45309,#f6c343);}
+.bfr{background:linear-gradient(90deg,#b91c1c,#f87171);box-shadow:0 0 8px rgba(248,113,113,0.4);}
+
+/* DRAWING */
+.drw-canvas{background:#060e1e;border-radius:10px;padding:18px;border:1px solid rgba(79,142,247,0.12);position:relative;overflow:hidden;}
+.drw-canvas::before{content:'';position:absolute;inset:0;background-image:linear-gradient(rgba(79,142,247,0.05) 1px,transparent 1px),linear-gradient(90deg,rgba(79,142,247,0.05) 1px,transparent 1px);background-size:20px 20px;}
+.drw-inner{position:relative;z-index:1;}
+.drw-label{font-size:9px;font-family:'JetBrains Mono',monospace;color:var(--txt3);letter-spacing:1px;text-transform:uppercase;margin-bottom:14px;}
+.beam-xsec{display:flex;gap:24px;align-items:flex-start;justify-content:center;}
+.xsec{text-align:center;}
+.xsec-lbl{font-size:9px;font-family:'JetBrains Mono',monospace;color:var(--txt3);margin-bottom:8px;}
+.beam-box{width:72px;height:108px;border:2px solid var(--blue2);border-radius:3px;position:relative;display:flex;align-items:flex-end;justify-content:center;padding-bottom:7px;background:rgba(79,142,247,0.04);}
+.stirrup{position:absolute;inset:5px;border:1.5px solid rgba(79,142,247,0.35);border-radius:2px;}
+.rbar{width:7px;height:7px;border-radius:50%;background:var(--blue2);border:1px solid var(--blue);display:inline-block;margin:0 2px;}
+.rtop{position:absolute;top:7px;left:50%;transform:translateX(-50%);display:flex;gap:3px;}
+.ann{font-size:8px;font-family:'JetBrains Mono',monospace;color:var(--cyan);margin-top:5px;display:flex;align-items:center;gap:3px;}
+.ann::before{content:'';width:12px;height:1px;background:var(--cyan);flex-shrink:0;}
+.dim{font-size:8px;font-family:'JetBrains Mono',monospace;color:var(--blue2);margin-top:3px;}
+.ftg-wrap{width:100px;height:80px;position:relative;}
+.ftg-col{width:28px;height:32px;border:2px solid var(--blue2);background:rgba(79,142,247,0.1);position:absolute;top:0;left:50%;transform:translateX(-50%);}
+.ftg-pad{width:100px;height:50px;border:2px solid rgba(79,142,247,0.5);background:rgba(79,142,247,0.05);border-radius:3px;position:absolute;bottom:0;display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:4px;padding:4px;}
+.ftg-bar{width:6px;height:6px;border-radius:50%;background:var(--blue2);}
+
+/* SECTIONS */
+.section{padding:100px 24px;}
+.si{max-width:1100px;margin:0 auto;}
+.ey{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;color:var(--blue2);letter-spacing:2px;text-transform:uppercase;margin-bottom:12px;display:flex;align-items:center;gap:8px;}
+.ey::before{content:'';width:20px;height:1.5px;background:var(--blue2);}
+.sh{font-family:'Familjen Grotesk',sans-serif;font-size:clamp(28px,5vw,48px);font-weight:700;line-height:1.1;letter-spacing:-1.5px;color:#fff;margin-bottom:14px;}
+.sp{font-size:17px;color:var(--txt2);line-height:1.7;}
+.who-grid{display:grid;grid-template-columns:1fr;gap:14px;margin-top:48px;}
+@media(min-width:640px){.who-grid{grid-template-columns:repeat(3,1fr);}}
+.wcard{border:1px solid var(--border);border-radius:18px;padding:28px 22px;background:var(--card);transition:all 0.2s;position:relative;overflow:hidden;}
+.wcard::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;opacity:0;transition:opacity 0.2s;}
+.wcard:hover::before{opacity:1;}.wcard:hover{border-color:var(--border2);transform:translateY(-3px);box-shadow:0 20px 60px rgba(0,0,0,0.3);}
+.ws::before{background:linear-gradient(90deg,var(--blue),var(--cyan));}
+.wg::before{background:linear-gradient(90deg,var(--green),#059669);}
+.wp::before{background:linear-gradient(90deg,var(--purple),#7c3aed);}
+.wicon{width:46px;height:46px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:16px;}
+.wh{font-family:'Familjen Grotesk',sans-serif;font-size:19px;font-weight:700;color:#fff;margin-bottom:9px;}
+.wp-txt{font-size:14px;color:var(--txt2);line-height:1.8;}
+#pricing{background:var(--bg1);border-top:1px solid var(--border);}
+.pgrid{display:flex;flex-direction:column;gap:16px;max-width:420px;margin:48px auto 0;}
+@media(min-width:900px){.pgrid{flex-direction:row;max-width:100%;align-items:stretch;}}
+.pcard{flex:1;background:var(--card);border:1px solid var(--border);border-radius:20px;padding:30px;position:relative;transition:all 0.2s;}
+.pcard:hover{border-color:var(--border2);transform:translateY(-2px);box-shadow:0 20px 60px rgba(0,0,0,0.3);}
+.pcard.pop{border-color:rgba(79,142,247,0.5);box-shadow:0 0 0 4px rgba(79,142,247,0.08);}
+.pbadge{position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:var(--blue);color:#fff;padding:4px 16px;border-radius:100px;font-size:10px;font-weight:700;font-family:'JetBrains Mono',monospace;white-space:nowrap;}
+.ptier{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;color:var(--txt3);letter-spacing:2px;text-transform:uppercase;margin-bottom:16px;}
+.pprice{font-family:'Familjen Grotesk',sans-serif;font-size:52px;font-weight:700;color:#fff;line-height:1;letter-spacing:-2px;margin-bottom:4px;}
+.pprice sup{font-size:22px;vertical-align:top;margin-top:10px;display:inline-block;color:var(--txt3);}
+.pcad{font-size:13px;color:var(--txt3);margin-bottom:22px;}
+.pdiv{height:1px;background:var(--border);margin:22px 0;}
+.pfeats{list-style:none;display:flex;flex-direction:column;gap:11px;margin-bottom:26px;}
+.pfeats li{font-size:14px;color:var(--txt2);display:flex;align-items:flex-start;gap:9px;line-height:1.5;}
+.pfeats li::before{content:'✓';color:var(--green);font-weight:700;flex-shrink:0;}
+.pfeats li.no::before{content:'✗';color:var(--txt4);}
+.pfeats li.no{color:var(--txt4);}
+.pbtn{width:100%;padding:14px;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;transition:all 0.2s;}
+.pbs{background:var(--blue);border:none;color:#fff;box-shadow:0 4px 20px rgba(79,142,247,0.3);}
+.pbs:hover{background:#3d7ef5;transform:translateY(-1px);}
+.pbo{background:transparent;border:1px solid var(--border2);color:var(--txt2);}
+.pbo:hover{border-color:var(--blue2);color:var(--blue2);}
+#cta{background:linear-gradient(135deg,#1a3a8a,#0e6680);padding:100px 24px;text-align:center;position:relative;overflow:hidden;}
+#cta::before{content:'';position:absolute;top:-50%;left:50%;transform:translateX(-50%);width:110%;height:200%;background:radial-gradient(ellipse,rgba(255,255,255,0.06) 0%,transparent 65%);pointer-events:none;}
+.cta-h{font-family:'Familjen Grotesk',sans-serif;font-size:clamp(32px,6vw,58px);font-weight:700;color:#fff;letter-spacing:-2px;margin-bottom:16px;position:relative;}
+.cta-p{font-size:17px;color:rgba(255,255,255,0.65);line-height:1.7;max-width:480px;margin:0 auto 40px;position:relative;}
+.cta-btns{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;position:relative;}
+.cbp{padding:16px 32px;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;background:#fff;border:none;color:#1a3a8a;box-shadow:0 8px 32px rgba(0,0,0,0.2);transition:all 0.2s;}
+.cbp:hover{transform:translateY(-2px);}
+.cbs{padding:16px 26px;border-radius:12px;font-size:15px;font-weight:500;cursor:pointer;font-family:inherit;background:rgba(255,255,255,0.1);border:1.5px solid rgba(255,255,255,0.25);color:#fff;transition:all 0.2s;}
+.cbs:hover{background:rgba(255,255,255,0.17);}
+footer{background:#080d1c;padding:44px 28px 32px;border-top:1px solid var(--border);}
+.fi-row{max-width:1100px;margin:0 auto;display:flex;flex-direction:column;gap:24px;}
+@media(min-width:640px){.fi-row{flex-direction:row;align-items:center;justify-content:space-between;}}
+.fmark{width:28px;height:28px;background:var(--blue);border-radius:7px;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:#fff;}
+.fname{font-family:'Familjen Grotesk',sans-serif;font-size:15px;font-weight:700;color:var(--txt);}
+.flinks{display:flex;gap:20px;flex-wrap:wrap;}
+.flinks a{color:var(--txt3);text-decoration:none;font-size:13px;transition:color 0.15s;}
+.flinks a:hover{color:var(--txt2);}
+.fcopy{font-size:11px;color:var(--txt4);font-family:'JetBrains Mono',monospace;text-align:center;margin-top:22px;}
+
+/* LOGIN */
+#lmodal{display:none;position:fixed;inset:0;z-index:9000;background:rgba(5,8,20,0.75);backdrop-filter:blur(14px);align-items:flex-end;justify-content:center;}
+#lmodal.show{display:flex;}
+@media(min-width:600px){#lmodal{align-items:center;padding:20px;}}
+.lbox{background:var(--bg2);border:1px solid var(--border2);border-radius:24px 24px 0 0;padding:8px 28px 40px;width:100%;max-width:420px;position:relative;box-shadow:0 -24px 80px rgba(0,0,0,0.5);animation:su 0.38s cubic-bezier(0.34,1.1,0.64,1);}
+@media(min-width:600px){.lbox{border-radius:20px;animation:fs 0.3s ease;}}
+@keyframes su{from{transform:translateY(100%)}to{transform:translateY(0)}}
+@keyframes fs{from{opacity:0;transform:scale(0.96)}to{opacity:1;transform:scale(1)}}
+.lhdl{width:36px;height:4px;background:var(--border2);border-radius:2px;margin:12px auto 22px;}
+@media(min-width:600px){.lhdl{display:none;}}
+.lcl{position:absolute;top:18px;right:18px;background:var(--bg3);border:none;color:var(--txt3);font-size:14px;cursor:pointer;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:600;}
+.lrow{display:flex;align-items:center;gap:9px;margin-bottom:4px;}
+.lmk{width:28px;height:28px;background:var(--blue);border-radius:7px;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:#fff;flex-shrink:0;}
+.ltxt{font-family:'Familjen Grotesk',sans-serif;font-size:18px;font-weight:700;color:var(--txt);}
+.lsub{font-size:13px;color:var(--txt3);margin-bottom:22px;}
+.ltabs{display:flex;background:var(--bg3);border-radius:12px;padding:4px;margin-bottom:22px;}
+.ltab{flex:1;padding:10px;border:none;background:transparent;color:var(--txt3);font-size:14px;font-weight:600;cursor:pointer;border-radius:9px;font-family:inherit;transition:all 0.15s;}
+.ltab.on{background:var(--bg2);color:var(--blue2);box-shadow:0 2px 8px rgba(0,0,0,0.3);}
+.lf{margin-bottom:16px;}
+.lf label{display:block;font-size:13px;color:var(--txt2);margin-bottom:7px;font-weight:600;}
+.lf input{width:100%;padding:13px 16px;background:var(--bg3);border:1.5px solid var(--border2);border-radius:10px;color:var(--txt);font-size:16px;font-family:inherit;outline:none;transition:all 0.15s;-webkit-appearance:none;}
+.lf input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(79,142,247,0.15);}
+.lf input::placeholder{color:var(--txt4);}
+.phrow{display:flex;gap:8px;}
+.phpre{padding:13px 16px;background:var(--bg3);border:1.5px solid var(--border2);border-radius:10px;color:var(--txt2);font-size:16px;font-weight:600;white-space:nowrap;}
+.lbtn{width:100%;padding:15px;background:var(--blue);border:none;border-radius:12px;color:#fff;font-size:16px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:4px;transition:all 0.2s;}
+.lbtn:hover{background:#3d7ef5;}
+.lmsg{font-size:12px;margin-top:10px;text-align:center;color:var(--txt3);}
+.lmsg.err{color:var(--red);}
+.purgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.purbtn{padding:12px;border:1.5px solid var(--border2);border-radius:10px;background:var(--bg3);color:var(--txt3);cursor:pointer;font-size:14px;font-weight:600;font-family:inherit;text-align:center;transition:all 0.15s;}
+.purbtn.on{border-color:var(--blue);background:rgba(79,142,247,0.12);color:var(--blue2);}
+.otprow{display:flex;gap:8px;justify-content:center;margin-bottom:20px;}
+.otpi{width:46px;height:56px;text-align:center;font-size:24px;font-weight:700;background:var(--bg3);border:1.5px solid var(--border2);border-radius:12px;color:var(--txt);font-family:'JetBrains Mono',monospace;outline:none;-webkit-appearance:none;transition:all 0.15s;}
+.otpi:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(79,142,247,0.15);}
+#lapmod{display:none;position:fixed;inset:0;z-index:9100;background:rgba(5,8,20,0.75);backdrop-filter:blur(14px);align-items:flex-end;justify-content:center;}
+#lapmod.show{display:flex;}
+@media(min-width:600px){#lapmod{align-items:center;padding:20px;}}
+.lapbox{background:var(--bg2);border:1px solid var(--border2);border-radius:24px 24px 0 0;padding:8px 28px 44px;width:100%;max-width:400px;text-align:center;animation:su 0.38s cubic-bezier(0.34,1.1,0.64,1);}
+@media(min-width:600px){.lapbox{border-radius:20px;animation:fs 0.3s ease;padding:44px 32px;}}
+.laphdl{width:36px;height:4px;background:var(--border2);border-radius:2px;margin:12px auto 28px;}
+@media(min-width:600px){.laphdl{display:none;}}
+
+/* REVEAL */
+.rv{opacity:0;transform:translateY(24px);transition:opacity 0.65s cubic-bezier(0.16,1,0.3,1),transform 0.65s cubic-bezier(0.16,1,0.3,1);}
+.rv.in{opacity:1;transform:translateY(0);}
+.d1{transition-delay:0.1s;}.d2{transition-delay:0.2s;}.d3{transition-delay:0.3s;}
+</style>
+</head>
+<body>
+
+<button id="atg" onclick="toggleEdit()" style="display:none;"><div class="tdot"></div><span id="atgl">Edit</span></button>
+<div id="etb"><span class="etl">EDITING</span><button class="ets" onclick="saveEdits()">Save</button><button class="etd" onclick="discardEdits()">Discard</button></div>
+
+<nav>
+  <a class="nlogo" href="#">
+    <div class="nmark">SL</div>
+    <div class="nname" data-e="nlogo" contenteditable="false" spellcheck="false">Struct<em>Learn</em> Pro</div>
+  </a>
+  <ul class="nlinks">
+    <li><a href="#who">Who it's for</a></li>
+    <li><a href="#showcase">How it works</a></li>
+    <li><a href="#pricing">Pricing</a></li>
+    <li><a href="#faq">FAQ</a></li>
+  </ul>
+  <div class="ncta">
+    <button class="nbg" onclick="showLogin('login')" id="nav-signin" style="display:flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="5" r="3" stroke="currentColor" stroke-width="1.4"/><path d="M1 13c0-3.3 2.7-6 6-6s6 2.7 6 6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg> My Workspace</button>
+    <button class="nbp" onclick="showLogin('signup')" id="nav-signup">Get started free</button>
+    <button id="nav-hamburger" onclick="toggleMobileNav()" style="display:none;background:transparent;border:1px solid var(--border2);border-radius:8px;padding:8px 10px;cursor:pointer;color:var(--txt2);">
+      <svg width="18" height="14" viewBox="0 0 18 14" fill="none"><path d="M0 1h18M0 7h18M0 13h18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+  </div>
+</nav>
+<!-- MOBILE NAV DRAWER -->
+<div id="mobileNav" style="display:none;position:fixed;top:60px;left:0;right:0;background:var(--bg2);border-bottom:1px solid var(--border);z-index:150;padding:16px 24px 24px;">
+  <ul style="list-style:none;display:flex;flex-direction:column;gap:4px;margin-bottom:16px;">
+    <li><a href="#who" onclick="closeMobileNav()" style="display:block;padding:12px 0;color:var(--txt2);text-decoration:none;font-size:15px;font-weight:600;border-bottom:1px solid var(--border);">Who it's for</a></li>
+    <li><a href="#showcase" onclick="closeMobileNav()" style="display:block;padding:12px 0;color:var(--txt2);text-decoration:none;font-size:15px;font-weight:600;border-bottom:1px solid var(--border);">How it works</a></li>
+    <li><a href="#pricing" onclick="closeMobileNav()" style="display:block;padding:12px 0;color:var(--txt2);text-decoration:none;font-size:15px;font-weight:600;border-bottom:1px solid var(--border);">Pricing</a></li>
+    <li><a href="#faq" onclick="closeMobileNav()" style="display:block;padding:12px 0;color:var(--txt2);text-decoration:none;font-size:15px;font-weight:600;">FAQ</a></li>
+  </ul>
+  <div style="display:flex;flex-direction:column;gap:10px;">
+    <button onclick="showLogin('login');closeMobileNav()" style="width:100%;padding:13px;border:1px solid var(--border2);border-radius:10px;background:transparent;color:var(--txt2);font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;">👤 My Workspace</button>
+    <button onclick="showLogin('signup');closeMobileNav()" style="width:100%;padding:13px;background:var(--blue);border:none;border-radius:10px;color:#fff;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;">Get started free →</button>
+  </div>
+</div>
+
+<!-- HERO -->
+<section id="hero">
+  <div class="hero-badge"><div class="live"><div class="ld"></div></div><span data-e="hbadge" contenteditable="false" spellcheck="false">IS 456 · IS 1893 · IS 875 · AI Assistant</span></div>
+  <h1><span data-e="h1a" contenteditable="false" spellcheck="false">The complete IS 456</span><br><span class="grad" data-e="h1b" contenteditable="false" spellcheck="false">design environment.</span></h1>
+  <p class="hero-sub" data-e="hsub" contenteditable="false" spellcheck="false">Guided. Explained. AI-powered. From column grid to foundation — design IS 456 buildings with an AI that explains every calculation, answers every doubt, and never lets you get stuck.</p>
+  <div class="hero-cta">
+    <button class="hbp" onclick="showLogin('signup')" data-e="hb1" contenteditable="false" spellcheck="false">Start designing free →</button>
+    <button class="hbs" onclick="document.getElementById('showcase').scrollIntoView({behavior:'smooth'})" data-e="hb2" contenteditable="false" spellcheck="false">See how it works</button>
+  </div>
+  <!-- RETURNING USER STRIP -->
+  <div style="margin-top:-20px;margin-bottom:32px;position:relative;z-index:1;animation:fu 0.7s 0.7s both ease-out;">
+    <div style="display:inline-flex;align-items:center;gap:10px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:100px;padding:8px 18px 8px 8px;cursor:pointer;transition:all 0.2s;" onclick="showLogin('login')" onmouseover="this.style.background='rgba(255,255,255,0.08)';this.style.borderColor='rgba(255,255,255,0.2)'" onmouseout="this.style.background='rgba(255,255,255,0.04)';this.style.borderColor='rgba(255,255,255,0.1)'">
+      <div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--blue),var(--purple));display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;">👤</div>
+      <span style="font-size:13px;color:var(--txt2);">Already have an account?</span>
+      <span style="font-size:13px;font-weight:700;color:var(--blue2);">Go to your workspace →</span>
+    </div>
+  </div>
+
+  <div class="hstats">
+    <div class="hstat"><div class="hn" data-e="s1n" contenteditable="false" spellcheck="false">28</div><div class="hl" data-e="s1l" contenteditable="false" spellcheck="false">Guided steps</div></div>
+    <div class="hstat"><div class="hn" data-e="s2n" contenteditable="false" spellcheck="false">4</div><div class="hl" data-e="s2l" contenteditable="false" spellcheck="false">IS codes</div></div>
+    <div class="hstat"><div class="hn" data-e="s3n" contenteditable="false" spellcheck="false">100%</div><div class="hl" data-e="s3l" contenteditable="false" spellcheck="false">Free to start</div></div>
+    <div class="hstat"><div class="hn" data-e="s4n" contenteditable="false" spellcheck="false">AI</div><div class="hl" data-e="s4l" contenteditable="false" spellcheck="false">Built-in assistant</div></div>
+  </div>
+</section>
+
+<!-- INTERACTIVE DEMO -->
+<section id="showcase" style="padding:80px 24px;background:var(--bg1);border-top:1px solid var(--border);">
+  <div style="max-width:960px;margin:0 auto;">
+
+    <div style="text-align:center;margin-bottom:40px;">
+      <div style="font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;color:var(--blue2);letter-spacing:2px;text-transform:uppercase;margin-bottom:12px;display:flex;align-items:center;justify-content:center;gap:8px;"><span style="width:20px;height:1.5px;background:var(--blue2);display:block;"></span>How it works<span style="width:20px;height:1.5px;background:var(--blue2);display:block;"></span></div>
+      <h2 style="font-family:'Familjen Grotesk',sans-serif;font-size:clamp(28px,5vw,46px);font-weight:700;line-height:1.1;letter-spacing:-1.5px;color:#fff;margin-bottom:12px;" data-e="demo-h" contenteditable="false" spellcheck="false">Watch a real design happen.</h2>
+      <p style="font-size:16px;color:var(--txt2);max-width:440px;margin:0 auto;" data-e="demo-p" contenteditable="false" spellcheck="false">From blank project to construction drawings — one smooth flow.</p>
+    </div>
+
+    <!-- BROWSER WINDOW -->
+    <div id="demoWin" style="background:var(--bg2);border:1px solid var(--border2);border-radius:18px;overflow:hidden;box-shadow:0 40px 100px rgba(0,0,0,0.5);position:relative;">
+
+      <!-- CHROME BAR -->
+      <div style="background:rgba(255,255,255,0.04);border-bottom:1px solid var(--border);padding:11px 18px;display:flex;align-items:center;gap:12px;user-select:none;flex-shrink:0;">
+        <div style="display:flex;gap:6px;flex-shrink:0;">
+          <div style="width:11px;height:11px;border-radius:50%;background:#f87171;"></div>
+          <div style="width:11px;height:11px;border-radius:50%;background:#fbbf24;"></div>
+          <div style="width:11px;height:11px;border-radius:50%;background:#3ecf8e;"></div>
+        </div>
+        <div style="flex:1;background:rgba(255,255,255,0.05);border-radius:6px;padding:5px 12px;font-size:11px;font-family:'JetBrains Mono',monospace;color:rgba(255,255,255,0.28);max-width:280px;margin:0 auto;display:flex;align-items:center;gap:5px;">
+          <span style="color:rgba(62,207,142,0.6);font-size:10px;">🔒</span> structlearnpro.com/app
+        </div>
+        <div id="dBreadcrumb" style="font-size:10px;color:var(--txt3);font-family:'JetBrains Mono',monospace;margin-left:auto;transition:opacity 0.3s;"></div>
+      </div>
+
+      <!-- APP BODY: sidebar + content -->
+      <div style="display:flex;height:480px;">
+
+        <!-- SIDEBAR -->
+        <div style="width:48px;background:rgba(0,0,0,0.2);border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;padding:12px 0;gap:4px;flex-shrink:0;">
+          <div style="width:26px;height:26px;background:var(--blue);border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;color:#fff;margin-bottom:10px;">SL</div>
+          <div class="sbi" id="sbi0">🗂</div>
+          <div class="sbi" id="sbi1">🗺️</div>
+          <div class="sbi" id="sbi2">⚡</div>
+          <div class="sbi" id="sbi3">📊</div>
+          <div class="sbi" id="sbi4">✦</div>
+          <div class="sbi" id="sbi5">📐</div>
+          <div class="sbi" id="sbi6">📄</div>
+        </div>
+
+        <!-- MAIN CONTENT AREA — single canvas that morphs -->
+        <div style="flex:1;position:relative;overflow:hidden;" id="demoCanvas">
+
+          <!-- ── LAYER: PROJECTS DASHBOARD ── -->
+          <div class="dlayer" id="dl-dash" style="padding:20px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+              <div><div style="font-family:'Familjen Grotesk',sans-serif;font-size:15px;font-weight:700;color:#fff;">My Projects</div><div style="font-size:10px;color:var(--txt3);font-family:'JetBrains Mono',monospace;margin-top:2px;">0 projects</div></div>
+              <div id="dBtnNew" class="dbtn-p">+ New Project</div>
+            </div>
+            <div style="flex:1;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px;padding:60px 0;">
+              <div style="font-size:40px;opacity:0.2;">📐</div>
+              <div style="font-size:13px;color:var(--txt3);text-align:center;line-height:1.6;">No projects yet.<br>Click <strong style="color:var(--txt2);">+ New Project</strong> to start.</div>
+            </div>
+          </div>
+
+          <!-- ── LAYER: FORM ── -->
+          <div class="dlayer" id="dl-form" style="padding:20px;display:none;">
+            <div style="font-size:10px;color:var(--txt3);font-family:'JetBrains Mono',monospace;margin-bottom:4px;display:flex;align-items:center;gap:8px;"><span style="cursor:pointer;opacity:0.6;">Projects</span><span style="opacity:0.4;">/</span><span>New Project</span></div>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;margin-top:12px;">
+              <span style="font-size:10px;color:var(--txt3);font-family:'JetBrains Mono',monospace;">Step 1 of 28 — Project Information</span>
+              <span id="dPct" style="font-size:10px;color:var(--blue2);font-family:'JetBrains Mono',monospace;">4%</span>
+            </div>
+            <div style="height:3px;background:rgba(255,255,255,0.07);border-radius:2px;margin-bottom:16px;overflow:hidden;"><div id="dPbar" style="height:100%;border-radius:2px;background:linear-gradient(90deg,var(--blue),var(--cyan));transition:width 0.6s ease;width:4%;"></div></div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+              <div style="grid-column:1/-1;"><div class="dlbl">Project Name</div><div class="dinput" id="dName" style="cursor:text;"><span id="dNameTxt" style="color:var(--txt4);">Type project name...</span><span id="dCur" style="display:none;border-right:2px solid var(--blue2);animation:blink 0.8s infinite;">&nbsp;</span></div></div>
+              <div><div class="dlbl">City</div><div class="dinput" id="dCity"><span id="dCityTxt" style="color:var(--txt4);">—</span></div></div>
+              <div><div class="dlbl">Floors</div><div class="dinput" id="dFloors"><span id="dFlrTxt" style="color:var(--txt4);">—</span></div></div>
+              <div><div class="dlbl">Seismic <span id="dAutoBadge" style="display:none;" class="auto-badge">auto</span></div><div class="dinput" id="dZone"><span id="dZoneTxt" style="color:var(--txt4);">—</span></div></div>
+              <div><div class="dlbl">Wind <span id="dAutoBadge2" style="display:none;" class="auto-badge">auto</span></div><div class="dinput" id="dWind"><span id="dWindTxt" style="color:var(--txt4);">—</span></div></div>
+            </div>
+            <div style="margin-top:14px;display:flex;justify-content:flex-end;"><div id="dBtnNext" class="dbtn-p" style="opacity:0.25;transition:opacity 0.4s;">Next — Loads →</div></div>
+          </div>
+
+          <!-- ── LAYER: LOADS ── -->
+          <div class="dlayer" id="dl-loads" style="padding:20px;display:none;">
+            <div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span style="font-size:10px;color:var(--txt3);font-family:'JetBrains Mono',monospace;">Step 8 of 28 — Loads & Materials</span><span style="font-size:10px;color:var(--green);font-family:'JetBrains Mono',monospace;">28%</span></div>
+            <div style="height:3px;background:rgba(255,255,255,0.07);border-radius:2px;margin-bottom:16px;overflow:hidden;"><div style="height:100%;width:28%;border-radius:2px;background:linear-gradient(90deg,var(--blue),var(--cyan));"></div></div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
+              <div><div class="dlbl">Live Load (IS 875 P2)</div><div class="dinput filled">2.0 kN/m²</div></div>
+              <div><div class="dlbl">Floor Finish</div><div class="dinput filled">1.0 kN/m²</div></div>
+              <div><div class="dlbl">Concrete Grade</div><div class="dinput filled">M25 — fck=25</div></div>
+              <div><div class="dlbl">Steel Grade</div><div class="dinput filled">Fe500D — TMT</div></div>
+            </div>
+            <div style="background:rgba(62,207,142,0.06);border:1px solid rgba(62,207,142,0.2);border-radius:9px;padding:10px 12px;margin-bottom:12px;">
+              <div style="font-size:9px;color:var(--green);font-family:'JetBrains Mono',monospace;margin-bottom:3px;">💡 IS 456 recommends</div>
+              <div style="font-size:11px;color:var(--txt2);line-height:1.6;">Fe500D mandatory for seismic zones (IS 13920 Cl 5.3). M25 minimum for moderate exposure (Table 5).</div>
+            </div>
+            <div><div class="dlbl">Soil Bearing Capacity</div><div class="dinput filled">200 kN/m²</div></div>
+            <div style="margin-top:14px;display:flex;justify-content:flex-end;"><div id="dBtnRun" class="dbtn-p" style="background:linear-gradient(135deg,#059669,#3ecf8e);box-shadow:0 0 16px rgba(62,207,142,0.3);">▶ Run Analysis</div></div>
+          </div>
+
+          <!-- ── LAYER: ANALYSIS ── -->
+          <div class="dlayer" id="dl-analysis" style="padding:20px;display:none;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+              <div style="font-family:'Familjen Grotesk',sans-serif;font-size:14px;font-weight:700;color:#fff;">Running IS 456 Analysis<span id="dDots" style="color:var(--blue2);"></span></div>
+              <span style="font-size:9px;padding:2px 8px;border-radius:8px;font-family:'JetBrains Mono',monospace;font-weight:600;background:rgba(183,148,244,0.15);color:var(--purple);">IS 456 Engine</span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:7px;">
+              <div class="an-row" id="ar0"><span class="an-ic">⏸️</span><div class="an-txt"><div class="an-lbl">Slab Design</div><div class="an-sub">IS 456 Cl 24</div></div><span class="an-tag">—</span></div>
+              <div class="an-row" id="ar1"><span class="an-ic">⏸️</span><div class="an-txt"><div class="an-lbl">Beam Design</div><div class="an-sub">IS 456 Cl 22</div></div><span class="an-tag">—</span></div>
+              <div class="an-row" id="ar2"><span class="an-ic">⏸️</span><div class="an-txt"><div class="an-lbl">Column Design</div><div class="an-sub">IS 456 Cl 39</div></div><span class="an-tag">—</span></div>
+              <div class="an-row" id="ar3"><span class="an-ic">⏸️</span><div class="an-txt"><div class="an-lbl">Seismic — IS 1893</div><div class="an-sub">Base shear, Zone IV</div></div><span class="an-tag">—</span></div>
+              <div class="an-row" id="ar4"><span class="an-ic">⏸️</span><div class="an-txt"><div class="an-lbl">Footing Design</div><div class="an-sub">IS 456 Cl 34</div></div><span class="an-tag">—</span></div>
+            </div>
+          </div>
+
+          <!-- ── LAYER: RESULTS ── -->
+          <div class="dlayer" id="dl-results" style="padding:20px;display:none;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+              <div style="font-family:'Familjen Grotesk',sans-serif;font-size:14px;font-weight:700;color:#fff;">Design Overview</div>
+              <span style="font-size:9px;padding:2px 9px;border-radius:8px;font-family:'JetBrains Mono',monospace;font-weight:600;background:rgba(62,207,142,0.12);color:var(--green);border:1px solid rgba(62,207,142,0.25);">✓ IS 456 PASS</span>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px;">
+              <div class="rc pass"><div class="rc-lbl">Slab</div><div class="rc-val">PASS</div><div class="rc-sub">150mm ✓</div></div>
+              <div class="rc warn"><div class="rc-lbl">Beam B6</div><div class="rc-val" style="color:var(--amber);">91%</div><div class="rc-sub">review</div></div>
+              <div class="rc pass"><div class="rc-lbl">Columns</div><div class="rc-val">8 ✓</div><div class="rc-sub">300×400</div></div>
+              <div class="rc pass"><div class="rc-lbl">Footings</div><div class="rc-val">PASS</div><div class="rc-sub">1.8×1.8m</div></div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;">
+              <div><div style="font-size:10px;color:var(--txt3);display:flex;justify-content:space-between;margin-bottom:3px;"><span>Seismic — IS 1893 Zone IV</span><span style="color:var(--green);">142.3 kN</span></div><div style="height:6px;background:rgba(255,255,255,0.06);border-radius:3px;overflow:hidden;"><div style="width:58%;height:100%;background:linear-gradient(90deg,#059669,#3ecf8e);border-radius:3px;"></div></div></div>
+              <div><div style="font-size:10px;color:var(--txt3);display:flex;justify-content:space-between;margin-bottom:3px;"><span>Wind — IS 875 Zone IV</span><span style="color:var(--blue2);">1.10 kN/m²</span></div><div style="height:6px;background:rgba(255,255,255,0.06);border-radius:3px;overflow:hidden;"><div style="width:44%;height:100%;background:linear-gradient(90deg,#1a3a8a,#4f8ef7);border-radius:3px;"></div></div></div>
+              <div><div style="font-size:10px;color:var(--txt3);display:flex;justify-content:space-between;margin-bottom:3px;"><span>Beam B6 — transfer beam</span><span style="color:var(--red);">91%</span></div><div style="height:6px;background:rgba(255,255,255,0.06);border-radius:3px;overflow:hidden;"><div style="width:91%;height:100%;background:linear-gradient(90deg,#b91c1c,#f87171);border-radius:3px;"></div></div></div>
+            </div>
+            <div id="dBtnCalc" class="dbtn-ghost" style="display:inline-flex;font-size:11px;cursor:pointer;">View Beam B3 calculation →</div>
+          </div>
+
+          <!-- ── LAYER: CALC ── -->
+          <div class="dlayer" id="dl-calc" style="padding:20px;display:none;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+              <div><div style="font-family:'Familjen Grotesk',sans-serif;font-size:14px;font-weight:700;color:#fff;">Beam B3 — Full Working</div><div style="font-size:9px;color:var(--txt3);font-family:'JetBrains Mono',monospace;margin-top:1px;">IS 456:2000 Cl 22, 26.5.1, Annex G · 230×450mm</div></div>
+              <span style="font-size:9px;padding:2px 8px;border-radius:8px;font-family:'JetBrains Mono',monospace;font-weight:600;background:rgba(62,207,142,0.12);color:var(--green);">✓ PASS</span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:5px;">
+              <div class="cs" id="cs0"><div class="cs-lbl">Step 1 — Factored Loads (IS 456 Cl 18.2)</div><div class="cs-body"><div class="cs-row"><span class="cs-k">Dead Load</span><span class="cs-eq">= 28.4 kN/m</span></div><div class="cs-row"><span class="cs-k">Live Load</span><span class="cs-eq">= 8.0 kN/m</span></div><div class="cs-row cs-hi"><span class="cs-k">Wu = 1.5(DL+LL)</span><span class="cs-eq cs-v">= 54.6 kN/m</span></div></div></div>
+              <div class="cs" id="cs1"><div class="cs-lbl">Step 2 — Bending Moment (IS 456 Cl 22.5)</div><div class="cs-body"><div class="cs-row"><span class="cs-k">Mu = WuL²/8</span><span class="cs-eq">= 54.6 × 16 / 8 = 109.2 kN·m</span></div><div class="cs-row cs-hi"><span class="cs-k">Mu,lim (Annex G)</span><span class="cs-eq cs-v">= 137.6 kN·m &gt; 109.2 ✓</span></div></div></div>
+              <div class="cs" id="cs2"><div class="cs-lbl">Step 3 — Steel Required (IS 456 Cl 26.5.1)</div><div class="cs-body"><div class="cs-row"><span class="cs-k">Ast required</span><span class="cs-eq">= 943 mm²</span></div><div class="cs-row cs-hi"><span class="cs-k">Provided 3-16φ+2-12φ</span><span class="cs-eq cs-v">= 1,030 mm² ✓</span></div></div></div>
+              <div class="cs" id="cs3"><div class="cs-lbl">Step 4 — Shear (IS 456 Cl 40.4)</div><div class="cs-body"><div class="cs-row"><span class="cs-k">Vu = 109.2 kN · τv</span><span class="cs-eq">= 1.16 N/mm²</span></div><div class="cs-row cs-hi"><span class="cs-k">Stirrups 2L-8φ</span><span class="cs-eq cs-v">@ 150 c/c ✓</span></div></div></div>
+            </div>
+          </div>
+
+          <!-- ── LAYER: AI ASSISTANT ── -->
+          <div class="dlayer" id="dl-ai" style="padding:20px;display:none;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+              <div>
+                <div style="font-family:'Familjen Grotesk',sans-serif;font-size:14px;font-weight:700;color:#fff;">AI Assistant</div>
+                <div style="font-size:10px;color:var(--txt3);font-family:'JetBrains Mono',monospace;margin-top:1px;">Ask anything about your design</div>
+              </div>
+              <span style="font-size:9px;padding:2px 9px;border-radius:8px;font-family:'JetBrains Mono',monospace;font-weight:600;background:rgba(183,148,244,0.15);color:var(--purple);border:1px solid rgba(183,148,244,0.2);">✦ AI</span>
+            </div>
+            <!-- Chat messages -->
+            <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:14px;" id="aiChatArea">
+              <!-- User question -->
+              <div style="display:flex;justify-content:flex-end;">
+                <div style="background:rgba(79,142,247,0.15);border:1px solid rgba(79,142,247,0.25);border-radius:14px 14px 4px 14px;padding:10px 14px;max-width:80%;font-size:13px;color:var(--txt);" id="aiQ1" style="opacity:0;">
+                  Why is Beam B6 showing 91% utilisation? Is it safe?
+                </div>
+              </div>
+              <!-- AI response -->
+              <div style="display:flex;gap:8px;align-items:flex-start;" id="aiA1" style="opacity:0;display:none;">
+                <div style="width:26px;height:26px;border-radius:8px;background:linear-gradient(135deg,var(--purple),var(--blue));display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;margin-top:2px;">✦</div>
+                <div style="background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:4px 14px 14px 14px;padding:11px 14px;flex:1;">
+                  <div style="font-size:12px;color:var(--txt2);line-height:1.75;" id="aiResponseText"></div>
+                </div>
+              </div>
+            </div>
+            <!-- Input bar -->
+            <div style="display:flex;gap:8px;align-items:center;background:rgba(255,255,255,0.04);border:1.5px solid var(--border2);border-radius:10px;padding:8px 12px;">
+              <div style="flex:1;font-size:12px;color:var(--txt4);font-family:inherit;">Ask anything about your design...</div>
+              <div style="width:26px;height:26px;background:var(--blue);border-radius:7px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;">
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 10L10 6L2 2V5.5L7 6L2 6.5V10Z" fill="white"/></svg>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── LAYER: DRAWINGS ── -->
+          <div class="dlayer" id="dl-draw" style="padding:20px;display:none;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+              <div style="font-family:'Familjen Grotesk',sans-serif;font-size:14px;font-weight:700;color:#fff;">Construction Drawings</div>
+              <div id="dBtnPDF" class="dbtn-p" style="font-size:11px;padding:7px 14px;background:linear-gradient(135deg,#1a3a8a,#4f8ef7);">⬇ Download PDF</div>
+            </div>
+            <div style="background:#060e1e;border-radius:10px;padding:16px;border:1px solid rgba(79,142,247,0.12);position:relative;overflow:hidden;">
+              <div style="position:absolute;inset:0;background-image:linear-gradient(rgba(79,142,247,0.05) 1px,transparent 1px),linear-gradient(90deg,rgba(79,142,247,0.05) 1px,transparent 1px);background-size:18px 18px;pointer-events:none;"></div>
+              <div style="position:relative;z-index:1;">
+                <div style="font-size:8px;font-family:'JetBrains Mono',monospace;color:var(--txt3);letter-spacing:1px;text-transform:uppercase;margin-bottom:14px;">Cross-Sections — IS 456:2000 · Sharma Residence G+3</div>
+                <div style="display:flex;gap:24px;align-items:flex-start;justify-content:center;flex-wrap:wrap;">
+                  <div style="text-align:center;">
+                    <div style="font-size:8px;font-family:'JetBrains Mono',monospace;color:var(--txt3);margin-bottom:7px;">BEAM B3 — 230×450mm</div>
+                    <div style="width:64px;height:96px;border:2px solid var(--blue2);border-radius:3px;position:relative;display:flex;align-items:flex-end;justify-content:center;padding-bottom:7px;background:rgba(79,142,247,0.04);margin:0 auto;">
+                      <div style="position:absolute;inset:4px;border:1.5px solid rgba(79,142,247,0.3);border-radius:2px;"></div>
+                      <div style="position:absolute;top:6px;left:50%;transform:translateX(-50%);display:flex;gap:3px;"><div style="width:6px;height:6px;border-radius:50%;background:var(--blue2);"></div><div style="width:6px;height:6px;border-radius:50%;background:var(--blue2);"></div></div>
+                      <div style="display:flex;gap:3px;"><div style="width:6px;height:6px;border-radius:50%;background:var(--blue2);"></div><div style="width:6px;height:6px;border-radius:50%;background:var(--blue2);"></div><div style="width:6px;height:6px;border-radius:50%;background:var(--blue2);"></div></div>
+                    </div>
+                    <div style="font-size:7px;font-family:'JetBrains Mono',monospace;color:var(--cyan);margin-top:5px;">3-16φ + 2-12φ · 2L-8φ@150</div>
+                    <div style="font-size:7px;font-family:'JetBrains Mono',monospace;color:var(--blue2);">230 × 450 mm</div>
+                  </div>
+                  <div style="text-align:center;">
+                    <div style="font-size:8px;font-family:'JetBrains Mono',monospace;color:var(--txt3);margin-bottom:7px;">FOOTING F1 — 1800×1800mm</div>
+                    <div style="position:relative;width:88px;height:70px;margin:0 auto;">
+                      <div style="width:24px;height:28px;border:2px solid var(--blue2);background:rgba(79,142,247,0.1);position:absolute;top:0;left:50%;transform:translateX(-50%);"></div>
+                      <div style="width:88px;height:44px;border:2px solid rgba(79,142,247,0.5);background:rgba(79,142,247,0.04);border-radius:2px;position:absolute;bottom:0;display:flex;align-items:center;justify-content:center;gap:4px;flex-wrap:wrap;padding:4px;">
+                        <div style="width:5px;height:5px;border-radius:50%;background:var(--blue2);"></div><div style="width:5px;height:5px;border-radius:50%;background:var(--blue2);"></div><div style="width:5px;height:5px;border-radius:50%;background:var(--blue2);"></div><div style="width:5px;height:5px;border-radius:50%;background:var(--blue2);"></div><div style="width:5px;height:5px;border-radius:50%;background:var(--blue2);"></div><div style="width:5px;height:5px;border-radius:50%;background:var(--blue2);"></div>
+                      </div>
+                    </div>
+                    <div style="font-size:7px;font-family:'JetBrains Mono',monospace;color:var(--cyan);margin-top:5px;">10φ @ 150 both ways</div>
+                    <div style="font-size:7px;font-family:'JetBrains Mono',monospace;color:var(--blue2);">1800 × 1800 × 400 mm</div>
+                  </div>
+                  <div style="text-align:center;">
+                    <div style="font-size:8px;font-family:'JetBrains Mono',monospace;color:var(--txt3);margin-bottom:7px;">COLUMN C1 — 300×400mm</div>
+                    <div style="width:56px;height:76px;border:2px solid var(--blue2);border-radius:3px;position:relative;background:rgba(79,142,247,0.04);margin:0 auto;">
+                      <div style="position:absolute;inset:4px;border:1.5px solid rgba(79,142,247,0.3);border-radius:2px;"></div>
+                      <div style="width:6px;height:6px;border-radius:50%;background:var(--blue2);position:absolute;top:7px;left:7px;"></div>
+                      <div style="width:6px;height:6px;border-radius:50%;background:var(--blue2);position:absolute;top:7px;right:7px;"></div>
+                      <div style="width:6px;height:6px;border-radius:50%;background:var(--blue2);position:absolute;bottom:7px;left:7px;"></div>
+                      <div style="width:6px;height:6px;border-radius:50%;background:var(--blue2);position:absolute;bottom:7px;right:7px;"></div>
+                    </div>
+                    <div style="font-size:7px;font-family:'JetBrains Mono',monospace;color:var(--cyan);margin-top:5px;">4-20φ + 4-16φ</div>
+                    <div style="font-size:7px;font-family:'JetBrains Mono',monospace;color:var(--blue2);">300 × 400 mm</div>
+                  </div>
+                </div>
+                <div id="dPdfToast" style="display:none;margin-top:12px;background:rgba(62,207,142,0.08);border:1px solid rgba(62,207,142,0.25);border-radius:9px;padding:10px 14px;align-items:center;gap:8px;">
+                  <span style="font-size:16px;">✅</span>
+                  <div><div style="font-size:12px;font-weight:700;color:var(--green);">PDF Downloaded!</div><div style="font-size:10px;color:var(--txt3);font-family:'JetBrains Mono',monospace;">Sharma_Residence_IS456_Report.pdf</div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- CURSOR -->
+      <div id="dCur2" style="position:absolute;width:18px;height:18px;pointer-events:none;z-index:999;display:none;transition:left 0.25s cubic-bezier(0.25,0.46,0.45,0.94),top 0.25s cubic-bezier(0.25,0.46,0.45,0.94);">
+        <svg width="18" height="18" viewBox="0 0 18 18"><path d="M3 2L3 14L6.5 10.5L9 16L11 15L8.5 9.5L13 9.5L3 2Z" fill="white" stroke="#0f1629" stroke-width="1.2" stroke-linejoin="round"/></svg>
+      </div>
+      <div id="dRipple" style="position:absolute;width:20px;height:20px;border-radius:50%;background:rgba(79,142,247,0.5);pointer-events:none;z-index:998;display:none;transform:translate(-50%,-50%);"></div>
+    </div>
+
+    <div style="text-align:center;margin-top:22px;display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;">
+      <button onclick="dReplay()" style="padding:9px 18px;border:1px solid var(--border2);border-radius:8px;background:transparent;color:var(--txt2);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;" onmouseover="this.style.borderColor='var(--blue2)'" onmouseout="this.style.borderColor='var(--border2)'">↺ Replay</button>
+      <button onclick="showLogin('signup')" style="padding:10px 24px;background:var(--blue);border:none;border-radius:8px;color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;box-shadow:0 0 24px rgba(79,142,247,0.3);" data-e="demo-cta" contenteditable="false" spellcheck="false">Try it yourself — free →</button>
+    </div>
+  </div>
+</section>
+
+<style>
+/* DEMO STYLES */
+.dlayer{position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;}
+.sbi{width:32px;height:32px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:14px;cursor:pointer;opacity:0.3;transition:all 0.2s;}
+.sbi.on{opacity:1;background:rgba(79,142,247,0.15);}
+.dlbl{font-size:10px;color:var(--txt3);font-family:'JetBrains Mono',monospace;margin-bottom:4px;}
+.dinput{background:rgba(255,255,255,0.04);border:1.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:12px;font-family:'JetBrains Mono',monospace;color:var(--txt3);transition:all 0.3s;min-height:36px;}
+.dinput.filled{background:rgba(79,142,247,0.07);border-color:rgba(79,142,247,0.35);color:var(--blue2);}
+.dinput.focused{border-color:var(--blue);box-shadow:0 0 0 3px rgba(79,142,247,0.15);}
+.auto-badge{font-size:8px;background:rgba(62,207,142,0.15);color:var(--green);padding:1px 5px;border-radius:5px;font-family:'JetBrains Mono',monospace;}
+.dbtn-p{display:inline-flex;align-items:center;gap:5px;padding:9px 18px;background:var(--blue);border-radius:8px;font-size:12px;font-weight:700;color:#fff;cursor:pointer;box-shadow:0 4px 14px rgba(79,142,247,0.25);user-select:none;}
+.dbtn-ghost{display:inline-flex;align-items:center;gap:5px;padding:8px 14px;border:1px solid var(--border2);border-radius:8px;font-size:12px;font-weight:600;color:var(--txt2);cursor:pointer;user-select:none;}
+.an-row{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:9px;background:rgba(255,255,255,0.02);border:1px solid var(--border);transition:background 0.3s,border-color 0.3s;}
+.an-ic{font-size:14px;width:22px;text-align:center;flex-shrink:0;}
+.an-txt{flex:1;}
+.an-lbl{font-size:12px;font-weight:600;color:var(--txt3);transition:color 0.3s;}
+.an-sub{font-size:9px;color:var(--txt4);font-family:'JetBrains Mono',monospace;margin-top:1px;}
+.an-tag{font-size:9px;padding:2px 8px;border-radius:8px;font-family:'JetBrains Mono',monospace;font-weight:600;background:rgba(255,255,255,0.05);color:var(--txt3);white-space:nowrap;transition:all 0.3s;}
+.rc{background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:9px;padding:10px;text-align:center;}
+.rc.pass{border-color:rgba(62,207,142,0.25);background:rgba(62,207,142,0.04);}
+.rc.warn{border-color:rgba(246,195,67,0.25);background:rgba(246,195,67,0.04);}
+.rc-lbl{font-size:8px;font-weight:600;color:var(--txt3);font-family:'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:5px;}
+.rc-val{font-family:'Familjen Grotesk',sans-serif;font-size:18px;font-weight:700;color:var(--green);}
+.rc-sub{font-size:8px;color:var(--txt3);font-family:'JetBrains Mono',monospace;margin-top:2px;}
+.cs{background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:9px;overflow:hidden;opacity:0;transform:translateY(6px);transition:opacity 0.35s ease,transform 0.35s ease;}
+.cs-lbl{font-size:9px;font-weight:700;color:var(--blue2);font-family:'JetBrains Mono',monospace;padding:7px 11px;background:rgba(79,142,247,0.06);border-bottom:1px solid var(--border);}
+.cs-body{padding:8px 11px;display:flex;flex-direction:column;gap:4px;}
+.cs-row{display:flex;gap:8px;font-size:10px;flex-wrap:wrap;}
+.cs-hi{padding-top:4px;border-top:1px solid var(--border);margin-top:2px;}
+.cs-k{font-family:'JetBrains Mono',monospace;color:var(--txt3);min-width:100px;flex-shrink:0;}
+.cs-eq{font-family:'JetBrains Mono',monospace;color:var(--txt2);}
+.cs-v{color:var(--green);font-weight:700;}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:0;}}
+@keyframes rpl{0%{transform:translate(-50%,-50%) scale(0);opacity:0.7;}100%{transform:translate(-50%,-50%) scale(4);opacity:0;}}
+/* smooth layer transition */
+.dlayer{opacity:1;transition:opacity 0.25s ease;}
+.dlayer.fading{opacity:0;}
+</style>
+
+<script>
+(function(){
+  const WIN = document.getElementById('demoWin');
+  let dT = null; // main timer
+
+  // ── HELPERS ──
+  function rc(id){ return document.getElementById(id); }
+  function bread(t){ const b=rc('dBreadcrumb'); if(b){ b.style.opacity=0; setTimeout(()=>{b.textContent=t;b.style.opacity=1;},150); } }
+  function sb(i){ document.querySelectorAll('.sbi').forEach((el,k)=>el.classList.toggle('on',k===i)); }
+
+  function elPos(el){
+    if(!el||!WIN) return {x:80,y:80};
+    const wr=WIN.getBoundingClientRect();
+    const er=el.getBoundingClientRect();
+    return { x:er.left-wr.left+er.width/2, y:er.top-wr.top+er.height/2 };
+  }
+
+  function moveTo(el, cb){
+    const cur=rc('dCur2'); if(!cur){cb&&cb();return;}
+    cur.style.display='block';
+    const p=elPos(el);
+    cur.style.left=p.x+'px'; cur.style.top=p.y+'px';
+    setTimeout(cb||noop, 220);
+  }
+
+  function click(el, cb){
+    moveTo(el, ()=>{
+      // ripple
+      const r=rc('dRipple');
+      if(r){ const p=elPos(el); r.style.left=p.x+'px'; r.style.top=p.y+'px'; r.style.display='block'; r.style.animation='none'; r.offsetHeight; r.style.animation='rpl 0.45s ease-out forwards'; setTimeout(()=>r.style.display='none',450); }
+      // press
+      el.style.transform='scale(0.94)'; el.style.transition='transform 0.1s';
+      setTimeout(()=>{ el.style.transform=''; cb&&cb(); }, 120);
+    });
+  }
+
+  // Smooth layer switch — crossfade
+  function switchTo(newId, cb){
+    const layers = document.querySelectorAll('.dlayer');
+    const next = rc(newId);
+    if(!next){cb&&cb();return;}
+    // fade out current
+    layers.forEach(l=>{ if(l.style.display!=='none'&&l!==next){ l.classList.add('fading'); setTimeout(()=>{l.style.display='none';l.classList.remove('fading');},220); } });
+    // fade in next
+    next.style.opacity=0; next.style.display=''; 
+    setTimeout(()=>{ next.style.opacity=1; cb&&cb(); },240);
+  }
+
+  function type(spanId, text, spd, cb){
+    const sp=rc(spanId); if(!sp){cb&&cb();return;}
+    sp.style.color=''; sp.textContent='';
+    const cur=rc('dCur'); if(cur) cur.style.display='inline';
+    let i=0;
+    const iv=setInterval(()=>{
+      sp.textContent=text.slice(0,++i);
+      if(i>=text.length){ clearInterval(iv); if(cur)cur.style.display='none'; setTimeout(cb||noop,100); }
+    },spd);
+  }
+
+  function noop(){}
+
+  // fill a field smoothly
+  function fill(inputId, spanId, val){
+    const el=rc(inputId); const sp=rc(spanId);
+    if(el) el.classList.add('filled');
+    if(sp){ sp.textContent=val; sp.style.color=''; }
+  }
+
+  // analysis step
+  function anStep(i, label, result, warn, delay){
+    setTimeout(()=>{
+      const row=rc('ar'+i); if(!row) return;
+      const ic=row.querySelector('.an-ic');
+      const lbl=row.querySelector('.an-lbl');
+      const tag=row.querySelector('.an-tag');
+      // running
+      row.style.borderColor='rgba(79,142,247,0.3)'; row.style.background='rgba(79,142,247,0.05)';
+      if(ic) ic.innerHTML='<span style="display:inline-block;animation:spin 0.7s linear infinite">⚙️</span>';
+      if(lbl){ lbl.style.color='var(--txt)'; }
+      // done
+      setTimeout(()=>{
+        row.style.borderColor=warn?'rgba(246,195,67,0.25)':'rgba(62,207,142,0.25)';
+        row.style.background=warn?'rgba(246,195,67,0.04)':'rgba(62,207,142,0.04)';
+        if(ic) ic.textContent='✅';
+        if(tag){ tag.textContent=result; tag.style.background=warn?'rgba(246,195,67,0.12)':'rgba(62,207,142,0.12)'; tag.style.color=warn?'var(--amber)':'var(--green)'; }
+      }, 280);
+    }, delay);
+  }
+
+  // dots animation
+  let dotsIv=null;
+  function startDots(){ let d=0; dotsIv=setInterval(()=>{ const el=rc('dDots'); if(el) el.textContent=['',' .','..','...'][d++%4]; },400); }
+  function stopDots(){ clearInterval(dotsIv); const el=rc('dDots'); if(el) el.textContent=''; }
+
+  // ── SEQUENCE: array of [delay_from_prev, fn] ──
+  // Everything is relative delay from the PREVIOUS step — feels continuous
+  const SEQ = [
+    [0,    ()=>{ switchTo('dl-dash'); sb(0); bread('My Projects'); }],
+    [1200, ()=>{ click(rc('dBtnNew'), noop); }],
+    [700,  ()=>{ switchTo('dl-form'); sb(0); bread('New Project'); }],
+    [700,  ()=>{ const el=rc('dName'); if(el)el.classList.add('focused'); moveTo(el,noop); }],
+    [500,  ()=>{ type('dNameTxt','Sharma Residence',65, ()=>{ rc('dName').classList.remove('focused'); }); }],
+    [1500, ()=>{ fill('dCity','dCityTxt','New Delhi'); }],
+    [600,  ()=>{ fill('dFloors','dFlrTxt','G + 3'); }],
+    [600,  ()=>{
+      fill('dZone','dZoneTxt','Zone IV — Z=0.24');
+      fill('dWind','dWindTxt','Zone IV — 47 m/s');
+      const b1=rc('dAutoBadge'); const b2=rc('dAutoBadge2');
+      if(b1)b1.style.display='inline'; if(b2)b2.style.display='inline';
+      const nb=rc('dBtnNext'); if(nb)nb.style.opacity='1';
+    }],
+    [1200, ()=>{ click(rc('dBtnNext'), noop); }],
+    [700,  ()=>{ switchTo('dl-loads'); sb(0); bread('Sharma Residence / Loads'); }],
+    [1800, ()=>{ click(rc('dBtnRun'), noop); }],
+    [600,  ()=>{ switchTo('dl-analysis'); sb(2); bread('Running Analysis...'); startDots(); }],
+    [400,  ()=>{
+      anStep(0,'Slab','✓ PASS',false,0);
+      anStep(1,'Beam','11 PASS · 1 review',true,800);
+      anStep(2,'Column','8 PASS',false,1600);
+      anStep(3,'Seismic','142.3 kN',false,2400);
+      anStep(4,'Footing','✓ PASS',false,3200);
+    }],
+    [4200, ()=>{ stopDots(); switchTo('dl-results'); sb(3); bread('Design Overview'); }],
+    [1600, ()=>{ moveTo(rc('dBtnCalc'), noop); }],
+    [600,  ()=>{ click(rc('dBtnCalc'), noop); }],
+    [600,  ()=>{
+      switchTo('dl-calc'); sb(3); bread('Beam B3 — Calculation');
+      ['cs0','cs1','cs2','cs3'].forEach((id,i)=>{
+        setTimeout(()=>{ const el=rc(id); if(el){el.style.opacity='1';el.style.transform='translateY(0)';} }, i*450);
+      });
+    }],
+    // AI screen
+    [3000, ()=>{ switchTo('dl-ai'); sb(4); bread('AI Assistant'); startAiChat(); }],
+    [8000, ()=>{ switchTo('dl-draw'); sb(6); bread('Construction Drawings'); }],
+    [1800, ()=>{ click(rc('dBtnPDF'), noop); }],
+    [700,  ()=>{ const t=rc('dPdfToast'); if(t){t.style.display='flex';} }],
+    [3000, ()=>{ dReplay(); }],
+  ];
+
+  let idx=0, running=false;
+
+  function runNext(){
+    if(idx>=SEQ.length) return;
+    const [delay,fn]=SEQ[idx++];
+    dT=setTimeout(()=>{ fn(); runNext(); }, delay);
+  }
+
+  const AI_RESPONSE = "Beam B6 is at 91% utilisation — that means it is using 91% of its maximum capacity as per IS 456 Annex G. It is technically safe (anything under 100% passes), but it is a transfer beam carrying load from a discontinued column above. I would recommend increasing the depth from 450mm to 500mm to bring utilisation below 80%. Want me to recalculate with the new size?";
+
+  function startAiChat(){
+    // Reset
+    const q1 = rc('aiQ1'); const a1 = rc('aiA1'); const rt = rc('aiResponseText');
+    if(q1){ q1.style.opacity='0'; q1.style.transform='translateY(8px)'; q1.style.transition='all 0.4s ease'; }
+    if(a1){ a1.style.display='none'; a1.style.opacity='0'; }
+    if(rt) rt.textContent='';
+
+    // Show user question
+    setTimeout(()=>{
+      if(q1){ q1.style.opacity='1'; q1.style.transform='translateY(0)'; }
+    }, 400);
+
+    // Show AI typing indicator then response
+    setTimeout(()=>{
+      if(a1){ a1.style.display='flex'; setTimeout(()=>a1.style.opacity='1',50); }
+      // Type the response
+      let i=0;
+      if(rt){
+        rt.textContent='';
+        const iv = setInterval(()=>{
+          rt.textContent = AI_RESPONSE.slice(0,++i);
+          if(i >= AI_RESPONSE.length) clearInterval(iv);
+        }, 28);
+      }
+    }, 1400);
+  }
+
+  window.dReplay=function(){
+    clearTimeout(dT); idx=0; stopDots();
+    // reset all layers
+    document.querySelectorAll('.dlayer').forEach(l=>{l.style.display='none';l.style.opacity='1';l.classList.remove('fading');});
+    // reset analysis rows
+    for(let i=0;i<5;i++){
+      const r=rc('ar'+i); if(!r)continue;
+      r.style.borderColor='var(--border)'; r.style.background='rgba(255,255,255,0.02)';
+      const ic=r.querySelector('.an-ic'); if(ic)ic.textContent='⏸️';
+      const lbl=r.querySelector('.an-lbl'); if(lbl)lbl.style.color='var(--txt3)';
+      const tag=r.querySelector('.an-tag'); if(tag){tag.textContent='—';tag.style.background='rgba(255,255,255,0.05)';tag.style.color='var(--txt3)';}
+    }
+    // reset calc steps
+    ['cs0','cs1','cs2','cs3'].forEach(id=>{const el=rc(id);if(el){el.style.opacity='0';el.style.transform='translateY(6px)';}});
+    // reset form
+    ['dName','dCity','dFloors','dZone','dWind'].forEach(id=>{const el=rc(id);if(el)el.classList.remove('filled','focused');});
+    const nt=rc('dNameTxt'); if(nt){nt.textContent='Type project name...';nt.style.color='var(--txt4)';}
+    const ct=rc('dCityTxt'); if(ct){ct.textContent='—';ct.style.color='var(--txt4)';}
+    const ft=rc('dFlrTxt'); if(ft){ft.textContent='—';}
+    const zt=rc('dZoneTxt'); if(zt){zt.textContent='—';}
+    const wt=rc('dWindTxt'); if(wt){wt.textContent='—';}
+    const b1=rc('dAutoBadge'); if(b1)b1.style.display='none';
+    const b2=rc('dAutoBadge2'); if(b2)b2.style.display='none';
+    const nb=rc('dBtnNext'); if(nb)nb.style.opacity='0.25';
+    const toast=rc('dPdfToast'); if(toast)toast.style.display='none';
+    const aiQ=rc('aiQ1'); if(aiQ){aiQ.style.opacity='0';}
+    const aiA=rc('aiA1'); if(aiA){aiA.style.display='none';}
+    const aiRt=rc('aiResponseText'); if(aiRt)aiRt.textContent='';
+    const cur=rc('dCur2'); if(cur)cur.style.display='none';
+    // start
+    setTimeout(runNext, 300);
+  };
+
+  // kick off — start when section enters viewport, restart every time it re-enters
+  const showcaseSection = document.getElementById('showcase');
+  let hasStarted = false;
+  let wasVisible = false;
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if(entry.isIntersecting && !wasVisible) {
+        // Section just came into view — restart from beginning
+        wasVisible = true;
+        dReplay();
+      } else if(!entry.isIntersecting) {
+        // Section left view — reset flag so next visit restarts
+        wasVisible = false;
+      }
+    });
+  }, { threshold: 0.3 }); // 30% of section must be visible to trigger
+
+  if(showcaseSection) observer.observe(showcaseSection);
+  else setTimeout(runNext, 500); // fallback
+})();
+
+function toggleMobileNav(){
+  const nav = document.getElementById('mobileNav');
+  nav.style.display = nav.style.display === 'none' ? 'block' : 'none';
+}
+function closeMobileNav(){
+  document.getElementById('mobileNav').style.display = 'none';
+}
+</script>
+
+
+<!-- WHO -->
+<section id="who" class="section">
+  <div class="si">
+    <div class="rv">
+      <div class="ey" data-e="w-ey" contenteditable="false" spellcheck="false">Who it's for</div>
+      <h2 class="sh" data-e="w-h" contenteditable="false" spellcheck="false">One platform.<br>Every civil engineer.</h2>
+      <p class="sp" data-e="w-p" contenteditable="false" spellcheck="false">Structured for students, powerful for professionals.</p>
+    </div>
+    <div class="who-grid">
+      <div class="wcard ws rv d1"><div class="wicon" style="background:rgba(79,142,247,0.1);">🎓</div><div class="wh" data-e="w1h" contenteditable="false" spellcheck="false">Students</div><div class="wp-txt" data-e="w1p" contenteditable="false" spellcheck="false">Learn IS 456 by doing real design projects — not memorising notes. Every step explains the calculation and cites the exact clause. Finish your project in hours, not weeks.</div></div>
+      <div class="wcard wg rv d2"><div class="wicon" style="background:rgba(62,207,142,0.08);">💼</div><div class="wh" data-e="w2h" contenteditable="false" spellcheck="false">Professionals</div><div class="wp-txt" data-e="w2p" contenteditable="false" spellcheck="false">Complete IS 456 analysis in minutes. Get PDF reports and construction drawings ready for client presentation or site — no manual calculations.</div></div>
+      <div class="wcard wp rv d3"><div class="wicon" style="background:rgba(183,148,244,0.08);">📚</div><div class="wh" data-e="w3h" contenteditable="false" spellcheck="false">Professors</div><div class="wp-txt" data-e="w3p" contenteditable="false" spellcheck="false">Assign real design projects to your class. Every result traces to the exact IS clause — perfect for teaching, viva questions, and grading.</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- AI SECTION -->
+<section id="ai" style="padding:100px 24px;background:var(--bg);border-top:1px solid var(--border);position:relative;overflow:hidden;">
+
+  <!-- Background glow -->
+  <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:600px;height:400px;background:radial-gradient(ellipse,rgba(183,148,244,0.08) 0%,transparent 70%);pointer-events:none;"></div>
+
+  <div style="max-width:1100px;margin:0 auto;position:relative;">
+
+    <div style="text-align:center;margin-bottom:64px;">
+      <div style="font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;color:var(--purple);letter-spacing:2px;text-transform:uppercase;margin-bottom:12px;display:flex;align-items:center;justify-content:center;gap:8px;"><span style="width:20px;height:1.5px;background:var(--purple);display:block;"></span>AI Assistant<span style="width:20px;height:1.5px;background:var(--purple);display:block;"></span></div>
+      <h2 style="font-family:'Familjen Grotesk',sans-serif;font-size:clamp(28px,5vw,52px);font-weight:700;line-height:1.05;letter-spacing:-2px;color:#fff;margin-bottom:16px;">Your personal IS 456<br><span style="background:linear-gradient(135deg,var(--purple),var(--blue2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">structural engineer.</span></h2>
+      <p style="font-size:17px;color:var(--txt2);max-width:520px;margin:0 auto;line-height:1.75;">Stuck on a result? Don't understand why a beam failed? Just ask. The AI knows every IS clause, every formula, and explains it in plain language — like a professor sitting next to you.</p>
+    </div>
+
+    <!-- TWO COLUMN: chat UI + feature list -->
+    <div style="display:grid;grid-template-columns:1fr;gap:40px;align-items:center;">
+      <div style="display:grid;grid-template-columns:1fr;gap:40px;align-items:center;max-width:1100px;margin:0 auto;width:100%;" id="aiGrid">
+
+        <!-- CHAT UI MOCKUP -->
+        <div style="background:var(--bg2);border:1px solid var(--border2);border-radius:18px;overflow:hidden;box-shadow:0 32px 80px rgba(0,0,0,0.4);">
+          <div style="background:rgba(255,255,255,0.04);border-bottom:1px solid var(--border);padding:12px 18px;display:flex;align-items:center;gap:10px;">
+            <div style="width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,var(--purple),var(--blue));display:flex;align-items:center;justify-content:center;font-size:14px;">✦</div>
+            <div>
+              <div style="font-size:12px;font-weight:700;color:#fff;">AI Assistant</div>
+              <div style="font-size:10px;color:var(--green);font-family:'JetBrains Mono',monospace;display:flex;align-items:center;gap:4px;"><span style="width:6px;height:6px;border-radius:50%;background:var(--green);display:inline-block;animation:lp 2s infinite;"></span>Online · knows your project</div>
+            </div>
+          </div>
+          <div style="padding:20px;display:flex;flex-direction:column;gap:14px;">
+
+            <!-- Message 1: user -->
+            <div style="display:flex;justify-content:flex-end;">
+              <div style="background:rgba(79,142,247,0.15);border:1px solid rgba(79,142,247,0.25);border-radius:14px 14px 4px 14px;padding:11px 15px;max-width:85%;font-size:13px;color:var(--txt);">Why is my Beam B6 showing 91% utilisation? Should I be worried?</div>
+            </div>
+
+            <!-- Message 1: AI -->
+            <div style="display:flex;gap:10px;align-items:flex-start;">
+              <div style="width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,var(--purple),var(--blue));display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;margin-top:2px;">✦</div>
+              <div style="background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:4px 14px 14px 14px;padding:12px 15px;flex:1;">
+                <div style="font-size:13px;color:var(--txt2);line-height:1.8;">91% means the beam uses 91% of its allowable capacity per <span style="color:var(--purple);font-family:'JetBrains Mono',monospace;font-size:11px;">IS 456 Annex G</span>. It's technically a pass — but B6 is a <strong style="color:#fff;">transfer beam</strong> carrying load from a discontinued column, so I'd recommend keeping utilisation below 80% for safety margin.<br><br>Try increasing depth from <span style="color:var(--amber);font-family:'JetBrains Mono',monospace;font-size:11px;">450mm → 500mm</span>. Want me to recalculate?</div>
+              </div>
+            </div>
+
+            <!-- Message 2: user -->
+            <div style="display:flex;justify-content:flex-end;">
+              <div style="background:rgba(79,142,247,0.15);border:1px solid rgba(79,142,247,0.25);border-radius:14px 14px 4px 14px;padding:11px 15px;max-width:85%;font-size:13px;color:var(--txt);">Yes please recalculate with 500mm depth</div>
+            </div>
+
+            <!-- Message 2: AI -->
+            <div style="display:flex;gap:10px;align-items:flex-start;">
+              <div style="width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,var(--purple),var(--blue));display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;margin-top:2px;">✦</div>
+              <div style="background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:4px 14px 14px 14px;padding:12px 15px;flex:1;">
+                <div style="font-size:13px;color:var(--txt2);line-height:1.8;">Done ✅ With 230×500mm, Beam B6 utilisation drops to <span style="color:var(--green);font-weight:700;font-family:'JetBrains Mono',monospace;">73%</span> — well within limits. Steel area required reduces from 943mm² to 812mm². I've updated the design and the PDF report.</div>
+              </div>
+            </div>
+
+            <!-- Input -->
+            <div style="display:flex;gap:8px;align-items:center;background:rgba(255,255,255,0.04);border:1.5px solid var(--border2);border-radius:10px;padding:10px 14px;margin-top:4px;">
+              <div style="flex:1;font-size:13px;color:var(--txt4);">Ask anything about your design...</div>
+              <div style="width:30px;height:30px;background:linear-gradient(135deg,var(--purple),var(--blue));border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;">
+                <svg width="13" height="13" viewBox="0 0 12 12" fill="none"><path d="M2 10L10 6L2 2V5.5L7 6L2 6.5V10Z" fill="white"/></svg>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- FEATURE LIST -->
+        <div style="display:flex;flex-direction:column;gap:20px;">
+
+          <div style="display:flex;gap:16px;align-items:flex-start;">
+            <div style="width:44px;height:44px;border-radius:12px;background:rgba(183,148,244,0.12);border:1px solid rgba(183,148,244,0.2);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">💬</div>
+            <div>
+              <div style="font-size:16px;font-weight:700;color:#fff;margin-bottom:5px;">Ask in plain English</div>
+              <div style="font-size:14px;color:var(--txt2);line-height:1.7;">"Why did my column fail?" "What does Z=0.24 mean?" "Is M25 enough for this building?" — ask anything, get a clear answer with the IS clause.</div>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:16px;align-items:flex-start;">
+            <div style="width:44px;height:44px;border-radius:12px;background:rgba(183,148,244,0.12);border:1px solid rgba(183,148,244,0.2);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">🔁</div>
+            <div>
+              <div style="font-size:16px;font-weight:700;color:#fff;margin-bottom:5px;">Suggests fixes and recalculates</div>
+              <div style="font-size:14px;color:var(--txt2);line-height:1.7;">Not just explanations — the AI can suggest a fix (increase depth, add steel, change grade) and instantly recalculate the entire design with the new values.</div>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:16px;align-items:flex-start;">
+            <div style="width:44px;height:44px;border-radius:12px;background:rgba(183,148,244,0.12);border:1px solid rgba(183,148,244,0.2);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">📖</div>
+            <div>
+              <div style="font-size:16px;font-weight:700;color:#fff;margin-bottom:5px;">Teaches as it explains</div>
+              <div style="font-size:14px;color:var(--txt2);line-height:1.7;">Every answer cites the exact IS clause. Students learn the code while designing — not after. Perfect for viva preparation.</div>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:16px;align-items:flex-start;">
+            <div style="width:44px;height:44px;border-radius:12px;background:rgba(183,148,244,0.12);border:1px solid rgba(183,148,244,0.2);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">🏗️</div>
+            <div>
+              <div style="font-size:16px;font-weight:700;color:#fff;margin-bottom:5px;">Knows your entire project</div>
+              <div style="font-size:14px;color:var(--txt2);line-height:1.7;">The AI has full context — your building dimensions, soil type, seismic zone, every member. Answers are specific to your design, not generic.</div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<style>
+/* responsive AI grid */
+@media(min-width:860px){
+  #aiGrid{grid-template-columns:1fr 1fr!important;}
+}
+</style>
+
+
+<!-- PRICING -->
+<section id="pricing">
+  <div class="si">
+    <div class="rv" style="text-align:center;max-width:520px;margin:0 auto;">
+      <div class="ey" style="justify-content:center;" data-e="p-ey" contenteditable="false" spellcheck="false">Pricing</div>
+      <h2 class="sh" data-e="p-h" contenteditable="false" spellcheck="false">Start free.<br>Upgrade when ready.</h2>
+      <p class="sp" data-e="p-sub" contenteditable="false" spellcheck="false">No credit card. Free plan gives you the full design engine — upgrade only when you need PDF downloads.</p>
+    </div>
+    <div class="pgrid rv">
+      <div class="pcard"><div class="ptier" data-e="p1t" contenteditable="false" spellcheck="false">Free</div><div class="pprice">₹<span data-e="p1a" contenteditable="false" spellcheck="false">0</span></div><div class="pcad" data-e="p1c" contenteditable="false" spellcheck="false">forever · no card needed</div><div class="pdiv"></div><ul class="pfeats"><li data-e="p1f1" contenteditable="false" spellcheck="false">Full IS 456 design engine</li><li data-e="p1f2" contenteditable="false" spellcheck="false">All 28 guided steps</li><li data-e="p1f3" contenteditable="false" spellcheck="false">Seismic and wind analysis</li><li data-e="p1f4" contenteditable="false" spellcheck="false">Learning modules + certificates</li><li class="no" data-e="p1f5" contenteditable="false" spellcheck="false">PDF report download</li><li class="no" data-e="p1f6" contenteditable="false" spellcheck="false">Construction drawings</li></ul><button class="pbtn pbo" onclick="showLogin('signup')">Get started free</button></div>
+      <div class="pcard pop"><div class="pbadge" data-e="p2badge" contenteditable="false" spellcheck="false">Most popular</div><div class="ptier" data-e="p2t" contenteditable="false" spellcheck="false">Pro Monthly</div><div class="pprice"><sup>₹</sup><span data-e="p2a" contenteditable="false" spellcheck="false">299</span></div><div class="pcad" data-e="p2c" contenteditable="false" spellcheck="false">per month · cancel anytime</div><div class="pdiv"></div><ul class="pfeats"><li data-e="p2f1" contenteditable="false" spellcheck="false">Everything in Free</li><li data-e="p2f2" contenteditable="false" spellcheck="false">PDF report download</li><li data-e="p2f3" contenteditable="false" spellcheck="false">Construction drawings</li><li data-e="p2f4" contenteditable="false" spellcheck="false">Unlimited saved projects</li><li data-e="p2f5" contenteditable="false" spellcheck="false">AI design assistant</li></ul><button class="pbtn pbs" onclick="showLogin('signup')">Get Pro →</button></div>
+      <div class="pcard"><div class="ptier" data-e="p3t" contenteditable="false" spellcheck="false">Pro Annual</div><div class="pprice"><sup>₹</sup><span data-e="p3a" contenteditable="false" spellcheck="false">249</span></div><div class="pcad" data-e="p3c" contenteditable="false" spellcheck="false">per month · ₹2,990/year</div><div class="pdiv"></div><ul class="pfeats"><li data-e="p3f1" contenteditable="false" spellcheck="false">Everything in Pro Monthly</li><li data-e="p3f2" contenteditable="false" spellcheck="false">2 months free — save ₹600</li><li data-e="p3f3" contenteditable="false" spellcheck="false">Priority support</li><li data-e="p3f4" contenteditable="false" spellcheck="false">Early access to new features</li></ul><button class="pbtn pbs" onclick="showLogin('signup')">Get Annual →</button></div>
+    </div>
+  </div>
+</section>
+
+<!-- TESTIMONIALS: INFINITE SCROLL MARQUEE -->
+<section id="testimonials" style="padding:80px 0;background:var(--bg);border-top:1px solid var(--border);overflow:hidden;">
+
+  <div style="text-align:center;margin-bottom:44px;padding:0 24px;">
+    <div style="font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;color:var(--blue2);letter-spacing:2px;text-transform:uppercase;margin-bottom:12px;display:flex;align-items:center;justify-content:center;gap:8px;"><span style="width:20px;height:1.5px;background:var(--blue2);display:block;"></span>What engineers say<span style="width:20px;height:1.5px;background:var(--blue2);display:block;"></span></div>
+    <h2 style="font-family:'Familjen Grotesk',sans-serif;font-size:clamp(26px,4vw,40px);font-weight:700;line-height:1.1;letter-spacing:-1px;color:#fff;margin-bottom:10px;" data-e="t-h" contenteditable="false" spellcheck="false">Real engineers. Real projects.</h2>
+    <p style="font-size:15px;color:var(--txt3);">Verified reviews from students and professionals across India.</p>
+
+    <!-- Write review button — only for logged in users -->
+    <div id="reviewBtnWrap" style="display:none;margin-top:16px;">
+      <button onclick="openReviewModal()" style="display:inline-flex;align-items:center;gap:8px;padding:10px 20px;background:rgba(79,142,247,0.1);border:1px solid rgba(79,142,247,0.3);border-radius:10px;color:var(--blue2);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;transition:all 0.2s;" onmouseover="this.style.background='rgba(79,142,247,0.18)'" onmouseout="this.style.background='rgba(79,142,247,0.1)'">✍️ Write a Review</button>
+    </div>
+  </div>
+
+  <!-- MARQUEE TRACK -->
+  <div style="position:relative;">
+    <!-- Left fade -->
+    <div style="position:absolute;left:0;top:0;bottom:0;width:120px;background:linear-gradient(90deg,var(--bg),transparent);z-index:2;pointer-events:none;"></div>
+    <!-- Right fade -->
+    <div style="position:absolute;right:0;top:0;bottom:0;width:120px;background:linear-gradient(270deg,var(--bg),transparent);z-index:2;pointer-events:none;"></div>
+
+    <!-- ROW 1: scrolls left -->
+    <div class="marquee-row" style="margin-bottom:14px;">
+      <div class="marquee-track" id="mtrack1">
+        <!-- cards injected by JS -->
+      </div>
+    </div>
+
+    <!-- ROW 2: scrolls right (opposite) -->
+    <div class="marquee-row">
+      <div class="marquee-track reverse" id="mtrack2">
+        <!-- cards injected by JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Rating summary strip -->
+  <div style="display:flex;align-items:center;justify-content:center;gap:32px;flex-wrap:wrap;margin-top:44px;padding:0 24px;">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div style="font-family:'Familjen Grotesk',sans-serif;font-size:36px;font-weight:700;color:#fff;letter-spacing:-1px;" id="avgRating">4.9</div>
+      <div><div style="color:var(--amber);font-size:18px;letter-spacing:1px;">★★★★★</div><div style="font-size:11px;color:var(--txt3);font-family:'JetBrains Mono',monospace;margin-top:2px;" id="reviewCount">from early users</div></div>
+    </div>
+    <div style="width:1px;height:40px;background:var(--border);display:none;" class="sep-line"></div>
+    <div style="display:flex;gap:20px;flex-wrap:wrap;" id="ratingPills">
+      <div style="display:flex;align-items:center;gap:8px;background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:100px;padding:6px 14px;">
+        <span style="color:var(--green);font-size:14px;">✓</span><span style="font-size:13px;color:var(--txt2);">IS Accuracy <strong style="color:#fff;">4.9</strong></span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:100px;padding:6px 14px;">
+        <span style="color:var(--green);font-size:14px;">✓</span><span style="font-size:13px;color:var(--txt2);">Ease of Use <strong style="color:#fff;">4.8</strong></span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:100px;padding:6px 14px;">
+        <span style="color:var(--green);font-size:14px;">✓</span><span style="font-size:13px;color:var(--txt2);">Value for Money <strong style="color:#fff;">5.0</strong></span>
+      </div>
+    </div>
+  </div>
+
+</section>
+
+<!-- FULL REVIEW MODAL -->
+<div id="fullReviewModal" style="display:none;position:fixed;inset:0;z-index:9300;background:rgba(5,8,20,0.8);backdrop-filter:blur(14px);align-items:flex-end;justify-content:center;" onclick="if(event.target===this)closeFullReview()">
+  <div style="background:var(--bg2);border:1px solid var(--border2);border-radius:24px 24px 0 0;padding:8px 28px 44px;width:100%;max-width:520px;animation:su 0.35s cubic-bezier(0.34,1.1,0.64,1);position:relative;">
+    <div style="width:36px;height:4px;background:var(--border2);border-radius:2px;margin:14px auto 24px;"></div>
+    <button onclick="closeFullReview()" style="position:absolute;top:18px;right:18px;background:var(--bg3);border:none;color:var(--txt3);width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;font-weight:600;">✕</button>
+    <div id="fullReviewBody"></div>
+  </div>
+</div>
+
+<!-- REVIEW SUBMIT MODAL -->
+<div id="reviewModal" style="display:none;position:fixed;inset:0;z-index:9200;background:rgba(5,8,20,0.75);backdrop-filter:blur(12px);align-items:flex-end;justify-content:center;">
+  <div style="background:var(--bg2);border:1px solid var(--border2);border-radius:24px 24px 0 0;padding:8px 28px 40px;width:100%;max-width:500px;position:relative;animation:su 0.35s cubic-bezier(0.34,1.1,0.64,1);">
+    <div style="width:36px;height:4px;background:var(--border2);border-radius:2px;margin:12px auto 22px;"></div>
+    <button onclick="closeReviewModal()" style="position:absolute;top:18px;right:18px;background:var(--bg3);border:none;color:var(--txt3);width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;font-weight:600;">✕</button>
+    <div style="font-family:'Familjen Grotesk',sans-serif;font-size:20px;font-weight:700;color:#fff;margin-bottom:4px;">Leave a Review</div>
+    <div style="font-size:13px;color:var(--txt3);margin-bottom:22px;">Goes to admin for approval before publishing. Only verified accounts can review.</div>
+    <div style="margin-bottom:18px;">
+      <div style="font-size:12px;font-weight:600;color:var(--txt2);margin-bottom:8px;">Your Rating <span style="color:var(--red);">*</span></div>
+      <div id="starPicker" style="display:flex;gap:8px;">
+        <span class="star-pick" data-v="1" onclick="setRating(1)" style="font-size:28px;cursor:pointer;opacity:0.3;transition:all 0.15s;">★</span>
+        <span class="star-pick" data-v="2" onclick="setRating(2)" style="font-size:28px;cursor:pointer;opacity:0.3;transition:all 0.15s;">★</span>
+        <span class="star-pick" data-v="3" onclick="setRating(3)" style="font-size:28px;cursor:pointer;opacity:0.3;transition:all 0.15s;">★</span>
+        <span class="star-pick" data-v="4" onclick="setRating(4)" style="font-size:28px;cursor:pointer;opacity:0.3;transition:all 0.15s;">★</span>
+        <span class="star-pick" data-v="5" onclick="setRating(5)" style="font-size:28px;cursor:pointer;opacity:0.3;transition:all 0.15s;">★</span>
+      </div>
+    </div>
+    <div style="margin-bottom:16px;">
+      <div style="font-size:12px;font-weight:600;color:var(--txt2);margin-bottom:8px;">Your Review <span style="color:var(--red);">*</span></div>
+      <textarea id="reviewText" placeholder="Share your experience — what did you design? How did it help?" style="width:100%;padding:13px 14px;background:var(--bg3);border:1.5px solid var(--border2);border-radius:10px;color:var(--txt);font-size:14px;font-family:inherit;outline:none;resize:vertical;min-height:100px;line-height:1.6;" oninput="updateReviewCount(this)"></textarea>
+      <div id="reviewCharCount" style="font-size:11px;color:var(--txt4);margin-top:4px;text-align:right;font-family:'JetBrains Mono',monospace;">0 / 500</div>
+    </div>
+    <div style="background:rgba(62,207,142,0.06);border:1px solid rgba(62,207,142,0.2);border-radius:10px;padding:11px 14px;margin-bottom:20px;display:flex;align-items:center;gap:10px;">
+      <div id="reviewerAvatar" style="width:34px;height:34px;border-radius:50%;background:var(--blue);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;flex-shrink:0;"></div>
+      <div><div style="font-size:13px;font-weight:600;color:#fff;" id="reviewerName"></div><div style="font-size:11px;color:var(--txt3);" id="reviewerRole"></div></div>
+      <div style="margin-left:auto;font-size:10px;background:rgba(62,207,142,0.15);color:var(--green);padding:2px 8px;border-radius:20px;font-family:'JetBrains Mono',monospace;font-weight:600;">✓ Verified</div>
+    </div>
+    <div id="reviewSubmitMsg" style="font-size:13px;text-align:center;margin-bottom:12px;min-height:18px;color:var(--txt3);"></div>
+    <button onclick="submitReview()" id="reviewSubmitBtn" style="width:100%;padding:15px;background:var(--blue);border:none;border-radius:12px;color:#fff;font-size:16px;font-weight:700;cursor:pointer;font-family:inherit;box-shadow:0 4px 20px rgba(79,142,247,0.3);">Submit Review →</button>
+    <div style="font-size:11px;color:var(--txt4);text-align:center;margin-top:10px;">Reviews are moderated before publishing. Usually within 24 hours.</div>
+  </div>
+</div>
+
+<style>
+/* MARQUEE */
+.marquee-row{display:flex;overflow:hidden;user-select:none;-webkit-overflow-scrolling:touch;}
+.marquee-track{display:flex;gap:12px;animation:scrollLeft 55s linear infinite;width:max-content;will-change:transform;}
+.marquee-track.reverse{animation:scrollRight 65s linear infinite;}
+.marquee-row:hover .marquee-track{animation-play-state:paused;}
+@keyframes scrollLeft{0%{transform:translateX(0);}100%{transform:translateX(-50%);}}
+@keyframes scrollRight{0%{transform:translateX(-50%);}100%{transform:translateX(0);}}
+
+/* REVIEW CARD */
+.rcard{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:14px;
+  padding:16px 18px;
+  width:260px;
+  flex-shrink:0;
+  transition:border-color 0.2s;
+}
+@media(min-width:640px){.rcard{width:300px;}}
+.rcard:hover{border-color:var(--border2);}
+.rcard-stars{color:var(--amber);font-size:12px;letter-spacing:1px;margin-bottom:10px;}
+.rcard-text{font-size:13px;color:var(--txt2);line-height:1.7;margin-bottom:14px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;}
+.rcard-text::before{content:'"';font-size:20px;color:var(--blue2);line-height:0;vertical-align:-6px;margin-right:1px;}
+.rcard-author{display:flex;align-items:center;gap:10px;}
+.rcard-av{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0;font-family:'JetBrains Mono',monospace;}
+.rcard-name{font-size:12px;font-weight:700;color:#fff;}
+.rcard-role{font-size:10px;color:var(--txt3);margin-top:1px;}
+@media(min-width:640px){.sep-line{display:block!important;}}
+</style>
+
+<script>
+// ══ MARQUEE REVIEW SYSTEM ══
+const SUPA_URL_R = 'https://rpjdveuxxjeoeomkwrfx.supabase.co';
+const SUPA_KEY_R = 'sb_publishable_L1RWkjtz41gT5sZKhRRnsw_BB3WfJWI';
+
+const PLACEHOLDER_REVIEWS = [
+  {rating:5,review_text:'I finished my G+3 residential building design in under 3 hours for my final year project. Every calculation had the IS clause reference — my professor was impressed.',reviewer_name:'Rahul Sharma',reviewer_role:'Final Year · Civil Engg · Delhi'},
+  {rating:5,review_text:'I have been using Excel sheets for years. StructLearn Pro does in 5 minutes what used to take half a day. Seismic analysis alone is worth it — actually IS 1893 compliant.',reviewer_name:'Priya Mehta',reviewer_role:'Structural Engineer · 4 yrs · Mumbai'},
+  {rating:5,review_text:'Assigned to my 3rd year class for their mini project. Students understood the calculations because every step cites the IS clause. Far better than just giving answers.',reviewer_name:'Prof. Anand Kumar',reviewer_role:'Associate Professor · Bangalore'},
+  {rating:5,review_text:'The column grid editor is amazing. L-shaped building with one missing column — handled the transfer beam automatically. Nothing else I tried could do this.',reviewer_name:'Vijay Reddy',reviewer_role:'Junior Engineer · Hyderabad'},
+  {rating:5,review_text:'Free plan was enough for my university project. Full IS 456 analysis, seismic, everything. Upgraded to Pro only for the PDF to submit. Worth every rupee.',reviewer_name:'Sneha Singh',reviewer_role:'3rd Year Student · NIT Trichy'},
+  {rating:4,review_text:'Very easy to use. Calculations matched textbook answers exactly. The AI assistant helped me understand the transfer beam concept clearly.',reviewer_name:'Arjun Nair',reviewer_role:'M.Tech Student · Kochi'},
+  {rating:5,review_text:'Used it for a client\'s G+5 commercial building. The PDF report is professional enough to share directly. Saved me at least 2 days of work.',reviewer_name:'Kavya Iyer',reviewer_role:'Consulting Engineer · Chennai'},
+  {rating:5,review_text:'The seismic calculation section is brilliant. It shows floor-by-floor load distribution with IS 1893 reference for every value. My viva went smoothly because of this.',reviewer_name:'Rohan Gupta',reviewer_role:'Final Year · IIT Roorkee'},
+];
+
+const AV_COLORS = [
+  'linear-gradient(135deg,#2563eb,#06b6d4)',
+  'linear-gradient(135deg,#059669,#34d399)',
+  'linear-gradient(135deg,#7c3aed,#a78bfa)',
+  'linear-gradient(135deg,#d97706,#fbbf24)',
+  'linear-gradient(135deg,#dc2626,#f87171)',
+  'linear-gradient(135deg,#0891b2,#22d3ee)',
+  'linear-gradient(135deg,#059669,#06b6d4)',
+  'linear-gradient(135deg,#7c3aed,#3b82f6)',
+];
+
+function makeCard(r, idx){
+  const initials = (r.reviewer_name||'?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+  const stars = '★'.repeat(r.rating||5)+'☆'.repeat(5-(r.rating||5));
+  const d = document.createElement('div');
+  d.className = 'rcard';
+  d.style.cursor = 'pointer';
+  d.title = 'Tap to read full review';
+  d.innerHTML = `
+    <div class="rcard-stars">${stars}</div>
+    <div class="rcard-text">${escHtml(r.review_text||'')}</div>
+    <div class="rcard-author">
+      <div class="rcard-av" style="background:${AV_COLORS[idx % AV_COLORS.length]};">${initials}</div>
+      <div>
+        <div class="rcard-name">${escHtml(r.reviewer_name||'Anonymous')}</div>
+        <div class="rcard-role">${escHtml(r.reviewer_role||'StructLearn Pro User')}</div>
+      </div>
+    </div>
+    <div style="margin-top:10px;font-size:10px;color:var(--blue2);font-family:'JetBrains Mono',monospace;letter-spacing:0.5px;">Tap to read full →</div>`;
+  // Click opens full review modal
+  d.addEventListener('click', ()=> openFullReview(r, idx));
+  return d;
+}
+
+function openFullReview(r, idx){
+  const initials = (r.reviewer_name||'?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+  const stars = '★'.repeat(r.rating||5)+'☆'.repeat(5-(r.rating||5));
+  const modal = document.getElementById('fullReviewModal');
+  const body = document.getElementById('fullReviewBody');
+  if(!modal||!body) return;
+  body.innerHTML = `
+    <div style="color:var(--amber);font-size:20px;letter-spacing:2px;margin-bottom:16px;">${stars}</div>
+    <div style="font-size:16px;color:var(--txt2);line-height:1.85;margin-bottom:24px;font-style:italic;">"${escHtml(r.review_text||'')}"</div>
+    <div style="display:flex;align-items:center;gap:12px;padding-top:18px;border-top:1px solid var(--border);">
+      <div style="width:44px;height:44px;border-radius:50%;background:${AV_COLORS[idx % AV_COLORS.length]};display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:#fff;flex-shrink:0;font-family:'JetBrains Mono',monospace;">${initials}</div>
+      <div>
+        <div style="font-size:15px;font-weight:700;color:#fff;">${escHtml(r.reviewer_name||'Anonymous')}</div>
+        <div style="font-size:12px;color:var(--txt3);margin-top:2px;">${escHtml(r.reviewer_role||'StructLearn Pro User')}</div>
+      </div>
+      <div style="margin-left:auto;font-size:10px;background:rgba(62,207,142,0.12);color:var(--green);border:1px solid rgba(62,207,142,0.25);padding:3px 10px;border-radius:20px;font-family:'JetBrains Mono',monospace;font-weight:600;">✓ Verified</div>
+    </div>`;
+  modal.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+  // Pause marquee while reading
+  document.querySelectorAll('.marquee-track').forEach(t=>t.style.animationPlayState='paused');
+}
+
+function closeFullReview(){
+  document.getElementById('fullReviewModal').style.display = 'none';
+  document.body.style.overflow = '';
+  document.querySelectorAll('.marquee-track').forEach(t=>t.style.animationPlayState='running');
+}
+
+function buildMarquee(reviews){
+  const track1 = document.getElementById('mtrack1');
+  const track2 = document.getElementById('mtrack2');
+  if(!track1||!track2) return;
+
+  // Split reviews into two rows
+  const row1 = reviews;
+  const row2 = [...reviews].reverse();
+
+  // Each row needs 2 copies for seamless loop
+  [track1, track2].forEach((track, ti)=>{
+    const row = ti===0 ? row1 : row2;
+    track.innerHTML='';
+    // 3 copies for seamless infinite loop on all screen sizes
+    [0,1,2].forEach(()=>{
+      row.forEach((r,i)=>{
+        track.appendChild(makeCard(r, i));
+      });
+    });
+  });
+
+  // Update rating summary
+  const avg = reviews.reduce((a,r)=>a+(r.rating||5),0)/reviews.length;
+  const avgEl = document.getElementById('avgRating');
+  const countEl = document.getElementById('reviewCount');
+  if(avgEl) avgEl.textContent = (Math.round(avg*10)/10).toFixed(1);
+  if(countEl) countEl.textContent = `${reviews.length} verified review${reviews.length!==1?'s':''}`;
+}
+
+async function loadReviewsMarquee(){
+  try {
+    const res = await fetch(`${SUPA_URL_R}/rest/v1/reviews?status=eq.approved&order=created_at.desc`, {
+      headers:{'apikey':SUPA_KEY_R,'Authorization':`Bearer ${SUPA_KEY_R}`}
+    });
+    if(!res.ok) throw new Error();
+    const data = await res.json();
+    if(data && data.length >= 3){
+      buildMarquee(data);
+      return;
+    }
+  } catch(e){}
+  // Fall back to placeholders
+  buildMarquee(PLACEHOLDER_REVIEWS);
+}
+
+// Review modal
+let selectedRating=0, currentUser=null;
+
+function initReviewSystem(){
+  try{
+    const u=localStorage.getItem('slp_user')||sessionStorage.getItem('slp_user');
+    if(u){ currentUser=JSON.parse(u); checkIfCanReview(); }
+  }catch(e){}
+  window.addEventListener('message',e=>{
+    if(e.data&&e.data.type==='slp_user'){currentUser=e.data.user;checkIfCanReview();}
+  });
+}
+
+async function checkIfCanReview(){
+  if(!currentUser) return;
+  // Only show review button if user has run at least 1 analysis
+  // Check analysis_count across their projects in Supabase
+  try {
+    const res = await fetch(
+      `${SUPA_URL_R}/rest/v1/projects?profile_id=eq.${currentUser.id}&select=analysis_count&deleted_at=is.null`,
+      { headers:{'apikey':SUPA_KEY_R,'Authorization':`Bearer ${SUPA_KEY_R}`} }
+    );
+    if(!res.ok) return;
+    const projects = await res.json();
+    const totalAnalyses = projects.reduce((sum,p)=>sum+(p.analysis_count||0),0);
+    if(totalAnalyses >= 1){
+      showReviewButton();
+    }
+    // If 0 analyses — button stays hidden, user hasn't used the app yet
+  } catch(e){
+    // If check fails, don't show button — safe default
+  }
+}
+function showReviewButton(){
+  const w=document.getElementById('reviewBtnWrap'); if(w)w.style.display='block';
+  if(currentUser){
+    const name=currentUser.name||currentUser.full_name||'User';
+    const role=currentUser.role||currentUser.purpose||'StructLearn Pro User';
+    const init=name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+    const av=document.getElementById('reviewerAvatar'); if(av)av.textContent=init;
+    const nm=document.getElementById('reviewerName'); if(nm)nm.textContent=name;
+    const rl=document.getElementById('reviewerRole'); if(rl)rl.textContent=role;
+  }
+}
+function setRating(v){
+  selectedRating=v;
+  document.querySelectorAll('.star-pick').forEach(s=>{
+    s.style.opacity=parseInt(s.dataset.v)<=v?'1':'0.3';
+    s.style.color=parseInt(s.dataset.v)<=v?'var(--amber)':'';
+  });
+}
+function updateReviewCount(el){
+  const c=document.getElementById('reviewCharCount'); if(c)c.textContent=`${el.value.length} / 500`;
+  if(el.value.length>500)el.value=el.value.slice(0,500);
+}
+function openReviewModal(){
+  if(!currentUser){showLogin('signup');return;}
+  document.getElementById('reviewModal').style.display='flex';
+  document.body.style.overflow='hidden';
+}
+function closeReviewModal(){
+  document.getElementById('reviewModal').style.display='none';
+  document.body.style.overflow='';
+}
+document.getElementById('reviewModal').addEventListener('click',e=>{
+  if(e.target===document.getElementById('reviewModal'))closeReviewModal();
+});
+async function submitReview(){
+  const text=document.getElementById('reviewText').value.trim();
+  const msg=document.getElementById('reviewSubmitMsg');
+  const btn=document.getElementById('reviewSubmitBtn');
+  if(!selectedRating){msg.style.color='var(--red)';msg.textContent='Please select a star rating.';return;}
+  if(text.length<30){msg.style.color='var(--red)';msg.textContent='Please write at least 30 characters.';return;}
+  if(!currentUser){msg.style.color='var(--red)';msg.textContent='You must be signed in to review.';return;}
+  btn.textContent='Submitting...';btn.disabled=true;
+  try{
+    const res=await fetch(`${SUPA_URL_R}/rest/v1/reviews`,{
+      method:'POST',
+      headers:{'apikey':SUPA_KEY_R,'Authorization':`Bearer ${SUPA_KEY_R}`,'Content-Type':'application/json','Prefer':'return=minimal'},
+      body:JSON.stringify({reviewer_id:currentUser.id,reviewer_name:currentUser.name||currentUser.full_name||'Anonymous',reviewer_role:currentUser.role||currentUser.purpose||'StructLearn Pro User',review_text:text,rating:selectedRating,status:'pending',created_at:new Date().toISOString()})
+    });
+    if(!res.ok)throw new Error();
+    msg.style.color='var(--green)';msg.textContent='✓ Submitted! Appears after admin approval (within 24 hours).';
+    btn.textContent='Submitted ✓';
+    document.getElementById('reviewText').value='';
+    selectedRating=0;
+    document.querySelectorAll('.star-pick').forEach(s=>{s.style.opacity='0.3';s.style.color='';});
+    setTimeout(closeReviewModal,2500);
+  }catch(e){
+    msg.style.color='var(--red)';msg.textContent='Failed to submit. Please try again.';
+    btn.textContent='Submit Review →';btn.disabled=false;
+  }
+}
+function escHtml(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+document.addEventListener('DOMContentLoaded',()=>{
+  loadReviewsMarquee();
+  initReviewSystem();
+});
+</script>
+
+
+<!-- FEEDBACK SECTION -->
+<section id="feedback" style="padding:80px 24px;background:linear-gradient(135deg,rgba(79,142,247,0.06),rgba(183,148,244,0.06));border-top:1px solid var(--border);">
+  <div style="max-width:680px;margin:0 auto;text-align:center;">
+
+    <div style="font-size:32px;margin-bottom:16px;">💬</div>
+    <h2 style="font-family:'Familjen Grotesk',sans-serif;font-size:clamp(24px,4vw,38px);font-weight:700;letter-spacing:-1px;color:#fff;margin-bottom:12px;" data-e="fb-h" contenteditable="false" spellcheck="false">Share your experience.</h2>
+    <p style="font-size:16px;color:var(--txt2);line-height:1.7;margin-bottom:36px;" data-e="fb-p" contenteditable="false" spellcheck="false">Tried StructLearn Pro? Tell other students what you thought. Your review helps them decide — and helps us improve.</p>
+
+    <!-- STAR PICKER -->
+    <div style="margin-bottom:24px;">
+      <div style="font-size:13px;font-weight:600;color:var(--txt2);margin-bottom:12px;">How would you rate it?</div>
+      <div style="display:flex;gap:10px;justify-content:center;" id="fbStars">
+        <span class="fb-star" data-v="1" onclick="fbSetRating(1)" style="font-size:38px;cursor:pointer;opacity:0.25;transition:all 0.15s;line-height:1;">★</span>
+        <span class="fb-star" data-v="2" onclick="fbSetRating(2)" style="font-size:38px;cursor:pointer;opacity:0.25;transition:all 0.15s;line-height:1;">★</span>
+        <span class="fb-star" data-v="3" onclick="fbSetRating(3)" style="font-size:38px;cursor:pointer;opacity:0.25;transition:all 0.15s;line-height:1;">★</span>
+        <span class="fb-star" data-v="4" onclick="fbSetRating(4)" style="font-size:38px;cursor:pointer;opacity:0.25;transition:all 0.15s;line-height:1;">★</span>
+        <span class="fb-star" data-v="5" onclick="fbSetRating(5)" style="font-size:38px;cursor:pointer;opacity:0.25;transition:all 0.15s;line-height:1;">★</span>
+      </div>
+      <div id="fbRatingLabel" style="font-size:13px;color:var(--txt3);margin-top:10px;min-height:20px;transition:all 0.2s;"></div>
+    </div>
+
+    <!-- FORM -->
+    <div style="background:var(--bg2);border:1px solid var(--border2);border-radius:16px;padding:24px;text-align:left;">
+
+      <!-- Verified badge — shown when logged in -->
+      <div id="fbVerifiedBadge" style="display:none;align-items:center;gap:8px;background:rgba(62,207,142,0.06);border:1px solid rgba(62,207,142,0.2);border-radius:9px;padding:9px 14px;margin-bottom:14px;font-size:12px;color:var(--green);">
+        <span>✓</span><span>Verified account — your name and role have been filled automatically</span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
+        <div>
+          <div style="font-size:12px;font-weight:600;color:var(--txt2);margin-bottom:7px;">Your Name <span style="color:var(--red);">*</span></div>
+          <input id="fbName" type="text" placeholder="Rahul Sharma" style="width:100%;padding:11px 14px;background:var(--bg3);border:1.5px solid var(--border2);border-radius:9px;color:var(--txt);font-size:14px;font-family:inherit;outline:none;transition:border-color 0.2s;" onfocus="this.style.borderColor='var(--blue)'" onblur="this.style.borderColor='var(--border2)'">
+        </div>
+        <div>
+          <div style="font-size:12px;font-weight:600;color:var(--txt2);margin-bottom:7px;">I am a</div>
+          <select id="fbRole" style="width:100%;padding:11px 14px;background:var(--bg3);border:1.5px solid var(--border2);border-radius:9px;color:var(--txt2);font-size:14px;font-family:inherit;outline:none;appearance:none;cursor:pointer;">
+            <option value="Student">🎓 Student</option>
+            <option value="Professional">💼 Professional</option>
+            <option value="Professor">📚 Professor</option>
+            <option value="Other">👤 Other</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="margin-bottom:16px;">
+        <div style="font-size:12px;font-weight:600;color:var(--txt2);margin-bottom:7px;">Your Review <span style="color:var(--red);">*</span></div>
+        <textarea id="fbText" placeholder="What did you design? How did StructLearn Pro help? What would you tell another student..." style="width:100%;padding:12px 14px;background:var(--bg3);border:1.5px solid var(--border2);border-radius:9px;color:var(--txt);font-size:14px;font-family:inherit;outline:none;resize:vertical;min-height:110px;line-height:1.65;transition:border-color 0.2s;" onfocus="this.style.borderColor='var(--blue)'" onblur="this.style.borderColor='var(--border2)'" oninput="fbCount(this)"></textarea>
+        <div style="font-size:11px;color:var(--txt4);text-align:right;margin-top:4px;font-family:'JetBrains Mono',monospace;" id="fbCharCount">0 / 500</div>
+      </div>
+
+      <!-- Submit message -->
+      <div id="fbMsg" style="font-size:13px;text-align:center;margin-bottom:12px;min-height:18px;"></div>
+
+      <button onclick="fbSubmit()" id="fbBtn" style="width:100%;padding:14px;background:var(--blue);border:none;border-radius:10px;color:#fff;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;box-shadow:0 4px 20px rgba(79,142,247,0.3);transition:all 0.2s;" onmouseover="this.style.background='#3d7ef5'" onmouseout="this.style.background='var(--blue)'">
+        Submit Review →
+      </button>
+
+      <div style="font-size:11px;color:var(--txt4);text-align:center;margin-top:12px;">
+        Reviews are moderated before publishing. Usually approved within 24 hours.
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<script>
+// ── FEEDBACK SECTION ──
+const FB_SUPA = 'https://rpjdveuxxjeoeomkwrfx.supabase.co';
+const FB_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJwamR2ZXV4eGplb2VvbWt3cmZ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg5MzY3NzIsImV4cCI6MjA5NDUxMjc3Mn0.3JvvMaCFKg2fB9-l2WJ5JMX5btGIKqvpMj_ZcxSRWaQ';
+
+let fbRating = 0;
+let fbProfile = null; // profile fetched from Supabase
+const fbLabels = ['','Poor','Below average','Good','Very good','Excellent! 🎉'];
+
+// On page load — check session token and fetch profile from Supabase
+async function fbInit(){
+  const tok = localStorage.getItem('slp_session_tok');
+  const mob = localStorage.getItem('slp_session_mob');
+  if(!tok || !mob) return; // not logged in — show manual form
+
+  try {
+    // Fetch profile directly from Supabase using mobile number
+    const res = await fetch(`${FB_SUPA}/rest/v1/profiles?mobile=eq.${mob}&select=id,full_name,purpose,role`, {
+      headers: { 'apikey': FB_ANON, 'Authorization': `Bearer ${tok}` }
+    });
+    const data = await res.json();
+    if(!data || !data[0]) return;
+
+    fbProfile = data[0];
+
+    // Auto-fill and lock name/role fields
+    const nameEl = document.getElementById('fbName');
+    const roleEl = document.getElementById('fbRole');
+    if(nameEl){
+      nameEl.value = fbProfile.full_name || '';
+      nameEl.readOnly = true;
+      nameEl.style.background = 'rgba(79,142,247,0.06)';
+      nameEl.style.borderColor = 'rgba(79,142,247,0.3)';
+      nameEl.style.color = 'var(--blue2)';
+    }
+    if(roleEl){
+      const r = fbProfile.purpose || fbProfile.role || 'Student';
+      // Match to option
+      Array.from(roleEl.options).forEach(o=>{ if(o.value.toLowerCase()===r.toLowerCase()||r.toLowerCase().includes(o.value.toLowerCase())) roleEl.value=o.value; });
+      roleEl.disabled = true;
+      roleEl.style.background = 'rgba(79,142,247,0.06)';
+      roleEl.style.borderColor = 'rgba(79,142,247,0.3)';
+      roleEl.style.color = 'var(--blue2)';
+    }
+
+    // Show verified badge
+    const badge = document.getElementById('fbVerifiedBadge');
+    if(badge) badge.style.display = 'flex';
+
+    // Check if already reviewed
+    const existing = await fetch(`${FB_SUPA}/rest/v1/reviews?reviewer_id=eq.${fbProfile.id}&select=id,status`, {
+      headers: { 'apikey': FB_ANON, 'Authorization': `Bearer ${tok}` }
+    });
+    const exData = await existing.json();
+    if(exData && exData.length > 0){
+      const btn = document.getElementById('fbBtn');
+      const msg = document.getElementById('fbMsg');
+      if(btn){ btn.disabled=true; btn.textContent='Already submitted ✓'; btn.style.background='var(--green)'; }
+      if(msg){ msg.style.color='var(--green)'; msg.textContent=exData[0].status==='approved'?'Your review is live! Thank you.':'Your review is pending approval.'; }
+    }
+  } catch(e) {}
+}
+
+function fbSetRating(v){
+  fbRating = v;
+  document.querySelectorAll('.fb-star').forEach(s=>{
+    const active = parseInt(s.dataset.v) <= v;
+    s.style.opacity = active ? '1' : '0.2';
+    s.style.color = active ? 'var(--amber)' : '';
+    s.style.transform = active ? 'scale(1.1)' : 'scale(1)';
+  });
+  const lbl = document.getElementById('fbRatingLabel');
+  if(lbl){ lbl.textContent = fbLabels[v]; lbl.style.color = v>=4?'var(--green)':v===3?'var(--amber)':'var(--red)'; }
+}
+
+function fbCount(el){
+  if(el.value.length > 500) el.value = el.value.slice(0,500);
+  const c = document.getElementById('fbCharCount');
+  if(c) c.textContent = `${el.value.length} / 500`;
+}
+
+async function fbSubmit(){
+  const name = document.getElementById('fbName').value.trim();
+  const role = document.getElementById('fbRole').value;
+  const text = document.getElementById('fbText').value.trim();
+  const msg = document.getElementById('fbMsg');
+  const btn = document.getElementById('fbBtn');
+
+  if(!fbRating){ msg.style.color='var(--red)'; msg.textContent='Please select a star rating.'; return; }
+  if(!name){ msg.style.color='var(--red)'; msg.textContent='Please enter your name.'; return; }
+  if(text.length < 30){ msg.style.color='var(--red)'; msg.textContent='Please write at least 30 characters.'; return; }
+
+  btn.textContent = 'Submitting...'; btn.disabled = true;
+  msg.textContent = '';
+
+  const tok = localStorage.getItem('slp_session_tok');
+
+  try {
+    const payload = {
+      reviewer_name: name,
+      reviewer_role: role,
+      review_text: text,
+      rating: fbRating,
+      status: 'pending'
+    };
+    // If logged in — add profile_id to prevent duplicates
+    if(fbProfile) payload.reviewer_id = fbProfile.id;
+
+    const res = await fetch(`${FB_SUPA}/rest/v1/reviews`, {
+      method: 'POST',
+      headers: {
+        'apikey': FB_ANON,
+        'Authorization': `Bearer ${tok || FB_ANON}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if(!res.ok){
+      // Check if duplicate (unique constraint violation)
+      const err = await res.text();
+      if(err.includes('duplicate')||err.includes('unique')){
+        msg.style.color='var(--amber)'; msg.textContent='You have already submitted a review. Thank you!';
+        btn.textContent='Already submitted ✓'; btn.style.background='var(--green)'; return;
+      }
+      throw new Error();
+    }
+
+    msg.style.color='var(--green)'; msg.textContent='✓ Thank you! Your review will appear after approval.';
+    btn.textContent='Submitted ✓'; btn.style.background='var(--green)';
+    document.getElementById('fbText').value='';
+    document.getElementById('fbCharCount').textContent='0 / 500';
+    fbRating=0;
+    document.querySelectorAll('.fb-star').forEach(s=>{ s.style.opacity='0.25'; s.style.color=''; s.style.transform=''; });
+    document.getElementById('fbRatingLabel').textContent='';
+
+  } catch(e){
+    msg.style.color='var(--red)'; msg.textContent='Failed to submit. Please try again.';
+    btn.textContent='Submit Review →'; btn.disabled=false; btn.style.background='var(--blue)';
+  }
+}
+
+document.addEventListener('DOMContentLoaded', fbInit);
+</script>
+
+
+<!-- COMPARISON -->
+<section id="comparison" style="padding:90px 24px;background:var(--bg1);border-top:1px solid var(--border);">
+  <div style="max-width:900px;margin:0 auto;">
+    <div style="text-align:center;margin-bottom:48px;">
+      <div style="font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;color:var(--blue2);letter-spacing:2px;text-transform:uppercase;margin-bottom:12px;display:flex;align-items:center;justify-content:center;gap:8px;"><span style="width:20px;height:1.5px;background:var(--blue2);display:block;"></span>Why StructLearn Pro<span style="width:20px;height:1.5px;background:var(--blue2);display:block;"></span></div>
+      <h2 style="font-family:'Familjen Grotesk',sans-serif;font-size:clamp(26px,4vw,40px);font-weight:700;line-height:1.1;letter-spacing:-1px;color:#fff;" data-e="c-h" contenteditable="false" spellcheck="false">Better than the alternative.</h2>
+      <p style="font-size:16px;color:var(--txt2);margin-top:10px;" data-e="c-p" contenteditable="false" spellcheck="false">Most students are still using Excel or doing it by hand. Here's the difference.</p>
+    </div>
+    <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;">
+      <table style="width:100%;border-collapse:collapse;min-width:580px;">
+        <thead>
+          <tr>
+            <th style="padding:14px 16px;text-align:left;font-size:12px;color:var(--txt3);font-family:'JetBrains Mono',monospace;font-weight:600;border-bottom:1px solid var(--border);width:34%;">Feature</th>
+            <th style="padding:14px 16px;text-align:center;font-size:13px;font-weight:700;color:#fff;border-bottom:1px solid var(--border);background:rgba(79,142,247,0.08);border-radius:10px 10px 0 0;width:22%;">
+              <div style="display:inline-flex;align-items:center;gap:6px;"><div style="width:20px;height:20px;background:var(--blue);border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff;">SL</div>StructLearn Pro</div>
+            </th>
+            <th style="padding:14px 16px;text-align:center;font-size:13px;font-weight:600;color:var(--txt3);border-bottom:1px solid var(--border);width:22%;">Excel Sheets</th>
+            <th style="padding:14px 16px;text-align:center;font-size:13px;font-weight:600;color:var(--txt3);border-bottom:1px solid var(--border);width:22%;">By Hand</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="ctr">
+            <td class="ctd-f">IS 456 compliant calculations</td>
+            <td class="ctd-y" style="background:rgba(79,142,247,0.05);">✓ Automatic</td>
+            <td class="ctd-p">⚠ Manual formulas</td>
+            <td class="ctd-p">⚠ Error-prone</td>
+          </tr>
+          <tr class="ctr">
+            <td class="ctd-f">IS clause reference on each result</td>
+            <td class="ctd-y" style="background:rgba(79,142,247,0.05);">✓ Every line</td>
+            <td class="ctd-n">✗ None</td>
+            <td class="ctd-p">⚠ If you know them</td>
+          </tr>
+          <tr class="ctr">
+            <td class="ctd-f">Seismic analysis (IS 1893)</td>
+            <td class="ctd-y" style="background:rgba(79,142,247,0.05);">✓ Built-in</td>
+            <td class="ctd-p">⚠ Separate sheet</td>
+            <td class="ctd-n">✗ Very tedious</td>
+          </tr>
+          <tr class="ctr">
+            <td class="ctd-f">Irregular / L-shaped buildings</td>
+            <td class="ctd-y" style="background:rgba(79,142,247,0.05);">✓ Interactive grid</td>
+            <td class="ctd-n">✗ Not possible</td>
+            <td class="ctd-n">✗ Very complex</td>
+          </tr>
+          <tr class="ctr">
+            <td class="ctd-f">Construction drawings</td>
+            <td class="ctd-y" style="background:rgba(79,142,247,0.05);">✓ Auto-generated</td>
+            <td class="ctd-n">✗ Not included</td>
+            <td class="ctd-n">✗ Manual drafting</td>
+          </tr>
+          <tr class="ctr">
+            <td class="ctd-f">AI assistant to explain results</td>
+            <td class="ctd-y" style="background:rgba(79,142,247,0.05);">✓ Ask anything</td>
+            <td class="ctd-n">✗ None</td>
+            <td class="ctd-n">✗ None</td>
+          </tr>
+          <tr class="ctr">
+            <td class="ctd-f">Time to complete G+3 design</td>
+            <td class="ctd-y" style="background:rgba(79,142,247,0.05);color:var(--green);font-weight:700;">2–3 hours</td>
+            <td class="ctd-p">1–2 days</td>
+            <td class="ctd-n">3–5 days</td>
+          </tr>
+          <tr class="ctr">
+            <td class="ctd-f">Cost</td>
+            <td class="ctd-y" style="background:rgba(79,142,247,0.05);color:var(--green);font-weight:700;">Free to start</td>
+            <td class="ctd-p">Free (your time)</td>
+            <td class="ctd-n">Free (weeks of work)</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section id="faq" style="padding:90px 24px;background:var(--bg);border-top:1px solid var(--border);">
+  <div style="max-width:720px;margin:0 auto;">
+    <div style="text-align:center;margin-bottom:52px;">
+      <div style="font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;color:var(--blue2);letter-spacing:2px;text-transform:uppercase;margin-bottom:12px;display:flex;align-items:center;justify-content:center;gap:8px;"><span style="width:20px;height:1.5px;background:var(--blue2);display:block;"></span>FAQ<span style="width:20px;height:1.5px;background:var(--blue2);display:block;"></span></div>
+      <h2 style="font-family:'Familjen Grotesk',sans-serif;font-size:clamp(26px,4vw,40px);font-weight:700;line-height:1.1;letter-spacing:-1px;color:#fff;" data-e="faq-h" contenteditable="false" spellcheck="false">Questions we always get.</h2>
+    </div>
+    <div id="faqList" style="display:flex;flex-direction:column;gap:10px;">
+
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)" data-e="fq1" contenteditable="false" spellcheck="false">Is StructLearn Pro really free?<span class="faq-arrow">↓</span></button>
+        <div class="faq-a" data-e="fa1" contenteditable="false" spellcheck="false">Yes — the complete IS 456 design engine is free. All 28 guided steps, seismic analysis, wind loads, learning modules, and certificates are free forever. You only need to upgrade (₹299/month) when you want to download the PDF report or construction drawings.</div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)" data-e="fq2" contenteditable="false" spellcheck="false">Will this work for my university project or viva?<span class="faq-arrow">↓</span></button>
+        <div class="faq-a" data-e="fa2" contenteditable="false" spellcheck="false">Yes. Every calculation references the exact IS 456 clause it comes from — IS 456:2000, IS 1893:2016, IS 875 Parts 1 & 2. Professors can verify every step. Many students have successfully submitted StructLearn Pro output for final year projects, mini projects, and viva examinations.</div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)" data-e="fq3" contenteditable="false" spellcheck="false">How accurate is the IS 456 calculation engine?<span class="faq-arrow">↓</span></button>
+        <div class="faq-a" data-e="fa3" contenteditable="false" spellcheck="false">The engine is built directly from IS 456:2000, IS 1893:2016, IS 875 Parts 1 & 2, and IS 13920. All 6 load combinations per IS 456 Cl 18.2 are applied. Results have been cross-checked against manual calculations and standard worked examples. Every formula shows the clause it comes from so you can verify it yourself.</div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)" data-e="fq4" contenteditable="false" spellcheck="false">Can professionals use this for real projects?<span class="faq-arrow">↓</span></button>
+        <div class="faq-a" data-e="fa4" contenteditable="false" spellcheck="false">Yes — professionals use StructLearn Pro for preliminary design, checking, and client presentations. The PDF reports are structured and professional. However, for statutory submissions requiring a licensed structural engineer's stamp, you should verify the output as you would with any design software. StructLearn Pro is a design aid, not a replacement for engineering judgment.</div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)" data-e="fq5" contenteditable="false" spellcheck="false">Does it work on mobile?<span class="faq-arrow">↓</span></button>
+        <div class="faq-a" data-e="fa5" contenteditable="false" spellcheck="false">StructLearn Pro runs in your browser on any device — phone, tablet, or laptop. However, the interactive column grid editor, full calculation tables, and PDF downloads are much better on a laptop or desktop. We recommend using a laptop for the actual design work.</div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)" data-e="fq6" contenteditable="false" spellcheck="false">Can I cancel my Pro subscription anytime?<span class="faq-arrow">↓</span></button>
+        <div class="faq-a" data-e="fa6" contenteditable="false" spellcheck="false">Yes, cancel anytime with no questions asked. Your projects and data are always saved — you just lose access to PDF downloads and construction drawings if you cancel. You can re-subscribe at any time to get access back.</div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)" data-e="fq7" contenteditable="false" spellcheck="false">What buildings can I design?<span class="faq-arrow">↓</span></button>
+        <div class="faq-a" data-e="fa7" contenteditable="false" spellcheck="false">Residential and commercial RC frame buildings up to G+20 floors. Supports regular and irregular column grids, L-shaped plans, missing columns with transfer beams, and cantilevers. Isolated footings, combined footings, and raft foundations. Seismic zones II through V, wind zones I through VI, all soil types per IS 1893 and IS 875.</div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<style>
+/* TESTIMONIALS */
+.tcard{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:24px;transition:all 0.2s;}
+.tcard:hover{border-color:var(--border2);transform:translateY(-2px);box-shadow:0 12px 40px rgba(0,0,0,0.3);}
+.tquote{font-size:14px;color:var(--txt2);line-height:1.75;margin-bottom:18px;font-style:italic;}
+.tquote::before{content:'"';font-size:28px;color:var(--blue2);line-height:0;vertical-align:-10px;margin-right:2px;font-style:normal;}
+.tauthor{display:flex;align-items:center;gap:12px;}
+.tavatar{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;flex-shrink:0;font-family:'JetBrains Mono',monospace;}
+.tname{font-size:13px;font-weight:700;color:#fff;margin-bottom:2px;}
+.trole{font-size:11px;color:var(--txt3);}
+
+/* COMPARISON TABLE */
+.ctr{border-bottom:1px solid var(--border);}
+.ctr:hover td{background:rgba(255,255,255,0.02);}
+.ctd-f{padding:13px 16px;font-size:13px;color:var(--txt2);font-weight:500;}
+.ctd-y{padding:13px 16px;text-align:center;font-size:13px;color:var(--green);font-weight:600;}
+.ctd-p{padding:13px 16px;text-align:center;font-size:13px;color:var(--amber);}
+.ctd-n{padding:13px 16px;text-align:center;font-size:13px;color:var(--txt4);}
+
+/* FAQ */
+.faq-item{border:1px solid var(--border);border-radius:12px;overflow:hidden;transition:border-color 0.2s;}
+.faq-item.open{border-color:rgba(79,142,247,0.35);}
+.faq-q{width:100%;padding:16px 20px;background:var(--card);border:none;color:var(--txt);font-size:15px;font-weight:600;cursor:pointer;text-align:left;display:flex;justify-content:space-between;align-items:center;gap:12px;font-family:inherit;transition:background 0.15s;}
+.faq-q:hover{background:rgba(255,255,255,0.04);}
+.faq-arrow{font-size:16px;color:var(--blue2);transition:transform 0.3s;flex-shrink:0;}
+.faq-item.open .faq-arrow{transform:rotate(180deg);}
+.faq-a{max-height:0;overflow:hidden;transition:max-height 0.35s ease,padding 0.35s ease;font-size:14px;color:var(--txt2);line-height:1.75;padding:0 20px;background:rgba(79,142,247,0.03);}
+.faq-item.open .faq-a{max-height:300px;padding:16px 20px;}
+</style>
+
+<script>
+function toggleFaq(btn){
+  const item = btn.closest('.faq-item');
+  const isOpen = item.classList.contains('open');
+  // close all
+  document.querySelectorAll('.faq-item').forEach(i=>i.classList.remove('open'));
+  // open this one if it was closed
+  if(!isOpen) item.classList.add('open');
+}
+// Open first FAQ by default
+document.addEventListener('DOMContentLoaded',()=>{
+  const first = document.querySelector('.faq-item');
+  if(first) first.classList.add('open');
+});
+</script>
+
+
+<!-- WORKSPACE BANNER for returning users -->
+<section style="padding:48px 24px;background:rgba(79,142,247,0.05);border-top:1px solid var(--border);border-bottom:1px solid var(--border);">
+  <div style="max-width:800px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:20px;">
+    <div style="display:flex;align-items:center;gap:16px;">
+      <div style="width:48px;height:48px;border-radius:14px;background:linear-gradient(135deg,var(--blue),var(--purple));display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;">🏗️</div>
+      <div>
+        <div style="font-family:'Familjen Grotesk',sans-serif;font-size:20px;font-weight:700;color:#fff;letter-spacing:-0.5px;" data-e="wb-h" contenteditable="false" spellcheck="false">Already designing with us?</div>
+        <div style="font-size:14px;color:var(--txt2);margin-top:3px;" data-e="wb-p" contenteditable="false" spellcheck="false">Your projects, progress and certificates are waiting. Sign in to continue.</div>
+      </div>
+    </div>
+    <button onclick="showLogin('login')" style="padding:14px 28px;background:var(--blue);border:none;border-radius:10px;color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;box-shadow:0 4px 20px rgba(79,142,247,0.3);white-space:nowrap;flex-shrink:0;transition:all 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''" data-e="wb-btn" contenteditable="false" spellcheck="false">
+      Go to my workspace →
+    </button>
+  </div>
+</section>
+
+
+<!-- CTA -->
+<section id="cta"><div class="si rv" style="max-width:620px;"><div class="ey" style="justify-content:center;color:rgba(255,255,255,0.4);" data-e="cta-ey" contenteditable="false" spellcheck="false">Get started today</div><h2 class="cta-h" data-e="cta-h" contenteditable="false" spellcheck="false">Your first design is completely free.</h2><p class="cta-p" data-e="cta-p" contenteditable="false" spellcheck="false">No installation. No credit card. Create an account and start your first IS 456 building design in under 2 minutes.</p><div class="cta-btns"><button class="cbp" onclick="showLogin('signup')" data-e="cta-b1" contenteditable="false" spellcheck="false">Start designing free →</button><button class="cbs" onclick="showLogin('login')" data-e="cta-b2" contenteditable="false" spellcheck="false">Sign in</button></div></div></section>
+
+<!-- FOOTER -->
+<footer><div class="fi-row"><div style="display:flex;align-items:center;gap:10px;"><div class="fmark">SL</div><div><div class="fname" data-e="f-nm" contenteditable="false" spellcheck="false">StructLearn Pro</div><div style="font-size:11px;color:var(--txt4);font-family:'JetBrains Mono',monospace;margin-top:1px;" data-e="f-tg" contenteditable="false" spellcheck="false">IS 456 · IS 1893 · IS 875 · IS 13920</div></div></div><div class="flinks"><a href="#" data-e="fl1" contenteditable="false" spellcheck="false">Privacy</a><a href="#" data-e="fl2" contenteditable="false" spellcheck="false">Terms</a><a href="#" data-e="fl3" contenteditable="false" spellcheck="false">Refunds</a><a href="mailto:structlearnpro@gmail.com" data-e="fl4" contenteditable="false" spellcheck="false">structlearnpro@gmail.com</a></div></div><div class="fcopy" data-e="f-cp" contenteditable="false" spellcheck="false">© 2026 StructLearn Pro · Made in India 🇮🇳</div></footer>
+
+<!-- LOGIN MODAL -->
+<div id="lmodal"><div class="lbox"><div class="lhdl"></div><button class="lcl" onclick="closeLogin()">✕</button><div class="lrow"><div class="lmk">SL</div><div class="ltxt">StructLearn Pro</div></div><div class="lsub" style="margin-top:4px;" data-e="l-sub" contenteditable="false" spellcheck="false">Design real buildings. Learn real IS codes.</div><div class="ltabs"><button class="ltab on" id="lt-li" onclick="lTab('login')">Sign in</button><button class="ltab" id="lt-su" onclick="lTab('signup')">Create account</button></div><div id="lf-login"><div class="lf"><label>Mobile number</label><div class="phrow"><span class="phpre">+91</span><input type="tel" id="lm-m" placeholder="98765 43210" maxlength="10" inputmode="numeric"></div></div><button class="lbtn" onclick="lSend('login')">Send OTP →</button><div class="lmsg" id="lmsg-l"></div></div><div id="lf-signup" style="display:none"><div class="lf"><label>Full name</label><input type="text" id="lm-name" placeholder="Rahul Sharma" autocomplete="name"></div><div class="lf"><label>Mobile number</label><div class="phrow"><span class="phpre">+91</span><input type="tel" id="lm-sm" placeholder="98765 43210" maxlength="10" inputmode="numeric"></div></div><div class="lf"><label>Email <span style="color:var(--txt4);font-weight:400;">(for receipts)</span></label><input type="email" id="lm-e" placeholder="rahul@gmail.com" inputmode="email"></div><div class="lf"><label>I am a</label><div class="purgrid"><button class="purbtn on" onclick="selP(this,'student')">🎓 Student</button><button class="purbtn" onclick="selP(this,'professional')">💼 Professional</button><button class="purbtn" onclick="selP(this,'professor')">📚 Professor</button><button class="purbtn" onclick="selP(this,'business')">🏢 Business</button></div></div><button class="lbtn" onclick="lSend('signup')">Send OTP →</button><div class="lmsg" id="lmsg-s"></div></div><div id="lf-otp" style="display:none;text-align:center;"><div style="font-size:44px;margin-bottom:14px;">📱</div><div style="font-family:'Familjen Grotesk',sans-serif;font-size:20px;font-weight:700;color:var(--txt);margin-bottom:8px;">Enter the OTP</div><div style="font-size:13px;color:var(--txt2);margin-bottom:24px;">Sent to <strong id="lm-ph" style="color:#fff;">+91 XXXXXXXXXX</strong></div><div class="otprow"><input class="otpi" maxlength="1" id="lo0" oninput="lOI(0)" onkeydown="lOK(event,0)" inputmode="numeric"><input class="otpi" maxlength="1" id="lo1" oninput="lOI(1)" onkeydown="lOK(event,1)" inputmode="numeric"><input class="otpi" maxlength="1" id="lo2" oninput="lOI(2)" onkeydown="lOK(event,2)" inputmode="numeric"><input class="otpi" maxlength="1" id="lo3" oninput="lOI(3)" onkeydown="lOK(event,3)" inputmode="numeric"><input class="otpi" maxlength="1" id="lo4" oninput="lOI(4)" onkeydown="lOK(event,4)" inputmode="numeric"><input class="otpi" maxlength="1" id="lo5" oninput="lOI(5)" onkeydown="lOK(event,5)" inputmode="numeric"></div><button class="lbtn" onclick="lVerify()">Verify and enter →</button><div class="lmsg" id="lmsg-o"></div><div style="margin-top:14px;font-size:13px;color:var(--txt3);">Didn't get it? <button onclick="lResend()" style="background:none;border:none;color:var(--blue2);cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;">Resend OTP</button></div></div></div></div>
+
+<!-- LAPTOP MODAL -->
+<div id="lapmod"><div class="lapbox"><div class="laphdl"></div><div style="font-size:52px;margin-bottom:16px;">💻</div><div style="font-family:'Familjen Grotesk',sans-serif;font-size:22px;font-weight:700;color:var(--txt);margin-bottom:12px;" data-e="lap-t" contenteditable="false" spellcheck="false">Best on a laptop</div><div style="font-size:15px;color:var(--txt2);line-height:1.75;margin-bottom:28px;" data-e="lap-b" contenteditable="false" spellcheck="false">StructLearn Pro works on mobile, but the <strong style="color:#fff;">interactive grid editor, calculation tables, and PDF downloads</strong> are much better on a bigger screen. Your account is saved — open on laptop when ready! 🚀</div><button style="width:100%;padding:15px;background:var(--blue);border:none;border-radius:12px;color:#fff;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:10px;" onclick="goApp()">Continue on mobile →</button><button style="width:100%;padding:13px;background:transparent;border:1px solid var(--border2);border-radius:12px;color:var(--txt3);font-size:14px;cursor:pointer;font-family:inherit;" onclick="closeLap()">I'll open on laptop later</button></div></div>
+
+<script>
+// ══════════════════════════════════════════════
+// SCROLL-DRIVEN SHOWCASE ENGINE
+// The sticky container holds both left text + right app.
+// Scroll steps below it drive which panel is active.
+// ══════════════════════════════════════════════
+(function(){
+  const N = 5;
+  const titles = ['New Project — Step 1 of 28','Loads & Materials — Step 8 of 28','Running Analysis...','Design Overview — Sharma Residence','Construction Drawings'];
+  const tags = ['Project Info','IS 875 / IS 456','IS 456 Engine','IS 456 · IS 1893','PRO Feature'];
+  const tagStyles = ['cb','cb','cp','cg','cc'];
+  
+  let current = -1;
+  
+  function activate(i){
+    if(i === current) return;
+    current = i;
+    
+    // Update progress bar
+    for(let k=0;k<N;k++){
+      const p = document.getElementById('prog-'+k);
+      if(p) p.classList.toggle('active', k===i);
+    }
+    
+    // Update left text panels
+    for(let k=0;k<N;k++){
+      const tp = document.getElementById('tp-'+k);
+      if(!tp) continue;
+      if(k===i){ tp.classList.remove('exit'); tp.classList.add('active'); }
+      else { tp.classList.remove('active'); if(k < i) tp.classList.add('exit'); else tp.classList.remove('exit'); }
+    }
+    
+    // Update app screens
+    for(let k=0;k<N;k++){
+      const sc = document.getElementById('sc-'+k);
+      if(sc) sc.classList.toggle('active', k===i);
+    }
+    
+    // Update chrome title + tag
+    const t = document.getElementById('awTitle');
+    const tag = document.getElementById('awTag');
+    if(t) t.textContent = titles[i];
+    if(tag){ tag.textContent = tags[i]; tag.className = 'aw-tag chip '+tagStyles[i]; }
+  }
+  
+  function onScroll(){
+    const showcase = document.getElementById('showcaseSticky');
+    const scrollSteps = document.getElementById('scrollSteps');
+    if(!showcase || !scrollSteps) return;
+    
+    const stepsTop = scrollSteps.getBoundingClientRect().top;
+    const stepsH = scrollSteps.offsetHeight;
+    const stepH = stepsH / N;
+    const scrolled = -stepsTop;
+    const idx = Math.max(0, Math.min(N-1, Math.floor(scrolled / stepH)));
+    
+    // Only show sticky when scroll steps are in view
+    const isInView = stepsTop < window.innerHeight && stepsTop + stepsH > 0;
+    showcase.style.visibility = isInView ? 'visible' : 'hidden';
+    
+    if(isInView) activate(idx);
+  }
+  
+  window.addEventListener('scroll', onScroll, {passive:true});
+  onScroll(); // init
+  activate(0);
+})();
+
+// SCROLL REVEAL
+const ro = new IntersectionObserver(e=>e.forEach(el=>{if(el.isIntersecting)el.target.classList.add('in');}),{threshold:0.08});
+document.querySelectorAll('.rv').forEach(el=>ro.observe(el));
+
+// ── RETURNING USER ──
+(function(){
+  var tok = localStorage.getItem('slp_session_tok');
+  var mob = localStorage.getItem('slp_session_mob');
+  if (!tok || !mob) return;
+
+  var mob10 = mob.replace(/\D/g,'').slice(-10);
+  fetch('https://rpjdveuxxjeoeomkwrfx.supabase.co/rest/v1/profiles?mobile=eq.%2B91'+mob10+'&select=*', {
+    headers: {'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJwamR2ZXV4eGplb2VvbWt3cmZ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg5MzY3NzIsImV4cCI6MjA5NDUxMjc3Mn0.3JvvMaCFKg2fB9-l2WJ5JMX5btGIKqvpMj_ZcxSRWaQ', 'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJwamR2ZXV4eGplb2VvbWt3cmZ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg5MzY3NzIsImV4cCI6MjA5NDUxMjc3Mn0.3JvvMaCFKg2fB9-l2WJ5JMX5btGIKqvpMj_ZcxSRWaQ'}
+  }).then(function(r){ return r.json(); }).then(function(data){
+    if (!data || !data[0]) return;
+    var prof = data[0];
+    var firstName = (prof.full_name || prof.name || 'there').split(' ')[0];
+    // Fetch project count from projects table
+    var SERVICE = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJwamR2ZXV4eGplb2VvbWt3cmZ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg5MzY3NzIsImV4cCI6MjA5NDUxMjc3Mn0.3JvvMaCFKg2fB9-l2WJ5JMX5btGIKqvpMj_ZcxSRWaQ';
+    fetch('https://rpjdveuxxjeoeomkwrfx.supabase.co/rest/v1/projects?profile_id=eq.'+prof.id+'&select=id,analysis_count', {
+      headers: {'apikey': SERVICE, 'Authorization': 'Bearer '+SERVICE}
+    }).then(function(r2){ return r2.json(); }).then(function(projs){
+      var projects = Array.isArray(projs) ? projs.length : 0;
+      var analyses = Array.isArray(projs) ? projs.reduce(function(s,p){ return s+(p.analysis_count||0); }, 0) : 0;
+      showReturningHero(firstName, projects, analyses);
+    }).catch(function(){ showReturningHero(firstName, 0, 0); });
+  }).catch(function(){});
+})();
+
+function showReturningHero(firstName, projects, analyses) {
+    var hero = document.getElementById('hero');
+    if (!hero) return;
+
+    var html = '';
+    html += '<div style="position:absolute;inset:0;background:radial-gradient(ellipse 80% 60% at 50% 0%,rgba(79,142,247,0.15),transparent);pointer-events:none;"></div>';
+    html += '<div style="position:relative;z-index:1;text-align:center;max-width:680px;margin:0 auto;padding:0 24px;">';
+    html += '<div style="display:inline-flex;align-items:center;gap:10px;background:rgba(62,207,142,0.1);border:1px solid rgba(62,207,142,0.25);border-radius:100px;padding:8px 20px 8px 10px;margin-bottom:28px;">';
+    html += '<div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#4f8ef7,#b794f4);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#fff;">'+firstName[0]+'</div>';
+    html += '<span style="font-size:14px;font-weight:600;color:#3ecf8e;">Welcome back, '+firstName+'! &#128075;</span>';
+    html += '</div>';
+    html += '<h1 style="font-size:clamp(38px,8vw,72px);font-weight:700;line-height:0.95;letter-spacing:-3px;color:#fff;margin-bottom:18px;">';
+    html += 'Ready to design<br>';
+    html += '<span style="background:linear-gradient(135deg,#7eb0ff,#34d4f0,#3ecf8e);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">something great?</span>';
+    html += '</h1>';
+    html += '<p style="font-size:17px;color:#a8b8d8;margin-bottom:32px;">Your projects and progress are right where you left them.</p>';
+    html += '<div style="display:flex;gap:10px;justify-content:center;margin-bottom:32px;flex-wrap:wrap;">';
+    html += '<div style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:14px 22px;text-align:center;min-width:90px;">';
+    html += '<div style="font-size:30px;font-weight:700;color:#fff;letter-spacing:-1px;">'+projects+'</div>';
+    html += '<div style="font-size:11px;color:#637594;margin-top:3px;">Project'+(projects!==1?'s':'')+'</div></div>';
+    html += '<div style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:14px 22px;text-align:center;min-width:90px;">';
+    html += '<div style="font-size:30px;font-weight:700;color:#fff;letter-spacing:-1px;">'+analyses+'</div>';
+    html += '<div style="font-size:11px;color:#637594;margin-top:3px;">Anal'+(analyses!==1?'yses':'ysis')+'</div></div>';
+    html += '<div style="background:rgba(62,207,142,0.08);border:1px solid rgba(62,207,142,0.2);border-radius:12px;padding:14px 22px;text-align:center;min-width:90px;">';
+    html += '<div style="font-size:24px;">&#127942;</div>';
+    html += '<div style="font-size:11px;color:#3ecf8e;margin-top:3px;font-weight:600;">IS 456 Designer</div></div>';
+    html += '</div>';
+    html += '<div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">';
+    html += '<button onclick="window.location.href=\'/dashboard.html\';" style="padding:16px 36px;border-radius:12px;font-size:16px;font-weight:700;cursor:pointer;font-family:inherit;background:#fff;border:none;color:#0f1629;box-shadow:0 4px 24px rgba(255,255,255,0.15);">Continue designing &#8594;</button>';
+    html += '<button onclick="ruSignOut()" style="padding:16px 20px;border-radius:12px;font-size:14px;cursor:pointer;font-family:inherit;background:rgba(255,255,255,0.06);border:1.5px solid rgba(255,255,255,0.15);color:#a8b8d8;">Sign out</button>';
+    html += '</div></div>';
+
+    hero.innerHTML = html;
+}
+
+function ruSignOut() {
+  localStorage.removeItem('slp_session_tok');
+  localStorage.removeItem('slp_session_mob');
+  window.location.reload();
+}
+
+// EDIT MODE
+let em=false,sc={},lpur='student';
+function toggleEdit(){em=!em;document.getElementById('atg').classList.toggle('on',em);document.getElementById('etb').classList.toggle('show',em);document.getElementById('atgl').textContent=em?'Exit':'Edit';document.body.classList.toggle('em',em);document.querySelectorAll('[data-e]').forEach(el=>{el.contentEditable=em?'true':'false';if(em&&!sc[el.dataset.e])sc[el.dataset.e]=el.innerHTML;});}
+function saveEdits(){const d={};document.querySelectorAll('[data-e]').forEach(el=>{d[el.dataset.e]=el.innerHTML;});localStorage.setItem('slp_v7',JSON.stringify(d));sc={...d};toggleEdit();toast('Changes saved');}
+function discardEdits(){document.querySelectorAll('[data-e]').forEach(el=>{if(sc[el.dataset.e]!==undefined)el.innerHTML=sc[el.dataset.e];});toggleEdit();}
+function toast(m){const t=document.createElement('div');t.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--bg2);border:1px solid rgba(62,207,142,0.4);color:var(--green);padding:11px 24px;border-radius:100px;font-size:13px;font-weight:600;z-index:99999;white-space:nowrap;font-family:inherit;';t.textContent=m;document.body.appendChild(t);setTimeout(()=>t.remove(),2500);}
+(function(){try{const d=JSON.parse(localStorage.getItem('slp_v7')||'{}');document.querySelectorAll('[data-e]').forEach(el=>{if(d[el.dataset.e])el.innerHTML=d[el.dataset.e];});}catch(e){}})();
+
+// Edit button only visible to admin
+(function(){
+  const params=new URLSearchParams(window.location.search);
+  const btn=document.getElementById('atg');
+  if(!btn) return;
+  // Show if URL has ?edit=true — you visit structlearnpro.com?edit=true
+  if(params.get('edit')==='true'){ btn.style.display='flex'; return; }
+  // Or if admin email is in localStorage
+  try{
+    const u=JSON.parse(localStorage.getItem('slp_user')||'{}');
+    if(u.email==='structlearnpro@gmail.com') btn.style.display='flex';
+  }catch(e){}
+})();
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.hasAttribute('data-e'))e.preventDefault();});
+
+// LOGIN
+function showLogin(tab){if(em)return;document.getElementById('lmodal').classList.add('show');lTab(tab);document.body.style.overflow='hidden';}
+function closeLogin(){document.getElementById('lmodal').classList.remove('show');document.body.style.overflow='';}
+document.getElementById('lmodal').addEventListener('click',e=>{if(e.target===document.getElementById('lmodal'))closeLogin();});
+function lTab(t){document.getElementById('lf-login').style.display=t==='login'?'block':'none';document.getElementById('lf-signup').style.display=t==='signup'?'block':'none';document.getElementById('lf-otp').style.display='none';document.getElementById('lt-li').classList.toggle('on',t==='login');document.getElementById('lt-su').classList.toggle('on',t==='signup');}
+function selP(b,v){document.querySelectorAll('.purbtn').forEach(x=>x.classList.remove('on'));b.classList.add('on');lpur=v;}
+async function lSend(type){
+  const mob=type==='login'?document.getElementById('lm-m').value:document.getElementById('lm-sm').value;
+  const mid=type==='login'?'lmsg-l':'lmsg-s';
+  const msg=document.getElementById(mid);
+  if(mob.length!==10){msg.className='lmsg err';msg.textContent='Enter a valid 10-digit number.';return;}
+  msg.className='lmsg';msg.textContent='Sending OTP...';
+  const btn=document.getElementById(type==='login'?'lbtn-login':'lbtn-signup');
+  if(btn){btn.disabled=true;}
+  try{
+    const resp=await fetch('https://rpjdveuxxjeoeomkwrfx.supabase.co/functions/v1/send-otp',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJwamR2ZXV4eGplb2VvbWt3cmZ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg5MzY3NzIsImV4cCI6MjA5NDUxMjc3Mn0.3JvvMaCFKg2fB9-l2WJ5JMX5btGIKqvpMj_ZcxSRWaQ','apikey':'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJwamR2ZXV4eGplb2VvbWt3cmZ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg5MzY3NzIsImV4cCI6MjA5NDUxMjc3Mn0.3JvvMaCFKg2fB9-l2WJ5JMX5btGIKqvpMj_ZcxSRWaQ'},
+      body:JSON.stringify({mobile:mob})
+    });
+    const result=await resp.json();
+    if(!result.success){
+      msg.className='lmsg err';
+      msg.textContent=result.error||'Failed to send OTP. Try again.';
+      if(btn)btn.disabled=false;
+      return;
+    }
+    // Success — show OTP screen
+    msg.className='lmsg';msg.textContent='';
+    document.getElementById('lm-ph').textContent='+91 '+mob.slice(0,5)+' '+mob.slice(5);
+    // Store mobile for verification
+    window._lmob=mob; window._ltype=type;
+    ['lf-login','lf-signup'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});
+    const otpEl=document.getElementById('lf-otp');
+    if(otpEl)otpEl.style.display='block';
+    document.getElementById('lo0')?.focus();
+  }catch(e){
+    msg.className='lmsg err';
+    msg.textContent='Network error. Check your connection.';
+    if(btn)btn.disabled=false;
+  }
+}
+function lOI(i){const v=document.getElementById('lo'+i).value;if(v&&i<5)document.getElementById('lo'+(i+1)).focus();}
+function lOK(e,i){if(e.key==='Backspace'&&!document.getElementById('lo'+i).value&&i>0)document.getElementById('lo'+(i-1)).focus();}
+async function lVerify(){
+  const otp=[0,1,2,3,4,5].map(i=>document.getElementById('lo'+i)?.value||'').join('');
+  const msg=document.getElementById('lmsg-o');
+  if(otp.length!==6){if(msg){msg.className='lmsg err';msg.textContent='Enter all 6 digits.';}return;}
+  if(msg){msg.className='lmsg';msg.textContent='Verifying...';}
+  try{
+    const resp=await fetch('https://rpjdveuxxjeoeomkwrfx.supabase.co/functions/v1/verify-otp',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJwamR2ZXV4eGplb2VvbWt3cmZ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg5MzY3NzIsImV4cCI6MjA5NDUxMjc3Mn0.3JvvMaCFKg2fB9-l2WJ5JMX5btGIKqvpMj_ZcxSRWaQ','apikey':'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJwamR2ZXV4eGplb2VvbWt3cmZ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg5MzY3NzIsImV4cCI6MjA5NDUxMjc3Mn0.3JvvMaCFKg2fB9-l2WJ5JMX5btGIKqvpMj_ZcxSRWaQ'},
+      body:JSON.stringify({mobile:window._lmob, otp:otp})
+    });
+    const result=await resp.json();
+    if(!result.success){
+      if(msg){msg.className='lmsg err';msg.textContent=result.error||'Invalid OTP. Try again.';}
+      return;
+    }
+    if(result.sessionToken){
+      localStorage.setItem('slp_session_mob', '+91'+window._lmob);
+      localStorage.setItem('slp_session_tok',result.sessionToken);
+    }
+    closeLogin();
+    if(/Android|iPhone|iPad/i.test(navigator.userAgent)) showLap();
+    else window.location.href='/dashboard.html';
+  }catch(e){
+    if(msg){msg.className='lmsg err';msg.textContent='Network error. Try again.';}
+  }
+}
+function lResend(){if(window._lmob){lSend(window._ltype||'login');}}
+function showLap(){document.getElementById('lapmod').classList.add('show');document.body.style.overflow='hidden';}
+function closeLap(){document.getElementById('lapmod').classList.remove('show');document.body.style.overflow='';}
+function goApp(){closeLap();window.location.href='/dashboard.html';}
+</script>
+
+<!-- 
+=== SUPABASE SETUP FOR REVIEWS ===
+
+1. Run this SQL in Supabase SQL Editor:
+
+CREATE TABLE reviews (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  reviewer_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  reviewer_name TEXT NOT NULL,
+  reviewer_role TEXT,
+  review_text TEXT NOT NULL,
+  rating INTEGER CHECK (rating >= 1 AND rating <= 5),
+  status TEXT DEFAULT 'pending' CHECK (status IN ('pending','approved','rejected')),
+  admin_note TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  approved_at TIMESTAMPTZ
+);
+
+-- Only logged-in users can insert their own review
+ALTER TABLE reviews ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users can insert own review" ON reviews FOR INSERT WITH CHECK (auth.uid() = reviewer_id);
+CREATE POLICY "Anyone can read approved reviews" ON reviews FOR SELECT USING (status = 'approved');
+CREATE POLICY "Admin can do everything" ON reviews USING (auth.jwt()->>'email' = 'structlearnpro@gmail.com');
+
+-- Prevent duplicate reviews from same user
+CREATE UNIQUE INDEX one_review_per_user ON reviews (reviewer_id);
+
+2. Replace SUPA_URL and SUPA_KEY in the script above with your values.
+
+3. In admin.html, add a reviews management tab (see below).
+
+=== ADMIN PANEL REVIEWS TAB ===
+The admin panel at admin.html should query:
+  GET /rest/v1/reviews?status=eq.pending&order=created_at.desc
+to see pending reviews, then PATCH to approve:
+  PATCH /rest/v1/reviews?id=eq.{id}  body: {"status":"approved","approved_at":"now()"}
+or reject:
+  PATCH /rest/v1/reviews?id=eq.{id}  body: {"status":"rejected","admin_note":"reason"}
+
+=== USER IDENTITY ===
+The review form reads currentUser from localStorage key 'slp_user'.
+In your app (index.html), after login, store:
+  localStorage.setItem('slp_user', JSON.stringify({id, name, role}))
+The landing page reads this to pre-fill and verify the reviewer.
+-->
+
+</body>
+</html>
