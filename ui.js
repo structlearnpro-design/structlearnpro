@@ -40,12 +40,7 @@ function go(n){
   }
   var prevPage = PAGE;
   PAGE=n;
-  // Save current page so we can resume later
-  S._lastPage = n;
-  // Notify parent to save this page number
-  try{ window.parent.postMessage({type:'PAGE_CHANGED', page:n}, '*'); }catch(e){}
-  // Update progress bar based on data filled, not just page position
-  updateProgressBar();
+
   // Push browser history so back button works within design pages
   // Only push if navigating to a different page (not same page refresh)
   if(prevPage !== n){
@@ -13513,23 +13508,6 @@ function buildCertificateSVG(level, certId, userName, dateStr) {
 }
 
 
-// ── PROGRESS BAR ──────────────────────────────────────────────
-function updateProgressBar(){
-  // Check which steps have actual data
-  var done = 0;
-  if(S.name || S.location || S.numFloors) done++;             // Step 1: Project Info
-  if(S.spansX && S.spansX.length && S.spansY && S.spansY.length) done++; // Step 2: Plan
-  if(S.udlLL || S.udlRoof) done++;                            // Step 3: Loads
-  if(S.fck && S.fy) done++;                                    // Step 4: Materials
-  if(S.soilBearing) done++;                                    // Step 5: Soil
-  if(RES) done++;                                              // Step 6: Analysis run
-  var pct = Math.round((done / 6) * 100);
-  var bar = document.getElementById('step-pct-bar');
-  var pctEl = document.getElementById('step-pct');
-  if(bar) bar.style.width = pct + '%';
-  if(pctEl) pctEl.textContent = pct + '%';
-}
-
 // ── TOAST NOTIFICATION ────────────────────────────────────────
 function showCertToast(msg, color='#b8860b') {
   let t = document.getElementById('_cert_toast');
@@ -16513,8 +16491,6 @@ window.addEventListener('message', function(e) {
       if(proj.results_json && typeof proj.results_json === 'object') {
         RES = proj.results_json;
       }
-      // Update progress bar after data restored
-      setTimeout(updateProgressBar, 200);
       // Ensure GRID has nx/ny computed from S (needed for column/slab plan selectors)
       if(GRID && S.spansX && S.spansY) {
         GRID.nx = S.spansX.length;
