@@ -40,6 +40,18 @@ function go(n){
   }
   var prevPage = PAGE;
   PAGE=n;
+  // Save current page so we can resume later
+  S._lastPage = n;
+  // Notify parent to save this page number
+  try{ window.parent.postMessage({type:'PAGE_CHANGED', page:n}, '*'); }catch(e){}
+  // Update progress bar (steps 1-6 = design steps, 7+ = advanced)
+  var coreSteps = [1,2,3,4,5,6];
+  var completedSteps = coreSteps.filter(function(s){ return s < n; }).length;
+  var pct = Math.round((completedSteps / 6) * 100);
+  var bar = document.getElementById('step-pct-bar');
+  var pctEl = document.getElementById('step-pct');
+  if(bar) bar.style.width = pct + '%';
+  if(pctEl) pctEl.textContent = pct + '%';
   // Push browser history so back button works within design pages
   // Only push if navigating to a different page (not same page refresh)
   if(prevPage !== n){
@@ -16714,3 +16726,4 @@ function closeChallengePopup(){var el=document.getElementById("_challenge_popup"
     }, 2000);
   };
 })();
+
