@@ -776,6 +776,1439 @@ function svgSeismicDist(floors2){
 // FULL CALCULATION ENGINE (same as before, compact)
 // =======================================================
 
+function svgStairSection(st) {
+  var spX = st.spX || 3, spY = st.spY || 4;
+  var flightSpan = st.flightSpan || spX * 0.7;
+  var riser = st.riser || S.riser || 150;   // use student input
+  var tread = st.tread || S.tread || 270;   // use student input
+  var steps = Math.ceil(S.floorHt * 1000 / riser);
+  var wD = st.wD || 150;         // waist slab thickness mm
+  var cover = S.coverSlab || 20;
+  var Ast = st.Ast2 || st.Ast || 400;       // mm²/m
+
+  // Use student-selected type from result (set before analysis) or S state
+  var type = st.stairType || S.stairType || (spX >= 2.5 && spY >= 5 ? 'dogleg' : spX >= 3 && spY >= 3 ? '90turn' : 'straight');
+
+  var W = 660, H = 500;
+  var lines = [];
+  lines.push('<svg viewBox="0 0 ' + W + ' ' + H + '" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block;background:#0a0f1e;border-radius:8px">');
+
+  // ── TYPE ILLUSTRATIONS (top row) ───────────────────────────────
+  var typeData = [
+    { id:'straight', label:'Straight Flight',  col:'#f59e0b', recW:'≥ 2m',   recL:'≥ 4m',  desc:'Single flight, no U-turn. Common for tight spaces.' },
+    { id:'dogleg',   label:'Dog-Leg (U-Turn)', col:'#34d399', recW:'≥ 2.5m', recL:'≥ 5m',  desc:'Two flights with mid-landing. Most common residential.' },
+    { id:'90turn',   label:'90° Quarter-Turn', col:'#38bdf8', recW:'≥ 3m',   recL:'≥ 3m',  desc:'L-shaped. Open well, elegant for corner bays.' },
+  ];
+  var cardW = 180, cardH = 100, cardGap = 16;
+  var totalTW = typeData.length * cardW + (typeData.length - 1) * cardGap;
+  var startX = (W - totalTW) / 2;
+
+  typeData.forEach(function(td, i) {
+    var tx = startX + i * (cardW + cardGap);
+    var ty = 12;
+    var isRec = td.id === type;
+    var alpha = isRec ? 1 : 0.3;
+
+    lines.push('<rect x="' + tx + '" y="' + ty + '" width="' + cardW + '" height="' + cardH + '" rx="6" fill="rgba(15,23,42,0.8)" stroke="' + td.col + '" stroke-width="' + (isRec ? 2 : 0.6) + '" opacity="' + alpha + '"/>');
+    if (isRec) lines.push('<text x="' + (tx + cardW - 8) + '" y="' + (ty + 14) + '" fill="' + td.col + '" font-size="10" text-anchor="end" font-family="JetBrains Mono">✓ Recommended</text>');
+
+    var cx = tx + cardW / 2, cy = ty + 30;
+
+    if (td.id === 'straight') {
+      // Step-up profile
+      var sx2 = tx + 16, sy2 = ty + 75, nS = 5, sw = 22, sh = 10;
+      for (var s = 0; s < nS; s++) {
+        lines.push('<rect x="' + (sx2 + s*sw) + '" y="' + (sy2 - s*sh) + '" width="' + sw + '" height="' + (H/10) + '" fill="rgba(245,158,11,0.2)" stroke="' + td.col + '" stroke-width="0.8" opacity="' + alpha + '"/>');
+      }
+      lines.push('<line x1="' + (sx2+nS*sw) + '" y1="' + (sy2-nS*sh) + '" x2="' + (sx2+nS*sw+20) + '" y2="' + (sy2-nS*sh) + '" stroke="' + td.col + '" stroke-width="1.5" opacity="' + alpha + '"/>');
+    } else if (td.id === 'dogleg') {
+      // Up-landing-down profile
+      var lx2 = tx + 10, ly2 = ty + 72, nS2 = 4, sw2 = 18, sh2 = 9;
+      for (var s2 = 0; s2 < nS2; s2++) {
+        lines.push('<rect x="' + (lx2 + s2*sw2) + '" y="' + (ly2 - s2*sh2) + '" width="' + sw2 + '" height="12" fill="rgba(52,211,153,0.2)" stroke="' + td.col + '" stroke-width="0.8" opacity="' + alpha + '"/>');
+      }
+      // Landing
+      lines.push('<rect x="' + (lx2+nS2*sw2) + '" y="' + (ly2-nS2*sh2-4) + '" width="20" height="14" fill="rgba(52,211,153,0.3)" stroke="' + td.col + '" stroke-width="1" opacity="' + alpha + '"/>');
+      // Second flight
+      var rx2 = lx2 + nS2*sw2 + 20;
+      for (var s3 = 0; s3 < nS2; s3++) {
+        lines.push('<rect x="' + (rx2 + s3*sw2) + '" y="' + (ly2 - nS2*sh2 - s3*sh2) + '" width="' + sw2 + '" height="12" fill="rgba(52,211,153,0.2)" stroke="' + td.col + '" stroke-width="0.8" opacity="' + alpha + '"/>');
+      }
+    } else {
+      // 90 degree turn
+      var qx = tx + 18, qy = ty + 72, nS4 = 3, qsw = 22, qsh = 9;
+      // First flight (horizontal in plan = vertical in elevation)
+      for (var s4 = 0; s4 < nS4; s4++) {
+        lines.push('<rect x="' + (qx + s4*qsw) + '" y="' + (qy - s4*qsh) + '" width="' + qsw + '" height="12" fill="rgba(56,189,248,0.2)" stroke="' + td.col + '" stroke-width="0.8" opacity="' + alpha + '"/>');
+      }
+      // Corner landing
+      lines.push('<rect x="' + (qx+nS4*qsw) + '" y="' + (qy-nS4*qsh-4) + '" width="18" height="18" fill="rgba(56,189,248,0.3)" stroke="' + td.col + '" stroke-width="1" opacity="' + alpha + '"/>');
+      // Second flight (90 degrees)
+      for (var s5 = 0; s5 < nS4; s5++) {
+        lines.push('<rect x="' + (qx+nS4*qsw) + '" y="' + (qy-nS4*qsh-4-s5*qsh) + '" width="12" height="' + qsh + '" fill="rgba(56,189,248,0.2)" stroke="' + td.col + '" stroke-width="0.8" opacity="' + alpha + '"/>');
+      }
+    }
+
+    lines.push('<text x="' + cx + '" y="' + (ty + cardH - 24) + '" fill="' + td.col + '" font-size="9" font-weight="700" text-anchor="middle" font-family="JetBrains Mono" opacity="' + alpha + '">' + td.label + '</text>');
+    lines.push('<text x="' + cx + '" y="' + (ty + cardH - 12) + '" fill="#64748b" font-size="7.5" text-anchor="middle" font-family="JetBrains Mono" opacity="' + alpha + '">' + td.recW + ' × ' + td.recL + ' bay</text>');
+  });
+
+  // ── PLAN VIEW: type-specific schematic ─────────────────────────
+  var pvY = 120, pvH = 70, pvX = 40, pvW = W - 80;
+  var typeTitleColor = type === 'dogleg' ? '#34d399' : type === '90turn' ? '#38bdf8' : '#f59e0b';
+
+  lines.push('<text x="' + (W/2) + '" y="' + (pvY - 6) + '" fill="' + typeTitleColor + '" font-size="9" font-weight="700" text-anchor="middle" font-family="JetBrains Mono">PLAN SCHEMATIC: ' + (type==='dogleg'?'DOG-LEG (2 flights + mid landing)':type==='90turn'?'90° QUARTER-TURN (L-shaped)':'STRAIGHT FLIGHT (single run)') + '</text>');
+
+  var bx = pvX, by = pvY, bw = pvW, bh = pvH;
+  // Bay outline
+  lines.push('<rect x="' + bx + '" y="' + by + '" width="' + bw + '" height="' + bh + '" fill="rgba(15,23,42,0.6)" stroke="#334155" stroke-width="1.5" rx="3"/>');
+
+  if (type === 'straight') {
+    // Single flight across bay
+    var fW = bw * 0.65, fH = bh * 0.55;
+    var fX = bx + (bw - fW) / 2, fY = by + (bh - fH) / 2;
+    lines.push('<rect x="' + fX + '" y="' + fY + '" width="' + fW + '" height="' + fH + '" fill="rgba(245,158,11,0.12)" stroke="#f59e0b" stroke-width="1.5" rx="2"/>');
+    // Steps (lines across flight)
+    var nSp = 8;
+    for (var si = 1; si < nSp; si++) {
+      lines.push('<line x1="' + (fX + si*fW/nSp) + '" y1="' + fY + '" x2="' + (fX + si*fW/nSp) + '" y2="' + (fY+fH) + '" stroke="#f59e0b" stroke-width="0.5" opacity="0.5"/>');
+    }
+    // Arrow direction
+    lines.push('<line x1="' + (fX+fW*0.1) + '" y1="' + (fY+fH/2) + '" x2="' + (fX+fW*0.9) + '" y2="' + (fY+fH/2) + '" stroke="#f59e0b" stroke-width="1.5" marker-end="url(#sArr)"/>');
+    lines.push('<text x="' + (fX+fW/2) + '" y="' + (fY-5) + '" fill="#f59e0b" font-size="7" text-anchor="middle" font-family="JetBrains Mono">FLIGHT ' + Math.ceil(S.floorHt*1000/riser) + ' risers</text>');
+    lines.push('<rect x="' + fX + '" y="' + by + '" width="' + fW + '" height="' + ((bh-fH)/2) + '" fill="rgba(71,85,105,0.3)" stroke="#475569" stroke-width="1"/>');
+    lines.push('<text x="' + (fX+fW/2) + '" y="' + (by+(bh-fH)/4+4) + '" fill="#64748b" font-size="7" text-anchor="middle" font-family="JetBrains Mono">LANDING</text>');
+  } else if (type === 'dogleg') {
+    // Two flights with mid landing U-turn
+    var fH2 = bh * 0.38, fW2 = bw * 0.42, lW = bw * 0.16;
+    var f1X = bx, f2X = bx + fW2 + lW, lX = bx + fW2;
+    // Flight 1
+    lines.push('<rect x="' + f1X + '" y="' + by + '" width="' + fW2 + '" height="' + fH2 + '" fill="rgba(52,211,153,0.12)" stroke="#34d399" stroke-width="1.5" rx="2"/>');
+    for (var si2 = 1; si2 < 7; si2++) lines.push('<line x1="' + (f1X + si2*fW2/7) + '" y1="' + by + '" x2="' + (f1X + si2*fW2/7) + '" y2="' + (by+fH2) + '" stroke="#34d399" stroke-width="0.5" opacity="0.4"/>');
+    lines.push('<line x1="' + (f1X+fW2*0.15) + '" y1="' + (by+fH2/2) + '" x2="' + (f1X+fW2*0.85) + '" y2="' + (by+fH2/2) + '" stroke="#34d399" stroke-width="1.5" marker-end="url(#sArr)"/>');
+    lines.push('<text x="' + (f1X+fW2/2) + '" y="' + (by+fH2+10) + '" fill="#34d399" font-size="7" text-anchor="middle" font-family="JetBrains Mono">UP</text>');
+    // Mid landing
+    lines.push('<rect x="' + lX + '" y="' + by + '" width="' + lW + '" height="' + fH2 + '" fill="rgba(71,85,105,0.4)" stroke="#475569" stroke-width="1"/>');
+    lines.push('<text x="' + (lX+lW/2) + '" y="' + (by+fH2/2+4) + '" fill="#64748b" font-size="6" text-anchor="middle" font-family="JetBrains Mono" writing-mode="tb">LAND</text>');
+    // Flight 2 (going back opposite direction)
+    lines.push('<rect x="' + f2X + '" y="' + by + '" width="' + fW2 + '" height="' + fH2 + '" fill="rgba(52,211,153,0.12)" stroke="#34d399" stroke-width="1.5" rx="2"/>');
+    for (var si3 = 1; si3 < 7; si3++) lines.push('<line x1="' + (f2X + si3*fW2/7) + '" y1="' + by + '" x2="' + (f2X + si3*fW2/7) + '" y2="' + (by+fH2) + '" stroke="#34d399" stroke-width="0.5" opacity="0.4"/>');
+    lines.push('<line x1="' + (f2X+fW2*0.85) + '" y1="' + (by+fH2/2) + '" x2="' + (f2X+fW2*0.15) + '" y2="' + (by+fH2/2) + '" stroke="#34d399" stroke-width="1.5" marker-end="url(#sArr)"/>');
+    lines.push('<text x="' + (f2X+fW2/2) + '" y="' + (by+fH2+10) + '" fill="#34d399" font-size="7" text-anchor="middle" font-family="JetBrains Mono">UP</text>');
+    // Lower landing
+    lines.push('<rect x="' + f1X + '" y="' + (by+fH2) + '" width="' + (f2X+fW2-f1X) + '" height="' + (bh-fH2) + '" fill="rgba(71,85,105,0.2)" stroke="#475569" stroke-width="1"/>');
+    lines.push('<text x="' + (bx+bw/2) + '" y="' + (by+fH2+(bh-fH2)/2+4) + '" fill="#64748b" font-size="7" text-anchor="middle" font-family="JetBrains Mono">LOWER LANDING</text>');
+  } else {
+    // 90° quarter turn - L-shaped
+    var fH3 = bh * 0.45, fW3 = bw * 0.45, lS = bh * 0.45;
+    // First flight (horizontal)
+    lines.push('<rect x="' + bx + '" y="' + (by+bh-fH3) + '" width="' + fW3 + '" height="' + fH3 + '" fill="rgba(56,189,248,0.12)" stroke="#38bdf8" stroke-width="1.5" rx="2"/>');
+    for (var si4 = 1; si4 < 7; si4++) lines.push('<line x1="' + (bx+si4*fW3/7) + '" y1="' + (by+bh-fH3) + '" x2="' + (bx+si4*fW3/7) + '" y2="' + (by+bh) + '" stroke="#38bdf8" stroke-width="0.5" opacity="0.4"/>');
+    lines.push('<line x1="' + (bx+fW3*0.15) + '" y1="' + (by+bh-fH3/2) + '" x2="' + (bx+fW3*0.85) + '" y2="' + (by+bh-fH3/2) + '" stroke="#38bdf8" stroke-width="1.5" marker-end="url(#sArr)"/>');
+    // Quarter landing (corner)
+    lines.push('<rect x="' + (bx+fW3) + '" y="' + (by+bh-lS) + '" width="' + (bw-fW3) + '" height="' + lS + '" fill="rgba(71,85,105,0.3)" stroke="#475569" stroke-width="1"/>');
+    lines.push('<text x="' + (bx+fW3+(bw-fW3)/2) + '" y="' + (by+bh-lS/2+4) + '" fill="#64748b" font-size="7" text-anchor="middle" font-family="JetBrains Mono">LANDING</text>');
+    // Second flight (vertical = 90° turn)
+    var f2W = bw - fW3;
+    lines.push('<rect x="' + (bx+fW3) + '" y="' + by + '" width="' + f2W + '" height="' + (bh-lS) + '" fill="rgba(56,189,248,0.12)" stroke="#38bdf8" stroke-width="1.5" rx="2"/>');
+    for (var si5 = 1; si5 < 6; si5++) lines.push('<line x1="' + (bx+fW3) + '" y1="' + (by+(bh-lS)*si5/6) + '" x2="' + (bx+fW3+f2W) + '" y2="' + (by+(bh-lS)*si5/6) + '" stroke="#38bdf8" stroke-width="0.5" opacity="0.4"/>');
+    lines.push('<line x1="' + (bx+fW3+f2W/2) + '" y1="' + (by+(bh-lS)*0.85) + '" x2="' + (bx+fW3+f2W/2) + '" y2="' + (by+(bh-lS)*0.15) + '" stroke="#38bdf8" stroke-width="1.5" marker-end="url(#sArr)"/>');
+  }
+
+  // ── STAIR CROSS-SECTION (bottom half) ──────────────────────────
+  var csY = pvY + pvH + 20, csH = H - csY - 15;
+  var csX = 40, csW = W - 80;
+  var nSteps = Math.min(steps, 12);
+  var stepW = Math.min(tread / 5, csW / (nSteps + 2));
+  var stepH = Math.min(riser / 3, csH / (nSteps + 2));
+  var waistThk = Math.max(8, wD / 20);
+
+  // Title
+  lines.push('<text x="' + (W/2) + '" y="' + (csY - 4) + '" fill="#f59e0b" font-size="10" font-weight="700" text-anchor="middle" font-family="JetBrains Mono">WAIST SLAB CROSS-SECTION — ' + steps + ' steps @ ' + riser + 'mm rise / ' + tread + 'mm tread</text>');
+
+  // Ground / landing at bottom-left
+  lines.push('<rect x="' + csX + '" y="' + (csY + csH - 20) + '" width="40" height="20" fill="rgba(71,85,105,0.6)" stroke="#475569" stroke-width="1"/>');
+  lines.push('<text x="' + (csX + 20) + '" y="' + (csY + csH + 10) + '" fill="#64748b" font-size="8" text-anchor="middle" font-family="JetBrains Mono">Ground</text>');
+
+  // Steps
+  var stairPath = 'M ' + (csX + 40) + ' ' + (csY + csH - 20);
+  var curX = csX + 40, curY = csY + csH - 20;
+  for (var s6 = 0; s6 < nSteps; s6++) {
+    // Riser (vertical)
+    stairPath += ' L ' + curX + ' ' + (curY - stepH);
+    curY -= stepH;
+    // Tread (horizontal)
+    stairPath += ' L ' + (curX + stepW) + ' ' + curY;
+    curX += stepW;
+  }
+  var topRightX = curX, topRightY = curY;
+  stairPath += ' L ' + topRightX + ' ' + (topRightY + 20);
+  stairPath += ' L ' + (csX + 40) + ' ' + (csY + csH - 20) + ' Z';
+
+  // Waist slab (parallel to flight, shifted down by waistThk)
+  var angle = Math.atan2(stepH, stepW);
+  var perpX = Math.sin(angle) * waistThk;
+  var perpY = Math.cos(angle) * waistThk;
+
+  lines.push('<path d="' + stairPath + '" fill="rgba(100,116,139,0.15)" stroke="#475569" stroke-width="1.5"/>');
+
+  // Waist slab bottom surface (parallel band)
+  var wStartX = csX + 40, wStartY = csY + csH - 20;
+  var waistPath = 'M ' + (wStartX + perpX) + ' ' + (wStartY + perpY);
+  var wx = wStartX + perpX, wy = wStartY + perpY;
+  for (var s7 = 0; s7 < nSteps; s7++) {
+    wx = wStartX + perpX + s7 * stepW;
+    wy = wStartY + perpY - s7 * stepH;
+    waistPath += ' L ' + (wStartX + perpX + (s7 + 1) * stepW) + ' ' + (wStartY + perpY - (s7 + 1) * stepH);
+  }
+  lines.push('<line x1="' + (wStartX + perpX) + '" y1="' + (wStartY + perpY) + '" x2="' + (wStartX + perpX + nSteps * stepW) + '" y2="' + (wStartY + perpY - nSteps * stepH) + '" stroke="#38bdf8" stroke-width="' + waistThk + '" stroke-linecap="round" opacity="0.3"/>');
+
+  // Reinforcement bars (along bottom of waist slab)
+  var nBars = 3;
+  for (var bi = 0; bi < nBars; bi++) {
+    var barOffset = (waistThk * 0.3 + bi * waistThk * 0.2);
+    var bpX = Math.sin(angle) * barOffset, bpY = Math.cos(angle) * barOffset;
+    lines.push('<line x1="' + (wStartX + bpX) + '" y1="' + (wStartY + bpY) + '" x2="' + (wStartX + bpX + nSteps * stepW) + '" y2="' + (wStartY + bpY - nSteps * stepH) + '" stroke="#34d399" stroke-width="2.5" stroke-linecap="round"/>');
+  }
+
+  // Top landing
+  lines.push('<rect x="' + topRightX + '" y="' + (topRightY - 5) + '" width="40" height="25" fill="rgba(71,85,105,0.5)" stroke="#475569" stroke-width="1"/>');
+  lines.push('<text x="' + (topRightX + 20) + '" y="' + (topRightY + 26) + '" fill="#64748b" font-size="8" text-anchor="middle" font-family="JetBrains Mono">Landing</text>');
+
+  // Dimension: waist slab thickness
+  var midStep = Math.floor(nSteps / 2);
+  var dimX1 = csX + 40 + midStep * stepW;
+  var dimY1 = csY + csH - 20 - midStep * stepH;
+  lines.push('<line x1="' + dimX1 + '" y1="' + dimY1 + '" x2="' + (dimX1 + perpX * 1.5) + '" y2="' + (dimY1 + perpY * 1.5) + '" stroke="#38bdf8" stroke-width="1" marker-end="url(#sArr)"/>');
+  lines.push('<text x="' + (dimX1 + perpX * 2) + '" y="' + (dimY1 + perpY * 2 + 4) + '" fill="#38bdf8" font-size="8" font-family="JetBrains Mono">wD=' + wD + 'mm</text>');
+
+  // Riser and tread labels
+  lines.push('<line x1="' + (csX + 40) + '" y1="' + (csY + csH - 20) + '" x2="' + (csX + 40) + '" y2="' + (csY + csH - 20 - stepH) + '" stroke="#f59e0b" stroke-width="0.8"/>');
+  lines.push('<text x="' + (csX + 30) + '" y="' + (csY + csH - 20 - stepH / 2) + '" fill="#f59e0b" font-size="8" text-anchor="end" font-family="JetBrains Mono">' + riser + 'mm</text>');
+  lines.push('<line x1="' + (csX + 40) + '" y1="' + (csY + csH - 20) + '" x2="' + (csX + 40 + stepW) + '" y2="' + (csY + csH - 20) + '" stroke="#f59e0b" stroke-width="0.8"/>');
+  lines.push('<text x="' + (csX + 40 + stepW / 2) + '" y="' + (csY + csH) + '" fill="#f59e0b" font-size="8" text-anchor="middle" font-family="JetBrains Mono">' + tread + 'mm</text>');
+
+  // Angle label
+  lines.push('<text x="' + (csX + 40 + 12) + '" y="' + (csY + csH - 27) + '" fill="#94a3b8" font-size="8" font-family="JetBrains Mono">θ=' + Math.round(Math.atan(riser/tread)*180/Math.PI) + '°</text>');
+
+  // Legend
+  var lgY = H - 12;
+  var lgItems = [
+    ['#34d399', 'Main bars D10@' + (st.stsp || 150) + 'mm c/c (along slope) — Ast=' + r0(Ast) + ' mm²/m'],
+    ['#38bdf8', 'Waist slab D=' + wD + 'mm (perpendicular to flight)'],
+    ['#f59e0b', 'Riser ' + riser + 'mm / Tread ' + tread + 'mm — ' + steps + ' steps per flight'],
+  ];
+  lgItems.forEach(function(item, i) {
+    lines.push('<circle cx="' + (42 + i * 220) + '" cy="' + (lgY - 3) + '" r="4" fill="' + item[0] + '"/>');
+    lines.push('<text x="' + (50 + i * 220) + '" y="' + lgY + '" fill="' + item[0] + '" font-size="8" font-family="JetBrains Mono">' + item[1] + '</text>');
+  });
+
+  lines.push('</svg>');
+  return '<div class="dg">' + lines.join('') + '<div class="dg-cap">Fig: Stair waist slab section — ' + (type === 'dogleg' ? 'Dog-leg' : type === '90turn' ? '90° Quarter-turn' : 'Straight flight') + ' type recommended for ' + r2(spX) + 'm × ' + r2(spY) + 'm bay. Waist slab designed as inclined one-way slab. IS 456 Cl 33. Minimum riser 150mm, max 200mm. Minimum tread 250mm. IS NBC 2016.</div></div>';
+}
+
+// ── SEISMIC ILLUSTRATIONS ─────────────────────────────────────────
+// 1. Building response illustration — shows deformation mode
+// 2. Sa/g spectrum curve with building's period marked
+// 3. Load path illustration — how seismic forces travel
+
+
+function svgSeismicBuilding(seis, numFloors, floorHt) {
+  var W = 320, H = 320;
+  var padL = 60, padR = 40, padT = 30, padB = 50;
+  var nF = numFloors, fh = floorHt || 3;
+  var bldH = H - padT - padB;
+  var fhPx = bldH / nF;
+  var bldW = 80;
+  var bx = padL, by = padT;
+  var maxQ = Math.max.apply(null, seis.floors.map(function(f) { return f.Qi; }));
+  var maxDisp = bldW * 0.35; // exaggerated lateral displacement at top
+
+  var lines = [];
+  lines.push('<svg viewBox="0 0 ' + W + ' ' + H + '" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block;background:#0a0f1e">');
+  lines.push('<text x="' + (W/2) + '" y="14" fill="#34d399" font-size="9" font-weight="700" text-anchor="middle" font-family="JetBrains Mono">BUILDING SEISMIC RESPONSE</text>');
+  lines.push('<text x="' + (W/2) + '" y="24" fill="#475569" font-size="8" text-anchor="middle" font-family="JetBrains Mono">(Inverted triangle force pattern)</text>');
+
+  // Ground
+  lines.push('<rect x="' + (bx - 20) + '" y="' + (by + bldH) + '" width="' + (bldW + 40) + '" height="12" fill="rgba(71,85,105,0.6)" stroke="#475569" stroke-width="1"/>');
+  for (var gi = 0; gi < 8; gi++) {
+    lines.push('<line x1="' + (bx - 20 + gi * 20) + '" y1="' + (by + bldH + 12) + '" x2="' + (bx - 24 + gi * 20) + '" y2="' + (by + bldH + 20) + '" stroke="#475569" stroke-width="1"/>');
+  }
+  lines.push('<text x="' + (bx + bldW / 2) + '" y="' + (by + bldH + 28) + '" fill="#64748b" font-size="8" text-anchor="middle" font-family="JetBrains Mono">Fixed base</text>');
+
+  // Deformed building shape (first mode — cantilever)
+  var dispPath = 'M ' + bx + ' ' + (by + bldH);
+  var heights = [];
+  for (var fi = 0; fi <= nF; fi++) {
+    var frac = fi / nF;
+    var disp = maxDisp * frac * frac; // parabolic approximation of first mode
+    heights.push({ x: bx + disp, y: by + bldH - fi * fhPx, disp: disp });
+  }
+  // Deformed centreline
+  lines.push('<polyline points="' + heights.map(function(h) { return r2(h.x) + ',' + r2(h.y); }).join(' ') + '" fill="none" stroke="rgba(52,211,153,0.3)" stroke-width="2" stroke-dasharray="4,3"/>');
+
+  // Original (undeformed) building
+  lines.push('<rect x="' + bx + '" y="' + by + '" width="' + bldW + '" height="' + bldH + '" fill="rgba(56,189,248,0.06)" stroke="#38bdf8" stroke-width="1"/>');
+
+  // Floor slabs
+  seis.floors.forEach(function(f, i) {
+    var fy2 = by + bldH - f.floor * fhPx;
+    lines.push('<line x1="' + bx + '" y1="' + r2(fy2) + '" x2="' + (bx + bldW) + '" y2="' + r2(fy2) + '" stroke="#334155" stroke-width="2"/>');
+
+    // Force arrow (horizontal, pointing right)
+    var arrowLen = Math.max(8, (f.Qi / maxQ) * 60);
+    var arrowX = bx + bldW;
+    lines.push('<line x1="' + arrowX + '" y1="' + r2(fy2) + '" x2="' + (arrowX + arrowLen) + '" y2="' + r2(fy2) + '" stroke="#34d399" stroke-width="2" marker-end="url(#sArr2)"/>');
+    lines.push('<text x="' + (arrowX + arrowLen + 4) + '" y="' + r2(fy2 + 4) + '" fill="#34d399" font-size="8" font-family="JetBrains Mono">F' + f.floor + '=' + r2(f.Qi) + 'kN</text>');
+  });
+
+  // Deformed shape (exaggerated) outline
+  var defLeft = heights.map(function(h) { return r2(h.x) + ',' + r2(h.y); }).join(' ');
+  var defRight = heights.slice().reverse().map(function(h) { return r2(h.x + bldW) + ',' + r2(h.y); }).join(' ');
+  lines.push('<polygon points="' + defLeft + ' ' + defRight + '" fill="rgba(52,211,153,0.04)" stroke="rgba(52,211,153,0.4)" stroke-width="1" stroke-dasharray="4,2"/>');
+
+  // Base shear arrow (at ground)
+  lines.push('<defs><marker id="sArr2" markerWidth="5" markerHeight="5" refX="4" refY="2.5" orient="auto"><polygon points="0,0 5,2.5 0,5" fill="#34d399"/></marker></defs>');
+  var baseY = by + bldH;
+  lines.push('<line x1="' + (bx - 15) + '" y1="' + baseY + '" x2="' + (bx + 30) + '" y2="' + baseY + '" stroke="#f87171" stroke-width="3" marker-end="url(#sArr2)" opacity="0.8"/>');
+  lines.push('<text x="' + (bx - 16) + '" y="' + (baseY - 4) + '" fill="#f87171" font-size="8" text-anchor="end" font-family="JetBrains Mono">Vb=' + r2(seis.Vb) + 'kN</text>');
+
+  // Labels
+  lines.push('<text x="' + bx + '" y="' + (by + bldH / 2) + '" fill="#38bdf8" font-size="8" text-anchor="end" font-family="JetBrains Mono" transform="rotate(-90,' + (bx - 10) + ',' + (by + bldH / 2) + ')">H=' + r2(nF * fh) + 'm</text>');
+
+  lines.push('</svg>');
+  return lines.join('');
+}
+
+
+function svgSeismicSpectrum(seis) {
+  var W = 320, H = 220;
+  var padL = 45, padR = 20, padT = 30, padB = 40;
+  var plotW = W - padL - padR, plotH = H - padT - padB;
+  var Ta = seis.Ta || 0.3;
+  var Sa = seis.Sa || 2.5;
+  var soil = S.soilType || 'II';
+
+  // IS 1893 spectrum points for different soil types
+  var spectra = {
+    'I':   [[0,1],[0.1,2.5],[0.4,2.5],[4.0,0.625]],
+    'II':  [[0,1],[0.1,2.5],[0.55,2.5],[4.0,0.455]],
+    'III': [[0,1],[0.1,2.5],[0.67,2.5],[4.0,0.373]],
+  };
+  var pts = spectra[soil] || spectra['II'];
+
+  var maxT = 2.5, maxSa = 3.0;
+  function px(T) { return padL + (T / maxT) * plotW; }
+  function py(s) { return padT + plotH - (s / maxSa) * plotH; }
+
+  var lines = [];
+  lines.push('<svg viewBox="0 0 ' + W + ' ' + H + '" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block;background:#0a0f1e">');
+  lines.push('<text x="' + (W/2) + '" y="14" fill="#f59e0b" font-size="9" font-weight="700" text-anchor="middle" font-family="JetBrains Mono">Sa/g RESPONSE SPECTRUM (IS 1893:2016)</text>');
+  lines.push('<text x="' + (W/2) + '" y="24" fill="#475569" font-size="8" text-anchor="middle" font-family="JetBrains Mono">Soil Type ' + soil + ' | Ta=' + r2(Ta) + 's | Sa/g=' + r2(Sa) + '</text>');
+
+  // Axes
+  lines.push('<line x1="' + padL + '" y1="' + padT + '" x2="' + padL + '" y2="' + (padT+plotH) + '" stroke="#334155" stroke-width="1.5"/>');
+  lines.push('<line x1="' + padL + '" y1="' + (padT+plotH) + '" x2="' + (padL+plotW) + '" y2="' + (padT+plotH) + '" stroke="#334155" stroke-width="1.5"/>');
+  lines.push('<text x="' + (W/2) + '" y="' + (H-4) + '" fill="#64748b" font-size="8" text-anchor="middle" font-family="JetBrains Mono">Time Period T (seconds)</text>');
+  lines.push('<text x="10" y="' + (padT+plotH/2) + '" fill="#64748b" font-size="8" text-anchor="middle" font-family="JetBrains Mono" transform="rotate(-90,10,' + (padT+plotH/2) + ')">Sa/g</text>');
+
+  // Grid
+  [0.5,1.0,1.5,2.0,2.5].forEach(function(T) {
+    var x2 = px(T);
+    lines.push('<line x1="' + x2 + '" y1="' + padT + '" x2="' + x2 + '" y2="' + (padT+plotH) + '" stroke="#1e293b" stroke-width="0.8"/>');
+    lines.push('<text x="' + x2 + '" y="' + (padT+plotH+12) + '" fill="#475569" font-size="7.5" text-anchor="middle" font-family="JetBrains Mono">' + T + '</text>');
+  });
+  [1.0,2.0,2.5].forEach(function(s) {
+    var y2 = py(s);
+    lines.push('<line x1="' + padL + '" y1="' + y2 + '" x2="' + (padL+plotW) + '" y2="' + y2 + '" stroke="#1e293b" stroke-width="0.8"/>');
+    lines.push('<text x="' + (padL-4) + '" y="' + (y2+3) + '" fill="#475569" font-size="7.5" text-anchor="end" font-family="JetBrains Mono">' + s + '</text>');
+  });
+
+  // Spectrum curve fill
+  var fillPts = pts.map(function(p) { return r2(px(Math.min(p[0],maxT))) + ',' + r2(py(Math.min(p[1],maxSa))); }).join(' ');
+  fillPts += ' ' + r2(px(maxT)) + ',' + r2(padT+plotH) + ' ' + r2(padL) + ',' + r2(padT+plotH);
+  lines.push('<polygon points="' + fillPts + '" fill="rgba(245,158,11,0.1)"/>');
+
+  // Spectrum curve
+  var curvePts = pts.map(function(p) { return r2(px(Math.min(p[0],maxT))) + ',' + r2(py(Math.min(p[1],maxSa))); }).join(' ');
+  lines.push('<polyline points="' + curvePts + '" fill="none" stroke="#f59e0b" stroke-width="2"/>');
+
+  // Ta marker
+  var taX = px(Math.min(Ta, maxT));
+  var saY = py(Math.min(Sa, maxSa));
+  lines.push('<line x1="' + taX + '" y1="' + padT + '" x2="' + taX + '" y2="' + (padT+plotH) + '" stroke="#34d399" stroke-width="1.5" stroke-dasharray="4,2"/>');
+  lines.push('<line x1="' + padL + '" y1="' + saY + '" x2="' + (padL+plotW) + '" y2="' + saY + '" stroke="#34d399" stroke-width="1.5" stroke-dasharray="4,2"/>');
+  lines.push('<circle cx="' + taX + '" cy="' + saY + '" r="5" fill="#34d399" stroke="#0a0f1e" stroke-width="1.5"/>');
+  lines.push('<text x="' + (taX+6) + '" y="' + (saY-6) + '" fill="#34d399" font-size="8.5" font-weight="700" font-family="JetBrains Mono">Ta=' + r2(Ta) + 's, Sa/g=' + r2(Sa) + '</text>');
+
+  // Plateau label
+  lines.push('<text x="' + px(0.3) + '" y="' + (py(2.5)-6) + '" fill="#f59e0b" font-size="8" text-anchor="middle" font-family="JetBrains Mono">Plateau Sa/g=2.5</text>');
+
+  lines.push('</svg>');
+  return lines.join('');
+}
+
+
+function svgSeismicLoadPath(seis, numFloors, floorHt) {
+  var W = 320, H = 260;
+  var nF = numFloors, fhPx = (H - 60) / nF;
+  var bx = 60, bW = 140;
+  var by = 20;
+
+  var lines = [];
+  lines.push('<svg viewBox="0 0 ' + W + ' ' + H + '" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block;background:#0a0f1e">');
+  lines.push('<text x="' + (W/2) + '" y="13" fill="#a78bfa" font-size="9" font-weight="700" text-anchor="middle" font-family="JetBrains Mono">SEISMIC LOAD PATH</text>');
+
+  // Columns (vertical lines)
+  [bx + 10, bx + bW - 10].forEach(function(cx2) {
+    lines.push('<rect x="' + (cx2 - 4) + '" y="' + by + '" width="8" height="' + (nF * fhPx) + '" fill="rgba(167,139,250,0.2)" stroke="#a78bfa" stroke-width="1"/>');
+  });
+
+  // Floor slabs and storey shear arrows
+  var Vi = seis.Vb;
+  seis.floors.slice().reverse().forEach(function(f, i) {
+    var fy2 = by + i * fhPx;
+    // Slab
+    lines.push('<rect x="' + (bx + 6) + '" y="' + (fy2 + fhPx - 4) + '" width="' + (bW - 12) + '" height="6" fill="rgba(56,189,248,0.3)" stroke="#38bdf8" stroke-width="0.8"/>');
+
+    // Storey shear in column (accumulates downward)
+    var shearW = Math.max(3, (f.Vi / seis.Vb) * 18);
+    lines.push('<rect x="' + (bx + 2) + '" y="' + fy2 + '" width="' + shearW + '" height="' + fhPx + '" fill="rgba(248,113,113,0.2)" stroke="none"/>');
+    lines.push('<text x="' + (bx + 2 + shearW + 2) + '" y="' + (fy2 + fhPx / 2 + 3) + '" fill="#f87171" font-size="7.5" font-family="JetBrains Mono">V' + f.floor + '=' + r2(f.Vi) + 'kN</text>');
+
+    // Floor label
+    lines.push('<text x="' + (bx - 4) + '" y="' + (fy2 + fhPx / 2 + 3) + '" fill="#64748b" font-size="7.5" text-anchor="end" font-family="JetBrains Mono">F' + f.floor + '</text>');
+
+    // Lateral force arrow
+    var flen = Math.max(6, (f.Qi / seis.Vb) * 40);
+    var ay2 = fy2 + fhPx - 4;
+    lines.push('<line x1="' + (bx + bW) + '" y1="' + ay2 + '" x2="' + (bx + bW + flen) + '" y2="' + ay2 + '" stroke="#34d399" stroke-width="1.5"/>');
+    lines.push('<polygon points="' + (bx + bW + flen) + ',' + ay2 + ' ' + (bx + bW + flen - 4) + ',' + (ay2 - 3) + ' ' + (bx + bW + flen - 4) + ',' + (ay2 + 3) + '" fill="#34d399"/>');
+  });
+
+  // Ground (base shear)
+  lines.push('<rect x="' + (bx - 20) + '" y="' + (by + nF * fhPx) + '" width="' + (bW + 40) + '" height="10" fill="rgba(71,85,105,0.7)" stroke="#475569" stroke-width="1"/>');
+  lines.push('<line x1="' + (bx - 5) + '" y1="' + (by + nF * fhPx + 5) + '" x2="' + (bx + 35) + '" y2="' + (by + nF * fhPx + 5) + '" stroke="#f87171" stroke-width="2.5"/>');
+  lines.push('<polygon points="' + (bx - 5) + ',' + (by + nF * fhPx + 5) + ' ' + (bx + 1) + ',' + (by + nF * fhPx + 2) + ' ' + (bx + 1) + ',' + (by + nF * fhPx + 8) + '" fill="#f87171"/>');
+  lines.push('<text x="' + (bx + 36) + '" y="' + (by + nF * fhPx + 9) + '" fill="#f87171" font-size="8" font-family="JetBrains Mono">Vb=' + r2(seis.Vb) + 'kN</text>');
+
+  // Legend
+  lines.push('<text x="5" y="' + (H - 28) + '" fill="#a78bfa" font-size="7.5" font-family="JetBrains Mono">█ Column carries</text>');
+  lines.push('<text x="5" y="' + (H - 16) + '" fill="#f87171" font-size="7.5" font-family="JetBrains Mono">█ Storey shear Vi</text>');
+  lines.push('<text x="5" y="' + (H - 4) + '" fill="#34d399" font-size="7.5" font-family="JetBrains Mono">→ Floor force Qi</text>');
+  lines.push('<text x="110" y="' + (H - 20) + '" fill="#38bdf8" font-size="7.5" font-family="JetBrains Mono">█ Floor slab</text>');
+  lines.push('<text x="110" y="' + (H - 8) + '" fill="#64748b" font-size="7.5" font-family="JetBrains Mono">Shear accumulates ↓</text>');
+
+  lines.push('</svg>');
+  return lines.join('');
+}
+
+
+function svgWindPressure(wind, H, B, L, hb) {
+  var W = 660, SVG_H = 340;
+  var padL = 60, padR = 60, padT = 55, padB = 60;
+
+  var bldW = 240, bldH = Math.max(100, Math.min(180, H * 12));
+  var bx = (W - bldW) / 2, by = padT;
+  var ex = bx + bldW;
+
+  var pz = wind.pz;
+  var cpe_w = 0.8, cpe_l = 0.5, cpe_s = hb <= 1 ? 0.7 : 0.8;
+  var cpi = 0.2;
+  var net_w = (cpe_w + cpi) * pz;  // windward net pressure
+  var net_l = (cpe_l + cpi) * pz;  // leeward net suction
+  var maxArrow = 80;
+  var scaleArrow = maxArrow / ((cpe_w + cpi) * pz);
+
+  var lines = [];
+  lines.push('<svg viewBox="0 0 ' + W + ' ' + SVG_H + '" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block;background:#0a0f1e;border-radius:8px">');
+
+  // Title
+  lines.push('<text x="' + (W/2) + '" y="18" fill="#fb923c" font-size="11" font-weight="bold" text-anchor="middle" font-family="JetBrains Mono">WIND PRESSURE ON BUILDING — IS 875 Part 3:2015</text>');
+  lines.push('<text x="' + (W/2) + '" y="32" fill="#64748b" font-size="9" text-anchor="middle" font-family="JetBrains Mono">Vb=' + wind.VbW + 'm/s | Vz=' + r2(wind.Vz) + 'm/s | pz=' + r2(pz) + ' kN/m² | Net lateral pressure=' + r2(wind.Fw) + ' kN/m²</text>');
+
+  // Wind direction arrow (left side, horizontal)
+  var windY = by + bldH / 2;
+  lines.push('<defs><marker id="wArr" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><polygon points="0,0 6,3 0,6" fill="#38bdf8"/></marker></defs>');
+  lines.push('<line x1="' + (bx - 90) + '" y1="' + windY + '" x2="' + (bx - 10) + '" y2="' + windY + '" stroke="#38bdf8" stroke-width="2.5" marker-end="url(#wArr)"/>');
+  lines.push('<text x="' + (bx - 50) + '" y="' + (windY - 10) + '" fill="#38bdf8" font-size="9" font-weight="700" text-anchor="middle" font-family="JetBrains Mono">WIND</text>');
+  lines.push('<text x="' + (bx - 50) + '" y="' + (windY + 20) + '" fill="#38bdf8" font-size="8" text-anchor="middle" font-family="JetBrains Mono">Vb=' + wind.VbW + 'm/s</text>');
+
+  // Building concrete body
+  lines.push('<rect x="' + bx + '" y="' + by + '" width="' + bldW + '" height="' + bldH + '" fill="rgba(100,116,139,0.15)" stroke="#475569" stroke-width="1.5"/>');
+  // Floor lines
+  var nF = S.numFloors || 4;
+  for (var fi = 1; fi < nF; fi++) {
+    var fy2 = by + fi * bldH / nF;
+    lines.push('<line x1="' + bx + '" y1="' + r2(fy2) + '" x2="' + ex + '" y2="' + r2(fy2) + '" stroke="#334155" stroke-width="1"/>');
+  }
+  // Ground
+  lines.push('<rect x="' + (bx - 20) + '" y="' + (by + bldH) + '" width="' + (bldW + 40) + '" height="12" fill="rgba(71,85,105,0.6)" stroke="#475569" stroke-width="1"/>');
+  for (var gi = 0; gi < 10; gi++) {
+    lines.push('<line x1="' + (bx - 20 + gi * (bldW + 40) / 9) + '" y1="' + (by + bldH + 12) + '" x2="' + (bx - 24 + gi * (bldW + 40) / 9) + '" y2="' + (by + bldH + 22) + '" stroke="#475569" stroke-width="1"/>');
+  }
+
+  // ── WINDWARD PRESSURE (arrows pointing INTO building, from left) ──
+  var nArrows = 5;
+  var arrowLen = r2(net_w * scaleArrow);
+  lines.push('<text x="' + (bx - 5) + '" y="' + (by + bldH / 4) + '" fill="#34d399" font-size="8.5" text-anchor="end" font-weight="700" font-family="JetBrains Mono">WINDWARD</text>');
+  lines.push('<text x="' + (bx - 5) + '" y="' + (by + bldH / 4 + 12) + '" fill="#34d399" font-size="8" text-anchor="end" font-family="JetBrains Mono">Cpe=+' + cpe_w + '</text>');
+  lines.push('<text x="' + (bx - 5) + '" y="' + (by + bldH / 4 + 24) + '" fill="#34d399" font-size="8" text-anchor="end" font-family="JetBrains Mono">Net=' + r2(net_w) + 'kN/m²</text>');
+  for (var ai = 0; ai < nArrows; ai++) {
+    var ay2 = by + (ai + 0.5) * bldH / nArrows;
+    var aLen = parseFloat(arrowLen) * (0.7 + 0.06 * ai); // slight increase with height
+    lines.push('<line x1="' + r2(bx - aLen) + '" y1="' + r2(ay2) + '" x2="' + bx + '" y2="' + r2(ay2) + '" stroke="#34d399" stroke-width="2" marker-end="url(#wArr2)"/>');
+  }
+  lines.push('<defs><marker id="wArr2" markerWidth="5" markerHeight="5" refX="4" refY="2.5" orient="auto"><polygon points="0,0 5,2.5 0,5" fill="#34d399"/></marker></defs>');
+
+  // Windward pressure fill zone
+  var wFillW = parseFloat(arrowLen) * 1.1;
+  lines.push('<rect x="' + r2(bx - wFillW) + '" y="' + by + '" width="' + r2(wFillW) + '" height="' + bldH + '" fill="rgba(52,211,153,0.08)" stroke="none"/>');
+
+  // ── LEEWARD SUCTION (arrows pointing AWAY from building, right side) ──
+  var lArrowLen = r2(net_l * scaleArrow);
+  lines.push('<defs><marker id="wArr3" markerWidth="5" markerHeight="5" refX="1" refY="2.5" orient="auto"><polygon points="5,0 0,2.5 5,5" fill="#f87171"/></marker></defs>');
+  for (var ai2 = 0; ai2 < nArrows; ai2++) {
+    var ay3 = by + (ai2 + 0.5) * bldH / nArrows;
+    lines.push('<line x1="' + ex + '" y1="' + r2(ay3) + '" x2="' + r2(ex + parseFloat(lArrowLen)) + '" y2="' + r2(ay3) + '" stroke="#f87171" stroke-width="2" marker-end="url(#wArr3)"/>');
+  }
+  lines.push('<rect x="' + ex + '" y="' + by + '" width="' + r2(parseFloat(lArrowLen) * 1.1) + '" height="' + bldH + '" fill="rgba(248,113,113,0.08)" stroke="none"/>');
+  lines.push('<text x="' + (ex + 5) + '" y="' + (by + bldH / 4) + '" fill="#f87171" font-size="8.5" font-weight="700" font-family="JetBrains Mono">LEEWARD</text>');
+  lines.push('<text x="' + (ex + 5) + '" y="' + (by + bldH / 4 + 12) + '" fill="#f87171" font-size="8" font-family="JetBrains Mono">Cpe=-' + cpe_l + '</text>');
+  lines.push('<text x="' + (ex + 5) + '" y="' + (by + bldH / 4 + 24) + '" fill="#f87171" font-size="8" font-family="JetBrains Mono">Net=' + r2(net_l) + 'kN/m²</text>');
+
+  // ── ROOF UPLIFT (arrows pointing UP from roof) ──
+  var roofArrows = 5;
+  var roofArrowLen = 35;
+  lines.push('<defs><marker id="wArr4" markerWidth="5" markerHeight="5" refX="2.5" refY="1" orient="auto"><polygon points="0,5 2.5,0 5,5" fill="#a78bfa"/></marker></defs>');
+  for (var ri = 0; ri < roofArrows; ri++) {
+    var rx2 = bx + 20 + ri * (bldW - 40) / (roofArrows - 1);
+    lines.push('<line x1="' + r2(rx2) + '" y1="' + by + '" x2="' + r2(rx2) + '" y2="' + r2(by - roofArrowLen) + '" stroke="#a78bfa" stroke-width="2" marker-end="url(#wArr4)"/>');
+  }
+  lines.push('<text x="' + (bx + bldW / 2) + '" y="' + (by - roofArrowLen - 8) + '" fill="#a78bfa" font-size="8.5" font-weight="700" text-anchor="middle" font-family="JetBrains Mono">ROOF UPLIFT — Cpe = -0.5 to -0.9 (suction)</text>');
+
+  // ── NET FORCE LABEL ──
+  var netY = by + bldH + 35;
+  lines.push('<line x1="' + (W/2 - 60) + '" y1="' + netY + '" x2="' + (W/2 + 60) + '" y2="' + netY + '" stroke="#fb923c" stroke-width="2" marker-end="url(#wArr)"/>');
+  lines.push('<text x="' + (W/2) + '" y="' + (netY - 8) + '" fill="#fb923c" font-size="9" font-weight="700" text-anchor="middle" font-family="JetBrains Mono">NET LATERAL FORCE = (Cpe_w + Cpe_l + 2Cpi) × pz = 1.3 × ' + r2(pz) + ' = ' + r2(wind.Fw) + ' kN/m²</text>');
+
+  // Height label
+  lines.push('<line x1="' + (bx - 40) + '" y1="' + by + '" x2="' + (bx - 40) + '" y2="' + (by + bldH) + '" stroke="#64748b" stroke-width="0.8"/>');
+  lines.push('<text x="' + (bx - 52) + '" y="' + (by + bldH / 2 + 4) + '" fill="#64748b" font-size="9" text-anchor="middle" font-family="JetBrains Mono" transform="rotate(-90,' + (bx - 52) + ',' + (by + bldH / 2) + ')">H=' + r2(H) + 'm</text>');
+
+  // Building dimension
+  lines.push('<line x1="' + bx + '" y1="' + (by + bldH + 22) + '" x2="' + ex + '" y2="' + (by + bldH + 22) + '" stroke="#64748b" stroke-width="0.8"/>');
+  lines.push('<text x="' + (bx + bldW / 2) + '" y="' + (by + bldH + 34) + '" fill="#64748b" font-size="9" text-anchor="middle" font-family="JetBrains Mono">B=' + B + 'm</text>');
+
+  // h/b label
+  lines.push('<text x="' + (bx + bldW + 5) + '" y="' + (by + 12) + '" fill="#64748b" font-size="8" font-family="JetBrains Mono">h/b=' + r2(hb) + '</text>');
+
+  lines.push('</svg>');
+  return '<div class="dg">' + lines.join('') + '<div class="dg-cap">Fig: Wind pressure distribution on building faces per IS 875 Part 3:2015. Green = windward face (pressure INTO building). Red = leeward face (suction AWAY). Purple = roof uplift. The combined effect is a net lateral force acting at each floor level.</div></div>';
+}
+
+// 2. k2 wind speed profile — height vs design wind speed
+
+function svgWindProfile(wind, windFloors, H) {
+  var W = 320, SVG_H = 280;
+  var padL = 55, padR = 30, padT = 30, padB = 45;
+  var plotW = W - padL - padR, plotH = SVG_H - padT - padB;
+
+  var maxH = Math.max(H + 2, 20);
+  var maxVz = wind.VbW * 1.25;
+  function px(Vz) { return padL + (Vz / maxVz) * plotW; }
+  function py2(h)  { return padT + plotH - (h / maxH) * plotH; }
+
+  var lines = [];
+  lines.push('<svg viewBox="0 0 ' + W + ' ' + SVG_H + '" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block;background:#0a0f1e">');
+
+  // Title
+  lines.push('<text x="' + (W/2) + '" y="14" fill="#fb923c" font-size="9" font-weight="700" text-anchor="middle" font-family="JetBrains Mono">WIND SPEED PROFILE</text>');
+  lines.push('<text x="' + (W/2) + '" y="24" fill="#475569" font-size="8" text-anchor="middle" font-family="JetBrains Mono">Terrain Cat ' + S.terrain + ' | k2 increases with height</text>');
+
+  // Axes
+  lines.push('<line x1="' + padL + '" y1="' + padT + '" x2="' + padL + '" y2="' + (padT + plotH) + '" stroke="#334155" stroke-width="1.5"/>');
+  lines.push('<line x1="' + padL + '" y1="' + (padT + plotH) + '" x2="' + (padL + plotW) + '" y2="' + (padT + plotH) + '" stroke="#334155" stroke-width="1.5"/>');
+  lines.push('<text x="' + (W/2) + '" y="' + (SVG_H - 3) + '" fill="#64748b" font-size="8" text-anchor="middle" font-family="JetBrains Mono">Design Wind Speed Vz (m/s)</text>');
+  lines.push('<text x="10" y="' + (padT + plotH / 2) + '" fill="#64748b" font-size="8" text-anchor="middle" font-family="JetBrains Mono" transform="rotate(-90,10,' + (padT + plotH / 2) + ')">Height (m)</text>');
+
+  // Grid
+  [10, 20, 30, 40].forEach(function(Vz2) {
+    if (Vz2 <= maxVz) {
+      var x2 = px(Vz2);
+      lines.push('<line x1="' + x2 + '" y1="' + padT + '" x2="' + x2 + '" y2="' + (padT + plotH) + '" stroke="#1e293b" stroke-width="0.8"/>');
+      lines.push('<text x="' + x2 + '" y="' + (padT + plotH + 12) + '" fill="#475569" font-size="7.5" text-anchor="middle" font-family="JetBrains Mono">' + Vz2 + '</text>');
+    }
+  });
+  [5, 10, 15, 20].forEach(function(h2) {
+    if (h2 <= maxH) {
+      var y2 = py2(h2);
+      lines.push('<line x1="' + padL + '" y1="' + y2 + '" x2="' + (padL + plotW) + '" y2="' + y2 + '" stroke="#1e293b" stroke-width="0.8"/>');
+      lines.push('<text x="' + (padL - 4) + '" y="' + (y2 + 3) + '" fill="#475569" font-size="7.5" text-anchor="end" font-family="JetBrains Mono">' + h2 + '</text>');
+    }
+  });
+
+  // Vb reference line (basic wind speed at 10m)
+  var vbX = px(wind.VbW);
+  lines.push('<line x1="' + vbX + '" y1="' + padT + '" x2="' + vbX + '" y2="' + (padT + plotH) + '" stroke="rgba(251,191,36,0.4)" stroke-width="1" stroke-dasharray="4,3"/>');
+  lines.push('<text x="' + (vbX + 3) + '" y="' + (padT + 10) + '" fill="#fbbf24" font-size="7.5" font-family="JetBrains Mono">Vb=' + wind.VbW + '</text>');
+
+  // Profile fill
+  var profilePts = windFloors.map(function(f) { return r2(px(f.Vz)) + ',' + r2(py2(f.h)); }).join(' ');
+  lines.push('<polygon points="' + padL + ',' + (padT + plotH) + ' ' + profilePts + ' ' + padL + ',' + py2(windFloors[windFloors.length - 1].h) + '" fill="rgba(251,191,36,0.1)"/>');
+
+  // Profile curve
+  lines.push('<polyline points="' + profilePts + '" fill="none" stroke="#fb923c" stroke-width="2"/>');
+
+  // Data points + horizontal pressure bars
+  windFloors.forEach(function(f) {
+    var fx = px(f.Vz), fy = py2(f.h);
+    // Horizontal bar showing force at this floor
+    var barLen = (f.Fi / windFloors[windFloors.length - 1].Fi) * 50;
+    lines.push('<rect x="' + (padL + plotW) + '" y="' + r2(fy - 4) + '" width="' + r2(barLen) + '" height="8" fill="rgba(251,191,36,0.3)" stroke="#fbbf24" stroke-width="0.8"/>');
+    lines.push('<circle cx="' + fx + '" cy="' + fy + '" r="3.5" fill="#fb923c" stroke="#0a0f1e" stroke-width="1"/>');
+    lines.push('<text x="' + (fx + 5) + '" y="' + (fy + 4) + '" fill="#fb923c" font-size="7.5" font-family="JetBrains Mono">' + r2(f.Vz) + 'm/s</text>');
+  });
+
+  // Force bar legend
+  lines.push('<text x="' + (padL + plotW + 2) + '" y="' + (padT - 4) + '" fill="#fbbf24" font-size="7.5" font-family="JetBrains Mono">Floor force→</text>');
+
+  // Building height marker
+  var bldTopY = py2(H);
+  lines.push('<line x1="' + padL + '" y1="' + bldTopY + '" x2="' + (padL + plotW) + '" y2="' + bldTopY + '" stroke="#64748b" stroke-width="1" stroke-dasharray="3,3"/>');
+  lines.push('<text x="' + (padL + 4) + '" y="' + (bldTopY - 3) + '" fill="#64748b" font-size="7.5" font-family="JetBrains Mono">H=' + r2(H) + 'm (roof)</text>');
+
+  lines.push('</svg>');
+  return lines.join('');
+}
+
+// 3. Floor-by-floor wind force + comparison with seismic
+
+function svgWindForces(windFloors, totalWindForce, seisVb) {
+  var W = 320, SVG_H = 280;
+  var padL = 45, padR = 20, padT = 30, padB = 45;
+  var plotW = W - padL - padR, plotH = SVG_H - padT - padB;
+
+  var maxForce = Math.max.apply(null, windFloors.map(function(f) { return f.Fi; }));
+  var nF = windFloors.length;
+  var barH = (plotH / nF) * 0.7;
+  var barGap = (plotH / nF) * 0.3;
+
+  var lines = [];
+  lines.push('<svg viewBox="0 0 ' + W + ' ' + SVG_H + '" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block;background:#0a0f1e">');
+
+  lines.push('<text x="' + (W/2) + '" y="14" fill="#fb923c" font-size="9" font-weight="700" text-anchor="middle" font-family="JetBrains Mono">FLOOR-BY-FLOOR WIND FORCE</text>');
+  lines.push('<text x="' + (W/2) + '" y="24" fill="#475569" font-size="8" text-anchor="middle" font-family="JetBrains Mono">Total Vw=' + r2(totalWindForce) + 'kN vs Seismic Vb=' + r2(seisVb) + 'kN</text>');
+
+  // Axes
+  lines.push('<line x1="' + padL + '" y1="' + padT + '" x2="' + padL + '" y2="' + (padT + plotH) + '" stroke="#334155" stroke-width="1.5"/>');
+  lines.push('<line x1="' + padL + '" y1="' + (padT + plotH) + '" x2="' + (padL + plotW) + '" y2="' + (padT + plotH) + '" stroke="#334155" stroke-width="1.5"/>');
+  lines.push('<text x="' + (padL + plotW / 2) + '" y="' + (SVG_H - 3) + '" fill="#64748b" font-size="8" text-anchor="middle" font-family="JetBrains Mono">Wind Force Fi (kN)</text>');
+
+  // Bars (top floor at top)
+  windFloors.slice().reverse().forEach(function(f, i) {
+    var barW = (f.Fi / maxForce) * plotW * 0.85;
+    var barY = padT + i * (barH + barGap);
+    var isRoof = f.floor === S.numFloors;
+
+    lines.push('<rect x="' + padL + '" y="' + r2(barY) + '" width="' + r2(barW) + '" height="' + r2(barH) + '" fill="' + (isRoof ? 'rgba(167,139,250,0.4)' : 'rgba(251,191,36,0.35)') + '" stroke="' + (isRoof ? '#a78bfa' : '#fb923c') + '" stroke-width="1" rx="2"/>');
+    lines.push('<text x="' + (padL - 3) + '" y="' + r2(barY + barH / 2 + 3) + '" fill="#64748b" font-size="8" text-anchor="end" font-family="JetBrains Mono">' + (isRoof ? 'Roof' : 'F' + f.floor) + '</text>');
+    lines.push('<text x="' + r2(padL + barW + 4) + '" y="' + r2(barY + barH / 2 + 3) + '" fill="' + (isRoof ? '#a78bfa' : '#fb923c') + '" font-size="8" font-family="JetBrains Mono">' + r2(f.Fi) + 'kN</text>');
+  });
+
+  // Note: wind increases with height (unlike seismic which is concentrated at top)
+  var noteY = padT + plotH + 28;
+  var seismicGoverns = seisVb > totalWindForce;
+  lines.push('<rect x="' + padL + '" y="' + noteY + '" width="' + plotW + '" height="14" rx="3" fill="rgba(' + (seismicGoverns ? '52,211,153' : '251,191,36') + ',0.1)" stroke="' + (seismicGoverns ? '#34d399' : '#fbbf24') + '" stroke-width="0.8"/>');
+  lines.push('<text x="' + (padL + plotW / 2) + '" y="' + (noteY + 10) + '" fill="' + (seismicGoverns ? '#34d399' : '#fbbf24') + '" font-size="8" font-weight="700" text-anchor="middle" font-family="JetBrains Mono">' + (seismicGoverns ? '✓ Seismic governs (' + r2(seisVb) + ' kN > ' + r2(totalWindForce) + ' kN wind)' : '⚠ Wind governs (' + r2(totalWindForce) + ' kN > ' + r2(seisVb) + ' kN seismic)') + '</text>');
+
+  lines.push('</svg>');
+  return lines.join('');
+}
+
+
+function svgSlabSection(p){
+  const D = Math.max(p.D||125, S.slabThk);
+  const d = p.d || D - S.coverSlab - 5;
+  const cover = S.coverSlab || 15;
+  const lx = p.lx || 3;
+  const ly = p.ly || 4;
+  const twoWay = p.twoWay;
+  const diaBot = 10, diaTop = 8, diaLong = 8;
+  const spx = p.spx || 200, spy = p.spy || 250;
+  const spx_n = p.spx_n || 300;
+
+  const W = 660, padL = 80, padR = 90, padT = 70;
+  const slabW = W - padL - padR;
+  const slabH = Math.max(70, Math.min(120, D * 1.8));
+  const scaleH = slabH / D;
+  const sx = padL, sy = padT;
+  const ex = W - padR;
+  const suppH = 24, suppW = 40;
+  const bmdGap = 18;
+  const bmdH = 25;
+  const lgLines = twoWay ? 3 : 2;
+  const totalH = padT + slabH + suppH + bmdGap + bmdH + 50 + lgLines * 15 + 20;
+
+  const botCoverY = sy + slabH - cover * scaleH;
+  const topCoverY = sy + cover * scaleH;
+  const botBarY = botCoverY - diaBot * scaleH / 2;
+  const topBarY = topCoverY + diaTop * scaleH / 2;
+  const longBarY = botBarY - (diaBot + diaLong) * scaleH / 2 - 1;
+  const extPx = Math.round(0.3 * slabW);
+  const nBotBars = Math.max(4, Math.min(9, Math.round(slabW / 45)));
+  const nTopBars = Math.max(2, Math.round(extPx / 30));
+  const nLongBars = Math.max(3, Math.min(7, Math.round(slabW / 55)));
+
+  const bmdY = sy + slabH + suppH + bmdGap;
+
+  // Build SVG as array of strings for clarity
+  const lines = [];
+
+  lines.push('<svg viewBox="0 0 ' + W + ' ' + totalH + '" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block;background:#0a0f1e;border-radius:8px">');
+  lines.push('<defs><marker id="sArr" markerWidth="4" markerHeight="4" refX="2" refY="2" orient="auto"><polygon points="0,0 4,2 0,4" fill="#64748b"/></marker></defs>');
+
+  // Title
+  lines.push('<text x="' + (W/2) + '" y="18" fill="#38bdf8" font-size="11" font-weight="bold" text-anchor="middle" font-family="JetBrains Mono">SLAB CROSS-SECTION — ' + p.bayLabel + ' (D=' + D + 'mm, ' + (twoWay ? 'Two-way' : 'One-way') + ')</text>');
+  lines.push('<text x="' + (W/2) + '" y="34" fill="#64748b" font-size="9" text-anchor="middle" font-family="JetBrains Mono">Section through short span (lx=' + r2(lx) + 'm) — IS 456 Cl 26.5.2 | Cover=' + cover + 'mm | d=' + d + 'mm</text>');
+  lines.push('<text x="' + (W/2) + '" y="50" fill="#475569" font-size="8.5" text-anchor="middle" font-family="JetBrains Mono">M20 concrete — Fe' + S.fy + ' steel — wu=' + r2(p.wu) + ' kN/m² — Case ' + p.caseN + ' (IS 456 Table 26)</text>');
+
+  // Slab concrete body
+  lines.push('<rect x="' + sx + '" y="' + sy + '" width="' + slabW + '" height="' + slabH + '" fill="rgba(100,116,139,0.12)" stroke="#475569" stroke-width="1.5"/>');
+
+  // Concrete hatch
+  lines.push('<clipPath id="slabHatch"><rect x="' + sx + '" y="' + sy + '" width="' + slabW + '" height="' + slabH + '"/></clipPath>');
+  lines.push('<g clip-path="url(#slabHatch)" stroke="rgba(100,116,139,0.18)" stroke-width="0.7">');
+  for (let i = -slabH; i < slabW + slabH; i += 16) {
+    lines.push('<line x1="' + (sx+i) + '" y1="' + sy + '" x2="' + (sx+i+slabH) + '" y2="' + (sy+slabH) + '"/>');
+  }
+  lines.push('</g>');
+
+  // Cover dashed lines
+  lines.push('<line x1="' + (sx+6) + '" y1="' + botCoverY + '" x2="' + (ex-6) + '" y2="' + botCoverY + '" stroke="rgba(99,102,241,0.35)" stroke-width="0.8" stroke-dasharray="4,3"/>');
+  lines.push('<line x1="' + (sx+6) + '" y1="' + topCoverY + '" x2="' + (ex-6) + '" y2="' + topCoverY + '" stroke="rgba(99,102,241,0.35)" stroke-width="0.8" stroke-dasharray="4,3"/>');
+  lines.push('<text x="' + (sx+4) + '" y="' + (topCoverY - 2) + '" fill="rgba(99,102,241,0.6)" font-size="7.5" font-family="JetBrains Mono">cover=' + cover + 'mm</text>');
+
+  // Bottom short-span bars
+  for (let i = 1; i <= nBotBars; i++) {
+    const bx = sx + i * (slabW / (nBotBars + 1));
+    const r = Math.max(3, diaBot * scaleH / 2);
+    lines.push('<circle cx="' + r2(bx) + '" cy="' + r2(botBarY) + '" r="' + r2(r) + '" fill="#34d399" stroke="#166534" stroke-width="0.8"/>');
+  }
+
+  // Long-span bottom bars (above short-span)
+  if (twoWay) {
+    for (let i = 1; i <= nLongBars; i++) {
+      const bx = sx + i * (slabW / (nLongBars + 1));
+      const r = Math.max(3, diaLong * scaleH / 2);
+      lines.push('<circle cx="' + r2(bx) + '" cy="' + r2(longBarY) + '" r="' + r2(r) + '" fill="#38bdf8" stroke="#1e3a5f" stroke-width="0.8"/>');
+    }
+  }
+
+  // Top bars — left zone
+  for (let i = 1; i <= nTopBars; i++) {
+    const bx = sx + i * (extPx / (nTopBars + 1));
+    const r = Math.max(3, diaTop * scaleH / 2);
+    lines.push('<circle cx="' + r2(bx) + '" cy="' + r2(topBarY) + '" r="' + r2(r) + '" fill="#f87171" stroke="#7f1d1d" stroke-width="0.8"/>');
+  }
+  // Top bars — right zone
+  for (let i = 1; i <= nTopBars; i++) {
+    const bx = ex - i * (extPx / (nTopBars + 1));
+    const r = Math.max(3, diaTop * scaleH / 2);
+    lines.push('<circle cx="' + r2(bx) + '" cy="' + r2(topBarY) + '" r="' + r2(r) + '" fill="#f87171" stroke="#7f1d1d" stroke-width="0.8"/>');
+  }
+
+  // Top bar zone extent lines (above slab)
+  const zbY = sy - 7;
+  lines.push('<line x1="' + sx + '" y1="' + zbY + '" x2="' + (sx+extPx) + '" y2="' + zbY + '" stroke="#f87171" stroke-width="1.2"/>');
+  lines.push('<line x1="' + sx + '" y1="' + (zbY-4) + '" x2="' + sx + '" y2="' + (zbY+4) + '" stroke="#f87171" stroke-width="1"/>');
+  lines.push('<line x1="' + (sx+extPx) + '" y1="' + (zbY-4) + '" x2="' + (sx+extPx) + '" y2="' + (zbY+4) + '" stroke="#f87171" stroke-width="1"/>');
+  lines.push('<text x="' + (sx+extPx/2) + '" y="' + (zbY-9) + '" fill="#f87171" font-size="8" text-anchor="middle" font-family="JetBrains Mono">0.3lx=' + r2(0.3*lx) + 'm</text>');
+  lines.push('<line x1="' + (ex-extPx) + '" y1="' + zbY + '" x2="' + ex + '" y2="' + zbY + '" stroke="#f87171" stroke-width="1.2"/>');
+  lines.push('<line x1="' + (ex-extPx) + '" y1="' + (zbY-4) + '" x2="' + (ex-extPx) + '" y2="' + (zbY+4) + '" stroke="#f87171" stroke-width="1"/>');
+  lines.push('<line x1="' + ex + '" y1="' + (zbY-4) + '" x2="' + ex + '" y2="' + (zbY+4) + '" stroke="#f87171" stroke-width="1"/>');
+  lines.push('<text x="' + (ex-extPx/2) + '" y="' + (zbY-9) + '" fill="#f87171" font-size="8" text-anchor="middle" font-family="JetBrains Mono">0.3lx=' + r2(0.3*lx) + 'm</text>');
+  lines.push('<text x="' + (W/2) + '" y="' + (zbY-20) + '" fill="#f87171" font-size="9" font-weight="bold" text-anchor="middle" font-family="JetBrains Mono">D' + diaTop + '@' + spx_n + 'mm TOP — Ast=' + r0(p.Ax_neg) + ' mm\u00b2/m (negative moment at supports)</text>');
+
+  // Supports
+  lines.push('<rect x="' + (sx-suppW) + '" y="' + (sy+slabH) + '" width="' + suppW + '" height="' + suppH + '" fill="rgba(71,85,105,0.5)" stroke="#475569" stroke-width="1"/>');
+  lines.push('<text x="' + (sx-suppW/2) + '" y="' + (sy+slabH+15) + '" fill="#94a3b8" font-size="8" text-anchor="middle" font-family="JetBrains Mono">Support</text>');
+  lines.push('<rect x="' + ex + '" y="' + (sy+slabH) + '" width="' + suppW + '" height="' + suppH + '" fill="rgba(71,85,105,0.5)" stroke="#475569" stroke-width="1"/>');
+  lines.push('<text x="' + (ex+suppW/2) + '" y="' + (sy+slabH+15) + '" fill="#94a3b8" font-size="8" text-anchor="middle" font-family="JetBrains Mono">Support</text>');
+
+  // Depth dimension (left side)
+  const dimX = sx - 22;
+  lines.push('<line x1="' + dimX + '" y1="' + sy + '" x2="' + dimX + '" y2="' + (sy+slabH) + '" stroke="#64748b" stroke-width="0.8"/>');
+  lines.push('<line x1="' + (dimX-4) + '" y1="' + sy + '" x2="' + (dimX+4) + '" y2="' + sy + '" stroke="#64748b" stroke-width="0.8"/>');
+  lines.push('<line x1="' + (dimX-4) + '" y1="' + (sy+slabH) + '" x2="' + (dimX+4) + '" y2="' + (sy+slabH) + '" stroke="#64748b" stroke-width="0.8"/>');
+  lines.push('<text x="' + (dimX-10) + '" y="' + (sy+slabH/2+4) + '" fill="#e2e8f0" font-size="10" font-weight="700" text-anchor="middle" font-family="JetBrains Mono" transform="rotate(-90,' + (dimX-10) + ',' + (sy+slabH/2) + ')">' + D + 'mm</text>');
+
+  // Cover dim right
+  const covX = ex + 22;
+  lines.push('<line x1="' + covX + '" y1="' + (sy+slabH) + '" x2="' + covX + '" y2="' + botCoverY + '" stroke="rgba(99,102,241,0.6)" stroke-width="0.8"/>');
+  lines.push('<line x1="' + (covX-3) + '" y1="' + (sy+slabH) + '" x2="' + (covX+3) + '" y2="' + (sy+slabH) + '" stroke="rgba(99,102,241,0.6)" stroke-width="0.8"/>');
+  lines.push('<line x1="' + (covX-3) + '" y1="' + botCoverY + '" x2="' + (covX+3) + '" y2="' + botCoverY + '" stroke="rgba(99,102,241,0.6)" stroke-width="0.8"/>');
+  lines.push('<text x="' + (covX+10) + '" y="' + ((sy+slabH+botCoverY)/2+3) + '" fill="rgba(99,102,241,0.9)" font-size="8" font-family="JetBrains Mono">' + cover + 'mm</text>');
+
+  // Effective depth d
+  lines.push('<line x1="' + (ex+58) + '" y1="' + topBarY + '" x2="' + (ex+58) + '" y2="' + botBarY + '" stroke="rgba(148,163,184,0.4)" stroke-width="0.8" stroke-dasharray="3,2"/>');
+  lines.push('<text x="' + (ex+68) + '" y="' + ((topBarY+botBarY)/2+3) + '" fill="#94a3b8" font-size="8" font-family="JetBrains Mono">d=' + d + 'mm</text>');
+
+  // BMD
+  lines.push('<text x="' + (W/2) + '" y="' + (bmdY-5) + '" fill="#475569" font-size="8" text-anchor="middle" font-family="JetBrains Mono">— Bending Moment Diagram (schematic) —</text>');
+  lines.push('<line x1="' + sx + '" y1="' + bmdY + '" x2="' + ex + '" y2="' + bmdY + '" stroke="#334155" stroke-width="0.8"/>');
+  // Sagging
+  lines.push('<path d="M' + sx + ',' + bmdY + ' C' + (sx+slabW*0.25) + ',' + bmdY + ' ' + (sx+slabW*0.25) + ',' + (bmdY+bmdH) + ' ' + (W/2) + ',' + (bmdY+bmdH) + ' C' + (ex-slabW*0.25) + ',' + (bmdY+bmdH) + ' ' + (ex-slabW*0.25) + ',' + bmdY + ' ' + ex + ',' + bmdY + '" stroke="#34d399" stroke-width="1.5" fill="rgba(52,211,153,0.12)"/>');
+  lines.push('<text x="' + (W/2) + '" y="' + (bmdY+bmdH+12) + '" fill="#34d399" font-size="8.5" text-anchor="middle" font-family="JetBrains Mono">+Mx = ' + r2(p.Mx) + ' kN.m/m (sagging — bottom tension)</text>');
+  // Hogging
+  const hogH = 16;
+  lines.push('<path d="M' + sx + ',' + bmdY + ' C' + (sx+extPx*0.4) + ',' + bmdY + ' ' + (sx+extPx*0.6) + ',' + (bmdY-hogH) + ' ' + (sx+extPx) + ',' + bmdY + '" stroke="#f87171" stroke-width="1.5" fill="rgba(248,113,113,0.1)"/>');
+  lines.push('<path d="M' + (ex-extPx) + ',' + bmdY + ' C' + (ex-extPx*0.6) + ',' + bmdY + ' ' + (ex-extPx*0.4) + ',' + (bmdY-hogH) + ' ' + ex + ',' + bmdY + '" stroke="#f87171" stroke-width="1.5" fill="rgba(248,113,113,0.1)"/>');
+  lines.push('<text x="' + (sx+extPx/2) + '" y="' + (bmdY-hogH-4) + '" fill="#f87171" font-size="7.5" text-anchor="middle" font-family="JetBrains Mono">-' + r2(p.Mx_neg) + ' kN.m</text>');
+  lines.push('<text x="' + (ex-extPx/2) + '" y="' + (bmdY-hogH-4) + '" fill="#f87171" font-size="7.5" text-anchor="middle" font-family="JetBrains Mono">-' + r2(p.Mx_neg) + ' kN.m</text>');
+
+  // Legend
+  const lgY = bmdY + bmdH + 30;
+  const lgItems = [
+    ['#34d399', 'D' + diaBot + '@' + spx + 'mm c/c — Short-span bottom, Ast_x = ' + r0(p.Ax) + ' mm\u00b2/m'],
+    twoWay ? ['#38bdf8', 'D' + diaLong + '@' + spy + 'mm c/c — Long-span bottom (above), Ast_y = ' + r0(p.Ay) + ' mm\u00b2/m'] : null,
+    ['#f87171', 'D' + diaTop + '@' + spx_n + 'mm c/c — Top/negative bars at supports, Ast_neg = ' + r0(p.Ax_neg) + ' mm\u00b2/m'],
+  ].filter(Boolean);
+
+  lgItems.forEach(function(item, i) {
+    const col = item[0], label = item[1];
+    lines.push('<circle cx="' + (padL+8) + '" cy="' + (lgY+i*15) + '" r="4.5" fill="' + col + '"/>');
+    lines.push('<text x="' + (padL+20) + '" y="' + (lgY+i*15+4) + '" fill="' + col + '" font-size="8.5" font-family="JetBrains Mono">' + label + '</text>');
+  });
+
+  lines.push('</svg>');
+
+  const cap = 'Fig: Cross-section through short span of slab ' + p.bayLabel + ' (lx=' + r2(lx) + 'm, ly=' + r2(ly) + 'm). Top bars at 0.3\u00d7lx=' + r2(0.3*lx) + 'm from supports per IS 456 Cl 26.5.2.3.';
+  return '<div class="dg">' + lines.join('') + '<div class="dg-cap">' + cap + '</div></div>';
+}
+
+
+// ── BEAM LONGITUDINAL DIAGRAM ────────────────────────────────────
+// Shows: elevation view with beam outline, bar zones, stirrup spacing,
+// cover, D, L, tension/compression zones, lap positions
+
+function svgBeamLongitudinal(b) {
+  var L = b.L, bw = b.b, D = b.D, d = b.d;
+  var cover = S.coverBeam || 40;
+  var nm = b.nm || 2, ns = b.ns || 2;
+  var diaBotBar = 20, diaTopBar = 20, diaStirrup = 8;
+  var sv = b.sv || 200, svd = b.svd || 100;
+  var Ld = b.Ld || 500; // development length in mm
+  var Lo = Math.max(2 * D, L * 1000 / 4); // confinement zone
+  var isCant = b.isCantilever, isTrf = b.isTransfer;
+
+  var W = 680, padL = 60, padR = 60, padT = 100, padB = 130;
+  var beamW = W - padL - padR;
+  var beamH = Math.max(60, Math.min(110, D * 0.5));
+  var scaleL = beamW / (L * 1000); // px per mm
+  var scaleD = beamH / D;
+  var sx = padL, sy = padT;
+  var ex = W - padR;
+  var totalH = padT + beamH + padB;
+
+  // Computed positions
+  var coverPx = cover * scaleD;
+  var botBarY = sy + beamH - coverPx - diaStirrup * scaleD - diaBotBar * scaleD / 2;
+  var topBarY = sy + coverPx + diaStirrup * scaleD + diaTopBar * scaleD / 2;
+  var LoPx = Lo * scaleL;
+  var LdPx = Ld * scaleL;
+
+  var lines = [];
+  lines.push('<svg viewBox="0 0 ' + W + ' ' + totalH + '" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block;background:#0a0f1e;border-radius:8px">');
+
+  // Title
+  lines.push('<text x="' + (W/2) + '" y="16" fill="#fb923c" font-size="11" font-weight="bold" text-anchor="middle" font-family="JetBrains Mono">BEAM ELEVATION — ' + b.label + ' (L=' + L + 'm, ' + bw + '×' + D + 'mm)</text>');
+  lines.push('<text x="' + (W/2) + '" y="30" fill="#64748b" font-size="9" text-anchor="middle" font-family="JetBrains Mono">' + b.endCond.split('(')[0].trim() + ' | wu=' + r2(b.wu) + ' kN/m | Mmax=' + r2(b.Mmax) + ' kN.m | RA=' + r2(b.RA) + ' kN</text>');
+  lines.push('<text x="' + (W/2) + '" y="44" fill="#475569" font-size="8.5" text-anchor="middle" font-family="JetBrains Mono">Stirrups: D' + diaStirrup + '@' + svd + 'mm (confinement zone Lo) | D' + diaStirrup + '@' + sv + 'mm (midspan) | Ld=' + r0(Ld) + 'mm</text>');
+
+  // ── SUPPORTS ────────────────────────────────────────────────────
+  var suppW = 28, suppH = beamH + 20;
+  // Left support
+  lines.push('<rect x="' + (sx - suppW) + '" y="' + (sy - 10) + '" width="' + suppW + '" height="' + suppH + '" fill="rgba(71,85,105,0.5)" stroke="#475569" stroke-width="1"/>');
+  // Right support
+  lines.push('<rect x="' + ex + '" y="' + (sy - 10) + '" width="' + suppW + '" height="' + suppH + '" fill="rgba(71,85,105,0.5)" stroke="#475569" stroke-width="1"/>');
+
+  // ── BEAM CONCRETE BODY ──────────────────────────────────────────
+  lines.push('<rect x="' + sx + '" y="' + sy + '" width="' + beamW + '" height="' + beamH + '" fill="rgba(100,116,139,0.1)" stroke="#475569" stroke-width="1.5"/>');
+
+  // Concrete hatch
+  lines.push('<clipPath id="bmClip"><rect x="' + sx + '" y="' + sy + '" width="' + beamW + '" height="' + beamH + '"/></clipPath>');
+  lines.push('<g clip-path="url(#bmClip)" stroke="rgba(100,116,139,0.15)" stroke-width="0.6">');
+  for (var hi = -beamH; hi < beamW + beamH; hi += 14) {
+    lines.push('<line x1="' + (sx + hi) + '" y1="' + sy + '" x2="' + (sx + hi + beamH) + '" y2="' + (sy + beamH) + '"/>');
+  }
+  lines.push('</g>');
+
+  // Cover dashed lines (top and bottom)
+  lines.push('<line x1="' + (sx + 4) + '" y1="' + (sy + coverPx) + '" x2="' + (ex - 4) + '" y2="' + (sy + coverPx) + '" stroke="rgba(99,102,241,0.3)" stroke-width="0.8" stroke-dasharray="4,3"/>');
+  lines.push('<line x1="' + (sx + 4) + '" y1="' + (sy + beamH - coverPx) + '" x2="' + (ex - 4) + '" y2="' + (sy + beamH - coverPx) + '" stroke="rgba(99,102,241,0.3)" stroke-width="0.8" stroke-dasharray="4,3"/>');
+
+  // ── CONFINEMENT ZONES (Lo from each end) ─────────────────────
+  // Left zone
+  lines.push('<rect x="' + sx + '" y="' + sy + '" width="' + Math.min(LoPx, beamW * 0.45) + '" height="' + beamH + '" fill="rgba(248,113,113,0.05)" stroke="none"/>');
+  lines.push('<line x1="' + (sx + Math.min(LoPx, beamW * 0.45)) + '" y1="' + sy + '" x2="' + (sx + Math.min(LoPx, beamW * 0.45)) + '" y2="' + (sy + beamH) + '" stroke="#f87171" stroke-width="0.8" stroke-dasharray="3,3"/>');
+  // Right zone
+  lines.push('<rect x="' + (ex - Math.min(LoPx, beamW * 0.45)) + '" y="' + sy + '" width="' + Math.min(LoPx, beamW * 0.45) + '" height="' + beamH + '" fill="rgba(248,113,113,0.05)" stroke="none"/>');
+  lines.push('<line x1="' + (ex - Math.min(LoPx, beamW * 0.45)) + '" y1="' + sy + '" x2="' + (ex - Math.min(LoPx, beamW * 0.45)) + '" y2="' + (sy + beamH) + '" stroke="#f87171" stroke-width="0.8" stroke-dasharray="3,3"/>');
+
+  // ── STIRRUPS ────────────────────────────────────────────────────
+  // Dense stirrups in confinement zone
+  var LoPx2 = Math.min(LoPx, beamW * 0.45);
+  var svdPx = svd * scaleL, svPx = sv * scaleL;
+  var stY1 = sy + coverPx + diaStirrup * scaleD / 2;
+  var stH = beamH - 2 * coverPx - diaStirrup * scaleD;
+
+  // Left zone stirrups
+  for (var xi = svdPx; xi < LoPx2; xi += svdPx) {
+    lines.push('<rect x="' + r2(sx + xi - 1) + '" y="' + r2(stY1) + '" width="2" height="' + r2(stH) + '" fill="#34d399" opacity="0.7"/>');
+  }
+  // Midspan stirrups
+  var midStart = LoPx2, midEnd = beamW - LoPx2;
+  for (var xi2 = midStart + svPx; xi2 < midEnd; xi2 += svPx) {
+    lines.push('<rect x="' + r2(sx + xi2 - 1) + '" y="' + r2(stY1) + '" width="2" height="' + r2(stH) + '" fill="#34d399" opacity="0.4"/>');
+  }
+  // Right zone stirrups
+  for (var xi3 = svdPx; xi3 < LoPx2; xi3 += svdPx) {
+    lines.push('<rect x="' + r2(ex - xi3 - 1) + '" y="' + r2(stY1) + '" width="2" height="' + r2(stH) + '" fill="#34d399" opacity="0.7"/>');
+  }
+
+  // ── BOTTOM BARS (tension — full length) ─────────────────────────
+  var barR = Math.max(3, diaBotBar * scaleD / 2);
+  for (var bi = 0; bi < nm; bi++) {
+    var byOff = bi * (diaBotBar + 4) * scaleD;
+    lines.push('<line x1="' + (sx + LdPx) + '" y1="' + r2(botBarY - byOff) + '" x2="' + (ex - LdPx) + '" y2="' + r2(botBarY - byOff) + '" stroke="#34d399" stroke-width="' + r2(barR * 1.6) + '" stroke-linecap="round"/>');
+  }
+  // Bottom bar hooks / Ld at ends
+  lines.push('<line x1="' + sx + '" y1="' + r2(botBarY) + '" x2="' + (sx + LdPx) + '" y2="' + r2(botBarY) + '" stroke="#34d399" stroke-width="' + r2(barR * 0.8) + '" stroke-dasharray="3,3" opacity="0.5"/>');
+  lines.push('<line x1="' + (ex - LdPx) + '" y1="' + r2(botBarY) + '" x2="' + ex + '" y2="' + r2(botBarY) + '" stroke="#34d399" stroke-width="' + r2(barR * 0.8) + '" stroke-dasharray="3,3" opacity="0.5"/>');
+
+  // ── TOP BARS (compression/hogging — support zones only) ──────────
+  var topBarR = Math.max(3, diaTopBar * scaleD / 2);
+  var topExtPx = Math.max(LdPx * 1.5, LoPx2); // extend at least Ld past confinement zone
+  for (var ti = 0; ti < ns; ti++) {
+    var tyOff = ti * (diaTopBar + 4) * scaleD;
+    // Left zone top bars
+    lines.push('<line x1="' + sx + '" y1="' + r2(topBarY + tyOff) + '" x2="' + (sx + topExtPx) + '" y2="' + r2(topBarY + tyOff) + '" stroke="#f87171" stroke-width="' + r2(topBarR * 1.4) + '" stroke-linecap="round"/>');
+    // Right zone top bars
+    lines.push('<line x1="' + (ex - topExtPx) + '" y1="' + r2(topBarY + tyOff) + '" x2="' + ex + '" y2="' + r2(topBarY + tyOff) + '" stroke="#f87171" stroke-width="' + r2(topBarR * 1.4) + '" stroke-linecap="round"/>');
+  }
+
+  // ── TRANSFER BEAM: Point load marker ─────────────────────────
+  if (isTrf && b.transferPL) {
+    var ptX = sx + b.transferPL.a * 1000 * scaleL;
+    lines.push('<line x1="' + r2(ptX) + '" y1="' + (sy - 25) + '" x2="' + r2(ptX) + '" y2="' + sy + '" stroke="#f59e0b" stroke-width="2.5"/>');
+    lines.push('<polygon points="' + r2(ptX) + ',' + sy + ' ' + r2(ptX - 6) + ',' + (sy - 12) + ' ' + r2(ptX + 6) + ',' + (sy - 12) + '" fill="#f59e0b"/>');
+    lines.push('<text x="' + r2(ptX) + '" y="' + (sy - 30) + '" fill="#f59e0b" font-size="8.5" text-anchor="middle" font-family="JetBrains Mono">P_u=' + r2(b.transferPL.P_u) + 'kN</text>');
+  }
+
+  // ── DIMENSION LINES ─────────────────────────────────────────────
+  // Total span L
+  var dimY = sy + beamH + 16;
+  lines.push('<line x1="' + sx + '" y1="' + dimY + '" x2="' + ex + '" y2="' + dimY + '" stroke="#f59e0b" stroke-width="0.8"/>');
+  lines.push('<line x1="' + sx + '" y1="' + (dimY - 4) + '" x2="' + sx + '" y2="' + (dimY + 4) + '" stroke="#f59e0b" stroke-width="0.8"/>');
+  lines.push('<line x1="' + ex + '" y1="' + (dimY - 4) + '" x2="' + ex + '" y2="' + (dimY + 4) + '" stroke="#f59e0b" stroke-width="0.8"/>');
+  lines.push('<text x="' + (W/2) + '" y="' + (dimY + 13) + '" fill="#f59e0b" font-size="10" font-weight="700" text-anchor="middle" font-family="JetBrains Mono">L = ' + L + ' m = ' + (L*1000) + ' mm</text>');
+
+  // Lo dimensions
+  var loDimY = sy - 18;
+  lines.push('<line x1="' + sx + '" y1="' + loDimY + '" x2="' + (sx + LoPx2) + '" y2="' + loDimY + '" stroke="#f87171" stroke-width="0.8"/>');
+  lines.push('<text x="' + (sx + LoPx2 / 2) + '" y="' + (loDimY - 5) + '" fill="#f87171" font-size="8" text-anchor="middle" font-family="JetBrains Mono">Lo=' + r0(Lo) + 'mm</text>');
+  lines.push('<line x1="' + (ex - LoPx2) + '" y1="' + loDimY + '" x2="' + ex + '" y2="' + loDimY + '" stroke="#f87171" stroke-width="0.8"/>');
+  lines.push('<text x="' + (ex - LoPx2 / 2) + '" y="' + (loDimY - 5) + '" fill="#f87171" font-size="8" text-anchor="middle" font-family="JetBrains Mono">Lo=' + r0(Lo) + 'mm</text>');
+
+  // Depth D — left side
+  var dDimX = sx - 20;
+  lines.push('<line x1="' + dDimX + '" y1="' + sy + '" x2="' + dDimX + '" y2="' + (sy + beamH) + '" stroke="#64748b" stroke-width="0.8"/>');
+  lines.push('<line x1="' + (dDimX - 4) + '" y1="' + sy + '" x2="' + (dDimX + 4) + '" y2="' + sy + '" stroke="#64748b" stroke-width="0.8"/>');
+  lines.push('<line x1="' + (dDimX - 4) + '" y1="' + (sy + beamH) + '" x2="' + (dDimX + 4) + '" y2="' + (sy + beamH) + '" stroke="#64748b" stroke-width="0.8"/>');
+  lines.push('<text x="' + (dDimX - 10) + '" y="' + (sy + beamH / 2 + 4) + '" fill="#e2e8f0" font-size="9" font-weight="700" text-anchor="middle" font-family="JetBrains Mono" transform="rotate(-90,' + (dDimX - 10) + ',' + (sy + beamH / 2) + ')">' + D + 'mm</text>');
+
+  // ── BAR LABELS ─────────────────────────────────────────────────
+  var lgY = sy + beamH + 38;
+  var lgItems = [
+    ['#34d399', nm + 'T20 bottom bars (tension, full span) — Ast=' + r0(b.Am) + ' mm\u00b2'],
+    ['#f87171', ns + 'T20 top bars at supports (hogging zone Lo) — Ast=' + r0(b.As2||b.ns*314) + ' mm\u00b2'],
+    ['#34d399', 'D' + diaStirrup + '@' + svd + 'mm stirrups in Lo (IS 13920 Cl 6.3.5) | D' + diaStirrup + '@' + sv + 'mm at midspan'],
+  ];
+  if (isTrf) lgItems.push(['#f59e0b', 'Point load P_u=' + r2(b.transferPL ? b.transferPL.P_u : 0) + ' kN from floating column at ' + r2(b.transferPL ? b.transferPL.a : 0) + 'm from left end']);
+
+  lgItems.forEach(function(item, i) {
+    var sw = i === 2 ? 8 : 10;
+    var sy2 = lgY + i * 16;
+    if (i === 2) {
+      lines.push('<rect x="' + (padL + 4) + '" y="' + (sy2 - 5) + '" width="' + sw + '" height="6" fill="' + item[0] + '" opacity="0.7"/>');
+    } else {
+      lines.push('<circle cx="' + (padL + 8) + '" cy="' + (sy2 - 1) + '" r="5" fill="' + item[0] + '"/>');
+    }
+    lines.push('<text x="' + (padL + 20) + '" y="' + (sy2 + 3) + '" fill="' + item[0] + '" font-size="8.5" font-family="JetBrains Mono">' + item[1] + '</text>');
+  });
+
+  lines.push('</svg>');
+  return '<div class="dg">' + lines.join('') + '<div class="dg-cap">Fig: Beam ' + b.label + ' elevation — longitudinal section showing bar zones, stirrup spacing, and confinement zones Lo per IS 13920:2016 Cl 6.3.5. Top bars extend Lo=' + r0(Lo) + 'mm from each support. Bottom bars run full span with development length Ld=' + r0(Ld) + 'mm anchorage into supports.</div></div>';
+}
+
+// ── FOOTING TYPE SELECTION ────────────────────────────────────────
+// Returns the recommended footing type for a node based on:
+// 1. If Bf overlaps with adjacent footing → Combined footing
+// 2. If all footings overlap widely → Raft
+// 3. Otherwise → Isolated
+
+function svgFootingTypePanel(ftg) {
+  var type = getFootingType(ftg);
+  var Bf = ftg.Bf, D = ftg.D, d = ftg.d, colSz = ftg.colSize || 300;
+  var Ps = ftg.Ps, Pu = ftg.Pu;
+  var SBC = S.soilBearing;
+
+  // Colour and icon by type
+  var typeInfo = {
+    isolated: { col: '#34d399', icon: '⬜', name: 'ISOLATED FOOTING', short: 'Isolated' },
+    combined: { col: '#f59e0b', icon: '▭', name: 'COMBINED FOOTING RECOMMENDED', short: 'Combined' },
+    raft:     { col: '#f87171', icon: '▦', name: 'RAFT FOUNDATION RECOMMENDED', short: 'Raft' },
+  };
+  var ti = typeInfo[type];
+
+  var W = 660, H = 420;
+  var lines = [];
+  lines.push('<svg viewBox="0 0 ' + W + ' ' + H + '" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block;background:#0a0f1e;border-radius:8px">');
+  lines.push('<text x="' + (W/2) + '" y="20" fill="' + ti.col + '" font-size="11" font-weight="bold" text-anchor="middle" font-family="JetBrains Mono">FOOTING TYPE — ' + ti.name + '</text>');
+
+  // Draw all three types side by side with the recommended one highlighted
+  var types = ['isolated', 'combined', 'raft'];
+  var tw = 180, th = 180, tGap = 20;
+  var totW = types.length * tw + (types.length - 1) * tGap;
+  var startX = (W - totW) / 2;
+
+  types.forEach(function(t, i) {
+    var tx = startX + i * (tw + tGap);
+    var ty = 40;
+    var isActive = t === type;
+    var tc = typeInfo[t].col;
+    var alpha = isActive ? '1' : '0.3';
+
+    // Card border
+    lines.push('<rect x="' + tx + '" y="' + ty + '" width="' + tw + '" height="' + th + '" rx="8" fill="' + (isActive ? 'rgba(' + (t==='isolated'?'52,211,153':t==='combined'?'245,158,11':'248,113,113') + ',0.08)' : 'rgba(30,41,59,0.5)') + '" stroke="' + tc + '" stroke-width="' + (isActive ? '2' : '0.5') + '" opacity="' + alpha + '"/>');
+
+    var cx = tx + tw / 2, cy = ty + th / 2;
+
+    if (t === 'isolated') {
+      // Plan view: square pad with column in centre
+      var padW = 80, padH = 80, colW = 20;
+      lines.push('<rect x="' + (cx-padW/2) + '" y="' + (ty+28) + '" width="' + padW + '" height="' + padH + '" fill="rgba(52,211,153,0.15)" stroke="#34d399" stroke-width="' + (isActive?1.5:0.5) + '" opacity="' + alpha + '"/>');
+      lines.push('<rect x="' + (cx-colW/2) + '" y="' + (ty+28+padH/2-colW/2) + '" width="' + colW + '" height="' + colW + '" fill="rgba(52,211,153,0.5)" stroke="#34d399" stroke-width="1" opacity="' + alpha + '"/>');
+      // Dimension arrows
+      lines.push('<text x="' + cx + '" y="' + (ty+28+padH+16) + '" fill="#34d399" font-size="8" text-anchor="middle" font-family="JetBrains Mono" opacity="' + alpha + '">Bf × Bf</text>');
+      // Elevation inset
+      var ey = ty + 28 + padH + 28;
+      lines.push('<rect x="' + (cx-padW/2) + '" y="' + ey + '" width="' + padW + '" height="18" fill="rgba(52,211,153,0.1)" stroke="#34d399" stroke-width="' + (isActive?1:0.5) + '" opacity="' + alpha + '"/>');
+      lines.push('<rect x="' + (cx-colW/2) + '" y="' + (ey-12) + '" width="' + colW + '" height="12" fill="rgba(52,211,153,0.4)" stroke="#34d399" stroke-width="0.8" opacity="' + alpha + '"/>');
+
+    } else if (t === 'combined') {
+      // Two columns on one elongated pad
+      var cpadW = 140, cpadH = 50, ccolW = 18;
+      var cey = ty + 45;
+      lines.push('<rect x="' + (cx-cpadW/2) + '" y="' + (cey+20) + '" width="' + cpadW + '" height="' + cpadH + '" fill="rgba(245,158,11,0.12)" stroke="#f59e0b" stroke-width="' + (isActive?1.5:0.5) + '" opacity="' + alpha + '"/>');
+      // Two columns
+      [-35, 35].forEach(function(ox) {
+        lines.push('<rect x="' + (cx+ox-ccolW/2) + '" y="' + (cey+8) + '" width="' + ccolW + '" height="12" fill="rgba(245,158,11,0.5)" stroke="#f59e0b" stroke-width="0.8" opacity="' + alpha + '"/>');
+        lines.push('<rect x="' + (cx+ox-ccolW/2) + '" y="' + (cey+20) + '" width="' + ccolW + '" height="12" fill="rgba(245,158,11,0.3)" stroke="none" opacity="' + alpha + '"/>');
+      });
+      lines.push('<text x="' + cx + '" y="' + (cey+20+cpadH+14) + '" fill="#f59e0b" font-size="8" text-anchor="middle" font-family="JetBrains Mono" opacity="' + alpha + '">Two columns, one pad</text>');
+      lines.push('<text x="' + cx + '" y="' + (cey+20+cpadH+26) + '" fill="#f59e0b" font-size="7.5" text-anchor="middle" font-family="JetBrains Mono" opacity="' + alpha + '">When footings would overlap</text>');
+
+    } else {
+      // Raft — full slab under building
+      var rpadW = 150, rpadH = 25;
+      var rey = ty + 55;
+      // Slab
+      lines.push('<rect x="' + (cx-rpadW/2) + '" y="' + (rey+20) + '" width="' + rpadW + '" height="' + rpadH + '" fill="rgba(248,113,113,0.1)" stroke="#f87171" stroke-width="' + (isActive?1.5:0.5) + '" opacity="' + alpha + '"/>');
+      // Multiple columns
+      [-55,-18,18,55].forEach(function(ox) {
+        lines.push('<rect x="' + (cx+ox-7) + '" y="' + (rey+8) + '" width="14" height="12" fill="rgba(248,113,113,0.5)" stroke="#f87171" stroke-width="0.8" opacity="' + alpha + '"/>');
+        lines.push('<rect x="' + (cx+ox-7) + '" y="' + (rey+20) + '" width="14" height="10" fill="rgba(248,113,113,0.25)" stroke="none" opacity="' + alpha + '"/>');
+      });
+      lines.push('<text x="' + cx + '" y="' + (rey+20+rpadH+14) + '" fill="#f87171" font-size="8" text-anchor="middle" font-family="JetBrains Mono" opacity="' + alpha + '">Continuous slab under all columns</text>');
+      lines.push('<text x="' + cx + '" y="' + (rey+20+rpadH+26) + '" fill="#f87171" font-size="7.5" text-anchor="middle" font-family="JetBrains Mono" opacity="' + alpha + '">Weak soil or heavy loads</text>');
+    }
+
+    // Label
+    lines.push('<text x="' + cx + '" y="' + (ty + th - 8) + '" fill="' + tc + '" font-size="9" font-weight="700" text-anchor="middle" font-family="JetBrains Mono" opacity="' + alpha + '">' + typeInfo[t].short + (isActive ? ' ✓' : '') + '</text>');
+  });
+
+  // ── DESIGN SUMMARY FOR THIS FOOTING ─────────────────────────
+  var detY = 240;
+  lines.push('<rect x="20" y="' + detY + '" width="' + (W-40) + '" height="165" rx="6" fill="rgba(15,23,42,0.8)" stroke="' + ti.col + '" stroke-width="1"/>');
+  lines.push('<text x="40" y="' + (detY+16) + '" fill="' + ti.col + '" font-size="10" font-weight="700" font-family="JetBrains Mono">' + ti.icon + ' ' + ftg.label + ' — ' + ti.name + '</text>');
+
+  var rows = [
+    ['Service load Ps', r2(Ps) + ' kN', 'From column design (all floors above)'],
+    ['SBC (soil bearing)', SBC + ' kN/m²', 'As specified in Soil & Site input'],
+    ['Area required = Ps / SBC', r2(Ps/SBC) + ' m²', 'IS 456 Cl 34.1'],
+    ['Footing plan size', r2(Bf) + ' × ' + r2(Bf) + ' m = ' + r2(Bf*Bf) + ' m²', 'Square isolated pad'],
+    ['Net upward pressure qu = Pu / Bf²', r2(ftg.quf) + ' kN/m²', 'Factored pressure for design'],
+    ['Depth D (punching governs)', D + ' mm', 'IS 456 Cl 31.6'],
+    ['Effective depth d = D - cover - bar/2', d + ' mm', 'cover=' + S.coverFtg + 'mm'],
+  ];
+  rows.forEach(function(row, i) {
+    var ry = detY + 32 + i * 19;
+    lines.push('<text x="40" y="' + ry + '" fill="#94a3b8" font-size="8.5" font-family="JetBrains Mono">' + row[0] + '</text>');
+    lines.push('<text x="300" y="' + ry + '" fill="#e2e8f0" font-size="8.5" font-weight="700" font-family="JetBrains Mono">' + row[1] + '</text>');
+    lines.push('<text x="420" y="' + ry + '" fill="#475569" font-size="8" font-family="JetBrains Mono">' + row[2] + '</text>');
+  });
+
+  // Type recommendation explanation
+  var expY = detY + 32 + rows.length * 19 + 6;
+  var explanation = {
+    isolated: 'Gap between adjacent footings > 300mm. Individual isolated pads are adequate. No overlap risk at this SBC and column load.',
+    combined: 'Adjacent footings would be within 300mm of each other. Combine them on a single elongated pad to avoid undermining, simplify construction, and distribute load more evenly. Design combined footing as inverted T-beam.',
+    raft: 'More than 50% of footings overlap when individually sized. A raft (mat) foundation is more economical and practical. Raft also reduces differential settlement. Raft design requires separate analysis.',
+  };
+  lines.push('<text x="40" y="' + expY + '" fill="' + ti.col + '" font-size="8.5" font-family="JetBrains Mono">Recommendation: ' + explanation[type] + '</text>');
+
+  lines.push('</svg>');
+
+  var cap = 'Fig: Footing type selection for ' + ftg.label + '. Recommended: ' + ti.name + '. Based on IS 456 Cl 34 and proximity to adjacent footings (gap < 300mm triggers combined footing recommendation).';
+
+  // Action buttons so user can apply the recommendation without going to Soil & Site tab
+  var btnStyle = 'padding:7px 16px;border-radius:8px;cursor:pointer;font-size:11px;font-weight:700;font-family:inherit;margin-right:8px;';
+  var btns = '';
+  if(type !== (S.ftgType||'isolated')){
+    btns += '<button onclick="S.ftgType=\''+type+'\';S._ftgTypeManual=true;runNow()" style="'+btnStyle+'background:rgba('+
+      (type==='combined'?'245,158,11':'248,113,113')+',0.15);border:1.5px solid '+ti.col+';color:'+ti.col+'">'+
+      '✅ Apply '+ti.short+' Footing & Re-analyse</button>';
+  } else {
+    btns += '<span style="font-size:11px;color:#34d399;font-weight:700">✓ '+ti.short+' footing is already selected</span>';
+  }
+  btns += '<button onclick="go(5)" style="'+btnStyle+'background:transparent;border:1px solid #475569;color:#94a3b8">⚙ Change in Soil & Site →</button>';
+  var actionBar = '<div style="margin-top:10px;padding:10px;background:rgba(15,23,42,0.5);border-radius:8px;display:flex;align-items:center;flex-wrap:wrap;gap:6px">'+btns+'</div>';
+
+  return '<div class="dg">' + lines.join('') + '<div class="dg-cap">' + cap + '</div>' + actionBar + '</div>';
+}
+
+
+function svgBeamBMD_SFD(b){
+  const W=380,H=240,pad=40;
+  const spanPx=W-2*pad;
+  const isCant=b.isCantilever;
+  let svg=`<svg viewBox="0 0 ${W} ${H}" style="width:100%;max-width:380px;display:block">`;
+  // Background
+  svg+=`<rect width="${W}" height="${H}" fill="#0a0f1e" rx="6"/>`;
+  // Title
+  svg+=`<text x="${W/2}" y="14" fill="#38bdf8" font-size="9" font-weight="bold" text-anchor="middle" font-family="JetBrains Mono">SHEAR FORCE & BENDING MOMENT DIAGRAMS</text>`;
+  // Beam line
+  const by=60;
+  svg+=`<line x1="${pad}" y1="${by}" x2="${pad+spanPx}" y2="${by}" stroke="#94a3b8" stroke-width="2"/>`;
+  // Supports
+  if(isCant){
+    // Fixed at left, free at right
+    svg+=`<rect x="${pad-4}" y="${by-12}" width="8" height="24" fill="#475569" stroke="#94a3b8"/>`;
+    for(let i=0;i<4;i++) svg+=`<line x1="${pad-8}" y1="${by-12+i*8}" x2="${pad-2}" y2="${by-6+i*8}" stroke="#64748b" stroke-width="1"/>`;
+  } else {
+    // Triangle supports
+    svg+=`<polygon points="${pad},${by+2} ${pad-8},${by+14} ${pad+8},${by+14}" fill="#475569" stroke="#94a3b8"/>`;
+    svg+=`<polygon points="${pad+spanPx},${by+2} ${pad+spanPx-8},${by+14} ${pad+spanPx+8},${by+14}" fill="#475569" stroke="#94a3b8"/>`;
+  }
+  // UDL arrows
+  for(let i=0;i<10;i++){
+    const xi=pad+spanPx*i/9;
+    svg+=`<line x1="${xi}" y1="${by-22}" x2="${xi}" y2="${by-4}" stroke="#f59e0b" stroke-width="1"/>`;
+    svg+=`<polygon points="${xi},${by-4} ${xi-2},${by-10} ${xi+2},${by-10}" fill="#f59e0b"/>`;
+  }
+  svg+=`<line x1="${pad}" y1="${by-22}" x2="${pad+spanPx}" y2="${by-22}" stroke="#f59e0b" stroke-width="1.5"/>`;
+  svg+=`<text x="${W/2}" y="${by-26}" fill="#f59e0b" font-size="8" text-anchor="middle" font-family="JetBrains Mono">wu = ${r2(b.wu)} kN/m</text>`;
+  // SFD
+  const sfdy=105, sfdH=35;
+  svg+=`<text x="${pad-2}" y="${sfdy-8}" fill="#34d399" font-size="8" font-weight="bold" font-family="JetBrains Mono">SFD</text>`;
+  svg+=`<line x1="${pad}" y1="${sfdy}" x2="${pad+spanPx}" y2="${sfdy}" stroke="#475569" stroke-width="0.5" stroke-dasharray="3,3"/>`;
+  if(isCant){
+    svg+=`<polygon points="${pad},${sfdy-sfdH} ${pad+spanPx},${sfdy} ${pad},${sfdy}" fill="rgba(52,211,153,0.15)" stroke="#34d399" stroke-width="1.5"/>`;
+    svg+=`<text x="${pad+4}" y="${sfdy-sfdH-4}" fill="#34d399" font-size="7" font-family="JetBrains Mono">${r2(b.RA)} kN</text>`;
+  } else {
+    svg+=`<polygon points="${pad},${sfdy-sfdH} ${W/2},${sfdy} ${pad},${sfdy}" fill="rgba(52,211,153,0.15)" stroke="#34d399" stroke-width="1.5"/>`;
+    svg+=`<polygon points="${W/2},${sfdy} ${pad+spanPx},${sfdy+sfdH} ${pad+spanPx},${sfdy}" fill="rgba(248,113,113,0.15)" stroke="#f87171" stroke-width="1.5"/>`;
+    svg+=`<text x="${pad+4}" y="${sfdy-sfdH-3}" fill="#34d399" font-size="7" font-family="JetBrains Mono">+${r2(b.RA)} kN</text>`;
+    svg+=`<text x="${pad+spanPx-40}" y="${sfdy+sfdH+10}" fill="#f87171" font-size="7" font-family="JetBrains Mono">-${r2(b.RA)} kN</text>`;
+  }
+  // BMD
+  const bmdy=185, bmdH=40;
+  svg+=`<text x="${pad-2}" y="${bmdy-bmdH-8}" fill="#f59e0b" font-size="8" font-weight="bold" font-family="JetBrains Mono">BMD</text>`;
+  svg+=`<line x1="${pad}" y1="${bmdy}" x2="${pad+spanPx}" y2="${bmdy}" stroke="#475569" stroke-width="0.5" stroke-dasharray="3,3"/>`;
+  if(isCant){
+    // Cantilever: max moment at support, parabolic to zero at free end
+    let pts=`${pad},${bmdy}`;
+    for(let i=0;i<=20;i++){
+      const t=i/20;
+      const xi=pad+spanPx*t;
+      const mi=bmdH*(1-t)*(1-t); // parabolic
+      pts+=` ${xi},${bmdy-mi}`;
+    }
+    pts+=` ${pad+spanPx},${bmdy}`;
+    svg+=`<polygon points="${pts}" fill="rgba(245,158,11,0.15)" stroke="#f59e0b" stroke-width="1.5"/>`;
+    svg+=`<text x="${pad+8}" y="${bmdy-bmdH-3}" fill="#f59e0b" font-size="7" font-family="JetBrains Mono">${r2(b.Mmax)} kN.m</text>`;
+  } else {
+    // SS or continuous: parabolic sagging
+    let pts=`${pad},${bmdy}`;
+    for(let i=0;i<=20;i++){
+      const t=i/20;
+      const xi=pad+spanPx*t;
+      const mi=bmdH*4*t*(1-t);
+      pts+=` ${xi},${bmdy+mi}`;
+    }
+    pts+=` ${pad+spanPx},${bmdy}`;
+    svg+=`<polygon points="${pts}" fill="rgba(245,158,11,0.15)" stroke="#f59e0b" stroke-width="1.5"/>`;
+    svg+=`<text x="${W/2}" y="${bmdy+bmdH+12}" fill="#f59e0b" font-size="8" text-anchor="middle" font-family="JetBrains Mono">${r2(b.Mmax)} kN.m</text>`;
+    // Hogging at supports if continuous
+    if(b.Msup>0){
+      const hogH=bmdH*b.Msup/Math.max(b.Mmax,1)*0.8;
+      svg+=`<rect x="${pad}" y="${bmdy-hogH}" width="${spanPx*0.15}" height="${hogH}" fill="rgba(248,113,113,0.15)" stroke="#f87171" stroke-width="1"/>`;
+      svg+=`<rect x="${pad+spanPx*0.85}" y="${bmdy-hogH}" width="${spanPx*0.15}" height="${hogH}" fill="rgba(248,113,113,0.15)" stroke="#f87171" stroke-width="1"/>`;
+      svg+=`<text x="${pad+spanPx*0.08}" y="${bmdy-hogH-3}" fill="#f87171" font-size="6" text-anchor="middle" font-family="JetBrains Mono">${r2(b.Msup)}</text>`;
+    }
+  }
+  svg+='</svg>';
+  return`<div class="dg">${svg}<div class="dg-cap">Fig: SFD and BMD for ${b.label} (L=${b.L}m, wu=${r2(b.wu)} kN/m)</div></div>`;
+}
+
+
+function svgBeamCrossSection(b){
+  const W=240,H=200;
+  const sc=Math.min(140/b.b,150/b.D)*0.7;
+  const bw=b.b*sc, bh=b.D*sc;
+  const ox=(W-bw)/2, oy=20;
+  const cv=S.coverBeam*sc, stir=8*sc;
+  const barR=Math.max(3,10*sc);
+  const nBot=b.nm||2, nTop=b.ns||2;
+  let s=`<svg viewBox="0 0 ${W} ${H}" style="width:100%;max-width:240px;display:block">`;
+  s+=`<rect width="${W}" height="${H}" fill="#0a0f1e" rx="6"/>`;
+  s+=`<text x="${W/2}" y="14" fill="#a78bfa" font-size="9" font-weight="bold" text-anchor="middle" font-family="JetBrains Mono">BEAM CROSS-SECTION</text>`;
+  // Concrete body
+  s+=`<rect x="${ox}" y="${oy}" width="${bw}" height="${bh}" fill="rgba(71,85,105,0.5)" stroke="#64748b" stroke-width="2" rx="1"/>`;
+  // Cover dashed
+  s+=`<rect x="${ox+cv}" y="${oy+cv}" width="${bw-2*cv}" height="${bh-2*cv}" fill="none" stroke="#f59e0b" stroke-width="0.5" stroke-dasharray="3,3"/>`;
+  // Stirrup
+  s+=`<rect x="${ox+cv+stir/2}" y="${oy+cv+stir/2}" width="${bw-2*cv-stir}" height="${bh-2*cv-stir}" fill="none" stroke="#94a3b8" stroke-width="${stir}" stroke-linejoin="round"/>`;
+  // Bottom bars (tension — orange)
+  const botY=oy+bh-cv-barR;
+  for(let i=0;i<nBot;i++){
+    const bx=ox+cv+barR+(bw-2*cv-2*barR)*i/Math.max(nBot-1,1);
+    s+=`<circle cx="${bx}" cy="${botY}" r="${barR}" fill="#f59e0b" stroke="#fbbf24" stroke-width="1"/>`;
+  }
+  // Top bars (compression — blue)
+  const topY=oy+cv+barR;
+  for(let i=0;i<nTop;i++){
+    const bx=ox+cv+barR+(bw-2*cv-2*barR)*i/Math.max(nTop-1,1);
+    s+=`<circle cx="${bx}" cy="${topY}" r="${barR*0.8}" fill="#38bdf8" stroke="#7dd3fc" stroke-width="1"/>`;
+  }
+  // Dimensions
+  s+=`<line x1="${ox}" y1="${oy+bh+10}" x2="${ox+bw}" y2="${oy+bh+10}" stroke="#94a3b8" stroke-width="0.8"/>`;
+  s+=`<text x="${ox+bw/2}" y="${oy+bh+20}" fill="#94a3b8" font-size="8" text-anchor="middle" font-family="JetBrains Mono">${b.b}mm</text>`;
+  s+=`<line x1="${ox+bw+10}" y1="${oy}" x2="${ox+bw+10}" y2="${oy+bh}" stroke="#94a3b8" stroke-width="0.8"/>`;
+  s+=`<text x="${ox+bw+20}" y="${oy+bh/2+3}" fill="#94a3b8" font-size="8" font-family="JetBrains Mono" transform="rotate(90,${ox+bw+20},${oy+bh/2})">${b.D}mm</text>`;
+  // Legend
+  s+=`<circle cx="${ox+8}" cy="${oy+bh+35}" r="4" fill="#f59e0b"/><text x="${ox+16}" y="${oy+bh+38}" fill="#f59e0b" font-size="7" font-family="JetBrains Mono">${nBot}-D20 bot (tension)</text>`;
+  s+=`<circle cx="${ox+bw/2+10}" cy="${oy+bh+35}" r="3" fill="#38bdf8"/><text x="${ox+bw/2+18}" y="${oy+bh+38}" fill="#38bdf8" font-size="7" font-family="JetBrains Mono">${nTop}-D20 top</text>`;
+  s+=`<text x="${ox+8}" y="${oy+bh+50}" fill="#94a3b8" font-size="7" font-family="JetBrains Mono">Stirrups: D8@${b.svd}mm(Lo) / D8@${b.sv}mm(mid) | Cover: ${S.coverBeam}mm</text>`;
+  s+='</svg>';
+  return`<div class="dg">${s}<div class="dg-cap">Fig: Beam ${b.label} transverse cross-section at midspan</div></div>`;
+}
+
+
+function svgTributaryArea(b){
+  const W=440, H=320, padL=55, padT=40, padR=30, padB=55;
+
+  // For transfer beams: use actual beam span L (merged), not stored spX/spY
+  const isX = b.dir==='X';
+  const beamSpanActual = b.L || (isX ? b.spX||4 : b.spY||3);
+  const spX = isX ? beamSpanActual : (b.spX||S.spansX[b.col]||4);
+  const spY = isX ? (b.spY||S.spansY[b.row]||3) : beamSpanActual;
+
+  // For transfer beams: use merged span in the relevant direction
+  const nCols = Math.min(S.spansX.length, 4);
+  const nRows = Math.min(S.spansY.length, 4);
+  const beamRow = b.row||0;
+  const beamCol = b.col||0;
+
+  // Determine slab type for adjacent bays
+  const lx_bay = Math.min(isX ? b.L||spX : spX, isX ? spY : b.L||spY);
+  const ly_bay = Math.max(isX ? b.L||spX : spX, isX ? spY : b.L||spY);
+  const ratio = ly_bay / Math.max(lx_bay, 0.1);
+  const twoWay = ratio < 2.0;
+
+  // Is this beam along the short span?
+  const beamSpan = isX ? spX : spY;
+  const beamIsShort = beamSpan <= (isX ? spY : spX);
+
+  const maxW = W-padL-padR, maxH = H-padT-padB;
+  const scX = Math.min(maxW/(nCols*spX), maxH/(nRows*spY), 52);
+  const scY = scX;
+  const bW = spX*scX, bH = spY*scY;
+  const xs = [], ys = [];
+  for(let i=0;i<=nCols;i++) xs.push(padL + i*bW);
+  for(let i=0;i<=nRows;i++) ys.push(padT + i*bH);
+
+  let s = `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">`;
+  s += `<rect width="${W}" height="${H}" fill="#0a0f1e" rx="6"/>`;
+
+  // Title
+  const slabType = twoWay ? 'TWO-WAY SLAB' : 'ONE-WAY SLAB';
+  s += `<text x="${W/2}" y="16" fill="#38bdf8" font-size="10" font-weight="bold" text-anchor="middle" font-family="JetBrains Mono">BEAM ${b.label} \u2014 ${slabType} LOAD PATTERN (IS 456 Annex D)</text>`;
+
+  // Draw slab panels with load pattern shading
+  for(let r=0;r<nRows;r++) for(let c=0;c<nCols;c++){
+    const isAdjacentBay = isX
+      ? (c===beamCol && (r===beamRow-1||r===beamRow))
+      : (r===beamRow && (c===beamCol-1||c===beamCol));
+
+    s += `<rect x="${xs[c]}" y="${ys[r]}" width="${bW}" height="${bH}" fill="${isAdjacentBay?'rgba(15,23,42,0.95)':'rgba(15,23,42,0.8)'}" stroke="${isAdjacentBay?'#475569':'#1e293b'}" stroke-width="${isAdjacentBay?1.2:0.6}"/>`;
+
+    if(isAdjacentBay && twoWay){
+      // Draw 45° yield lines showing actual load distribution
+      const x1=xs[c], y1=ys[r], x2=xs[c+1], y2=ys[r+1];
+      const w=x2-x1, h=y2-y1;
+      const hl = Math.min(w,h)/2; // half the shorter dimension
+
+      // 45° lines from corners
+      s += `<line x1="${x1}" y1="${y1}" x2="${x1+hl}" y2="${y1+hl}" stroke="#64748b" stroke-width="0.8" stroke-dasharray="3,2"/>`;
+      s += `<line x1="${x2}" y1="${y1}" x2="${x2-hl}" y2="${y1+hl}" stroke="#64748b" stroke-width="0.8" stroke-dasharray="3,2"/>`;
+      s += `<line x1="${x1}" y1="${y2}" x2="${x1+hl}" y2="${y2-hl}" stroke="#64748b" stroke-width="0.8" stroke-dasharray="3,2"/>`;
+      s += `<line x1="${x2}" y1="${y2}" x2="${x2-hl}" y2="${y2-hl}" stroke="#64748b" stroke-width="0.8" stroke-dasharray="3,2"/>`;
+
+      // Shade the tributary zone for THIS beam
+      if(isX){
+        // X-beam gets triangular load: shade the triangles on top/bottom edges
+        const isBayAbove = r===beamRow-1;
+        if(isBayAbove){
+          // Triangle pointing DOWN (beam is at bottom of this bay)
+          s += `<polygon points="${x1},${y2} ${x1+hl},${y2-hl} ${x2-hl},${y2-hl} ${x2},${y2}" fill="rgba(249,115,22,0.25)" stroke="none"/>`;
+        } else {
+          // Triangle pointing UP (beam is at top of this bay)
+          s += `<polygon points="${x1},${y1} ${x1+hl},${y1+hl} ${x2-hl},${y1+hl} ${x2},${y1}" fill="rgba(249,115,22,0.25)" stroke="none"/>`;
+        }
+      } else {
+        // Y-beam gets trapezoidal load: shade left/right edges
+        const isBayLeft = c===beamCol-1;
+        if(isBayLeft){
+          // Trapezoid on right edge of left bay
+          s += `<polygon points="${x2},${y1} ${x2-hl},${y1+hl} ${x2-hl},${y2-hl} ${x2},${y2}" fill="rgba(249,115,22,0.25)" stroke="none"/>`;
+        } else {
+          // Trapezoid on left edge of right bay
+          s += `<polygon points="${x1},${y1} ${x1+hl},${y1+hl} ${x1+hl},${y2-hl} ${x1},${y2}" fill="rgba(249,115,22,0.25)" stroke="none"/>`;
+        }
+      }
+    } else if(isAdjacentBay && !twoWay){
+      // One-way: shade full half-strip for short-span beam, nothing for long-span
+      if(beamIsShort){
+        s += `<rect x="${xs[c]}" y="${ys[r]}" width="${bW}" height="${bH}" fill="rgba(249,115,22,0.2)" stroke="none"/>`;
+      }
+    }
+  }
+
+  // Draw the design beam — for transfer beams, span full merged length
+  if(isX){
+    const y=ys[beamRow];
+    // For transfer beam: draw from beamCol to end of merged span
+    const x1=xs[beamCol];
+    const x2 = b.isTransfer ? (xs[beamCol]+beamSpanActual*((W-padL-padR)/S.spansX.reduce((a,v)=>a+v,0))) : (xs[beamCol+1]||xs[beamCol]+bW);
+    const beamColor = b.isTransfer ? '#f59e0b' : '#f59e0b';
+    const beamDash = b.isTransfer ? '8,4' : '';
+    if(beamDash) s += `<line x1="${x1}" y1="${y}" x2="${x2}" y2="${y}" stroke="${beamColor}" stroke-width="6" stroke-dasharray="${beamDash}" stroke-linecap="round"/>`;
+    else s += `<line x1="${x1}" y1="${y}" x2="${x2}" y2="${y}" stroke="${beamColor}" stroke-width="4" stroke-linecap="round"/>`;
+    s += `<text x="${(x1+x2)/2}" y="${y-7}" fill="${beamColor}" font-size="9" font-weight="bold" text-anchor="middle" font-family="JetBrains Mono">${b.label} (L=${b.L||spX}m${b.isTransfer?' TRANSFER':''})</text>`;
+    // Mark floating column position if transfer
+    if(b.isTransfer && b.transferPL){
+      const maxX=S.spansX.reduce((a,v)=>a+v,0)||12;
+      const pw=W-padL-padR;
+      const ptX = x1 + b.transferPL.a/maxX*pw;
+      s += `<line x1="${ptX}" y1="${y-15}" x2="${ptX}" y2="${y+15}" stroke="#f87171" stroke-width="2" stroke-dasharray="3,2"/>`;
+      s += `<text x="${ptX}" y="${y-18}" fill="#f87171" font-size="8" text-anchor="middle" font-family="JetBrains Mono">↓ P_u=${r2(b.transferPL.P_u)}kN</text>`;
+    }
+  } else {
+    const x=xs[beamCol];
+    const y1=ys[beamRow];
+    const y2 = b.isTransfer ? (ys[beamRow]+beamSpanActual*((H-padT-padB)/S.spansY.reduce((a,v)=>a+v,0))) : (ys[beamRow+1]||ys[beamRow]+bH);
+    const beamDash = b.isTransfer ? '8,4' : '';
+    if(beamDash) s += `<line x1="${x}" y1="${y1}" x2="${x}" y2="${y2}" stroke="#f59e0b" stroke-width="6" stroke-dasharray="${beamDash}" stroke-linecap="round"/>`;
+    else s += `<line x1="${x}" y1="${y1}" x2="${x}" y2="${y2}" stroke="#f59e0b" stroke-width="4" stroke-linecap="round"/>`;
+    s += `<text x="${x+6}" y="${(y1+y2)/2+4}" fill="#f59e0b" font-size="9" font-weight="bold" font-family="JetBrains Mono">${b.label} (L=${b.L||spY}m${b.isTransfer?' TRANSFER':''})</text>`;
+    if(b.isTransfer && b.transferPL){
+      const maxY=S.spansY.reduce((a,v)=>a+v,0)||9;
+      const ph=H-padT-padB;
+      const ptY = y1 + b.transferPL.a/maxY*ph;
+      s += `<line x1="${x-15}" y1="${ptY}" x2="${x+15}" y2="${ptY}" stroke="#f87171" stroke-width="2" stroke-dasharray="3,2"/>`;
+      s += `<text x="${x+18}" y="${ptY+4}" fill="#f87171" font-size="8" font-family="JetBrains Mono">← P_u=${r2(b.transferPL.P_u)}kN</text>`;
+    }
+  }
+
+  // Column nodes — skip missing/void nodes
+  for(let r=0;r<=nRows;r++) for(let c=0;c<=nCols;c++){
+    const gridNode = GRID && getNode(r, c);
+    if(gridNode && !gridNode.hasColumn) continue; // skip void/removed columns
+    s += `<rect x="${xs[c]-5}" y="${ys[r]-5}" width="10" height="10" fill="#1e293b" stroke="#a78bfa" stroke-width="1.5" rx="1"/>`;
+  }
+
+  // Equivalent UDL annotation (show what IS 456 formula gives)
+  const w_unit = 10; // example per m² for annotation
+  let equivLabel = '';
+  if(twoWay){
+    if(beamIsShort){
+      equivLabel = `w_eq = w\u00d7lx/3 = w\u00d7${r2(lx_bay)}/3 (triangular\u2192equiv UDL)`;
+    } else {
+      const r2v = lx_bay/ly_bay;
+      equivLabel = `w_eq = w\u00d7lx/3\u00d7(3-(lx/ly)\u00b2)/2 (trapezoidal\u2192equiv UDL)`;
+    }
+  } else {
+    equivLabel = beamIsShort
+      ? `w_eq = w\u00d7lx/2 (one-way: full rectangular load)`
+      : `w_eq \u2248 0 (one-way: negligible load on long-span beam)`;
+  }
+  s += `<text x="${W/2}" y="${H-38}" fill="#38bdf8" font-size="8" text-anchor="middle" font-family="JetBrains Mono">${equivLabel}</text>`;
+  s += `<text x="${W/2}" y="${H-26}" fill="#475569" font-size="8" text-anchor="middle" font-family="JetBrains Mono">IS 456 Annex D | ly/lx=${r2(ratio)} \u2192 ${twoWay?'Two-way':'One-way'} slab</text>`;
+
+  // Span dims — bottom
+  for(let c=0;c<nCols;c++){
+    const y0=ys[nRows]+10;
+    s += `<line x1="${xs[c]}" y1="${y0}" x2="${xs[c+1]}" y2="${y0}" stroke="#f59e0b" stroke-width="0.8"/>`;
+    s += `<line x1="${xs[c]}" y1="${y0-3}" x2="${xs[c]}" y2="${y0+3}" stroke="#f59e0b" stroke-width="0.8"/>`;
+    s += `<line x1="${xs[c+1]}" y1="${y0-3}" x2="${xs[c+1]}" y2="${y0+3}" stroke="#f59e0b" stroke-width="0.8"/>`;
+    s += `<text x="${(xs[c]+xs[c+1])/2}" y="${y0+11}" fill="#f59e0b" font-size="9" text-anchor="middle" font-family="JetBrains Mono">${spX}m</text>`;
+  }
+  // Span dims — left
+  for(let r=0;r<nRows;r++){
+    const x0=padL-12;
+    s += `<line x1="${x0}" y1="${ys[r]}" x2="${x0}" y2="${ys[r+1]}" stroke="#f59e0b" stroke-width="0.8"/>`;
+    s += `<line x1="${x0-3}" y1="${ys[r]}" x2="${x0+3}" y2="${ys[r]}" stroke="#f59e0b" stroke-width="0.8"/>`;
+    s += `<line x1="${x0-3}" y1="${ys[r+1]}" x2="${x0+3}" y2="${ys[r+1]}" stroke="#f59e0b" stroke-width="0.8"/>`;
+    s += `<text x="${x0-14}" y="${(ys[r]+ys[r+1])/2+4}" fill="#f59e0b" font-size="9" text-anchor="middle" font-family="JetBrains Mono" transform="rotate(-90,${x0-14},${(ys[r]+ys[r+1])/2})">${spY}m</text>`;
+  }
+
+  // Legend
+  const ly0 = ys[nRows]+24;
+  s += `<polygon points="10,${ly0+8} 22,${ly0} 22,${ly0+8}" fill="rgba(249,115,22,0.25)" stroke="#f97316" stroke-width="1"/>`;
+  s += `<text x="26" y="${ly0+8}" fill="#f97316" font-size="9" font-family="JetBrains Mono">${twoWay?(beamIsShort?'Triangular load zone':'Trapezoidal load zone'):'Rectangular load zone'}</text>`;
+  s += `<line x1="200" y1="${ly0+4}" x2="212" y2="${ly0+4}" stroke="#f59e0b" stroke-width="3"/>`;
+  s += `<text x="216" y="${ly0+8}" fill="#f59e0b" font-size="9" font-family="JetBrains Mono">Design beam</text>`;
+  if(twoWay){
+    s += `<line x1="300" y1="${ly0+4}" x2="312" y2="${ly0+4}" stroke="#64748b" stroke-width="1" stroke-dasharray="3,2"/>`;
+    s += `<text x="316" y="${ly0+8}" fill="#64748b" font-size="9" font-family="JetBrains Mono">45\u00b0 yield lines</text>`;
+  }
+
+  s += '</svg>';
+
+  const loadDesc = twoWay
+    ? (beamIsShort
+        ? `Short-span beam gets triangular load. Equivalent UDL = w × lx/3 = w × ${r2(lx_bay)}/3.`
+        : `Long-span beam gets trapezoidal load. Equivalent UDL = w × lx/3 × (3-(lx/ly)²)/2.`)
+    : (beamIsShort
+        ? `One-way slab: short-span beam gets full rectangular load = w × lx/2.`
+        : `One-way slab: long-span beam carries negligible slab load.`);
+
+  return`<div class="dg">${s}<div class="dg-cap">IS 456 Annex D load pattern for beam ${b.label}. ${loadDesc}</div></div>`;
+}
+
 // == 03_calc.js ==
 
 // ================================================================
@@ -2629,16 +4062,27 @@ function runNow(){
       go(7);
       // Save to Supabase via parent
       try{
+        var _saveData = {
+          type:'SAVE_PROJECT',
+          projectId: window._slpProjectId,
+          S: JSON.parse(JSON.stringify(S)),
+          RES: JSON.parse(JSON.stringify(RES)),
+          GRID: GRID ? {bays:GRID.bays, nodes:GRID.nodes} : null
+        };
         if(typeof saveToParent === 'function'){
-          setTimeout(function(){ saveToParent('analysis'); }, 1000);
-        } else if(window.parent){
-          window.parent.postMessage({
-            type:'SAVE_PROJECT',
-            projectId: window._slpProjectId,
-            S: JSON.parse(JSON.stringify(S)),
-            RES: JSON.parse(JSON.stringify(RES)),
-            GRID: GRID ? {bays:GRID.bays, nodes:GRID.nodes} : null
-          }, '*');
+          setTimeout(function(){ saveToParent('analysis'); }, 500);
+        } else {
+          // saveToParent not injected yet - send SAVE_PROJECT directly
+          setTimeout(function(){
+            try{
+              if(typeof saveToParent === 'function'){
+                saveToParent('analysis');
+              } else {
+                window.parent.postMessage(_saveData, '*');
+              }
+            }catch(e){}
+          }, 1500);
+          window.parent.postMessage(_saveData, '*');
         }
       }catch(e){ console.warn('save err',e); }
     }catch(e){
