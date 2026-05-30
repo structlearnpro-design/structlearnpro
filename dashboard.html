@@ -2042,7 +2042,7 @@ async function newProject(){
       name:           projName,
       analysis_count: 0,
       time_spent_sec: 0,
-      state_json:     {name:'', client:'', location:'', _lastPage:1}
+      state_json:     null
     })
   });
   if(!resp.ok){ toast('Failed to create project. Please try again.','#f87171'); return; }
@@ -2505,14 +2505,10 @@ window.addEventListener('message', function(ev){
     // Update state_json with last page so we can resume on next open
     var proj = projects.find(function(p){ return p.id===_autoSaveProjId; });
     if(proj){
+      // Only store in memory — do NOT patch Supabase here
+      // The main auto-save handles state_json properly
       if(!proj.state_json) proj.state_json = {};
       proj.state_json._lastPage = ev.data.page;
-      // Lightweight patch — just save the page
-      fetch(SUPA_URL+'/rest/v1/projects?id=eq.'+_autoSaveProjId,{
-        method:'PATCH',
-        headers:{'Authorization':'Bearer '+SUPA_KEY,'apikey':SUPA_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},
-        body:JSON.stringify({state_json: proj.state_json})
-      }).catch(function(){});
     }
     return;
   }
