@@ -13273,12 +13273,12 @@ function buildCertificateSVG(level, certId, userName, dateStr) {
   const body = getCertBody(level);
   const codes = getCertCodes(level);
   const medal = getMedalEmoji(level);
-  const verifyURL = `${window.location.origin}/verify.html?id=${certId}`;
+  const verifyURL = `https://structlearnpro.com/cert?id=${certId}`;
 
   // Build QR code as data URL using qrcode library
   // We'll use a simple QR placeholder — real QR needs the library
   const qrPlaceholder = `<text x="815" y="480" font-size="7" fill="${c.primary}" font-family="monospace" text-anchor="middle">${certId}</text>
-    <text x="815" y="492" font-size="6" fill="${c.secondary}" font-family="sans-serif" text-anchor="middle">Scan to verify</text>`;
+    <text x="815" y="492" font-size="6" fill="${c.secondary}" font-family="sans-serif" text-anchor="middle">Visit to verify</text>`;
 
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1123" height="794" viewBox="0 0 1123 794">
   <!-- Background -->
@@ -13458,8 +13458,14 @@ function buildCertificateSVG(level, certId, userName, dateStr) {
   <text x="870" y="545" font-size="8" font-family="sans-serif" fill="${c.secondary}">${dateStr}</text>
   <text x="870" y="558" font-size="7" font-family="sans-serif" fill="${c.secondary}"
     letter-spacing="1">CERTIFICATE ID</text>
-  <text x="870" y="574" font-size="7" font-family="sans-serif" fill="${c.primary}">
-    ${verifyURL.slice(0,40)}
+  <text x="870" y="574" font-size="7" font-family="sans-serif" fill="${c.primary}" letter-spacing="0.3">
+    structlearnpro.com/cert
+  </text>
+  <text x="870" y="586" font-size="7" font-family="sans-serif" fill="${c.secondary}" letter-spacing="0.3">
+    ?id=${certId}
+  </text>
+  <text x="870" y="600" font-size="6" font-family="sans-serif" fill="${c.secondary}" opacity="0.7">
+    Visit above URL to verify this certificate
   </text>
 </svg>`;
   return svg;
