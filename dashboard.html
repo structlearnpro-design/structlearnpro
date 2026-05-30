@@ -1403,7 +1403,20 @@ function showScreen(id){
 function goTo(tab){
   document.querySelectorAll('.tnav-btn').forEach(b=>b.classList.remove('on'));
   if(tab==='projects'){document.getElementById('n-proj').classList.add('on');showScreen('dash-screen');loadProjects();}
-  else if(tab==='app'){document.getElementById('n-app').classList.add('on');showScreen('app-screen');tellIframe();}
+  else if(tab==='app'){
+    document.getElementById('n-app').classList.add('on');
+    showScreen('app-screen');
+    tellIframe();
+    // If no project is loaded, send to welcome page (step 0)
+    if(!_autoSaveProjId){
+      setTimeout(function(){
+        var fr = document.getElementById('app-iframe');
+        if(fr && fr.contentWindow){
+          fr.contentWindow.postMessage({type:'LOAD_PROJECT', project:null, goStep:0}, '*');
+        }
+      }, 400);
+    }
+  }
   else if(tab==='account'){document.getElementById('n-acc').classList.add('on');showScreen('acc-screen');renderAcc();}
   // Push browser history so back button works within the app
   if(['projects','app','account'].includes(tab)){
@@ -1801,10 +1814,6 @@ function tellIframe(){
         fr.contentWindow.postMessage({type:'USER_PLAN',plan:plan,user:P},'*');
         // Also send disabled tabs on every plan message
         fr.contentWindow.postMessage({type:'DISABLED_TABS',tabs:_disabledTabs},'*');
-        // If no project loaded, show welcome page (step 0)
-        if(!_autoSaveProjId && delay===800){
-          fr.contentWindow.postMessage({type:'LOAD_PROJECT',project:null,goStep:0},'*');
-        }
         if(delay===800) injectSaveToParent(fr);
       }catch(e){}
     }, delay);
@@ -1843,10 +1852,12 @@ function renderP(ps){
   g.innerHTML=ps.map(p=>{
     const dt = timeAgo(p.updated_at);
     const safeOk = p.all_checks_pass;
-    const hasResults = p.safety_score !== null && p.safety_score !== undefined;
-    const safetyColor = safeOk ? '#34d399' : hasResults ? '#f87171' : '#64748b';
+    const hasResults = (p.safety_score !== null && p.safety_score !== undefined) || (p.analysis_count > 0);
+    const hasScore   = p.safety_score !== null && p.safety_score !== undefined;
+    const safetyColor = safeOk ? '#34d399' : hasScore ? '#f87171' : hasResults ? '#64748b' : '#334155';
     const safetyText  = safeOk ? '✅ All checks pass'
-                      : hasResults ? '⚠️ '+Math.round(p.safety_score)+'% safety'
+                      : hasScore ? '⚠️ '+Math.round(p.safety_score)+'% safety'
+                      : hasResults ? '🔄 '+p.analysis_count+' analysis run'
                       : '📝 Not analysed yet';
     const thumb = p.thumbnail_svg
       ? `<div style="border-radius:8px;overflow:hidden;margin-bottom:10px;background:#0a0f1e;height:70px;display:flex;align-items:center;justify-content:center">${p.thumbnail_svg}</div>`
