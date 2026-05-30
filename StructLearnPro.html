@@ -2627,6 +2627,20 @@ function runNow(){
       RES=runCalcsFromGrid();
       if(!RES){alert('Calculation returned empty. Check inputs.');return;}
       go(7);
+      // Save to Supabase via parent
+      try{
+        if(typeof saveToParent === 'function'){
+          setTimeout(function(){ saveToParent('analysis'); }, 1000);
+        } else if(window.parent){
+          window.parent.postMessage({
+            type:'SAVE_PROJECT',
+            projectId: window._slpProjectId,
+            S: JSON.parse(JSON.stringify(S)),
+            RES: JSON.parse(JSON.stringify(RES)),
+            GRID: GRID ? {bays:GRID.bays, nodes:GRID.nodes} : null
+          }, '*');
+        }
+      }catch(e){ console.warn('save err',e); }
     }catch(e){
       console.error('runCalcs error:',e);
       const m=document.getElementById('main');
