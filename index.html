@@ -396,8 +396,8 @@ footer{background:#080d1c;padding:44px 28px 32px;border-top:1px solid var(--bord
     <li><a href="/cert" style="color:var(--blue2,#4f8ef7)">🎓 Verify Cert</a></li>
   </ul>
   <div class="ncta">
-    <button class="nbg" onclick="showLogin('login')" id="nav-signin" style="display:flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="5" r="3" stroke="currentColor" stroke-width="1.4"/><path d="M1 13c0-3.3 2.7-6 6-6s6 2.7 6 6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg> My Workspace</button>
-    <button class="nbp" onclick="showLogin('signup')" id="nav-signup">Get started free</button>
+    <button class="nbg" onclick="goToApp('login')" id="nav-signin" style="display:flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="5" r="3" stroke="currentColor" stroke-width="1.4"/><path d="M1 13c0-3.3 2.7-6 6-6s6 2.7 6 6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg> My Workspace</button>
+    <button class="nbp" onclick="goToApp('signup')" id="nav-signup">Get started free</button>
     <button id="nav-hamburger" onclick="toggleMobileNav()" style="display:none;background:transparent;border:1px solid var(--border2);border-radius:8px;padding:8px 10px;cursor:pointer;color:var(--txt2);">
       <svg width="18" height="14" viewBox="0 0 18 14" fill="none"><path d="M0 1h18M0 7h18M0 13h18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
     </button>
@@ -412,8 +412,8 @@ footer{background:#080d1c;padding:44px 28px 32px;border-top:1px solid var(--bord
     <li><a href="#faq" onclick="closeMobileNav()" style="display:block;padding:12px 0;color:var(--txt2);text-decoration:none;font-size:15px;font-weight:600;">FAQ</a></li>
   </ul>
   <div style="display:flex;flex-direction:column;gap:10px;">
-    <button onclick="showLogin('login');closeMobileNav()" style="width:100%;padding:13px;border:1px solid var(--border2);border-radius:10px;background:transparent;color:var(--txt2);font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;">👤 My Workspace</button>
-    <button onclick="showLogin('signup');closeMobileNav()" style="width:100%;padding:13px;background:var(--blue);border:none;border-radius:10px;color:#fff;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;">Get started free →</button>
+    <button onclick="goToApp('login');closeMobileNav()" style="width:100%;padding:13px;border:1px solid var(--border2);border-radius:10px;background:transparent;color:var(--txt2);font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;">👤 My Workspace</button>
+    <button onclick="goToApp('signup');closeMobileNav()" style="width:100%;padding:13px;background:var(--blue);border:none;border-radius:10px;color:#fff;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;">Get started free →</button>
   </div>
 </div>
 
@@ -423,12 +423,12 @@ footer{background:#080d1c;padding:44px 28px 32px;border-top:1px solid var(--bord
   <h1><span data-e="h1a" contenteditable="false" spellcheck="false">The complete IS 456</span><br><span class="grad" data-e="h1b" contenteditable="false" spellcheck="false">design environment.</span></h1>
   <p class="hero-sub" data-e="hsub" contenteditable="false" spellcheck="false">Guided. Explained. AI-powered. From column grid to foundation — design IS 456 buildings with an AI that explains every calculation, answers every doubt, and never lets you get stuck.</p>
   <div class="hero-cta">
-    <button class="hbp" onclick="showLogin('signup')" data-e="hb1" contenteditable="false" spellcheck="false">Start designing free →</button>
+    <button class="hbp" onclick="goToApp('signup')" data-e="hb1" contenteditable="false" spellcheck="false">Start designing free →</button>
     <button class="hbs" onclick="document.getElementById('showcase').scrollIntoView({behavior:'smooth'})" data-e="hb2" contenteditable="false" spellcheck="false">See how it works</button>
   </div>
   <!-- RETURNING USER STRIP -->
   <div style="margin-top:-20px;margin-bottom:32px;position:relative;z-index:1;animation:fu 0.7s 0.7s both ease-out;">
-    <div style="display:inline-flex;align-items:center;gap:10px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:100px;padding:8px 18px 8px 8px;cursor:pointer;transition:all 0.2s;" onclick="showLogin('login')" onmouseover="this.style.background='rgba(255,255,255,0.08)';this.style.borderColor='rgba(255,255,255,0.2)'" onmouseout="this.style.background='rgba(255,255,255,0.04)';this.style.borderColor='rgba(255,255,255,0.1)'">
+    <div style="display:inline-flex;align-items:center;gap:10px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:100px;padding:8px 18px 8px 8px;cursor:pointer;transition:all 0.2s;" onclick="goToApp('login')" onmouseover="this.style.background='rgba(255,255,255,0.08)';this.style.borderColor='rgba(255,255,255,0.2)'" onmouseout="this.style.background='rgba(255,255,255,0.04)';this.style.borderColor='rgba(255,255,255,0.1)'">
       <div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--blue),var(--purple));display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;">👤</div>
       <span style="font-size:13px;color:var(--txt2);">Already have an account?</span>
       <span style="font-size:13px;font-weight:700;color:var(--blue2);">Go to your workspace →</span>
@@ -683,7 +683,7 @@ footer{background:#080d1c;padding:44px 28px 32px;border-top:1px solid var(--bord
 
     <div style="text-align:center;margin-top:22px;display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;">
       <button onclick="dReplay()" style="padding:9px 18px;border:1px solid var(--border2);border-radius:8px;background:transparent;color:var(--txt2);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;" onmouseover="this.style.borderColor='var(--blue2)'" onmouseout="this.style.borderColor='var(--border2)'">↺ Replay</button>
-      <button onclick="showLogin('signup')" style="padding:10px 24px;background:var(--blue);border:none;border-radius:8px;color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;box-shadow:0 0 24px rgba(79,142,247,0.3);" data-e="demo-cta" contenteditable="false" spellcheck="false">Try it yourself — free →</button>
+      <button onclick="goToApp('signup')" style="padding:10px 24px;background:var(--blue);border:none;border-radius:8px;color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;box-shadow:0 0 24px rgba(79,142,247,0.3);" data-e="demo-cta" contenteditable="false" spellcheck="false">Try it yourself — free →</button>
     </div>
   </div>
 </section>
@@ -1108,9 +1108,9 @@ function closeMobileNav(){
       <p class="sp" data-e="p-sub" contenteditable="false" spellcheck="false">No credit card. Free plan gives you the full design engine — upgrade only when you need PDF downloads.</p>
     </div>
     <div class="pgrid rv">
-      <div class="pcard"><div class="ptier" data-e="p1t" contenteditable="false" spellcheck="false">Free</div><div class="pprice">₹<span data-e="p1a" contenteditable="false" spellcheck="false">0</span></div><div class="pcad" data-e="p1c" contenteditable="false" spellcheck="false">forever · no card needed</div><div class="pdiv"></div><ul class="pfeats"><li data-e="p1f1" contenteditable="false" spellcheck="false">Full IS 456 design engine</li><li data-e="p1f2" contenteditable="false" spellcheck="false">All 28 guided steps</li><li data-e="p1f3" contenteditable="false" spellcheck="false">Seismic and wind analysis</li><li data-e="p1f4" contenteditable="false" spellcheck="false">Learning modules + certificates</li><li class="no" data-e="p1f5" contenteditable="false" spellcheck="false">PDF report download</li><li class="no" data-e="p1f6" contenteditable="false" spellcheck="false">Construction drawings</li></ul><button class="pbtn pbo" onclick="showLogin('signup')">Get started free</button></div>
-      <div class="pcard pop"><div class="pbadge" data-e="p2badge" contenteditable="false" spellcheck="false">Most popular</div><div class="ptier" data-e="p2t" contenteditable="false" spellcheck="false">Pro Monthly</div><div class="pprice"><sup>₹</sup><span data-e="p2a" contenteditable="false" spellcheck="false">299</span></div><div class="pcad" data-e="p2c" contenteditable="false" spellcheck="false">per month · cancel anytime</div><div class="pdiv"></div><ul class="pfeats"><li data-e="p2f1" contenteditable="false" spellcheck="false">Everything in Free</li><li data-e="p2f2" contenteditable="false" spellcheck="false">PDF report download</li><li data-e="p2f3" contenteditable="false" spellcheck="false">Construction drawings</li><li data-e="p2f4" contenteditable="false" spellcheck="false">Unlimited saved projects</li><li data-e="p2f5" contenteditable="false" spellcheck="false">AI design assistant</li></ul><button class="pbtn pbs" onclick="showLogin('signup')">Get Pro →</button></div>
-      <div class="pcard"><div class="ptier" data-e="p3t" contenteditable="false" spellcheck="false">Pro Annual</div><div class="pprice"><sup>₹</sup><span data-e="p3a" contenteditable="false" spellcheck="false">249</span></div><div class="pcad" data-e="p3c" contenteditable="false" spellcheck="false">per month · ₹2,990/year</div><div class="pdiv"></div><ul class="pfeats"><li data-e="p3f1" contenteditable="false" spellcheck="false">Everything in Pro Monthly</li><li data-e="p3f2" contenteditable="false" spellcheck="false">2 months free — save ₹600</li><li data-e="p3f3" contenteditable="false" spellcheck="false">Priority support</li><li data-e="p3f4" contenteditable="false" spellcheck="false">Early access to new features</li></ul><button class="pbtn pbs" onclick="showLogin('signup')">Get Annual →</button></div>
+      <div class="pcard"><div class="ptier" data-e="p1t" contenteditable="false" spellcheck="false">Free</div><div class="pprice">₹<span data-e="p1a" contenteditable="false" spellcheck="false">0</span></div><div class="pcad" data-e="p1c" contenteditable="false" spellcheck="false">forever · no card needed</div><div class="pdiv"></div><ul class="pfeats"><li data-e="p1f1" contenteditable="false" spellcheck="false">Full IS 456 design engine</li><li data-e="p1f2" contenteditable="false" spellcheck="false">All 28 guided steps</li><li data-e="p1f3" contenteditable="false" spellcheck="false">Seismic and wind analysis</li><li data-e="p1f4" contenteditable="false" spellcheck="false">Learning modules + certificates</li><li class="no" data-e="p1f5" contenteditable="false" spellcheck="false">PDF report download</li><li class="no" data-e="p1f6" contenteditable="false" spellcheck="false">Construction drawings</li></ul><button class="pbtn pbo" onclick="goToApp('signup')">Get started free</button></div>
+      <div class="pcard pop"><div class="pbadge" data-e="p2badge" contenteditable="false" spellcheck="false">Most popular</div><div class="ptier" data-e="p2t" contenteditable="false" spellcheck="false">Pro Monthly</div><div class="pprice"><sup>₹</sup><span data-e="p2a" contenteditable="false" spellcheck="false">299</span></div><div class="pcad" data-e="p2c" contenteditable="false" spellcheck="false">per month · cancel anytime</div><div class="pdiv"></div><ul class="pfeats"><li data-e="p2f1" contenteditable="false" spellcheck="false">Everything in Free</li><li data-e="p2f2" contenteditable="false" spellcheck="false">PDF report download</li><li data-e="p2f3" contenteditable="false" spellcheck="false">Construction drawings</li><li data-e="p2f4" contenteditable="false" spellcheck="false">Unlimited saved projects</li><li data-e="p2f5" contenteditable="false" spellcheck="false">AI design assistant</li></ul><button class="pbtn pbs" onclick="goToApp('signup')">Get Pro →</button></div>
+      <div class="pcard"><div class="ptier" data-e="p3t" contenteditable="false" spellcheck="false">Pro Annual</div><div class="pprice"><sup>₹</sup><span data-e="p3a" contenteditable="false" spellcheck="false">249</span></div><div class="pcad" data-e="p3c" contenteditable="false" spellcheck="false">per month · ₹2,990/year</div><div class="pdiv"></div><ul class="pfeats"><li data-e="p3f1" contenteditable="false" spellcheck="false">Everything in Pro Monthly</li><li data-e="p3f2" contenteditable="false" spellcheck="false">2 months free — save ₹600</li><li data-e="p3f3" contenteditable="false" spellcheck="false">Priority support</li><li data-e="p3f4" contenteditable="false" spellcheck="false">Early access to new features</li></ul><button class="pbtn pbs" onclick="goToApp('signup')">Get Annual →</button></div>
     </div>
   </div>
 </section>
@@ -1797,7 +1797,7 @@ document.addEventListener('DOMContentLoaded',()=>{
         <div style="font-size:14px;color:var(--txt2);margin-top:3px;" data-e="wb-p" contenteditable="false" spellcheck="false">Your projects, progress and certificates are waiting. Sign in to continue.</div>
       </div>
     </div>
-    <button onclick="showLogin('login')" style="padding:14px 28px;background:var(--blue);border:none;border-radius:10px;color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;box-shadow:0 4px 20px rgba(79,142,247,0.3);white-space:nowrap;flex-shrink:0;transition:all 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''" data-e="wb-btn" contenteditable="false" spellcheck="false">
+    <button onclick="goToApp('login')" style="padding:14px 28px;background:var(--blue);border:none;border-radius:10px;color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;box-shadow:0 4px 20px rgba(79,142,247,0.3);white-space:nowrap;flex-shrink:0;transition:all 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''" data-e="wb-btn" contenteditable="false" spellcheck="false">
       Go to my workspace →
     </button>
   </div>
@@ -1805,7 +1805,7 @@ document.addEventListener('DOMContentLoaded',()=>{
 
 
 <!-- CTA -->
-<section id="cta"><div class="si rv" style="max-width:620px;"><div class="ey" style="justify-content:center;color:rgba(255,255,255,0.4);" data-e="cta-ey" contenteditable="false" spellcheck="false">Get started today</div><h2 class="cta-h" data-e="cta-h" contenteditable="false" spellcheck="false">Your first design is completely free.</h2><p class="cta-p" data-e="cta-p" contenteditable="false" spellcheck="false">No installation. No credit card. Create an account and start your first IS 456 building design in under 2 minutes.</p><div class="cta-btns"><button class="cbp" onclick="showLogin('signup')" data-e="cta-b1" contenteditable="false" spellcheck="false">Start designing free →</button><button class="cbs" onclick="showLogin('login')" data-e="cta-b2" contenteditable="false" spellcheck="false">Sign in</button></div></div></section>
+<section id="cta"><div class="si rv" style="max-width:620px;"><div class="ey" style="justify-content:center;color:rgba(255,255,255,0.4);" data-e="cta-ey" contenteditable="false" spellcheck="false">Get started today</div><h2 class="cta-h" data-e="cta-h" contenteditable="false" spellcheck="false">Your first design is completely free.</h2><p class="cta-p" data-e="cta-p" contenteditable="false" spellcheck="false">No installation. No credit card. Create an account and start your first IS 456 building design in under 2 minutes.</p><div class="cta-btns"><button class="cbp" onclick="goToApp('signup')" data-e="cta-b1" contenteditable="false" spellcheck="false">Start designing free →</button><button class="cbs" onclick="goToApp('login')" data-e="cta-b2" contenteditable="false" spellcheck="false">Sign in</button></div></div></section>
 
 <!-- FOOTER -->
 
@@ -2186,6 +2186,7 @@ if('serviceWorker' in navigator){
     }).catch(function(e){ console.log('SW error:', e); });
   });
 }
+function goToApp(mode){var mob=localStorage.getItem("slp_session_mob"),tok=localStorage.getItem("slp_session_tok");if(mob&&tok){window.location.href="/app";}else{showLogin(mode||"signup");}}
 </script>
 </body>
 </html>

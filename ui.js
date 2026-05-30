@@ -294,7 +294,50 @@ function p5(){return`
   </div>
 </div>`;}
 
-function p6(){return`
+function p6(){
+  // ── Frame interpretation ──────────────────────────────────────
+  var fi = {
+    contBeams: 0, oneEndBeams: 0, ssBeams: 0, cantBeams: 0, transferBeams: 0,
+    interiorCols: 0, edgeCols: 0, cornerCols: 0,
+    totalBeams: 0, totalCols: 0, totalFtgs: 0,
+  };
+  if(GRID && GRID.beams){
+    GRID.beams.forEach(function(b){
+      fi.totalBeams++;
+      if(b.isCantilever) fi.cantBeams++;
+      else if(b.isTransfer) fi.transferBeams++;
+      else {
+        var el=b.endLeft, er=b.endRight;
+        var lc=el==='column', rc=er==='column';
+        if(lc&&rc) fi.contBeams++;
+        else if(lc||rc) fi.oneEndBeams++;
+        else fi.ssBeams++;
+      }
+    });
+  }
+  if(GRID && GRID.nodes){
+    GRID.nodes.forEach(function(n){
+      if(!n.hasColumn) return;
+      fi.totalFtgs++;
+      var nx=S.spansX?S.spansX.length:0, ny=S.spansY?S.spansY.length:0;
+      var isEdgeX=(n.col===0||n.col===nx);
+      var isEdgeY=(n.row===0||n.row===ny);
+      if(isEdgeX&&isEdgeY) fi.cornerCols++;
+      else if(isEdgeX||isEdgeY) fi.edgeCols++;
+      else fi.interiorCols++;
+    });
+    fi.totalCols = fi.cornerCols + fi.edgeCols + fi.interiorCols;
+  }
+
+  function fiRow(label, val, color, note){
+    return '<div style="display:flex;justify-content:space-between;align-items:flex-start;padding:7px 0;border-bottom:1px solid rgba(255,255,255,0.04);font-size:12px">'
+      +'<span style="color:#94a3b8">'+label+'</span>'
+      +'<span style="font-weight:700;color:'+color+';text-align:right">'
+        +val+(note?'<br><span style="font-size:10px;color:#475569;font-weight:400">'+note+'</span>':'')
+      +'</span></div>';
+  }
+
+  return`
 <div class="card bl">
   <div class="ct">* Ready to Run</div>
   <div class="cp" style="margin-bottom:14px">
@@ -304,6 +347,44 @@ function p6(){return`
        ['Concrete','M'+S.fck],['Steel','Fe'+S.fy],['SBC',S.soilBearing+' kN/m^2'],
     ].map(([k,v])=>`<strong style="color:var(--txt)">${k}:</strong> ${v}`).join(' &nbsp;.&nbsp; ')}
   </div>
+
+  <!-- ── FRAME INTERPRETATION ── -->
+  <div style="background:rgba(10,15,30,0.6);border:1px solid rgba(56,189,248,0.15);border-radius:10px;padding:14px;margin-bottom:16px">
+    <div style="font-size:11px;font-weight:700;color:#38bdf8;letter-spacing:1px;margin-bottom:12px">🔍 HOW THE ENGINE INTERPRETS YOUR FRAME</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 20px">
+
+      <div>
+        <div style="font-size:10px;font-weight:700;color:#475569;letter-spacing:1px;margin-bottom:6px">BEAMS (per floor)</div>
+        ${fi.contBeams>0?fiRow('Both ends continuous',fi.contBeams+' beams','#38bdf8','IS 456 T12: α=1/16 midspan, 1/12 support'):''}
+        ${fi.oneEndBeams>0?fiRow('One end continuous',fi.oneEndBeams+' beams','#60a5fa','IS 456 T12: α=1/10 midspan & support'):''}
+        ${fi.ssBeams>0?fiRow('Simply supported',fi.ssBeams+' beams','#94a3b8','IS 456 T12: α=1/8 midspan'):''}
+        ${fi.cantBeams>0?fiRow('Cantilever',fi.cantBeams+' beams','#34d399','Free end moment: wL²/2'):''}
+        ${fi.transferBeams>0?fiRow('Transfer beams',fi.transferBeams+' beams','#f59e0b','Carries column load above — checked separately'):''}
+        <div style="padding:7px 0;font-size:11px;color:#334155">${fi.totalBeams} total beams × ${S.numFloors||3} floors = <strong style="color:#e2e8f0">${fi.totalBeams*(S.numFloors||3)} beam designs</strong></div>
+      </div>
+
+      <div>
+        <div style="font-size:10px;font-weight:700;color:#475569;letter-spacing:1px;margin-bottom:6px">COLUMNS & FOOTINGS</div>
+        ${fi.cornerCols>0?fiRow('Corner columns',fi.cornerCols+' nodes','#a78bfa','Trib = lx/2 × ly/2'):''}
+        ${fi.edgeCols>0?fiRow('Edge columns',fi.edgeCols+' nodes','#a78bfa','Trib = lx/2 × ly or lx × ly/2'):''}
+        ${fi.interiorCols>0?fiRow('Interior columns',fi.interiorCols+' nodes','#a78bfa','Trib = lx × ly (full bay)'):''}
+        <div style="padding:7px 0;font-size:11px;color:#334155">${fi.totalCols} columns × ${S.numFloors||3} floors = <strong style="color:#e2e8f0">${fi.totalCols*(S.numFloors||3)} column designs</strong></div>
+        <div style="padding:4px 0;font-size:11px;color:#334155">${fi.totalFtgs} isolated footings (1 per column node)</div>
+      </div>
+
+    </div>
+
+    <div style="margin-top:12px;padding:12px;background:rgba(52,211,153,0.05);border:1px solid rgba(52,211,153,0.15);border-radius:8px;font-size:11px;color:#64748b;line-height:1.8">
+      <div style="font-weight:700;color:#34d399;margin-bottom:8px">💡 HOW BEAM TYPE IS DETERMINED (automatic)</div>
+      The engine checks each beam's end conditions from your grid:<br><br>
+      <strong style="color:#e2e8f0">Column at BOTH ends →</strong> Both ends continuous → IS 456 T12 α = 1/16 (interior beams — most restrained, lowest moments)<br>
+      <strong style="color:#e2e8f0">Column at ONE end only →</strong> One end continuous → IS 456 T12 α = 1/10 (edge/end span beams — moderate restraint)<br>
+      <strong style="color:#e2e8f0">No column at either end →</strong> Simply supported → IS 456 T12 α = 1/8 (secondary/isolated beams — highest moments)<br><br>
+      <strong style="color:#fbbf24">⚠ Why this matters for design:</strong> A simply supported beam (α=1/8) carries <strong style="color:#fbbf24">twice the midspan moment</strong> of a fully continuous beam (α=1/16) for the same span and load. Getting this wrong means seriously under-designing the beam steel.<br><br>
+      <strong style="color:#94a3b8">Column types affect tributary area:</strong> A corner column collects load from only 1/4 of the surrounding bays. An interior column collects from all 4 surrounding bays — typically 4× the load. This directly controls footing size and column steel.
+    </div>
+  </div>
+
   <button class="btn gr" id="rb" style="width:100%;padding:13px;font-size:14px" onclick="runNow();setTimeout(()=>{ try{ if(window._slpProjectId){ window.parent.postMessage({type:'SAVE_PROJECT',projectId:window._slpProjectId,S:JSON.parse(JSON.stringify(S)),RES:RES?JSON.parse(JSON.stringify(RES)):null,GRID:GRID?{bays:GRID.bays,nodes:GRID.nodes}:null},'*'); } }catch(e){console.warn('save err',e);} },2500)">🚀 Run Full Analysis</button>
   <div id="ld" style="display:none;margin-top:12px">
     <div class="lbar"><div class="lfill"></div></div>
