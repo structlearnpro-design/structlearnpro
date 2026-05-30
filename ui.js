@@ -16714,4 +16714,3 @@ function closeChallengePopup(){var el=document.getElementById("_challenge_popup"
     }, 2000);
   };
 })();
-
