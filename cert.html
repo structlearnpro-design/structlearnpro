@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Verify Certificate — StructLearn Pro</title>
+<meta name="description" content="Verify the authenticity of a StructLearn Pro IS 456 structural engineering certificate.">
+<meta property="og:title" content="StructLearn Pro — Certificate Verification">
+<meta property="og:description" content="Verify the authenticity of a StructLearn Pro IS 456 structural engineering certificate.">
+<meta property="og:image" content="https://structlearnpro.com/og-image.png">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  background: #030712;
+  color: #e2e8f0;
+  font-family: Arial, sans-serif;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 40px 20px;
+}
+
+.logo-bar {
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 48px; text-decoration: none;
+}
+.logo-icon {
+  width: 40px; height: 40px;
+  background: linear-gradient(135deg, #1d4ed8, #38bdf8);
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px;
+}
+.logo-name {
+  font-size: 18px; font-weight: 900;
+  color: #f8fafc; letter-spacing: -0.5px;
+}
+.logo-name span { color: #38bdf8; }
+
+.verify-card {
+  background: #0a1628;
+  border: 1px solid rgba(56,189,248,0.15);
+  border-radius: 20px;
+  padding: 40px;
+  max-width: 560px; width: 100%;
+  text-align: center;
+}
+
+.verify-title {
+  font-size: 22px; font-weight: 800; color: #f1f5f9;
+  margin-bottom: 8px;
+}
+.verify-sub {
+  font-size: 13px; color: #475569; margin-bottom: 28px; line-height: 1.6;
+}
+
+.input-row {
+  display: flex; gap: 10px; margin-bottom: 16px;
+}
+.cert-input {
+  flex: 1;
+  padding: 12px 16px;
+  background: #060c18;
+  border: 1px solid rgba(56,189,248,0.2);
+  border-radius: 10px;
+  color: #e2e8f0; font-size: 14px;
+  font-family: 'Courier New', monospace;
+  outline: none; letter-spacing: 1px;
+  text-transform: uppercase;
+}
+.cert-input:focus { border-color: rgba(56,189,248,0.5); }
+.cert-input::placeholder { color: #334155; text-transform: none; letter-spacing: 0; }
+
+.verify-btn {
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #1d4ed8, #38bdf8);
+  border: none; border-radius: 10px;
+  color: #fff; font-size: 14px; font-weight: 700;
+  cursor: pointer; font-family: inherit;
+  white-space: nowrap;
+}
+
+/* Result states */
+.result { margin-top: 24px; border-radius: 14px; padding: 24px; display: none; }
+.result.valid {
+  background: rgba(52,211,153,0.06);
+  border: 1px solid rgba(52,211,153,0.25);
+}
+.result.invalid {
+  background: rgba(248,113,113,0.06);
+  border: 1px solid rgba(248,113,113,0.2);
+}
+
+.result-icon { font-size: 48px; margin-bottom: 12px; }
+.result-status {
+  font-size: 16px; font-weight: 800; margin-bottom: 16px;
+}
+.result-status.valid { color: #34d399; }
+.result-status.invalid { color: #f87171; }
+
+.cert-detail-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.05);
+  font-size: 13px; text-align: left;
+}
+.cert-detail-row:last-child { border-bottom: none; }
+.cert-detail-lbl { color: #64748b; }
+.cert-detail-val { color: #e2e8f0; font-weight: 600; }
+
+.level-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 12px; border-radius: 20px;
+  font-size: 12px; font-weight: 700;
+}
+.level-badge.foundation { background: rgba(217,119,6,0.12); color: #d97706; border: 1px solid rgba(217,119,6,0.3); }
+.level-badge.proficiency { background: rgba(56,189,248,0.1); color: #38bdf8; border: 1px solid rgba(56,189,248,0.25); }
+.level-badge.competent { background: rgba(167,139,250,0.1); color: #a78bfa; border: 1px solid rgba(167,139,250,0.25); }
+
+.share-row {
+  display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap;
+}
+.share-btn {
+  flex: 1; padding: 9px;
+  background: transparent; border: 1px solid rgba(56,189,248,0.2);
+  border-radius: 8px; color: #38bdf8; font-size: 12px;
+  cursor: pointer; font-family: inherit; font-weight: 600;
+}
+.share-btn:hover { background: rgba(56,189,248,0.06); }
+
+.loading { color: #475569; font-size: 13px; margin-top: 20px; display: none; }
+
+/* URL-based auto-verify */
+.url-note {
+  margin-top: 24px; padding: 12px;
+  background: rgba(56,189,248,0.04); border: 1px solid rgba(56,189,248,0.08);
+  border-radius: 10px; font-size: 11px; color: #475569; line-height: 1.6;
+}
+</style>
+</head>
+<body>
+
+<a href="https://structlearnpro.com" class="logo-bar">
+  <div class="logo-icon">🏗</div>
+  <div class="logo-name">STRUCT<span>LEARN</span> PRO</div>
+</a>
+
+<div class="verify-card">
+  <div style="font-size:36px;margin-bottom:12px">🎓</div>
+  <div class="verify-title">Certificate Verification</div>
+  <div class="verify-sub">Enter a StructLearn Pro certificate ID to verify its authenticity. Certificate IDs are in the format <strong style="color:#38bdf8;font-family:'Courier New',monospace">SLP-L1-2026-12345</strong></div>
+
+  <div class="input-row">
+    <input type="text" class="cert-input" id="cert-id-input"
+      placeholder="e.g. SLP-L1-2026-12345"
+      maxlength="20"
+      onkeydown="if(event.key==='Enter') verifyCert()">
+    <button class="verify-btn" onclick="verifyCert()">Verify</button>
+  </div>
+
+  <div class="loading" id="loading">🔍 Checking certificate...</div>
+
+  <!-- VALID RESULT -->
+  <div class="result valid" id="result-valid">
+    <div class="result-icon">✅</div>
+    <div class="result-status valid">Certificate is Valid</div>
+    <div id="cert-details"></div>
+    <div class="share-row">
+      <button class="share-btn" onclick="copyLink()">🔗 Copy Verification Link</button>
+      <button class="share-btn" onclick="shareLinkedIn()">💼 Share on LinkedIn</button>
+    </div>
+  </div>
+
+  <!-- INVALID RESULT -->
+  <div class="result invalid" id="result-invalid">
+    <div class="result-icon">❌</div>
+    <div class="result-status invalid">Certificate Not Found</div>
+    <div style="font-size:13px;color:#94a3b8;line-height:1.6">
+      This certificate ID does not exist in our records. It may be invalid, incorrectly entered, or not yet issued.<br><br>
+      Please check the ID and try again. If you believe this is an error, contact us at
+      <a href="mailto:structlearnpro@gmail.com" style="color:#38bdf8">structlearnpro@gmail.com</a>
+    </div>
+  </div>
+
+  <div class="url-note">
+    💡 Certificate holders can share a direct verification link:<br>
+    <strong style="color:#38bdf8">structlearnpro.com/cert?id=SLP-L1-2026-XXXXX</strong>
+  </div>
+</div>
+
+<script>
+var SUPA_URL = 'https://rpjdveuxxjeoeomkwrfx.supabase.co';
+var SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJwamR2ZXV4eGplb2VvbWt3cmZ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg5MzY3NzIsImV4cCI6MjA5NDUxMjc3Mn0.3JvvMaCFKg2fB9-l2WJ5JMX5btGIKqvpMj_ZcxSRWaQ';
+
+var _currentCertId = '';
+
+var LEVEL_LABELS = {
+  foundation:  { label:'Foundation',  badge:'foundation',  icon:'🥉', desc:'IS 456 Fundamentals — Materials, Loads & Basic Design' },
+  proficiency: { label:'Proficiency', badge:'proficiency', icon:'🥈', desc:'IS 456 Proficiency — Beams, Columns & Footings' },
+  competent:   { label:'Competent',   badge:'competent',   icon:'🥇', desc:'IS 456 Competence — Advanced Design & Seismic Analysis' },
+};
+
+// Auto-verify if cert ID is in URL
+window.addEventListener('load', function(){
+  var params = new URLSearchParams(window.location.search);
+  var id = params.get('id') || params.get('cert');
+  if(id){
+    var input = document.getElementById('cert-id-input');
+    input.value = id.toUpperCase();
+    verifyCert();
+  }
+});
+
+async function verifyCert(){
+  var input = document.getElementById('cert-id-input');
+  var certId = (input.value||'').trim().toUpperCase();
+  if(!certId){ input.focus(); return; }
+
+  _currentCertId = certId;
+
+  // Hide previous results
+  document.getElementById('result-valid').style.display = 'none';
+  document.getElementById('result-invalid').style.display = 'none';
+  document.getElementById('loading').style.display = 'block';
+
+  try {
+    var resp = await fetch(
+      SUPA_URL + '/rest/v1/certificates?cert_id=eq.' + encodeURIComponent(certId) + '&select=*',
+      { headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY } }
+    );
+    var data = await resp.json();
+    document.getElementById('loading').style.display = 'none';
+
+    if(Array.isArray(data) && data.length && data[0].is_valid !== false){
+      showValid(data[0]);
+    } else {
+      document.getElementById('result-invalid').style.display = 'block';
+    }
+  } catch(e){
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('result-invalid').style.display = 'block';
+  }
+}
+
+function showValid(cert){
+  var levelKey = cert.level || 'foundation';
+  var levelInfo = LEVEL_LABELS[levelKey] || LEVEL_LABELS.foundation;
+  var issueDate = new Date(cert.issued_date || cert.created_at).toLocaleDateString('en-IN',{
+    day:'numeric', month:'long', year:'numeric'
+  });
+
+  document.getElementById('cert-details').innerHTML =
+    '<div class="cert-detail-row">' +
+      '<span class="cert-detail-lbl">Certificate ID</span>' +
+      '<span class="cert-detail-val" style="font-family:\'Courier New\',monospace;color:#38bdf8">' + (cert.cert_id||'') + '</span>' +
+    '</div>' +
+    '<div class="cert-detail-row">' +
+      '<span class="cert-detail-lbl">Holder</span>' +
+      '<span class="cert-detail-val">' + (cert.student_name||'—') + '</span>' +
+    '</div>' +
+    '<div class="cert-detail-row">' +
+      '<span class="cert-detail-lbl">Level</span>' +
+      '<span class="cert-detail-val"><span class="level-badge ' + levelInfo.badge + '">' + levelInfo.icon + ' ' + levelInfo.label + '</span></span>' +
+    '</div>' +
+    '<div class="cert-detail-row">' +
+      '<span class="cert-detail-lbl">Competency</span>' +
+      '<span class="cert-detail-val" style="font-size:11px;color:#64748b">' + levelInfo.desc + '</span>' +
+    '</div>' +
+    '<div class="cert-detail-row">' +
+      '<span class="cert-detail-lbl">Issued by</span>' +
+      '<span class="cert-detail-val">StructLearn Pro · structlearnpro.com</span>' +
+    '</div>' +
+    '<div class="cert-detail-row">' +
+      '<span class="cert-detail-lbl">Issue Date</span>' +
+      '<span class="cert-detail-val">' + issueDate + '</span>' +
+    '</div>' +
+    '<div class="cert-detail-row">' +
+      '<span class="cert-detail-lbl">Status</span>' +
+      '<span class="cert-detail-val" style="color:#34d399">✅ Verified &amp; Valid</span>' +
+    '</div>';
+
+  document.getElementById('result-valid').style.display = 'block';
+}
+
+function copyLink(){
+  var url = 'https://structlearnpro.com/cert?id=' + _currentCertId;
+  navigator.clipboard.writeText(url).then(function(){
+    var btn = event.target;
+    btn.textContent = '✅ Link Copied!';
+    setTimeout(function(){ btn.textContent = '🔗 Copy Verification Link'; }, 2000);
+  });
+}
+
+function shareLinkedIn(){
+  var url = encodeURIComponent('https://structlearnpro.com/cert?id=' + _currentCertId);
+  var text = encodeURIComponent('I just earned my IS 456 structural engineering certificate on StructLearn Pro! Verify it here:');
+  window.open('https://www.linkedin.com/sharing/share-offsite/?url=' + url + '&summary=' + text, '_blank');
+}
+</script>
+
+</body>
+</html>

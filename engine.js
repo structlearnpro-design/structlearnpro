@@ -43,10 +43,9 @@ window.addEventListener('message',(e)=>{
         const isFreshProject = Object.keys(savedS).length <= 5 &&
           !savedS.spansX && !savedS.fck && !savedS.numFloors;
         if(isFreshProject){
-          // Reset ALL fields to defaults so previous project data doesn't bleed through
-          S.name=''; S.client=''; S.location='';
-          S.numFloors=4; S.floorHt=3.2;
+          // Reset all structural inputs to defaults
           S.spansX=[4,4,4]; S.spansY=[3,3,3];
+          S.numFloors=4; S.floorHt=3.2;
           S.buildingL=12; S.buildingW=9;
           S.fck=25; S.fy=500;
           S.udlLL=3.0; S.udlRoof=1.5;
@@ -55,10 +54,7 @@ window.addEventListener('message',(e)=>{
           S.stairType='dogleg'; S.ftgType='isolated';
           S.slabThk=150; S.coverSlab=20; S.coverBeam=25; S.coverCol=40; S.coverFtg=75;
           S.columns=null; S.floorFinish=1.0; S.wallLoad=10;
-          S.windZone=4; S.terrainCat=2; S.topography=1.0;
-          S.roofLL=1.5; S.floorFinishLoad=1.0; S.partitionLoad=1.0;
-          S.foundationType='isolated'; S.soilBearing=200;
-          // Clear all analysis results and overrides
+          // Clear overrides and analysis state
           window._memberOverrides = {};
           window._nodeChoices = {};
           window._coordMode = false;
@@ -201,7 +197,7 @@ function saveToParent(status){
 // =======================================================
 let PAGE=0, RES=null, RSEC='overview', BIDX=0, CIDX=0;
 const S={
-  name:'',location:'',client:'',
+  name:'Sharma Residence',location:'New Delhi',client:'Mr. Arun Sharma',
   zone:'IV',soilType:'II',importance:1.0,
   numFloors:4,floorHt:3.2,buildingL:12,buildingW:9,
   spansX:[4,4,4],spansY:[3,3,3],
@@ -292,21 +288,7 @@ function fld(id,lbl,tip,unit,type,val,opts){
   return`<div class="fld"><label>${lbl} ${t} ${u}</label><input type="number" id="${id}" value="${val}" oninput="sv('${id}',this.value);fldValidate('${id}')"/></div>`;
 }
 
-function tfld(id,lbl,tip,val){
-  const ph={'name':'e.g. Sharma Residence','client':'e.g. Mr. Arun Sharma','location':'e.g. New Delhi'}[id]||'Enter value';
-  return`<div class="fld">
-    <label style="display:flex;align-items:center;gap:5px;margin-bottom:4px">
-      <span>${lbl}</span>
-      <span title="${tip}" style="display:inline-block;background:#1e3a8a;color:#93c5fd;border-radius:50%;width:13px;height:13px;font-size:9px;text-align:center;line-height:13px;cursor:default">?</span>
-      <span style="margin-left:auto;font-size:9px;color:var(--yellow);font-weight:700;letter-spacing:0.3px">✏ EDIT THIS</span>
-    </label>
-    <input type="text" id="${id}" value="${val}" placeholder="${ph}" oninput="sv('${id}',this.value)"
-      style="width:100%;background:var(--bg1);color:var(--txt);border:1px solid ${val?'var(--b2)':'rgba(251,191,36,0.4)'};border-radius:6px;padding:8px 10px;font-size:12px;font-family:var(--mono);outline:none;transition:border-color 0.15s;"
-      onfocus="this.style.borderColor='var(--blue)';this.style.boxShadow='0 0 0 3px rgba(96,165,250,0.12)'"
-      onblur="this.style.borderColor=this.value?'var(--b2)':'rgba(251,191,36,0.4)';this.style.boxShadow='none'"
-    />
-  </div>`;
-}
+function tfld(id,lbl,tip,val){return`<div class="fld"><label>${lbl} <span title="${tip}" style="display:inline-block;background:#1e3a8a;color:#93c5fd;border-radius:50%;width:13px;height:13px;font-size:9px;text-align:center;line-height:13px;cursor:default">?</span></label><input type="text" id="${id}" value="${val}" oninput="sv('${id}',this.value)" style="width:100%;background:var(--bg1);color:var(--txt);border:1px solid var(--b2);border-radius:6px;padding:7px 10px;font-size:12px;font-family:var(--mono)"/></div>`;}
 
 // =======================================================
 // ALL PAGES
@@ -4226,6 +4208,7 @@ function runCalcsFromGrid(){
     stair:{riser,tread,wD,wd,DLst,wust,Mst,Ast2,stsp,ss:stairSpan},
     allStairDesigns,
     warnings,
+    boq: computeBOQ({allBeams, allCols, allFtgs, slab:slabRes, S}),
     gridSummary:{
       nCols:colNodes.length,
       nMissing:missingCols.length,
@@ -4256,6 +4239,120 @@ function runCalcsFromGrid(){
       if(maxFtgSize > 8) sw.push(`⚠ SANITY CHECK: Footing size = ${r2(maxFtgSize)}m × ${r2(maxFtgSize)}m. This is very large — consider increasing soil bearing capacity or reducing loads.`);
       return sw;
     })(),
+  };
+}
+
+
+// ── BILL OF QUANTITIES ───────────────────────────────────────
+function computeBOQ({allBeams, allCols, allFtgs, slab, S}){
+  if(!S || !allBeams) return null;
+  var nFloors = S.numFloors || 3;
+  var fck = S.fck || 25;
+  var fy  = S.fy  || 500;
+
+  // ── CONCRETE VOLUME ──────────────────────────────────────────
+  var concBeams = 0, concCols = 0, concFtgs = 0, concSlab = 0;
+
+  // Beams — unique beams per floor (allBeams includes all floors)
+  allBeams.forEach(function(b){
+    concBeams += (b.b/1000) * (b.D/1000) * (b.L || 3); // m³
+  });
+
+  // Columns
+  allCols.forEach(function(c){
+    concCols += (c.size/1000) * (c.size/1000) * (S.floorHt || 3); // m³
+  });
+
+  // Footings
+  allFtgs.forEach(function(f){
+    concFtgs += (f.Bf||1.2) * (f.Bf||1.2) * (f.D/1000||0.3); // m³
+  });
+
+  // Slab — per floor
+  if(slab && S.spansX && S.spansY){
+    var totalX = S.spansX.reduce(function(a,b){return a+b;},0);
+    var totalY = S.spansY.reduce(function(a,b){return a+b;},0);
+    var slabThk = (S.slabThk || 150) / 1000;
+    concSlab = totalX * totalY * slabThk * nFloors;
+  }
+
+  var totalConc = concBeams + concCols + concFtgs + concSlab;
+
+  // ── STEEL WEIGHT ─────────────────────────────────────────────
+  // Steel ratio: ~80-120 kg/m³ for beams/slabs, ~160-200 for cols/ftgs
+  var steelBeams = concBeams * 100; // kg (avg ~100 kg/m³)
+  var steelCols  = concCols  * 180; // kg (avg ~180 kg/m³)
+  var steelFtgs  = concFtgs  * 120; // kg (avg ~120 kg/m³)
+  var steelSlab  = concSlab  * 80;  // kg (avg ~80 kg/m³)
+  var totalSteel = steelBeams + steelCols + steelFtgs + steelSlab;
+
+  // ── FORMWORK AREA ────────────────────────────────────────────
+  var fwBeams = 0, fwCols = 0, fwSlab = 0;
+  allBeams.forEach(function(b){
+    fwBeams += (2*(b.D/1000) + (b.b/1000)) * (b.L||3); // soffit + two sides
+  });
+  allCols.forEach(function(c){
+    fwCols += 4 * (c.size/1000) * (S.floorHt||3);
+  });
+  if(slab && S.spansX && S.spansY){
+    var totalX2 = S.spansX.reduce(function(a,b){return a+b;},0);
+    var totalY2 = S.spansY.reduce(function(a,b){return a+b;},0);
+    fwSlab = totalX2 * totalY2 * nFloors;
+  }
+  var totalFw = fwBeams + fwCols + fwSlab;
+
+  // ── EXCAVATION ───────────────────────────────────────────────
+  var excavVol = 0;
+  allFtgs.forEach(function(f){
+    var pit = (f.Bf||1.2) + 0.6; // footing + 300mm working space each side
+    excavVol += pit * pit * ((S.ftgDepth||1.5) + 0.15); // depth + PCC
+  });
+
+  // ── COST ESTIMATE (approximate Indian rates 2025) ─────────────
+  var rates = {
+    concM25: 6500, concM30: 7200, concM20: 6000, // ₹/m³ (material+labour)
+    steel: 72,      // ₹/kg (Fe500)
+    formwork: 350,  // ₹/m²
+    excavation: 280 // ₹/m³
+  };
+
+  var concRate = fck===30?rates.concM30:fck===20?rates.concM20:rates.concM25;
+  var costConc  = Math.round(totalConc  * concRate);
+  var costSteel = Math.round(totalSteel * rates.steel);
+  var costFw    = Math.round(totalFw    * rates.formwork);
+  var costExcav = Math.round(excavVol   * rates.excavation);
+  var totalCost = costConc + costSteel + costFw + costExcav;
+
+  return {
+    concrete: {
+      beams:   Math.round(concBeams*100)/100,
+      cols:    Math.round(concCols*100)/100,
+      ftgs:    Math.round(concFtgs*100)/100,
+      slab:    Math.round(concSlab*100)/100,
+      total:   Math.round(totalConc*100)/100,
+    },
+    steel: {
+      beams:   Math.round(steelBeams),
+      cols:    Math.round(steelCols),
+      ftgs:    Math.round(steelFtgs),
+      slab:    Math.round(steelSlab),
+      total:   Math.round(totalSteel),
+    },
+    formwork: {
+      beams:   Math.round(fwBeams*10)/10,
+      cols:    Math.round(fwCols*10)/10,
+      slab:    Math.round(fwSlab*10)/10,
+      total:   Math.round(totalFw*10)/10,
+    },
+    excavation: Math.round(excavVol*100)/100,
+    cost: {
+      concrete:   costConc,
+      steel:      costSteel,
+      formwork:   costFw,
+      excavation: costExcav,
+      total:      totalCost,
+    },
+    note: 'Approximate estimate only. Rates based on 2025 Indian market rates. Excludes finishing, MEP, supervision, and profit margins.'
   };
 }
 

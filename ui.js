@@ -346,7 +346,7 @@ function p7(){
   <div id="pdfLog" class="pdf-log"></div>
 </div>
 <div class="tabs">
-  ${['overview','seismic','wind','slab','beams','columns','footings','staircase','safety','schedule','snapshot'].map(s=>
+  ${['overview','seismic','wind','slab','beams','columns','footings','staircase','safety','schedule','boq','snapshot'].map(s=>
     `<button class="tab${RSEC===s?' active':''}" onclick="showSec('${s}')">${s.toUpperCase()}</button>`).join('')}
 </div>
 <div id="_historyBar" style="display:none;align-items:center;gap:6px;flex-wrap:wrap;padding:8px 12px;background:rgba(56,189,248,0.04);border:1px solid rgba(56,189,248,0.15);border-radius:8px;margin-bottom:10px">
@@ -417,10 +417,107 @@ if(typeof _beamFloor==='undefined'){var _beamFloor=1,_beamIdx=0,_colFloor=1,_col
 function showSec(s){
   RSEC=s;
   document.querySelectorAll('.tab').forEach(t=>{t.classList.toggle('active',t.textContent.toLowerCase()===s);});
-  const fns={overview:secOverview,seismic:secSeismic,wind:secWind,slab:secSlab,beams:secBeams,columns:secColumns,footings:secFootings,staircase:secStair,safety:secSafety,schedule:secMemberSchedule,snapshot:secSnapshot};
+  const fns={overview:secOverview,seismic:secSeismic,wind:secWind,slab:secSlab,beams:secBeams,columns:secColumns,footings:secFootings,staircase:secStair,safety:secSafety,schedule:secMemberSchedule,boq:secBOQ,snapshot:secSnapshot};
   const el=document.getElementById('secBody');
   if(el)(fns[s]||secOverview)().then?fns[s]().then(h=>el.innerHTML=h):el.innerHTML=(fns[s]||secOverview)();
   setTimeout(()=>{if(s==='seismic'&&RES)renderGridPrev&&renderGridPrev();},50);
+}
+
+
+// ── BILL OF QUANTITIES ───────────────────────────────────────
+function secBOQ(){
+  if(!RES || !RES.boq) return '<div class="card"><div class="ct">Bill of Quantities</div><p style="color:var(--txt3)">Run analysis first to generate the bill of quantities.</p></div>';
+  var b = RES.boq;
+  var fmt = function(n){ return n.toLocaleString('en-IN'); };
+  var r2 = function(n){ return Math.round(n*100)/100; };
+
+  function row(lbl, val, unit, sub){
+    return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--b1);font-size:13px">' +
+      '<span style="color:var(--txt3)">' + lbl + (sub?'<span style="font-size:10px;color:#334155;margin-left:6px">'+sub+'</span>':'') + '</span>' +
+      '<span style="font-weight:700;color:var(--txt)">' + val + ' <span style="font-size:11px;color:var(--txt3);font-weight:400">' + unit + '</span></span>' +
+    '</div>';
+  }
+
+  function costRow(lbl, val){
+    return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--b1);font-size:13px">' +
+      '<span style="color:var(--txt3)">' + lbl + '</span>' +
+      '<span style="font-weight:700;color:var(--txt)">₹' + fmt(val) + '</span>' +
+    '</div>';
+  }
+
+  return '<div class="card">' +
+    '<div class="ct">📦 Bill of Quantities — Approximate Estimate</div>' +
+
+    '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin-bottom:16px">' +
+
+      // CONCRETE
+      '<div style="background:var(--bg1);border:1px solid var(--b1);border-radius:10px;padding:14px">' +
+        '<div style="font-size:11px;font-weight:700;color:#38bdf8;letter-spacing:1px;margin-bottom:10px">🧱 CONCRETE (M'+S.fck+')</div>' +
+        row('Beams', r2(b.concrete.beams), 'm³') +
+        row('Columns', r2(b.concrete.cols), 'm³') +
+        row('Footings', r2(b.concrete.ftgs), 'm³') +
+        row('Slabs', r2(b.concrete.slab), 'm³') +
+        '<div style="display:flex;justify-content:space-between;padding:10px 0 0;font-size:14px;font-weight:800;color:#38bdf8">' +
+          '<span>Total Concrete</span><span>' + r2(b.concrete.total) + ' m³</span>' +
+        '</div>' +
+      '</div>' +
+
+      // STEEL
+      '<div style="background:var(--bg1);border:1px solid var(--b1);border-radius:10px;padding:14px">' +
+        '<div style="font-size:11px;font-weight:700;color:#f97316;letter-spacing:1px;margin-bottom:10px">⚙️ STEEL (Fe'+S.fy+')</div>' +
+        row('Beams', fmt(b.steel.beams), 'kg') +
+        row('Columns', fmt(b.steel.cols), 'kg') +
+        row('Footings', fmt(b.steel.ftgs), 'kg') +
+        row('Slabs', fmt(b.steel.slab), 'kg') +
+        '<div style="display:flex;justify-content:space-between;padding:10px 0 0;font-size:14px;font-weight:800;color:#f97316">' +
+          '<span>Total Steel</span><span>' + fmt(b.steel.total) + ' kg (' + r2(b.steel.total/1000) + ' MT)</span>' +
+        '</div>' +
+      '</div>' +
+
+      // FORMWORK
+      '<div style="background:var(--bg1);border:1px solid var(--b1);border-radius:10px;padding:14px">' +
+        '<div style="font-size:11px;font-weight:700;color:#a78bfa;letter-spacing:1px;margin-bottom:10px">🪵 FORMWORK</div>' +
+        row('Beams', r2(b.formwork.beams), 'm²') +
+        row('Columns', r2(b.formwork.cols), 'm²') +
+        row('Slabs', r2(b.formwork.slab), 'm²') +
+        '<div style="display:flex;justify-content:space-between;padding:10px 0 0;font-size:14px;font-weight:800;color:#a78bfa">' +
+          '<span>Total Formwork</span><span>' + r2(b.formwork.total) + ' m²</span>' +
+        '</div>' +
+      '</div>' +
+
+      // EXCAVATION
+      '<div style="background:var(--bg1);border:1px solid var(--b1);border-radius:10px;padding:14px">' +
+        '<div style="font-size:11px;font-weight:700;color:#34d399;letter-spacing:1px;margin-bottom:10px">⛏️ EXCAVATION</div>' +
+        row('Foundation pits', r2(b.excavation), 'm³', '(incl. 300mm working space)') +
+        '<div style="margin-top:10px;padding:8px;background:rgba(52,211,153,0.06);border-radius:6px;font-size:11px;color:#64748b">Includes PCC bed and working clearance around footings.</div>' +
+      '</div>' +
+
+    '</div>' +
+
+    // COST ESTIMATE
+    '<div style="background:rgba(251,191,36,0.04);border:1px solid rgba(251,191,36,0.15);border-radius:12px;padding:16px;margin-bottom:14px">' +
+      '<div style="font-size:11px;font-weight:700;color:#fbbf24;letter-spacing:1px;margin-bottom:10px">💰 APPROXIMATE COST ESTIMATE</div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">' +
+        '<div>' +
+          costRow('Concrete (material + labour)', b.cost.concrete) +
+          costRow('Steel reinforcement', b.cost.steel) +
+        '</div>' +
+        '<div>' +
+          costRow('Formwork', b.cost.formwork) +
+          costRow('Excavation', b.cost.excavation) +
+        '</div>' +
+      '</div>' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding-top:12px;border-top:1px solid rgba(251,191,36,0.2)">' +
+        '<span style="font-size:16px;font-weight:800;color:#fbbf24">Total Structure Cost</span>' +
+        '<span style="font-size:20px;font-weight:900;color:#fbbf24">₹' + fmt(b.cost.total) + '</span>' +
+      '</div>' +
+    '</div>' +
+
+    '<div style="padding:10px 14px;background:rgba(248,113,113,0.04);border:1px solid rgba(248,113,113,0.12);border-radius:8px;font-size:11px;color:#64748b;line-height:1.7">' +
+      '⚠️ <strong style="color:#94a3b8">Disclaimer:</strong> ' + b.note +
+    '</div>' +
+
+  '</div>';
 }
 
 function secOverview(){
@@ -13599,6 +13696,10 @@ function showCertificate(level) {
         <button onclick="downloadCert(${level})"
           style="padding:8px 18px;background:#1d4ed8;border:none;border-radius:6px;color:white;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">
           ↓ Download PDF
+        </button>
+        <button onclick="window.open('https://structlearnpro.com/cert?id=${cert.id}','_blank')"
+          style="padding:8px 18px;background:transparent;border:1px solid #34d399;border-radius:6px;color:#34d399;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">
+          🔗 Verify / Share
         </button>
         <button onclick="document.getElementById('_cert_view').remove()"
           style="padding:8px 14px;background:transparent;border:1px solid #64748b;border-radius:6px;color:#64748b;cursor:pointer;font-size:12px;font-family:inherit">✕</button>
