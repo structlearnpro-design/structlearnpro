@@ -4574,6 +4574,12 @@ function secOverview(){
   return`
 <div class="card bl">
   <div class="ct">Design Summary  -  ${S.name}</div>
+  ${RES.sanityWarnings&&RES.sanityWarnings.length>0?`
+  <div style="margin-bottom:14px;padding:12px;background:rgba(245,158,11,0.08);border:2px solid rgba(245,158,11,0.6);border-radius:8px">
+    <div style="font-size:12px;font-weight:800;color:#f59e0b;margin-bottom:8px">⚠ SANITY CHECK — Review Before Trusting Results</div>
+    ${RES.sanityWarnings.map(w=>`<div style="font-size:10.5px;color:#fbbf24;line-height:1.7;margin-bottom:4px">${w}</div>`).join('')}
+    <div style="font-size:9px;color:#92400e;margin-top:8px">Go back to <button onclick="go(2)" style="background:none;border:none;color:#f59e0b;cursor:pointer;text-decoration:underline;font-size:9px">Plan & Spans</button> and verify your inputs.</div>
+  </div>`:``}
   ${RES.gridSummary&&RES.gridSummary.nMissing>0?`<div class="cp" style="border-left-color:var(--yellow);margin-bottom:10px"><strong style="color:var(--yellow)">Irregular Structure:</strong> ${RES.gridSummary.nMissing} missing column(s), ${RES.gridSummary.nTransfer} transfer beam(s), ${RES.gridSummary.nCant} cantilever(s). Results account for actual grid configuration.</div>`:''}
   <div style="font-size:11px;color:var(--txt3);margin-bottom:12px">G+${S.numFloors-1} . ${S.buildingL}mx${S.buildingW}m . M${S.fck}/Fe${S.fy} . Zone ${S.zone} seismic . Zone ${S.windZone} wind</div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
@@ -4600,6 +4606,8 @@ function secOverview(){
   </table>
 </div>`;}
 
+
+// ── STAIR TYPE SELECTION + CROSS-SECTION DIAGRAM ─────────────────
 function secSeismic(){
   const{seis}=RES;
   return`
@@ -4611,7 +4619,7 @@ function secSeismic(){
         ${fm(`Z (Zone ${S.zone})`,seis.Z,'IS 1893 Table 3')}
         ${fm('I (Importance Factor)',seis.I,'IS 1893 Table 8')}
         ${fm('R (SMRF with IS 13920)',seis.R,'IS 1893 Table 9')}
-        ${fm('Soil factor (Type '+S.soilType+')',seis.sf,'IS 1893 Table 3')}
+        ${fm('Soil type',S.soilType+' (per-type Sa/g spectrum)','IS 1893 Cl 6.4.5')}
       </div>
       <div style="flex:1;min-width:200px">
         <div class="cp tl"><strong>Why R=5?</strong> SMRF (Special Moment Resisting Frame) with IS 13920 ductile detailing can deform plastically before collapse, absorbing 5x more seismic energy. This halves the design force  -  but REQUIRES 135 deg hooks, confinement zones, and Fe500D steel. No shortcuts.</div>
@@ -4619,14 +4627,15 @@ function secSeismic(){
     </div>
   `,'tl')}
   ${sb('EQ-2','Natural Time Period Ta',`
-    ${fm(`Ta = 0.09H/sqrtd = 0.09x${r2(S.numFloors*S.floorHt)}/sqrt${S.buildingW}`,r2(seis.Ta)+' s','IS 1893 Cl 7.6.1b')}
-    <div class="cp tl">H = ${r2(S.numFloors*S.floorHt)}m total height | d = ${S.buildingW}m width in direction of motion<br>
-    Ta = ${r2(seis.Ta)}s -> ${seis.Ta<=0.55?'in flat plateau (0.10-0.55s) -> Sa/g = 2.5 x soil factor':'descending branch -> Sa/g = 1.36/Ta x soil factor'}</div>
+    ${fm(`Ta = 0.09H/sqrtd = 0.09x${r2(S.numFloors*S.floorHt)}/sqrt${S.buildingW}`,r2(seis.Ta)+' s','IS 1893 Cl 7.6.2(c)')}
+    <div class="cp tl">H = ${r2(S.numFloors*S.floorHt)}m total height | d = ${S.buildingW}m width in direction of motion (governing direction shown)<br>
+    Ta = ${r2(seis.Ta)}s — Sa/g curve chosen per IS 1893:2016 for Type ${S.soilType} soil</div>
   `,'tl')}
   ${sb('EQ-3','Spectral Acceleration & Design Ah',`
-    ${fm('Sa/g = 2.5 x soil_factor = 2.5 x '+seis.sf,r2(seis.Sa),'IS 1893 Fig. 2')}
+    ${fm('Sa/g per IS 1893:2016 spectrum (Type '+S.soilType+')',r2(seis.Sa),'IS 1893 Cl 6.4.5 / Fig. 2')}
     ${fmWhy(`Ah = (Z/2)x(Sa/g)/RxI = (${seis.Z}/2)x${r2(seis.Sa)}/${seis.R}x${seis.I}`,seis.Ah.toFixed(4),'IS 1893 Cl 6.4.2')}
     ${vd(true,`Ah = ${seis.Ah.toFixed(4)} -> Every kN of building weight produces ${r2(seis.Ah*1000)} N of horizontal seismic force`)}
+    ${svgSeismicSpectrum(seis)}
   `,'tl')}
   ${sb('EQ-4','Seismic Weight & Base Shear',`
     ${fm('Floor area = '+S.buildingL+'x'+S.buildingW,r2(S.buildingL*S.buildingW)+' m^2','')}
@@ -4645,35 +4654,176 @@ function secSeismic(){
       </div>
       <div style="flex:1;min-width:180px">${svgSeismicDist(seis.floors)}</div>
     </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px">
+        <div>${svgSeismicBuilding(seis,S.numFloors,S.floorHt)}</div>
+        <div>${svgSeismicLoadPath(seis,S.numFloors,S.floorHt)}</div>
+      </div>
   `,'tl')}
 </div>`;}
 
+
+// ── WIND DIAGRAMS ────────────────────────────────────────────────
+
+// 1. Building wind pressure diagram — elevation showing Cpe arrows on all faces
 function secWind(){
-  if(!RES || !RES.wind) return '<div class="card"><div class="ct">Wind Analysis</div><p style="color:var(--txt3)">Run analysis first to generate wind calculations.</p></div>';
-  const{wind}=RES;
-  const slab = RES.slab || RES.slabs?.[0] || {};
+  const{wind,seis}=RES;
+  const H=S.numFloors*S.floorHt;
+  const B=S.buildingW, L=S.buildingL;
+  const hb=H/B;
+
+  // Storey-wise wind force calculation
+  const k2Table={'1':[[10,1.05],[15,1.09],[20,1.12],[30,1.15],[50,1.20]],
+    '2':[[10,1.00],[15,1.05],[20,1.07],[30,1.12],[50,1.17]],
+    '3':[[10,0.91],[15,0.97],[20,1.01],[30,1.06],[50,1.12]]};
+  const k2vals=k2Table[S.terrain]||k2Table['2'];
+
+  function getK2(z){
+    for(let i=0;i<k2vals.length;i++){
+      if(z<=k2vals[i][0]) return k2vals[i][1];
+      if(i<k2vals.length-1&&z<=k2vals[i+1][0]){
+        const [z0,v0]=k2vals[i],[z1,v1]=k2vals[i+1];
+        return v0+(z-z0)*(v1-v0)/(z1-z0);
+      }
+    }
+    return k2vals[k2vals.length-1][1];
+  }
+
+  const windFloors=[];
+  let totalWindForce=0;
+  for(let i=1;i<=S.numFloors;i++){
+    const zi=i*S.floorHt;
+    const k2i=getK2(zi);
+    const Vzi=wind.VbW*1.0*k2i*1.0;
+    const pzi=0.6*Vzi*Vzi/1000;
+    const Fwi=1.3*pzi;
+    const tributH=(i===1)?S.floorHt/2+0.5:(i===S.numFloors)?S.floorHt/2:S.floorHt;
+    const Fi=Fwi*tributH*B;
+    totalWindForce+=Fi;
+    windFloors.push({floor:i,h:zi,k2:k2i,Vz:Vzi,pz:pzi,Fw:Fwi,tributH,Fi});
+  }
+
+  const seismicGoverns=seis.Vb>totalWindForce;
+  const cpe_w=0.8, cpe_l=-0.5;
+  const cpe_side = hb<=0.5?-0.7:(hb<=1?-0.7:(hb<=2?-0.8:-0.9));
+
   return`
 <div class="card or">
-  <div class="ct or">💨 Wind Analysis  -  IS 875 Part 3:2015</div>
-  ${sb('W-1','Basic Wind Speed',`
-    ${fm('Vb (Zone '+S.windZone+')',wind.VbW+' m/s','IS 875 P3 Fig. 1')}
-    <div class="cp or">Delhi/Agra: 47 m/s | Mumbai/Pune: 44 m/s | Chennai: 50 m/s | Himalayan region: 55 m/s</div>
-  `,'or')}
-  ${sb('W-2','Design Wind Speed & Pressure',`
-    ${fm('k1=1.0 (50-year return) | k2='+wind.k2+' (Terrain '+S.terrain+') | k3=1.0 (flat)','','IS 875 P3 Tables 1,2')}
-    ${fm('Vz = Vbxk1xk2xk3 = '+wind.VbW+'x1.0x'+wind.k2+'x1.0',r2(wind.Vz)+' m/s','IS 875 P3 Cl 5.3')}
-    ${fmWhy('pz = 0.6xVz^2/1000 = 0.6x'+r2(wind.Vz)+'^2/1000',r2(wind.pz)+' kN/m^2','IS 875 P3 Cl 5.4')}
-  `,'or')}
-  ${sb('W-3','Net Wind Pressure',`
-    ${fm('Cpe_windward = +0.8 | Cpe_leeward = -0.5 | Cpi = +/-0.5','','IS 875 P3 Tables 5,6')}
-    ${fm('Net pressure = (0.8+0.5)xpz = 1.3x'+r2(wind.pz),r2(wind.Fw)+' kN/m^2','worst case')}
-    ${vd(true,'Seismic Vb = '+r2(RES.seis.Vb)+' kN vs Wind ~ '+r2(wind.Fw*S.buildingW*S.numFloors*S.floorHt/2)+' kN -> '+(RES.seis.Vb>wind.Fw*S.buildingW*S.numFloors*S.floorHt/2?'SEISMIC GOVERNS':'WIND GOVERNS'))}
+  <div class="ct or">\ud83d\udca8 Wind Analysis \u2014 IS 875 Part 3:2015</div>
+  <div class="cd">Wind analysis determines horizontal force on the building from wind. For low-rise residential in seismic zones III-V, seismic usually governs \u2014 but wind MUST be checked independently.</div>
+
+  ${sb('W-1','Basic Wind Speed (Vb)',`
+    ${fm('Vb (Zone '+S.windZone+')',wind.VbW+' m/s','IS 875 P3 Cl 5.2 / Fig. 1')}
+    <div class="cp or">
+      <strong>Wind zone map (IS 875 P3 Fig. 1):</strong><br>
+      Zone I: 33 m/s (Himalayan foothills) | Zone II: 39 m/s (Central India) |
+      Zone III: 44 m/s (Mumbai, Pune, Bangalore) | Zone IV: 47 m/s (Delhi, Agra, Lucknow) |
+      Zone V: 50 m/s (Chennai, Kolkata, coastal Odisha) | Zone VI: 55 m/s (Coastal cyclone belt)
+    </div>
+    <div class="cp" style="border-left-color:var(--blue)">
+      <strong>What is Vb?</strong> The basic wind speed is the peak 3-second gust speed at 10m height in open terrain (Category 2) with a 50-year return period. It is NOT the average wind speed \u2014 it is the short-duration maximum that structures must withstand.
+    </div>
+    ${svgWindPressure(wind, H, B, L, hb)}
   `,'or')}
 
-  ${slabStepByStep(slab)}
-</div>`;}
+  ${sb('W-2','Wind Speed Modification Factors (k1, k2, k3, k4)',`
+    <div style="display:grid;gap:10px;margin-bottom:10px">
+      <div class="cp or">
+        <strong>k1 = Risk Coefficient</strong> (IS 875 P3 Table 1)<br>
+        For residential buildings with 50-year design life: <strong>k1 = 1.0</strong><br>
+        <span style="font-size:10px;color:var(--txt3)">k1 increases to 1.08 for 100-year return (hospitals), decreases to 0.90 for temporary structures (5-year return).</span>
+      </div>
+      <div class="cp or">
+        <strong>k2 = Terrain, Height & Structure Size Factor</strong> (IS 875 P3 Table 2)<br>
+        Terrain Category ${S.terrain}: k2 = <strong>${wind.k2}</strong> at height ${r2(H)}m<br>
+        <span style="font-size:10px;color:var(--txt3)">
+          Category 1: Open sea coast, flat plains (k2 = 1.05 at 10m).
+          Category 2: Open terrain with scattered obstructions (k2 = 1.00 at 10m).
+          Category 3: Closely built-up areas, city centres (k2 = 0.91 at 10m).
+          k2 INCREASES with height \u2014 taller buildings catch faster wind above the boundary layer.
+        </span>
+      </div>
+      <div class="cp or">
+        <strong>k3 = Topography Factor</strong> (IS 875 P3 Cl 5.3.3)<br>
+        For flat ground or gentle slopes (<3\u00b0): <strong>k3 = 1.0</strong><br>
+        <span style="font-size:10px;color:var(--txt3)">k3 > 1.0 for buildings on hilltops, ridges, or escarpments where wind accelerates. Can reach 1.36 for steep cliffs.</span>
+      </div>
+      <div class="cp or">
+        <strong>k4 = Importance Factor for Cyclonic Region</strong> (IS 875 P3 Cl 5.3.4)<br>
+        For non-cyclonic regions: <strong>k4 = 1.0</strong><br>
+        <span style="font-size:10px;color:var(--txt3)">k4 = 1.15 for buildings within 60km of coast in cyclone-prone areas (Gujarat, Odisha, AP, TN coast).</span>
+      </div>
+    </div>
+    ${fm('Design wind speed: Vz = Vb \u00d7 k1 \u00d7 k2 \u00d7 k3 \u00d7 k4','','IS 875 P3 Cl 5.3')}
+    ${fm('Vz = '+wind.VbW+' \u00d7 1.0 \u00d7 '+wind.k2+' \u00d7 1.0 \u00d7 1.0',r2(wind.Vz)+' m/s','')}
+    ${fmWhy('Design wind pressure: pz = 0.6 \u00d7 Vz\u00b2 / 1000',r2(wind.pz)+' kN/m\u00b2','IS 875 P3 Cl 5.4',
+      'The 0.6 factor comes from \u00bd\u03c1 where \u03c1 = air density = 1.2 kg/m\u00b3. So \u00bd\u00d71.2 = 0.6. The formula gives pressure in N/m\u00b2 when Vz is in m/s; divide by 1000 for kN/m\u00b2.')}
+  `,'or')}
 
+  ${sb('W-3','Pressure Coefficients (Cpe & Cpi)',`
+    <div class="cp or">
+      <strong>Building geometry:</strong> L = ${L}m \u00d7 B = ${B}m \u00d7 H = ${r2(H)}m | h/b = ${r2(hb)}<br>
+      External pressure coefficients depend on h/b ratio and face orientation.
+    </div>
+    <table>
+      <tr><th>Surface</th><th>Cpe</th><th>Explanation</th></tr>
+      <tr><td>Windward wall</td><td class="val" style="color:var(--green)">+${cpe_w}</td><td>Positive = pushes INTO building</td></tr>
+      <tr><td>Leeward wall</td><td class="val" style="color:var(--blue)">${cpe_l}</td><td>Negative = suction OUTWARD</td></tr>
+      <tr><td>Side walls</td><td class="val" style="color:var(--blue)">${cpe_side}</td><td>Suction \u2014 increases with h/b ratio</td></tr>
+      <tr><td>Roof (h/b=${r2(hb)})</td><td class="val" style="color:var(--blue)">-0.5 to -0.9</td><td>Uplift \u2014 roof sheeting must be anchored</td></tr>
+    </table>
+    <div class="cp" style="border-left-color:var(--blue);margin-top:10px">
+      <strong>Internal pressure (Cpi):</strong><br>
+      Enclosed buildings with small openings (<5%): <strong>Cpi = \u00b10.2</strong>. Medium openings (5-20%): Cpi = \u00b10.5.<br>
+      <span style="font-size:10px;color:var(--txt3)">The \u00b1 means we check BOTH cases: internal pressure helping AND opposing external pressure. Take the worst combination.</span>
+    </div>
+    ${fm('Net pressure on windward = (Cpe_w + |Cpi|) \u00d7 pz = (0.8+0.5) \u00d7 '+r2(wind.pz),r2(1.3*wind.pz)+' kN/m\u00b2','worst case')}
+    ${fm('Net pressure on leeward = (|Cpe_l| + Cpi) \u00d7 pz = (0.5+0.5) \u00d7 '+r2(wind.pz),r2(1.0*wind.pz)+' kN/m\u00b2 (suction)','')}
+    ${fm('Combined net lateral pressure on building = 1.3 \u00d7 pz',r2(wind.Fw)+' kN/m\u00b2','IS 875 P3 Cl 6.3')}
+  `,'or')}
 
+  ${sb('W-4','Floor-by-Floor Wind Force Distribution',`
+    <div class="cp or">
+      Unlike seismic (which distributes force based on mass \u00d7 height\u00b2), wind force depends on the actual wind pressure at each floor level. Higher floors get more force because k2 increases with height.
+    </div>
+    <table>
+      <tr><th>Floor</th><th>Height (m)</th><th>k2</th><th>Vz (m/s)</th><th>pz (kN/m\u00b2)</th><th>Trib H (m)</th><th>Force Fi (kN)</th></tr>
+      ${windFloors.map(f=>'<tr><td>'+(f.floor===S.numFloors?'Roof':'F'+f.floor)+'</td><td class="val">'+r2(f.h)+'</td><td class="val">'+r2(f.k2)+'</td><td class="val">'+r2(f.Vz)+'</td><td class="val">'+r2(f.pz)+'</td><td class="val">'+r2(f.tributH)+'</td><td class="val" style="font-weight:700">'+r2(f.Fi)+'</td></tr>').join('')}
+      <tr style="border-top:2px solid var(--b1);font-weight:700">
+        <td colspan="6">Total Wind Base Shear</td>
+        <td class="val" style="color:var(--orange)">${r2(totalWindForce)} kN</td>
+      </tr>
+    </table>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px">
+      <div>${svgWindProfile(wind, windFloors, H)}</div>
+      <div>${svgWindForces(windFloors, totalWindForce, seis.Vb)}</div>
+    </div>
+  `,'or')}
+
+  ${sb('W-5','Seismic vs Wind Comparison \u2014 Which Governs?',`
+    <table>
+      <tr><th>Parameter</th><th>Seismic (IS 1893)</th><th>Wind (IS 875 P3)</th><th>Governs</th></tr>
+      <tr>
+        <td>Base shear</td>
+        <td class="val">${r2(seis.Vb)} kN</td>
+        <td class="val">${r2(totalWindForce)} kN</td>
+        <td class="val" style="font-weight:700;color:${seismicGoverns?'var(--green)':'var(--orange)'}">${seismicGoverns?'SEISMIC':'WIND'}</td>
+      </tr>
+      <tr><td>Load factor</td><td>1.5 (IS 1893)</td><td>1.5 (IS 875)</td><td>Same</td></tr>
+      <tr><td>Direction</td><td>Both X and Y</td><td>Critical direction</td><td>\u2014</td></tr>
+    </table>
+    ${vd(true, seismicGoverns
+      ? 'Seismic base shear ('+r2(seis.Vb)+' kN) exceeds wind ('+r2(totalWindForce)+' kN) \u2014 SEISMIC GOVERNS for lateral design. This is typical for low-rise residential in Indian seismic zones III-V. However, local wind effects (roof uplift, cladding design) still use IS 875 Part 3 values.'
+      : 'Wind base shear ('+r2(totalWindForce)+' kN) exceeds seismic ('+r2(seis.Vb)+' kN) \u2014 WIND GOVERNS for lateral design. This can happen in low-seismic zones (Zone II) with high wind speeds. Design columns and beams for wind + gravity combination.'
+    )}
+    <div class="cp" style="border-left-color:var(--txt3);margin-top:10px">
+      <strong>Why seismic usually governs for Indian residential buildings:</strong><br>
+      A typical G+3 residential building in Zone IV (Z=0.24) has Ah \u2248 0.06. With building weight ~4000 kN, Vb \u2248 240 kN.
+      Wind pressure pz \u2248 1.3 kN/m\u00b2 gives total wind force \u2248 80-100 kN \u2014 about half the seismic force.
+      Wind can govern for: (1) tall industrial buildings with large exposed area, (2) coastal zones with high wind + low seismic zone, (3) lightweight structures like steel sheds.
+    </div>
+  `,'or')}
+</div>`;
+}
 
 // ================================================================
 // SLAB — floor selector + typical vs roof
@@ -4982,6 +5132,31 @@ function beamDetail(b){
   ${vd(ok,ok?'All checks PASS — beam is safe':'One or more checks FAIL — revision required')}
   <div style="font-size:10px;color:var(--txt3);margin-bottom:10px">End conditions: <strong style="color:var(--txt2)">${b.endCond||'auto'}</strong></div>
 
+  ${b.isTransfer?`
+  <div style="margin-bottom:12px;padding:12px;background:rgba(245,158,11,0.06);border:1.5px solid rgba(245,158,11,0.4);border-radius:8px">
+    <div style="font-size:12px;font-weight:800;color:#f59e0b;margin-bottom:8px">⚠ TRANSFER BEAM — Read This First</div>
+    <div style="font-size:10px;color:#fbbf24;line-height:1.8;margin-bottom:8px">
+      <strong>What is a transfer beam?</strong><br>
+      A transfer beam carries the load of a <em>floating column</em> — a column that has no support below it. This happens when a column is removed for architectural reasons (open plan, parking, lobby). The transfer beam must carry the entire load from all floors above the missing column, delivered as a heavy <strong>point load</strong> at a specific position along its span, in addition to its normal slab UDL load.
+    </div>
+    ${b.transferPL?`
+    <div style="font-size:10px;color:#94a3b8;line-height:1.8;background:#0a0f1e;padding:8px;border-radius:6px;margin-bottom:8px">
+      <strong style="color:#f59e0b">Point Load from floating column:</strong><br>
+      Service load P_s = <strong>${r2(b.transferPL.P_s)} kN</strong> (${b.transferPL.floorsAbove} floors × ${r2(b.transferPL.slabArea)}m² tributary area)<br>
+      Factored load P_u = 1.5 × ${r2(b.transferPL.P_s)} = <strong style="color:#f59e0b">${r2(b.transferPL.P_u)} kN</strong><br>
+      Position: <strong>${r2(b.transferPL.a)}m from left end</strong>, ${r2(b.transferPL.b)}m from right end (L=${b.L}m)<br>
+      Additional moment: P_u × a × b / L = ${r2(b.transferPL.P_u)} × ${r2(b.transferPL.a)} × ${r2(b.transferPL.b)} / ${b.L} = <strong>${r2(b.transferPL.P_u*b.transferPL.a*b.transferPL.b/b.L)} kN.m</strong>
+    </div>`:``}
+    <div style="font-size:9px;color:#92400e;padding:6px 10px;background:rgba(245,158,11,0.08);border-radius:4px">
+      ⚠ <strong>IMPORTANT:</strong> Transfer beam design is approximate. The actual design must account for:<br>
+      • Deflection under point load (much larger than UDL beams)<br>
+      • Differential settlement at supports<br>
+      • Connection detailing at the floating column<br>
+      • Seismic considerations — IS 1893 requires special detailing<br>
+      <strong>Always verify transfer beam design with a qualified structural engineer before construction.</strong>
+    </div>
+  </div>`:``}
+
   ${sb('B-1','Beam Size',`
     ${fm('D (start at L×1000/12 = '+r2(b.L*1000)+'/12, iterate up until Mu≤Mulim & δ≤δallow)',b.D+' mm','')}
     ${fm('b = max(200, 0.4D) = max(200, '+r0(0.4*b.D)+')',b.b+' mm','IS 456 Cl 26.5.1.2')}
@@ -4989,40 +5164,95 @@ function beamDetail(b){
   `,'or')}
 
   ${sb('B-2','Loading',`
+    ${svgTributaryArea(b)}
     ${fm('Tributary width from grid (slab bays only)',r2(b.trib)+' m','')}
-    ${fm('w_slab = (DL+FF+PL+LL)×trib = '+r2(RES.slab.DL_sl+S.floorFinish+S.partitions+(b.isRoof?S.udlRoof:S.udlLL))+'×'+r2(b.trib),r2(b.wslab)+' kN/m','')}
+    ${(()=>{
+      const lx=Math.min(b.spX||S.spansX[b.col]||4, b.spY||S.spansY[b.row]||3);
+      const ly=Math.max(b.spX||S.spansX[b.col]||4, b.spY||S.spansY[b.row]||3);
+      const r=ly/lx, twoWay=r<2;
+      const beamSpan=b.dir==='X'?(b.spX||S.spansX[b.col]||4):(b.spY||S.spansY[b.row]||3);
+      const isShort=beamSpan<=Math.max(b.spX||S.spansX[b.col]||4,b.spY||S.spansY[b.row]||3);
+      const wBase=r2(RES.slab.DL_sl+S.floorFinish+S.partitions+(b.isRoof?S.udlRoof:S.udlLL));
+      let formula='', result='';
+      if(twoWay && isShort){
+        formula=`w_slab = w × lx/3 = ${wBase} × ${r2(lx)}/3`;
+        result=r2(b.wslab)+' kN/m (triangular → equiv UDL, IS 456 Annex D)';
+      } else if(twoWay && !isShort){
+        formula=`w_slab = w × lx/3 × (3-(lx/ly)²)/2 = ${wBase} × ${r2(lx)}/3 × (3-${r2((lx/ly)**2)})/2`;
+        result=r2(b.wslab)+' kN/m (trapezoidal → equiv UDL, IS 456 Annex D)';
+      } else if(isShort){
+        formula=`w_slab = w × lx/2 = ${wBase} × ${r2(lx)}/2`;
+        result=r2(b.wslab)+' kN/m (one-way slab: rectangular, IS 456 Cl 24.1)';
+      } else {
+        formula=`w_slab ≈ 0 (one-way slab: long-span beam, IS 456 Cl 24.1)`;
+        result=r2(b.wslab)+' kN/m';
+      }
+      return fm(formula, result, '');
+    })()}
     ${fm('w_sw (self-weight) = '+b.b+'/1000 × '+b.D+'/1000 × 25',r2(b.wsw)+' kN/m','')}
     ${b.ww>0?fm('w_wall (perimeter beam)',r2(b.ww)+' kN/m',''):''}
     ${fm('wu = 1.5 × ('+r2(b.wslab)+' + '+r2(b.wsw)+(b.ww>0?' + '+r2(b.ww):'')+') factored',r2(b.wu)+' kN/m','IS 456 Table 18')}
   `,'or')}
 
-  ${sb('B-3','Bending Moment',`
-    ${fm('Mmax = alpha × wu × L² = '+r2(b.isCantilever?0.5:b.wu/(b.wu||1))+'... × '+r2(b.wu)+'×'+b.L+'²',r2(b.Mmax)+' kN.m','')}
-    ${b.Msup>0?fm('Msup (at support) = alpha_sup × wu × L²',r2(b.Msup)+' kN.m',''):''}
-    ${fm('Mulim = 0.36×xu_max×(1-0.42×xu_max)×fck×b×d² = Mf×'+S.fck+'×'+b.b+'×'+b.d+'²/1e6',r2(b.Mulim)+' kN.m','')}
-    ${vd(b.Mmax<=b.Mulim,'Mmax ('+r2(b.Mmax)+') '+(b.Mmax<=b.Mulim?'≤':'>')+' Mulim ('+r2(b.Mulim)+') → '+(b.Mmax<=b.Mulim?'Singly reinforced OK':'DOUBLY reinforced needed'),b.momUtil)}
+  ${sb('B-3','Bending Moment & Shear Force Diagrams',`
+    ${svgBeamBMD_SFD(b)}
+    ${sb('B-3a','Longitudinal Section — Bar Layout & Stirrups',svgBeamLongitudinal(b),'or')}
+
+    <div class="cp or" style="font-size:10px;line-height:2.0;margin-bottom:8px">
+      <strong>Formula:</strong> Mmax = α × wu × L²<br>
+      <strong>Where:</strong><br>
+      &nbsp;&nbsp;α = moment coefficient = ${r2(b.isCantilever?0.5:b.Mmax/(b.wu*b.L*b.L))} (${b.isCantilever?'cantilever = 0.5':'IS 456 Table 12'})<br>
+      &nbsp;&nbsp;wu = ${r2(b.wu)} kN/m (factored UDL = 1.5 × total service load)<br>
+      &nbsp;&nbsp;L = ${b.L} m (effective span of beam)<br>
+      <strong>Result:</strong> Mmax = ${r2(b.isCantilever?0.5:b.Mmax/(b.wu*b.L*b.L))} × ${r2(b.wu)} × ${b.L}² = <strong style="color:var(--orange)">${r2(b.Mmax)} kN.m</strong><br><br>
+      <strong>Formula:</strong> Mulim = Mf × fck × b × d² / 10⁶<br>
+      <strong>Where:</strong><br>
+      &nbsp;&nbsp;Mf = ${r2(b.Mulim*1e6/(S.fck*b.b*b.d*b.d))} (limiting factor for Fe${S.fy} steel from IS 456 Annex G)<br>
+      &nbsp;&nbsp;fck = ${S.fck} N/mm² (concrete grade M${S.fck})<br>
+      &nbsp;&nbsp;b = ${b.b} mm (beam width)<br>
+      &nbsp;&nbsp;d = ${b.d} mm (effective depth)<br>
+      <strong>Result:</strong> Mulim = ${r2(b.Mulim*1e6/(S.fck*b.b*b.d*b.d))} × ${S.fck} × ${b.b} × ${b.d}² / 10⁶ = <strong style="color:var(--orange)">${r2(b.Mulim)} kN.m</strong>
+    </div>
+    ${vd(b.Mmax<=b.Mulim,'Mmax ('+r2(b.Mmax)+') '+(b.Mmax<=b.Mulim?'≤':'>')+' Mulim ('+r2(b.Mulim)+') → '+(b.Mmax<=b.Mulim?'Singly reinforced OK':'DOUBLY reinforced needed — or increase depth'),b.momUtil)}
   `,'or')}
 
-  ${sb('B-4','Reinforcement',`
-    ${fm('Ast_bottom = Mu/(0.87fy×d×[1 - Mu/(fck×b×d²×0.48)])',r0(b.Am)+' mm²','')}
+  ${sb('B-4','Reinforcement & Cross-Section',`
+    ${svgBeamCrossSection(b)}
+    <div class="cp or" style="font-size:10px;line-height:2.0;margin-bottom:8px">
+      <strong>Formula:</strong> Ast = Mu / (0.87 × fy × d × [1 − Mu/(fck × b × d² × 0.48)])<br>
+      <strong>Where:</strong><br>
+      &nbsp;&nbsp;Mu = ${r2(b.Mmax)} kN.m (design bending moment)<br>
+      &nbsp;&nbsp;fy = ${S.fy} N/mm² (steel yield strength Fe${S.fy})<br>
+      &nbsp;&nbsp;d = ${b.d} mm (effective depth)<br>
+      &nbsp;&nbsp;fck = ${S.fck} N/mm² (concrete grade M${S.fck})<br>
+      &nbsp;&nbsp;b = ${b.b} mm (beam width)<br>
+      <strong>Result:</strong> Ast_required = <strong style="color:var(--orange)">${r0(b.Am)} mm²</strong>
+    </div>
     ${fm('No. of T20 bars = Ast/π×100 = '+r0(b.Am)+'/314',b.nm+' bars (Ap='+r0(b.Ap)+' mm²)','IS 456 Cl 26.5.1.2')}
-    ${b.ns>0?fm('Top bars (at support)',b.ns+' bars',''):''}
+    ${b.ns>0?fm('Top bars (at support — compression/hogging)',b.ns+' bars',''):''}
     ${fm('pt = Ap/(b×d) × 100 = '+r0(b.Ap)+'/('+b.b+'×'+b.d+')×100',r2(b.pt)+'%','')}
     ${fm('Ld = 0.87fy×φ/(4τbd) = 0.87×'+S.fy+'×20/(4×1.6×1.25×√'+S.fck+')',r0(b.Ld)+' mm','IS 456 Cl 26.2')}
   `,'or')}
 
-  ${sb('B-5','Shear',`
-    ${fm('RA = '+(b.isCantilever?'wu×L':'0.55×wu×L')+' = '+(b.isCantilever?'wu':'0.55×'+r2(b.wu))+'×'+b.L,r2(b.RA)+' kN','')}
-    ${fm('tv = RA×1000/(b×d) = '+r2(b.RA)+'×1000/('+b.b+'×'+b.d+')',r2(b.tv)+' N/mm²','')}
-    ${fm('tc (from Table 19, pt='+r2(b.pt)+'%)',r2(b.tc)+' N/mm²','IS 456 Table 19')}
-    ${fm('tc_max (Table 20, M'+S.fck+')',r2(b.tcmax)+' N/mm²','IS 456 Table 20')}
-    ${vd(b.shearSafe,'tv ('+r2(b.tv)+') '+(b.shearSafe?'≤':'>')+' tc_max ('+r2(b.tcmax)+') → '+(b.shearSafe?'OK':'FAIL — increase b×d'),b.shearUtil)}
-    ${fm('Stirrups (conf.zone): D8@'+b.svd+'mm | Midspan: D8@'+b.sv+'mm','Lo=max(2D,L/4)='+r0(Math.max(2*b.D,b.L*1000/4))+'mm','IS 13920 Cl 6.3.5')}
+  ${sb('B-5','Shear Design',`
+    <div class="cp or" style="font-size:10px;line-height:2.0;margin-bottom:8px">
+      <strong>Formula:</strong> τv = Vu / (b × d)<br>
+      <strong>Where:</strong><br>
+      &nbsp;&nbsp;Vu = end shear = ${b.isCantilever?'wu × L':'0.55 × wu × L'} = ${b.isCantilever?r2(b.wu)+'×'+b.L:'0.55×'+r2(b.wu)+'×'+b.L} = <strong>${r2(b.RA)} kN</strong><br>
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(${b.isCantilever?'cantilever: full wu×L at support':'IS 456 Table 12 shear coefficient 0.55 for continuous beam'})<br>
+      &nbsp;&nbsp;b = ${b.b} mm (beam width)<br>
+      &nbsp;&nbsp;d = ${b.d} mm (effective depth)<br>
+      <strong>Result:</strong> τv = ${r2(b.RA)} × 1000 / (${b.b} × ${b.d}) = <strong style="color:var(--orange)">${r2(b.tv)} N/mm²</strong><br><br>
+      &nbsp;&nbsp;τc = ${r2(b.tc)} N/mm² (concrete shear capacity from IS 456 Table 19 at pt=${r2(b.pt)}%)<br>
+      &nbsp;&nbsp;τc,max = ${r2(b.tcmax)} N/mm² (maximum limit for M${S.fck} from IS 456 Table 20)
+    </div>
+    ${vd(b.shearSafe,'τv ('+r2(b.tv)+') '+(b.shearSafe?'≤':'>')+' τc,max ('+r2(b.tcmax)+') → '+(b.shearSafe?'Shear OK':'FAIL — increase b or D'),b.shearUtil)}
+    ${fm('Stirrups (confinement zone Lo): D8@'+b.svd+'mm | Midspan: D8@'+b.sv+'mm','Lo=max(2D,L/4)='+r0(Math.max(2*b.D,b.L*1000/4))+'mm','IS 13920 Cl 6.3.5')}
   `,'or')}
 
   ${sb('B-6','Deflection',`
     ${fm('δ = 5wu×L⁴/(384EI) = 5×'+r2(b.wu)+'×'+b.L+'⁴/(384×'+r2(b.EI)+')',r2(b.dfl)+' mm','')}
-    ${fm('δallow = L/'+( b.isCantilever?'150':'250')+' = '+b.L*1000+'/'+(b.isCantilever?'150':'250'),r2(b.dall)+' mm','IS 456 Cl 23.2(b)')}
+    ${fm('δallow = L/'+( b.isCantilever?'150':'250')+' = '+b.L*1000+'/'+(b.isCantilever?'150':'250'),r2(b.dall)+' mm','IS 456 Cl 23.2')}
     ${vd(b.deflOK,'δ ('+r2(b.dfl)+') '+(b.deflOK?'≤':'>')+' δallow ('+r2(b.dall)+') → '+(b.deflOK?'OK':'FAIL — increase D'),b.deflUtil)}
   `,'or')}
 
@@ -5059,8 +5289,65 @@ function beamDetail(b){
     return sb('B-7','Floor-by-Floor Beam Summary (same span, varying load)',
       '<div style="font-size:10px;color:var(--txt3);margin-bottom:6px">D×b governed by deflection — constant on all floors. Load, steel and stirrups vary.</div>'+tblHtml+note,'or');
   })()}
+  ${beamFailureExplanation(b)}
 
-  <div style="margin-top:10px;padding:10px">
+  ${(()=>{
+    // ── FEATURE B: Member Override Panel ──
+    const ovrKey = `B:${b.row}:${b.col}:${b.dir}`;
+    const hasOvr = window._memberOverrides && window._memberOverrides[ovrKey];
+    const recD = !b.deflOK ? Math.ceil(b.D*Math.pow(b.dfl/b.dall,1/3)/25+1)*25 : null;
+    const recB = !b.shearSafe ? Math.max(b.b+50, Math.ceil(b.b*1.25/25)*25) : null;
+    const ovr = hasOvr ? window._memberOverrides[ovrKey] : null;
+
+    return `<div style="margin-top:12px;padding:12px;background:rgba(56,189,248,0.05);border:1.5px solid rgba(56,189,248,0.2);border-radius:8px">
+      <div style="font-size:11px;font-weight:700;color:#38bdf8;margin-bottom:8px">🔧 Try Different Size — Re-analyse with Override</div>
+      <div style="font-size:10px;color:#94a3b8;margin-bottom:10px">
+        Change the size of beam <strong style="color:#f59e0b">${b.label}</strong> and see how the full building responds.
+        ${!b.deflOK||!b.shearSafe?`<span style="color:#34d399">Recommended fix: D=${recD||b.D}mm${recB?', b='+recB+'mm':''}</span>`:''}
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:10px">
+        <div>
+          <div style="font-size:9px;color:#64748b;margin-bottom:3px">Depth D (mm)</div>
+          <input id="ovr_bD_${ovrKey.replace(/:/g,'_')}" type="number" min="200" max="1000" step="25"
+            value="${ovr?ovr.D:b.D}"
+            style="width:90px;padding:6px 8px;background:#0f172a;border:1px solid ${!b.deflOK?'#f87171':'#334155'};border-radius:6px;color:#f1f5f9;font-size:11px;font-family:JetBrains Mono"/>
+          ${recD?`<div style="font-size:8px;color:#34d399;margin-top:2px">Recommended: ${recD}mm</div>`:''}
+        </div>
+        <div>
+          <div style="font-size:9px;color:#64748b;margin-bottom:3px">Width b (mm)</div>
+          <input id="ovr_bB_${ovrKey.replace(/:/g,'_')}" type="number" min="150" max="600" step="25"
+            value="${ovr?ovr.b:b.b}"
+            style="width:90px;padding:6px 8px;background:#0f172a;border:1px solid ${!b.shearSafe?'#f87171':'#334155'};border-radius:6px;color:#f1f5f9;font-size:11px;font-family:JetBrains Mono"/>
+          ${recB?`<div style="font-size:8px;color:#34d399;margin-top:2px">Recommended: ${recB}mm</div>`:''}
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          ${recD||recB?`<button onclick="
+            document.getElementById('ovr_bD_${ovrKey.replace(/:/g,'_')}').value=${recD||b.D};
+            document.getElementById('ovr_bB_${ovrKey.replace(/:/g,'_')}').value=${recB||b.b};
+          " style="padding:6px 12px;background:rgba(52,211,153,0.12);border:1px solid #34d399;border-radius:6px;color:#34d399;cursor:pointer;font-size:10px;font-weight:700">
+            ✓ Use Recommended
+          </button>`:''}
+          <button onclick="(function(){
+            const k='${ovrKey}';
+            const D=parseInt(document.getElementById('ovr_bD_${ovrKey.replace(/:/g,'_')}').value);
+            const bw=parseInt(document.getElementById('ovr_bB_${ovrKey.replace(/:/g,'_')}').value);
+            if(!window._memberOverrides) window._memberOverrides={};
+            window._memberOverrides[k]={D,b:bw};
+            runWithOverrides('Beam ${b.label}: D→'+D+'mm, b→'+bw+'mm');
+          })()" style="padding:6px 14px;background:rgba(56,189,248,0.12);border:1px solid #38bdf8;border-radius:6px;color:#38bdf8;cursor:pointer;font-size:10px;font-weight:700">
+            ⚡ Re-analyse
+          </button>
+          ${hasOvr?`<button onclick="delete window._memberOverrides['${ovrKey}'];runWithOverrides('Reset ${b.label}')" style="padding:6px 12px;background:transparent;border:1px solid #64748b;border-radius:6px;color:#64748b;cursor:pointer;font-size:10px">
+            ↺ Reset to auto
+          </button>`:''}
+        </div>
+      </div>
+      ${hasOvr?`<div style="font-size:9px;padding:4px 10px;background:rgba(249,115,22,0.1);border-radius:4px;color:#f97316">⚠ This beam is using a student override (D=${ovr.D}mm, b=${ovr.b}mm). Auto-design is disabled for this beam.</div>`:''}
+    </div>`;
+  })()}
+
+
+  <div style="margin-top:12px;border-top:1px solid rgba(71,85,105,0.3);padding-top:10px">
     <button onclick="(function(){try{window.parent.postMessage({type:'OPEN_AI_FOR_MEMBER',member:'${b.label||'beam'}',issue:'${b.shearSafe===false?'shear fail':b.deflOK===false?'deflection fail':'design check'}',memberType:'beam'},'*');}catch(e){}})()" style="width:100%;padding:8px;background:linear-gradient(135deg,rgba(79,70,229,0.15),rgba(124,58,237,0.15));border:1.5px solid rgba(99,102,241,0.4);border-radius:8px;color:#818cf8;cursor:pointer;font-size:11px;font-weight:700;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px" onmouseover="this.style.borderColor='#6366f1'" onmouseout="this.style.borderColor='rgba(99,102,241,0.4)'">🤖 Ask AI about this beam →</button>
   </div>
 </div>`;
@@ -5178,7 +5465,7 @@ function colDetail(c){
   ${vd(ok,ok?'SAFE — Pu('+r2(c.Pu)+'kN) ≤ Pcap('+r2(c.Pcap)+'kN)':'UNSAFE — Pu('+r2(c.Pu)+'kN) > Pcap('+r2(c.Pcap)+'kN) — REVISE',c.Pu/c.Pcap)}
 
   ${sb('C-1','Tributary Area & Axial Load',`
-    ${svgTribArea(c.corner?'corner':c.edge?'edge':'interior',S.spansX[c.col]||4,S.spansY[c.row]||3)}
+    ${svgTribArea(c.corner?'corner':c.edge?'edge':'interior', S.spansX[c.col]||4, S.spansY[c.row]||3, c.row, c.col, GRID.ny, GRID.nx)}
     ${fm('Slab trib area (slab bays only, voids excluded)',r2(c.ta)+' m²','')}
     ${c.perimLen>0?fm('Perimeter beam length (wall load)',r2(c.perimLen)+' m',''):''}
     ${fm('Ps per floor = DL_tot×area + LL×area×0.25 + wallLoad×perimLen',r2(c.Ps/c.floorsAbove)+' kN/floor','')}
@@ -5186,28 +5473,128 @@ function colDetail(c){
     ${fm('Pu = 1.5 × Ps',r2(c.Pu)+' kN','IS 456 Cl 18.2')}
   `,'vi')}
 
-  ${sb('C-2','Column Size',`
-    ${fm('Required Ag = Pu/(0.4fck + 0.008(0.67fy-0.4fck))',r0(c.Ag)+' mm²','')}
-    ${fm('Size = √Ag rounded up to 25mm, min 300mm',c.size+'×'+c.size+' mm','')}
+  ${sb('C-2','Column Size — Step-by-Step',`
+    <div class="cp vi" style="margin-bottom:10px;font-size:10px;line-height:2.0">
+      <strong>Formula:</strong> Required Ag = Pu × 1000 / (0.4·fck + 0.008·(0.67·fy − 0.4·fck))<br>
+      <strong>Where:</strong><br>
+      &nbsp;&nbsp;Pu = ${r2(c.Pu)} kN (factored axial load = 1.5 × ${r2(c.Ps)} kN service)<br>
+      &nbsp;&nbsp;fck = ${S.fck} N/mm² (concrete grade M${S.fck})<br>
+      &nbsp;&nbsp;fy = ${S.fy} N/mm² (steel grade Fe${S.fy})<br>
+      &nbsp;&nbsp;0.4·fck = ${r2(0.4*S.fck)} N/mm²<br>
+      &nbsp;&nbsp;0.67·fy = ${r2(0.67*S.fy)} N/mm²<br>
+      <strong>Result:</strong> Ag = ${r2(c.Pu)}×1000 / (${r2(0.4*S.fck)} + 0.008×(${r2(0.67*S.fy)} − ${r2(0.4*S.fck)})) = <strong style="color:#a78bfa">${r0(c.Ag)} mm²</strong>
+    </div>
+    ${fm('Size = √'+r0(c.Ag)+' rounded up to 25mm, min 300mm (IS 13920)',c.size+'×'+c.size+' mm','IS 13920 Cl 7.1')}
     ${fm('leff = 0.65×H = 0.65×'+r2(S.floorHt*1000),r0(c.leff)+' mm','IS 456 Table 28')}
     ${fm('Slenderness = leff/size = '+r0(c.leff)+'/'+c.size,r2(c.lex),'IS 456 Cl 25.1')}
     ${vd(c.short,c.lex+(c.short?' ≤ 12 → SHORT column OK':' > 12 → LONG column — additional moment required'))}
   `,'vi')}
 
-  ${sb('C-3','Reinforcement (IS 456 Cl 39.3)',`
-    ${fm('Pcap = 0.4×fck×Ac + 0.67×fy×Asc (IS 456 Cl 39.3)',r2(c.Pcap)+' kN','')}
-    ${fm('Asc_req = (Pu×1000 - 0.4×fck×Ag)/(0.67×fy-0.4×fck)',r0(Math.max(0,c.Ar))+' mm²','')}
-    ${fm('Asc_min = 0.8%×Ag = 0.008×'+r0(c.Ag),r0(0.008*c.Ag)+' mm²','IS 456 Cl 26.5.3.1')}
-    ${fm('Asc_max = 4%×Ag = 0.04×'+r0(c.Ag),r0(0.04*c.Ag)+' mm²','IS 456 Cl 26.5.3.1')}
+  ${sb('C-3','Reinforcement — Step-by-Step (IS 456 Cl 39.3)',`
+    <div class="cp vi" style="margin-bottom:10px;font-size:10px;line-height:2.0">
+      <strong>Column capacity formula (IS 456 Cl 39.3):</strong><br>
+      Pcap = 0.4·fck·Ac + 0.67·fy·Asc<br>
+      <strong>Where:</strong><br>
+      &nbsp;&nbsp;Ac = Ag − Asc = ${r0(c.Ag)} − ${r0(c.Aprov)} = ${r0(c.Ag-c.Aprov)} mm² (net concrete area)<br>
+      &nbsp;&nbsp;Asc = ${r0(c.Aprov)} mm² (steel area provided = ${c.nb}×D${c.dB})<br>
+      <strong>Result:</strong> Pcap = 0.4×${S.fck}×${r0(c.Ag-c.Aprov)} + 0.67×${S.fy}×${r0(c.Aprov)} = <strong style="color:#a78bfa">${r2(c.Pcap)} kN</strong>
+    </div>
+    ${(()=>{
+      const Ar_raw=(c.Pu*1000-0.4*S.fck*c.Ag)/(0.67*S.fy-0.4*S.fck);
+      const Asc_axial=Math.max(0,Ar_raw);
+      const Asc_ecc=c.Asc_ecc||0;
+      const Asc_min=0.008*c.Ag;
+      const Asc_combined=Asc_axial+Asc_ecc;
+      const concreteCarries=0.4*S.fck*c.Ag/1000;
+      const govAsc=Math.max(Asc_combined,Asc_min);
+      var html3='';
+      html3+='<div style="background:rgba(167,139,250,0.05);border:1px solid rgba(167,139,250,0.2);border-radius:8px;padding:10px;margin:8px 0;font-size:11px">';
+      html3+='<div style="font-weight:700;color:#a78bfa;margin-bottom:8px">Steel Requirement — 3 Checks (IS 456 Cl 25.4, 26.5.3, 39.3)</div>';
+      html3+='<div style="margin-bottom:6px;padding:6px;background:rgba(0,0,0,0.2);border-radius:4px">';
+      html3+='<span style="color:#94a3b8">① Axial demand only (IS 456 Cl 39.3):</span><br>';
+      html3+='<span style="font-family:monospace;font-size:10px">Asc_axial = (Pu×1000 − 0.4×fck×Ag)/(0.67×fy−0.4×fck)</span><br>';
+      html3+='<span style="font-family:monospace;font-size:10px">= ('+r0(c.Pu*1000)+' − '+r0(0.4*S.fck*c.Ag)+')/'+r0(0.67*S.fy-0.4*S.fck)+' = '+r2(Ar_raw)+' mm²</span><br>';
+      html3+=Ar_raw<=0
+        ?'<span style="color:#fbbf24">→ 0 mm² (concrete alone can carry '+r2(concreteCarries)+'kN ≥ Pu='+r2(c.Pu)+'kN for pure axial)</span>'
+        :'<span style="color:#34d399">→ '+r0(Asc_axial)+' mm²</span>';
+      html3+='</div>';
+      html3+='<div style="margin-bottom:6px;padding:6px;background:rgba(0,0,0,0.2);border-radius:4px">';
+      html3+='<span style="color:#94a3b8">② Minimum eccentricity moment (IS 456 Cl 25.4):</span><br>';
+      html3+='<span style="font-family:monospace;font-size:10px">emin = max(L/500+D/30, 20) = '+r1(c.emin)+'mm</span><br>';
+      html3+='<span style="font-family:monospace;font-size:10px">Mu_min = Pu×emin = '+r2(c.Pu)+'×'+r1(c.emin)+'/1000 = '+r2(c.Mu_min)+' kN.m</span><br>';
+      html3+='<span style="font-family:monospace;font-size:10px">Asc_ecc = Mu_min×10⁶/(0.67×fy×lever_arm) = '+r0(Asc_ecc)+' mm²</span><br>';
+      html3+='<span style="color:#f87171;font-weight:600">→ '+r0(Asc_ecc)+' mm² (columns ALWAYS have bending — no column is purely axial)</span>';
+      html3+='</div>';
+      html3+='<div style="margin-bottom:6px;padding:6px;background:rgba(0,0,0,0.2);border-radius:4px">';
+      html3+='<span style="color:#94a3b8">③ Minimum steel (IS 456 Cl 26.5.3.1):</span><br>';
+      html3+='<span style="font-family:monospace;font-size:10px">Asc_min = 0.8% × Ag = 0.008 × '+r0(c.Ag)+' = '+r0(Asc_min)+' mm²</span><br>';
+      html3+='<span style="color:#60a5fa">→ '+r0(Asc_min)+' mm² (prevents brittle failure, resists creep/shrinkage)</span>';
+      html3+='</div>';
+      html3+='<div style="padding:8px;background:rgba(52,211,153,0.1);border:1px solid rgba(52,211,153,0.3);border-radius:4px">';
+      html3+='<strong style="color:#34d399">Governing: Asc_design = max(①+②, ③) = max('+r0(Asc_axial)+'+'+r0(Asc_ecc)+', '+r0(Asc_min)+') = <span style="color:#a78bfa">'+r0(govAsc)+' mm²</span></strong>';
+      html3+='</div>';
+      html3+='</div>';
+      return html3;
+    })()}
+    ${fm('Asc_max = 4% × Ag = 0.04 × '+r0(c.Ag),r0(0.04*c.Ag)+' mm²','IS 456 Cl 26.5.3.1')}
     ${fm('Provide: '+c.nb+' D'+c.dB+' bars',r0(c.Aprov)+' mm² (pt='+r2(c.pt)+'%)','IS 456 Cl 26.5.3')}
+    ${(()=>{
+      const sz=c.size,cv=40,stir=8,barR=c.dB/2;
+      const W=220,H=220;
+      const sc=Math.min(150/sz,150/sz)*0.65;
+      const bw=sz*sc,ox=(W-bw)/2,oy=20;
+      const cvs=cv*sc,sts=stir*sc,brs=Math.max(3,barR*sc);
+      let s='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;max-width:220px;display:block">';
+      s+='<rect width="'+W+'" height="'+H+'" fill="#0a0f1e" rx="6"/>';
+      s+='<text x="'+W/2+'" y="14" fill="#a78bfa" font-size="9" font-weight="bold" text-anchor="middle" font-family="JetBrains Mono">COLUMN CROSS-SECTION</text>';
+      s+='<rect x="'+ox+'" y="'+oy+'" width="'+bw+'" height="'+bw+'" fill="rgba(71,85,105,0.5)" stroke="#64748b" stroke-width="2" rx="1"/>';
+      s+='<rect x="'+(ox+cvs)+'" y="'+(oy+cvs)+'" width="'+(bw-2*cvs)+'" height="'+(bw-2*cvs)+'" fill="none" stroke="#f59e0b" stroke-width="0.5" stroke-dasharray="3,3"/>';
+      s+='<rect x="'+(ox+cvs+sts/2)+'" y="'+(oy+cvs+sts/2)+'" width="'+(bw-2*cvs-sts)+'" height="'+(bw-2*cvs-sts)+'" fill="none" stroke="#94a3b8" stroke-width="'+sts+'" stroke-linejoin="round"/>';
+      const nb2=c.nb;
+      const positions=[];
+      const startX=ox+cvs+sts+brs;const startY=oy+cvs+sts+brs;
+      const endX=ox+bw-cvs-sts-brs;const endY=oy+bw-cvs-sts-brs;
+      // Always place corner bars first, then distribute extras along sides
+      // Corners: TL, TR, BR, BL
+      const corners=[[startX,startY],[endX,startY],[endX,endY],[startX,endY]];
+      corners.forEach(pt=>positions.push(pt));
+      // Extra bars beyond 4 are placed along sides (top, right, bottom, left)
+      const extras=nb2-4;
+      if(extras>0){
+        const perSide=Math.floor(extras/4);
+        const rem=extras%4;
+        // Top side extras
+        const topN=perSide+(rem>0?1:0);
+        for(let i=1;i<=topN;i++) positions.push([startX+(endX-startX)*(i/(topN+1)),startY]);
+        // Right side extras
+        const rightN=perSide+(rem>1?1:0);
+        for(let i=1;i<=rightN;i++) positions.push([endX,startY+(endY-startY)*(i/(rightN+1))]);
+        // Bottom side extras
+        const botN=perSide+(rem>2?1:0);
+        for(let i=1;i<=botN;i++) positions.push([startX+(endX-startX)*(i/(botN+1)),endY]);
+        // Left side extras
+        const leftN=perSide;
+        for(let i=1;i<=leftN;i++) positions.push([startX,startY+(endY-startY)*(i/(leftN+1))]);
+      }
+      for(let j=0;j<Math.min(nb2,positions.length);j++){
+        s+='<circle cx="'+positions[j][0]+'" cy="'+positions[j][1]+'" r="'+brs+'" fill="#f59e0b" stroke="#fbbf24" stroke-width="1"/>';
+      }
+      s+='<line x1="'+ox+'" y1="'+(oy+bw+10)+'" x2="'+(ox+bw)+'" y2="'+(oy+bw+10)+'" stroke="#94a3b8" stroke-width="0.8"/>';
+      s+='<text x="'+(ox+bw/2)+'" y="'+(oy+bw+20)+'" fill="#94a3b8" font-size="8" text-anchor="middle" font-family="JetBrains Mono">'+c.size+'mm</text>';
+      s+='<circle cx="'+(ox+8)+'" cy="'+(oy+bw+35)+'" r="4" fill="#f59e0b"/>';
+      s+='<text x="'+(ox+16)+'" y="'+(oy+bw+38)+'" fill="#f59e0b" font-size="7" font-family="JetBrains Mono">'+c.nb+'-D'+c.dB+' (pt='+r2(c.pt)+'%)</text>';
+      s+='<text x="'+(ox+8)+'" y="'+(oy+bw+50)+'" fill="#94a3b8" font-size="7" font-family="JetBrains Mono">Ties: D8@'+c.ts+'(gen) / D8@'+c.tsc+'(Lo) | 135°</text>';
+      s+='</svg>';
+      return '<div class="dg">'+s+'<div class="dg-cap">Fig: Column '+c.label+' cross-section ('+c.size+'×'+c.size+'mm)</div></div>';
+    })()}
   `,'vi')}
 
   ${sb('C-4','Lateral Ties + IS 13920 Confinement',`
     ${fm('General tie spacing = min('+c.size+', 16×'+c.dB+', 300)',c.ts+'mm','IS 456 Cl 26.5.3.2')}
-    ${fm('Confinement zone Lo = max('+c.size+', H/6, 450)',r0(c.Lo)+' mm','IS 13920 Cl 7.6.1')}
-    ${fm('Confining tie spacing = min(D/4, 6×'+c.dB+', 100, 75)',c.tsc+'mm','IS 13920 Cl 7.6.1 (Amd 1)')}
+    ${fm('Confinement zone Lo = max('+c.size+', H/6, 450)',r0(c.Lo)+' mm','IS 13920 Cl 7.4.1')}
+    ${fm('Confining tie spacing = min(ts, 8×'+c.dB+', 100, 75)',c.tsc+'mm','IS 13920 Cl 7.4.6')}
     <div class="cp vi" style="margin-top:8px">
-      <strong>Provide:</strong> D8 ties @ ${c.ts}mm (general) | D8 ties @ ${c.tsc}mm (Lo=${r0(c.Lo)}mm each end) | All hooks: 135° with 8d extension ≥75mm MANDATORY (IS 13920 Cl 3.5 + Amd 1)
+      <strong>Provide:</strong> D8 ties @ ${c.ts}mm (general) | D8 ties @ ${c.tsc}mm (Lo=${r0(c.Lo)}mm each end) | All hooks: 135° mandatory (IS 13920 Cl 7.4.7)
     </div>
   `,'vi')}
 
@@ -5245,7 +5632,66 @@ function colDetail(c){
     return sb('C-5','Floor-by-Floor Column Summary (cumulative load)',
       '<div style="font-size:10px;color:var(--txt3);margin-bottom:6px">Same column node — decreasing load on upper floors. Size may reduce; 300mm IS 13920 minimum governs.</div>'+tblHtml+note,'vi');
   })()}
-</div>`;
+
+  ${(()=>{
+    // ── FEATURE B: Column Override Panel ──
+    const ovrKey = `C:${c.nodeId}`;
+    const hasOvr = window._memberOverrides && window._memberOverrides[ovrKey];
+    const ovr = hasOvr ? window._memberOverrides[ovrKey] : null;
+    // Recommended size: iterate up by 25mm until Pcap >= Pu
+    let recSize = c.size;
+    if(!c.safe){
+      for(let sz=c.size+25;sz<=800;sz+=25){
+        const Ag2=sz*sz;
+        const Ar2=(c.Pu*1000-0.4*S.fck*Ag2)/(0.67*S.fy-0.4*S.fck);
+        const Ap2=Math.max(0.008*Ag2,Ar2)*(Math.PI*16*16/4)/(Math.PI*16*16/4);
+        const Pcap2=(0.4*S.fck*(Ag2-0.008*Ag2)+0.67*S.fy*0.008*Ag2)/1000;
+        if(Pcap2>=c.Pu){recSize=sz;break;}
+      }
+    }
+
+    return `<div style="margin-top:12px;padding:12px;background:rgba(167,139,250,0.05);border:1.5px solid rgba(167,139,250,0.2);border-radius:8px">
+      <div style="font-size:11px;font-weight:700;color:#a78bfa;margin-bottom:8px">🔧 Try Different Size — Re-analyse with Override</div>
+      <div style="font-size:10px;color:#94a3b8;margin-bottom:10px">
+        Change column <strong style="color:#a78bfa">${c.label}</strong> size. This applies to ALL floors of this column.
+        ${!c.safe?`<span style="color:#34d399"> Recommended: ${recSize}×${recSize}mm</span>`:''}
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:10px">
+        <div>
+          <div style="font-size:9px;color:#64748b;margin-bottom:3px">Column Size (mm × mm)</div>
+          <input id="ovr_cS_${ovrKey.replace(/:/g,'_')}" type="number" min="200" max="800" step="25"
+            value="${ovr?ovr.size:c.size}"
+            style="width:100px;padding:6px 8px;background:#0f172a;border:1px solid ${!c.safe?'#f87171':'#334155'};border-radius:6px;color:#f1f5f9;font-size:11px;font-family:JetBrains Mono"/>
+          ${!c.safe?`<div style="font-size:8px;color:#34d399;margin-top:2px">Recommended: ${recSize}mm</div>`:''}
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          ${!c.safe?`<button onclick="document.getElementById('ovr_cS_${ovrKey.replace(/:/g,'_')}').value=${recSize}"
+            style="padding:6px 12px;background:rgba(52,211,153,0.12);border:1px solid #34d399;border-radius:6px;color:#34d399;cursor:pointer;font-size:10px;font-weight:700">
+            ✓ Use Recommended
+          </button>`:''}
+          <button onclick="(function(){
+            const k='${ovrKey}';
+            const sz=parseInt(document.getElementById('ovr_cS_${ovrKey.replace(/:/g,'_')}').value);
+            if(!window._memberOverrides) window._memberOverrides={};
+            window._memberOverrides[k]={size:sz};
+            runWithOverrides('Col ${c.label}: size→'+sz+'mm');
+          })()" style="padding:6px 14px;background:rgba(167,139,250,0.12);border:1px solid #a78bfa;border-radius:6px;color:#a78bfa;cursor:pointer;font-size:10px;font-weight:700">
+            ⚡ Re-analyse
+          </button>
+          ${hasOvr?`<button onclick="delete window._memberOverrides['${ovrKey}'];runWithOverrides('Reset ${c.label}')"
+            style="padding:6px 12px;background:transparent;border:1px solid #64748b;border-radius:6px;color:#64748b;cursor:pointer;font-size:10px">
+            ↺ Reset to auto
+          </button>`:''}
+        </div>
+      </div>
+      ${hasOvr?`<div style="font-size:9px;padding:4px 10px;background:rgba(249,115,22,0.1);border-radius:4px;color:#f97316">⚠ This column is using a student override (${ovr.size}×${ovr.size}mm). Auto-design is disabled.</div>`:''}
+    </div>`;
+  })()}
+</div>
+
+  <div style="margin-top:12px;border-top:1px solid rgba(71,85,105,0.3);padding-top:10px">
+    <button onclick="(function(){try{window.parent.postMessage({type:'OPEN_AI_FOR_MEMBER',member:'${c.baseLabel||'column'}',issue:'${c.safe===false?'capacity fail':'design check'}',memberType:'column'},'*');}catch(e){}})()" style="width:100%;padding:8px;background:linear-gradient(135deg,rgba(79,70,229,0.15),rgba(124,58,237,0.15));border:1.5px solid rgba(99,102,241,0.4);border-radius:8px;color:#818cf8;cursor:pointer;font-size:11px;font-weight:700;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px" onmouseover="this.style.borderColor='#6366f1'" onmouseout="this.style.borderColor='rgba(99,102,241,0.4)'">🤖 Ask AI about this column →</button>
+  </div>`;
 }
 
 
@@ -5255,13 +5701,12 @@ function colDetail(c){
 _ftgIdx=0;
 
 function secFootings(){
-  if(!RES||!RES.allFtgs||RES.allFtgs.length===0)return'<div class="card"><div class="ct">Footings</div><p style="color:var(--txt3)">Run analysis first to see footing designs.</p></div>';
+  if(!RES.allFtgs||RES.allFtgs.length===0)return'<div class="card">No footing data.</div>';
   if(_ftgIdx>=RES.allFtgs.length) _ftgIdx=0;
   const ftg=RES.allFtgs[_ftgIdx];
 
-  // Selector grid - get nx/ny from GRID or from S
-  const nx=(GRID&&GRID.nx)||(S.spansX?S.spansX.length:3);
-  const ny=(GRID&&GRID.ny)||(S.spansY?S.spansY.length:3);
+  // Selector grid
+  const ny=GRID.ny, nx=GRID.nx;
   // Build footing grid plan: (nx+2) columns = 1 row-label + (nx+1) node cells
   const allFtgsArr=RES.allFtgs||(RES.ftgs||[]);
   let nodeGrid='<div style="display:inline-grid;gap:3px;grid-template-columns:repeat('+(nx+2)+',auto)">';
@@ -5278,18 +5723,18 @@ function secFootings(){
       const ftgResult=isCol?allFtgsArr.find(f=>f.row===r&&f.col===c):null;
       const globalIdx=ftgResult?allFtgsArr.indexOf(ftgResult):-1;
       const isActive=globalIdx>=0&&globalIdx===_ftgIdx;
-      const ok=ftgResult&&ftgResult.punch_ok&&ftgResult.ow_ok;
+      const ok=ftgResult&&ftgResult.punch_ok&&ftgResult.ow_ok&&ftgResult.Ld_ok;
       const lbl=ftgResult?(ftgResult.baseLabel||String.fromCharCode(65+r)+(c+1)):(isCol?'?':'');
       if(!isCol){
         nodeGrid+=`<div style="width:36px;height:36px;border:1px dashed #1e293b;border-radius:4px;opacity:0.25"></div>`;
       } else if(!ftgResult){
-        nodeGrid+=`<div style="width:36px;height:36px;border:1px dashed #475569;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:7px;color:#475569">${String.fromCharCode(65+r)}${c+1}</div>`;
+        nodeGrid+=`<div style="width:36px;height:36px;border:1px dashed #64748b;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:7px;color:#64748b">${String.fromCharCode(65+r)}${c+1}</div>`;
       } else {
         nodeGrid+=`<button onclick="_ftgIdx=${globalIdx};showSec('footings')"
           style="width:36px;height:36px;border-radius:4px;cursor:pointer;font-size:7px;font-weight:700;
-          border:1.5px solid ${isActive?'#ffffff':(ok?'#fbbf24':'#f87171')};
+          border:1.5px solid ${isActive?'#0a0f1e':(ok?'#fbbf24':'#f87171')};
           background:${isActive?'rgba(251,191,36,0.3)':(ok?'rgba(251,191,36,0.1)':'rgba(248,113,113,0.12)')};
-          color:${isActive?'#ffffff':(ok?'#fbbf24':'#f87171')}">
+          color:${isActive?'#0a0f1e':(ok?'#fbbf24':'#f87171')}">
           ${lbl}
         </button>`;
       }
@@ -5297,7 +5742,7 @@ function secFootings(){
   }
   nodeGrid+='</div>';
 
-  const allOk=RES.allFtgs.filter(f=>f.punch_ok&&f.ow_ok).length;
+  const allOk=RES.allFtgs.filter(f=>f.punch_ok&&f.ow_ok&&f.Ld_ok).length;
   const allFail=RES.allFtgs.length-allOk;
 
   return`
@@ -5324,9 +5769,15 @@ function secFootings(){
 function ftgDetail(f){
   if(!f)return'';
   const ok=f.punch_ok&&f.ow_ok&&f.Ld_ok;
+  const ftgTypeLabel={'isolated':'Isolated Pad','combined':'Combined Footing','raft':'Raft Foundation'}[S.ftgType||'isolated']||'Isolated Pad';
+  const ftgTypeColor={'isolated':'#34d399','combined':'#f59e0b','raft':'#f87171'}[S.ftgType||'isolated']||'#34d399';
   return`
 <div style="border:1px solid ${ok?'rgba(251,191,36,0.3)':'rgba(248,113,113,0.4)'};border-radius:8px;padding:12px">
-  <div style="font-size:13px;font-weight:800;color:#fbbf24;margin-bottom:6px">${f.label||'FTG-'+f.baseLabel}</div>
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;flex-wrap:wrap">
+    <div style="font-size:13px;font-weight:800;color:#fbbf24">${f.label||'FTG-'+f.baseLabel}</div>
+    <span style="padding:2px 8px;border-radius:4px;font-size:9px;font-weight:700;background:rgba(0,0,0,0.3);border:1px solid ${ftgTypeColor};color:${ftgTypeColor}">${ftgTypeLabel}</span>
+    ${(S.ftgType||'isolated')!=='isolated'?`<span style="font-size:9px;color:#64748b">⚠ Refer to engineer for detailed ${ftgTypeLabel.toLowerCase()} design</span>`:''}
+  </div>
   ${vd(ok,ok?'All checks PASS OK':'One or more checks FAIL — REVISE')}
 
   ${sb('F-1','Size & Pressure',`
@@ -5337,37 +5788,185 @@ function ftgDetail(f){
     ${vd(f.qu<=S.soilBearing,'qu ('+r2(f.qu)+') '+(f.qu<=S.soilBearing?'≤':'>')+' SBC ('+S.soilBearing+') → '+(f.qu<=S.soilBearing?'OK':'FAIL'),f.qu/S.soilBearing)}
   `,'ye')}
 
+
+  ${sb('F-1a','Foundation Type Selection',svgFootingTypePanel(f),'or')}
+
   ${sb('F-2','Footing Depth',`
-    ${fm('Projection from col face = (Bf×1000 - col_size)/4 = ('+r2(f.Bf*1000)+' - '+f.colSize+')/4',r0((f.Bf*1000-f.colSize)/4)+' mm','')}
-    ${fm('D = max('+( S.ftgMinD||300)+', projection+cover+8) rounded to 25mm',r0(f.D)+' mm','IS 456 Cl 34.1.2')}
-    ${fm('d = D - cover - bar = '+r0(f.D)+' - '+S.coverFtg+' - 8',r0(f.d)+' mm','')}
-    ${fm('Factored qu_f = 1.5 × qu',r2(f.quf)+' kN/m²','')}
+    <div class="cp ye" style="font-size:10px;line-height:2.0;margin-bottom:8px">
+      <strong>Formula:</strong> D = max(min depth, projection + cover + bar)<br>
+      <strong>Where:</strong><br>
+      &nbsp;&nbsp;Projection = (Bf × 1000 − col_size) / 4 = (${r2(f.Bf*1000)} − ${f.colSize}) / 4 = <strong>${r0((f.Bf*1000-f.colSize)/4)} mm</strong><br>
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(controls cantilever bending and shear demand on footing)<br>
+      &nbsp;&nbsp;cover = ${S.coverFtg} mm (concrete cover to reinforcement in footing)<br>
+      <strong>Result:</strong> D = ${r0(f.D)} mm (rounded up to nearest 25mm, min ${S.ftgMinD||300}mm)<br>
+      &nbsp;&nbsp;d = D − cover − bar = ${r0(f.D)} − ${S.coverFtg} − 8 = <strong style="color:#fbbf24">${r0(f.d)} mm</strong> (effective depth)<br>
+      &nbsp;&nbsp;Factored qu_f = 1.5 × qu = 1.5 × ${r2(f.qu)} = <strong>${r2(f.quf)} kN/m²</strong> (factored upward soil pressure for section design)
+    </div>
   `,'ye')}
 
   ${sb('F-3 ★','Punching Shear (IS 456 Cl 31.6)',`
-    ${fm('Critical perimeter bo = 4×(col_size + d) = 4×('+f.colSize+'+'+r0(f.d)+')',r0(f.bo)+' mm','IS 456 Cl 31.6.1')}
-    ${fm('Vpu = Pu - quf×(col+d)² = '+r2(f.Pu)+' - '+r2(f.quf)+'×'+r2((f.colSize/1000+f.d/1000)**2)+'×1000',r2(f.Vpu)+' kN','')}
-    ${fm('tvp = Vpu×1000/(bo×d) = '+r2(f.Vpu)+'×1000/('+r0(f.bo)+'×'+r0(f.d)+')',r2(f.tvp)+' N/mm²','')}
-    ${fm('tcp = 0.25×√fck = 0.25×√'+S.fck,r2(f.tcp)+' N/mm²','IS 456 Cl 31.6.3')}
-    ${vd(f.punch_ok,'tvp ('+r2(f.tvp)+') '+(f.punch_ok?'≤':'>')+' tcp ('+r2(f.tcp)+') → '+(f.punch_ok?'SAFE':'FAIL — increase d'),f.tvp/f.tcp)}
+    <div class="cp ye" style="font-size:10px;line-height:2.0;margin-bottom:8px">
+      <strong>What is punching shear?</strong> The column punches DOWN through the footing like a cookie cutter. The failure perimeter is a square at d/2 from the column face on all four sides.<br><br>
+      <strong>Formula:</strong> τvp = Vpu × 1000 / (bo × d)<br>
+      <strong>Where:</strong><br>
+      &nbsp;&nbsp;bo = 4 × (col_size + d) = 4 × (${f.colSize} + ${r0(f.d)}) = <strong>${r0(f.bo)} mm</strong> (critical perimeter at d/2 from column face)<br>
+      &nbsp;&nbsp;Vpu = Pu − qu_f × (col+d)² = ${r2(f.Pu)} − ${r2(f.quf)} × ${r2((f.colSize/1000+f.d/1000)**2)} × 1000 = <strong>${r2(f.Vpu)} kN</strong><br>
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(net upward punch = total load minus upward pressure inside the critical perimeter)<br>
+      &nbsp;&nbsp;Pu = ${r2(f.Pu)} kN (factored column load), d = ${r0(f.d)} mm<br>
+      <strong>Result:</strong> τvp = ${r2(f.Vpu)} × 1000 / (${r0(f.bo)} × ${r0(f.d)}) = <strong style="color:#fbbf24">${r2(f.tvp)} N/mm²</strong><br>
+      &nbsp;&nbsp;Limit: τcp = 0.25×√fck = 0.25×√${S.fck} = <strong>${r2(f.tcp)} N/mm²</strong> (IS 456 Cl 31.6.3)
+    </div>
+    ${vd(f.punch_ok,'τvp ('+r2(f.tvp)+') '+(f.punch_ok?'≤':'>')+' τcp ('+r2(f.tcp)+') → '+(f.punch_ok?'SAFE — punching shear OK':'FAIL — increase footing depth d'),f.tvp/f.tcp)}
   `,'ye')}
 
   ${sb('F-4 ★','One-Way Shear (IS 456 Cl 34.2.4)',`
-    ${fm('Critical at d from col face; proj = (Bf-col)/2 - d',r2(Math.max(0,(f.Bf*1000-f.colSize)/2-f.d))+' mm','')}
-    ${fm('Vow = quf×Bf×proj/1000',r2(f.Vow)+' kN','')}
-    ${fm('tvow = Vow×1000/(Bf×1000×d)',r2(f.tvow)+' N/mm²','')}
-    ${fm('tcow = 0.36 N/mm² (IS 456 Table 19, pt≈0.15%)',r2(f.tcow)+' N/mm²','')}
-    ${vd(f.ow_ok,'tvow ('+r2(f.tvow)+') '+(f.ow_ok?'≤':'>')+' tcow ('+r2(f.tcow)+') → '+(f.ow_ok?'SAFE':'FAIL — increase D'),f.tvow/f.tcow)}
+    <div class="cp ye" style="font-size:10px;line-height:2.0;margin-bottom:8px">
+      <strong>What is one-way shear?</strong> The footing bends like a cantilever slab from each column face outward. Shear failure can occur across the full width at distance d from column face.<br><br>
+      <strong>Formula:</strong> τvow = Vow × 1000 / (Bf × 1000 × d)<br>
+      <strong>Where:</strong><br>
+      &nbsp;&nbsp;Critical section is at d = ${r0(f.d)} mm from column face (IS 456 Cl 34.2.4)<br>
+      &nbsp;&nbsp;Projection to critical section = (Bf − col)/2 − d = ${r2(Math.max(0,(f.Bf*1000-f.colSize)/2-f.d))} mm<br>
+      &nbsp;&nbsp;Vow = qu_f × Bf × projection / 1000 = ${r2(f.quf)} × ${r2(f.Bf)} × ${r2(Math.max(0,(f.Bf*1000-f.colSize)/2-f.d))}/1000 = <strong>${r2(f.Vow)} kN</strong><br>
+      &nbsp;&nbsp;Bf = ${r2(f.Bf)} m (footing width), d = ${r0(f.d)} mm<br>
+      <strong>Result:</strong> τvow = ${r2(f.Vow)} × 1000 / (${r2(f.Bf*1000)} × ${r0(f.d)}) = <strong style="color:#fbbf24">${r2(f.tvow)} N/mm²</strong><br>
+      &nbsp;&nbsp;Limit: τcow = ${r2(f.tcow)} N/mm² (IS 456 Table 19 at pt ≈ 0.15%)
+    </div>
+    ${vd(f.ow_ok,'τvow ('+r2(f.tvow)+') '+(f.ow_ok?'≤':'>')+' τcow ('+r2(f.tcow)+') → '+(f.ow_ok?'SAFE — one-way shear OK':'FAIL — increase footing depth D'),f.tvow/f.tcow)}
   `,'ye')}
 
   ${sb('F-5','Bending & Steel',`
-    ${fm('x = (Bf - col/1000)/2 = ('+r2(f.Bf)+' - '+r2(f.colSize/1000)+')/2',r2((f.Bf-f.colSize/1000)/2)+' m','')}
-    ${fm('Mu = quf×Bf×x²/2',r2(f.Mu)+' kN.m','')}
-    ${fm('Af = Ast from Mu (or 0.12%Bt min)',r0(f.Af)+' mm² | D'+f.dBf+'@'+f.spf+'mm both ways','IS 456 Cl 34.3')}
+    <div class="cp ye" style="font-size:10px;line-height:2.0;margin-bottom:8px">
+      <strong>Formula:</strong> Mu = qu_f × Bf × x² / 2 &nbsp; (cantilever bending moment at column face)<br>
+      <strong>Where:</strong><br>
+      &nbsp;&nbsp;x = cantilever arm = (Bf − col_size/1000) / 2 = (${r2(f.Bf)} − ${r2(f.colSize/1000)}) / 2 = <strong>${r2((f.Bf-f.colSize/1000)/2)} m</strong><br>
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(the footing overhang acts as a cantilever slab from column face to edge)<br>
+      &nbsp;&nbsp;qu_f = ${r2(f.quf)} kN/m² (factored upward soil pressure), Bf = ${r2(f.Bf)} m<br>
+      <strong>Result:</strong> Mu = ${r2(f.quf)} × ${r2(f.Bf)} × ${r2((f.Bf-f.colSize/1000)/2)}² / 2 = <strong style="color:#fbbf24">${r2(f.Mu)} kN.m</strong><br>
+      &nbsp;&nbsp;Ast = ${r0(f.Af)} mm² → Provide D${f.dBf}@${f.spf}mm both ways (IS 456 Cl 34.3)
+    </div>
     ${fm('Ld_req (90° hook in footing)',r0(f.Ldr)+' mm | Ld_avail = '+r0(f.Lda)+' mm','IS 456 Cl 26.2.2')}
-    ${vd(f.Ld_ok,'Ld_avail ('+r0(f.Lda)+') '+(f.Ld_ok?'≥':'<')+' Ld_req ('+r0(f.Ldr)+') → '+(f.Ld_ok?'OK':'Use 90° hook'))}
+    ${vd(f.Ld_ok,'Ld_avail ('+r0(f.Lda)+') '+(f.Ld_ok?'≥':'<')+' Ld_req ('+r0(f.Ldr)+') → '+(f.Ld_ok?'OK':'FAIL — see below'))}
   `,'ye')}
-</div>`;
+
+
+  ${!f.Ld_ok?`
+  <div style="margin-top:10px;padding:14px;background:rgba(248,113,113,0.06);border:1.5px solid rgba(248,113,113,0.3);border-radius:8px">
+    <div style="font-size:12px;font-weight:700;color:#f87171;margin-bottom:6px">⚠ DEVELOPMENT LENGTH FAILURE — 4 Ways to Fix</div>
+    <div style="font-size:10.5px;line-height:1.8;color:#fca5a5;margin-bottom:14px">
+      Bar needs <strong>${r0(f.Ldr_straight||f.Ldr/0.7)}mm</strong> to anchor (IS 456 Cl 26.2.2).
+      Available = <strong>${r0(f.Lda)}mm</strong> — short by <strong style="color:#f87171">${r0((f.Ldr_straight||f.Ldr/0.7)-f.Lda)}mm</strong>.
+      Pick any fix below — they all re-run the full analysis instantly.
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+
+      <!-- OPTION A: 90° Hook -->
+      <div style="padding:10px;background:rgba(52,211,153,0.06);border:1.5px solid ${f.Lda>=(f.Ldr_straight||f.Ldr/0.7)*0.7?'#34d399':'rgba(52,211,153,0.3)'};border-radius:8px">
+        <div style="font-size:11px;font-weight:700;color:#34d399;margin-bottom:4px">Option A: 90° Hook</div>
+        <div style="font-size:10px;color:var(--txt2);line-height:1.7">
+          Reduces required Ld by <strong>30%</strong> (IS 456 Cl 26.2.2.1).<br>
+          Ld needed with hook = 0.7 × ${r0(f.Ldr_straight||f.Ldr/0.7)} = <strong style="color:#34d399">${r0(Math.ceil((f.Ldr_straight||f.Ldr/0.7)*0.7))}mm</strong><br>
+          Available = ${r0(f.Lda)}mm →
+          ${f.Lda>=(f.Ldr_straight||f.Ldr/0.7)*0.7
+            ?'<strong style="color:#34d399">✔ HOOK ALONE FIXES IT</strong>'
+            :'<span style="color:#f87171">Still short by '+r0(Math.ceil((f.Ldr_straight||f.Ldr/0.7)*0.7)-f.Lda)+'mm</span>'}
+        </div>
+        <button onclick="(function(){
+          var key='F:${f.nodeId}';
+          if(!window._memberOverrides) window._memberOverrides={};
+          window._memberOverrides[key]=Object.assign(window._memberOverrides[key]||{},{hook:true,dBf:${f.dBf}});
+          runWithOverrides('Footing ${f.baseLabel||f.label}: 90° hook');
+        })()" style="margin-top:8px;width:100%;padding:6px;background:rgba(52,211,153,0.15);border:1.5px solid #34d399;border-radius:6px;color:#34d399;cursor:pointer;font-size:10px;font-weight:700">
+          ✅ Apply 90° Hook & Re-analyse
+        </button>
+      </div>
+
+      <!-- OPTION B: Wider Footing -->
+      <div style="padding:10px;background:rgba(56,189,248,0.06);border:1px solid rgba(56,189,248,0.3);border-radius:8px">
+        <div style="font-size:11px;font-weight:700;color:#38bdf8;margin-bottom:4px">Option B: Widen Footing</div>
+        <div style="font-size:10px;color:var(--txt2);line-height:1.7">
+          Wider footing → longer bar → more grip length.<br>
+          Bf needed = <strong style="color:#38bdf8">${r2(Math.ceil(((f.Ldr_straight||f.Ldr/0.7)*0.7*2+f.colSize+2*S.coverFtg)/1000*100)/100)}m</strong> (now ${r2(f.Bf)}m)<br>
+          <span style="color:#64748b">Note: only widens THIS footing, not combined footing.</span>
+        </div>
+        <button onclick="(function(){
+          var key='F:${f.nodeId}';
+          var bfNeed=Math.ceil(${Math.ceil(((f.Ldr_straight||f.Ldr/0.7)*0.7*2+f.colSize+2*S.coverFtg)/1000*100)/100}*100)/100;
+          if(!window._memberOverrides) window._memberOverrides={};
+          window._memberOverrides[key]=Object.assign(window._memberOverrides[key]||{},{Bf:bfNeed,dBf:${f.dBf}});
+          runWithOverrides('Footing ${f.baseLabel||f.label}: Bf→'+bfNeed+'m');
+        })()" style="margin-top:8px;width:100%;padding:6px;background:rgba(56,189,248,0.12);border:1.5px solid #38bdf8;border-radius:6px;color:#38bdf8;cursor:pointer;font-size:10px;font-weight:700">
+          ⚡ Widen Footing & Re-analyse
+        </button>
+      </div>
+
+      <!-- OPTION C: Reduce bar diameter -->
+      <div style="padding:10px;background:rgba(251,191,36,0.06);border:1px solid rgba(251,191,36,0.3);border-radius:8px">
+        <div style="font-size:11px;font-weight:700;color:#fbbf24;margin-bottom:4px">Option C: Smaller Bar Diameter</div>
+        <div style="font-size:10px;color:var(--txt2);line-height:1.7">
+          Smaller bars need shorter development length (Ld ∝ φ).<br>
+          T12→T10: Ld = ${r0(Math.ceil((f.Ldr_straight||f.Ldr/0.7)*10/12))}mm
+          ${f.Lda>=Math.ceil((f.Ldr_straight||f.Ldr/0.7)*10/12)?'<strong style="color:#34d399"> ✔ FIXES IT</strong>':'<span style="color:#f87171"> still short</span>'}<br>
+          T12→T8:  Ld = ${r0(Math.ceil((f.Ldr_straight||f.Ldr/0.7)*8/12))}mm
+          ${f.Lda>=Math.ceil((f.Ldr_straight||f.Ldr/0.7)*8/12)?'<strong style="color:#34d399"> ✔ FIXES IT</strong>':''}
+        </div>
+        <div style="display:flex;gap:6px;margin-top:8px">
+          <button onclick="(function(){
+            var key='F:${f.nodeId}';
+            if(!window._memberOverrides) window._memberOverrides={};
+            window._memberOverrides[key]=Object.assign(window._memberOverrides[key]||{},{dBf:10});
+            runWithOverrides('Footing ${f.baseLabel||f.label}: T10 bars');
+          })()" style="flex:1;padding:5px;background:rgba(251,191,36,0.12);border:1.5px solid #fbbf24;border-radius:6px;color:#fbbf24;cursor:pointer;font-size:10px;font-weight:700">
+            Use T10 & Re-analyse
+          </button>
+          <button onclick="(function(){
+            var key='F:${f.nodeId}';
+            if(!window._memberOverrides) window._memberOverrides={};
+            window._memberOverrides[key]=Object.assign(window._memberOverrides[key]||{},{dBf:8});
+            runWithOverrides('Footing ${f.baseLabel||f.label}: T8 bars');
+          })()" style="flex:1;padding:5px;background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.5);border-radius:6px;color:#d97706;cursor:pointer;font-size:10px;font-weight:700">
+            Use T8 & Re-analyse
+          </button>
+        </div>
+      </div>
+
+      <!-- OPTION D: Hook + Smaller bar (combined) -->
+      <div style="padding:10px;background:rgba(167,139,250,0.06);border:1px solid rgba(167,139,250,0.3);border-radius:8px">
+        <div style="font-size:11px;font-weight:700;color:#a78bfa;margin-bottom:4px">Option D: Hook + T10 (Best Practice)</div>
+        <div style="font-size:10px;color:var(--txt2);line-height:1.7">
+          Combine both — hook reduces Ld 30%, smaller bar reduces Ld another 17%.<br>
+          T10 + hook: Ld = ${r0(Math.ceil((f.Ldr_straight||f.Ldr/0.7)*10/12*0.7))}mm
+          ${f.Lda>=Math.ceil((f.Ldr_straight||f.Ldr/0.7)*10/12*0.7)?'<strong style="color:#34d399"> ✔ FIXES IT</strong>':'<span style="color:#f87171"> still short</span>'}<br>
+          <span style="color:#64748b">Most economical — no size change needed.</span>
+        </div>
+        <button onclick="(function(){
+          var key='F:${f.nodeId}';
+          if(!window._memberOverrides) window._memberOverrides={};
+          window._memberOverrides[key]=Object.assign(window._memberOverrides[key]||{},{hook:true,dBf:10});
+          runWithOverrides('Footing ${f.baseLabel||f.label}: hook+T10');
+        })()" style="margin-top:8px;width:100%;padding:6px;background:rgba(167,139,250,0.12);border:1.5px solid #a78bfa;border-radius:6px;color:#a78bfa;cursor:pointer;font-size:10px;font-weight:700">
+          🔧 Hook + T10 & Re-analyse
+        </button>
+      </div>
+    </div>
+
+    <div style="padding:10px;background:#0a1628;border:1px solid #1e3a8a;border-radius:6px;font-size:10px;color:#64748b">
+      <strong style="color:#38bdf8">💡 Which to use?</strong>
+      ${f.Lda>=(f.Ldr_straight||f.Ldr/0.7)*0.7
+        ?'Hook alone fixes it (Option A) — cheapest, no concrete change. Just bend the bar tip.'
+        :f.Lda>=Math.ceil((f.Ldr_straight||f.Ldr/0.7)*10/12*0.7)
+          ?'Option D (Hook + T10) is the most economical — no footing size change.'
+          :'Widen the footing (Option B). Smaller footings often can\'t fit enough bar length regardless of hooks.'}
+      Depth increase alone (Option E below) does NOT fix dev length — depth is vertical, dev length is horizontal.
+    </div>
+
+  </div>
+  `:''}
+</div>
+
+  <div style="margin-top:12px;border-top:1px solid rgba(71,85,105,0.3);padding-top:10px">
+    <button onclick="(function(){try{window.parent.postMessage({type:'OPEN_AI_FOR_MEMBER',member:'${f.label||'footing'}',issue:'${f.Ld_ok===false?'development length fail':f.punch_ok===false?'punching fail':f.ow_ok===false?'shear fail':'design check'}',memberType:'footing'},'*');}catch(e){}})()" style="width:100%;padding:8px;background:linear-gradient(135deg,rgba(79,70,229,0.15),rgba(124,58,237,0.15));border:1.5px solid rgba(99,102,241,0.4);border-radius:8px;color:#818cf8;cursor:pointer;font-size:11px;font-weight:700;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px" onmouseover="this.style.borderColor='#6366f1'" onmouseout="this.style.borderColor='rgba(99,102,241,0.4)'">🤖 Ask AI about this footing →</button>
+  </div>`;
 }
 
 
@@ -5375,11 +5974,19 @@ function ftgDetail(f){
 function secStair(){
   const stairDesigns = RES.allStairDesigns;
 
-  // If no stair bays marked, fall back to generic single stair
+  // If no stair bays marked → show clear message, do NOT design a phantom stair
   if(!stairDesigns||stairDesigns.length===0){
-    const st=RES.stair;
-    if(!st)return '<div class="card"><div class="ct tl">🪜 Staircase Design</div><div class="cd">No staircase bays marked in the plan. Mark a bay as "Staircase" in the Building Plan Editor.</div></div>';
-    return stairSinglePanel(st,'Generic Stair (no bay marked)');
+    return '<div class="card"><div class="ct tl">\ud83e\udeb5 Staircase Design</div>'
+      + '<div style="padding:20px;text-align:center">'
+      + '<div style="font-size:32px;margin-bottom:10px">\ud83c\udfd7</div>'
+      + '<div style="font-size:13px;font-weight:700;color:#f59e0b;margin-bottom:8px">No Staircase Bay Marked</div>'
+      + '<div style="font-size:11px;color:#94a3b8;line-height:1.8;max-width:400px;margin:0 auto">'
+      + 'To design a staircase, go to <strong>Plan &amp; Spans</strong> and right-click on a bay in the grid.'
+      + '<br>Select <strong>Staircase</strong> from the bay type menu.'
+      + '<br>Then re-run analysis to get a full stair design.'
+      + '</div>'
+      + '<button class="btn" onclick="go(2)" style="margin-top:16px">&larr; Go to Plan &amp; Spans</button>'
+      + '</div></div>';
   }
 
   // Multiple stair bays: tab per bay
@@ -5394,9 +6001,68 @@ function secStair(){
       ${sd.bayLabel} (${r2(sd.spX)}×${r2(sd.spY)}m)
     </button>`).join('');
 
+  // Stair type recommendation based on bay dimensions
+  const stairW=active.spX||3, stairL=active.spY||3;
+  const recType=stairW>=2.5&&stairL>=5?'Dog-leg (most common for residential)':stairW>=2&&stairL>=4?'Dog-leg or 90° turn':'Straight flight (compact bay)';
+
   return`
 <div class="card tl">
   <div class="ct tl">🪜 Staircase Design — ${stairDesigns.length} Stair Bay(s) — Waist Slab Method</div>
+
+  <div style="margin-bottom:14px;padding:12px;background:rgba(245,158,11,0.05);border:1px solid rgba(245,158,11,0.2);border-radius:8px">
+    <div style="font-size:11px;font-weight:700;color:#f59e0b;margin-bottom:8px">STAIR TYPE GUIDE</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:10px">
+      <div style="padding:8px;background:rgba(245,158,11,0.06);border-radius:6px;text-align:center">
+        <svg viewBox="0 0 80 60" style="width:80px;height:60px;display:block;margin:0 auto 4px">
+          <rect width="80" height="60" fill="#0a0f1e" rx="4"/>
+          <line x1="10" y1="50" x2="10" y2="40" stroke="#f59e0b" stroke-width="2"/>
+          <line x1="10" y1="40" x2="20" y2="40" stroke="#f59e0b" stroke-width="2"/>
+          <line x1="20" y1="40" x2="20" y2="30" stroke="#f59e0b" stroke-width="2"/>
+          <line x1="20" y1="30" x2="30" y2="30" stroke="#f59e0b" stroke-width="2"/>
+          <line x1="30" y1="30" x2="30" y2="20" stroke="#f59e0b" stroke-width="2"/>
+          <line x1="30" y1="20" x2="40" y2="20" stroke="#f59e0b" stroke-width="2"/>
+          <line x1="40" y1="20" x2="40" y2="10" stroke="#f59e0b" stroke-width="2"/>
+          <line x1="40" y1="10" x2="70" y2="10" stroke="#f59e0b" stroke-width="2"/>
+        </svg>
+        <div style="font-size:9px;font-weight:700;color:#f59e0b">Straight Flight</div>
+        <div style="font-size:8px;color:var(--txt3)">Bay ≥ 2m × 4m<br>Simple, economical</div>
+      </div>
+      <div style="padding:8px;background:rgba(52,211,153,0.06);border:1px solid rgba(52,211,153,0.2);border-radius:6px;text-align:center">
+        <svg viewBox="0 0 80 60" style="width:80px;height:60px;display:block;margin:0 auto 4px">
+          <rect width="80" height="60" fill="#0a0f1e" rx="4"/>
+          <line x1="10" y1="50" x2="10" y2="35" stroke="#34d399" stroke-width="2"/>
+          <line x1="10" y1="35" x2="20" y2="35" stroke="#34d399" stroke-width="2"/>
+          <line x1="20" y1="35" x2="20" y2="25" stroke="#34d399" stroke-width="2"/>
+          <line x1="20" y1="25" x2="35" y2="25" stroke="#34d399" stroke-width="2"/>
+          <rect x="35" y="20" width="15" height="10" fill="rgba(52,211,153,0.2)" stroke="#34d399" stroke-width="1"/>
+          <text x="42" y="27" fill="#34d399" font-size="5" text-anchor="middle">landing</text>
+          <line x1="50" y1="25" x2="60" y2="25" stroke="#34d399" stroke-width="2"/>
+          <line x1="60" y1="25" x2="60" y2="15" stroke="#34d399" stroke-width="2"/>
+          <line x1="60" y1="15" x2="70" y2="15" stroke="#34d399" stroke-width="2"/>
+          <line x1="70" y1="15" x2="70" y2="10" stroke="#34d399" stroke-width="2"/>
+        </svg>
+        <div style="font-size:9px;font-weight:700;color:#34d399">Dog-Leg (U-Turn)</div>
+        <div style="font-size:8px;color:var(--txt3)">Bay ≥ 2.5m × 5m<br>Most common residential</div>
+      </div>
+      <div style="padding:8px;background:rgba(56,189,248,0.06);border-radius:6px;text-align:center">
+        <svg viewBox="0 0 80 60" style="width:80px;height:60px;display:block;margin:0 auto 4px">
+          <rect width="80" height="60" fill="#0a0f1e" rx="4"/>
+          <line x1="10" y1="50" x2="10" y2="35" stroke="#38bdf8" stroke-width="2"/>
+          <line x1="10" y1="35" x2="25" y2="35" stroke="#38bdf8" stroke-width="2"/>
+          <rect x="25" y="30" width="15" height="10" fill="rgba(56,189,248,0.2)" stroke="#38bdf8" stroke-width="1"/>
+          <line x1="40" y1="35" x2="40" y2="15" stroke="#38bdf8" stroke-width="2"/>
+          <line x1="40" y1="15" x2="55" y2="15" stroke="#38bdf8" stroke-width="2"/>
+          <line x1="55" y1="15" x2="55" y2="10" stroke="#38bdf8" stroke-width="2"/>
+        </svg>
+        <div style="font-size:9px;font-weight:700;color:#38bdf8">90° Turn</div>
+        <div style="font-size:8px;color:var(--txt3)">Bay ≥ 3m × 3m<br>Open-well, elegant</div>
+      </div>
+    </div>
+    <div style="font-size:10px;color:var(--txt2)">
+      <strong>For your bay (${r2(stairW)}m × ${r2(stairL)}m):</strong> Recommended type: <strong style="color:#34d399">${recType}</strong>.
+      The waist slab method (used below) works for all types — the structural design is identical; only the geometry changes.
+    </div>
+  </div>
 
   ${stairDesigns.length>1?`
   <div style="margin-bottom:12px">
@@ -5477,36 +6143,188 @@ function stairSinglePanel(st, titleOverride){
 
 function secSafety(){
   const{slab,beams,cols,ftgs}=RES;
-  const checks=[];
-  checks.push({it:'Slab l/d check',ok:slab.ld_ok,note:'l/d='+r2(slab.lx*1000/slab.slabd)+' (limit 26)'});
-  checks.push({it:'Slab Mu < Mulim',ok:slab.ok,note:'Mu='+r2(slab.Mx)+' vs '+r2(slab.Mulim)+' kN.m/m'});
+
+  // Group checks by category
+  const slabChecks=[];
+  const slabLd = (slab.lx && slab.slabd) ? r2(slab.lx*1000/slab.slabd) : 'N/A';
+  slabChecks.push({it:'Slab l/d ratio',ok:!!slab.ld_ok,note:'l/d='+slabLd+' (limit 26)',cat:'Slab'});
+  slabChecks.push({it:'Slab Mu < Mulim',ok:!!slab.ok,note:'Mu='+r2(slab.Mx||0)+' vs '+r2(slab.Mulim||0)+' kN.m/m',cat:'Slab'});
+
+  const beamChecks=[];
   beams.forEach(b=>{
-    checks.push({it:b.label+' Shear',ok:b.shearSafe,note:'tvv='+r2(b.tv)+' vs tvcmax='+r2(b.tcmax)});
-    checks.push({it:b.label+' Deflection',ok:b.deflOK,note:'delta='+r2(b.dfl)+'mm, allow='+r2(b.dall)+'mm'});
+    beamChecks.push({it:b.label+' Shear',ok:b.shearSafe,note:'τv='+r2(b.tv)+' vs τc,max='+r2(b.tcmax)+' N/mm²',cat:'Beam',beam:b});
+    beamChecks.push({it:b.label+' Deflection',ok:b.deflOK,note:'δ='+r2(b.dfl)+'mm, allow='+r2(b.dall)+'mm',cat:'Beam',beam:b});
   });
+
+  const colChecks=[];
   cols.filter(c=>c.floor===1).forEach(c=>{
-    checks.push({it:c.label+' Axial',ok:c.safe,note:'Pu='+r2(c.Pu)+' vs cap='+r2(c.Pcap)+' kN'});
-    checks.push({it:c.label+' Steel%',ok:c.pt>=0.8&&c.pt<=4,note:'pt='+r2(c.pt)+'% (0.8-4%)'});
+    colChecks.push({it:c.label+' Axial capacity',ok:c.safe,note:'Pu='+r2(c.Pu)+' vs Pcap='+r2(c.Pcap)+' kN',cat:'Column',col:c});
+    colChecks.push({it:c.label+' Steel ratio',ok:c.pt>=0.8&&c.pt<=4,note:'pt='+r2(c.pt)+'% (0.8–4%)',cat:'Column',col:c});
   });
+
+  const ftgChecks=[];
   ftgs.forEach(f=>{
-    checks.push({it:f.lbl+' Punching',ok:f.punch_ok,note:'tvv='+r2(f.tvp)+' vs tvc='+r2(f.tcp)+' N/mm^2'});
-    checks.push({it:f.lbl+' One-way shear',ok:f.ow_ok,note:'tvv='+r2(f.tvow)+' vs tvc='+r2(f.tcow)});
-    checks.push({it:f.lbl+' Dev length',ok:f.Ld_ok,note:'Avail='+r0(f.Lda)+' vs req='+r0(f.Ldr)+'mm'});
+    const flbl = f.label || f.lbl || 'FTG';
+    ftgChecks.push({it:flbl+' Punching shear',ok:f.punch_ok,note:'τvp='+r2(f.tvp)+' vs τcp='+r2(f.tcp)+' N/mm²',cat:'Footing'});
+    ftgChecks.push({it:flbl+' One-way shear',ok:f.ow_ok,note:'τv='+r2(f.tvow)+' vs τc='+r2(f.tcow),cat:'Footing'});
+    ftgChecks.push({it:flbl+' Dev length',ok:f.Ld_ok,note:'Avail='+r0(f.Lda)+' vs req='+r0(f.Ldr)+'mm',cat:'Footing'});
   });
-  const p=checks.filter(c=>c.ok).length,t=checks.length;
+
+  const allChecks=[...slabChecks,...beamChecks,...colChecks,...ftgChecks];
+  const p=allChecks.filter(c=>c.ok).length,t=allChecks.length;
+  const failChecks=allChecks.filter(c=>!c.ok);
+
+  function renderGroup(title,emoji,color,checks){
+    const gp=checks.filter(c=>c.ok).length,gt=checks.length;
+    const allOk=gp===gt;
+    return `
+    <div style="margin-bottom:16px;padding:12px;background:rgba(${allOk?'52,211,153':'248,113,113'},0.04);border:1px solid rgba(${allOk?'52,211,153':'248,113,113'},0.2);border-radius:8px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <div style="font-size:12px;font-weight:700;color:${color}">${emoji} ${title}</div>
+        <div style="padding:2px 10px;border-radius:12px;font-size:10px;font-weight:700;background:rgba(${allOk?'52,211,153':'248,113,113'},0.15);color:${allOk?'#34d399':'#f87171'}">${gp}/${gt} pass</div>
+      </div>
+      <table style="width:100%;border-collapse:collapse;font-size:10px">
+        <tr style="background:var(--bg1)">
+          <th style="padding:5px 8px;border:1px solid var(--b1);text-align:left;color:var(--txt3)">Check</th>
+          <th style="padding:5px 8px;border:1px solid var(--b1);width:60px;color:var(--txt3)">Status</th>
+          <th style="padding:5px 8px;border:1px solid var(--b1);text-align:left;color:var(--txt3)">Values</th>
+        </tr>
+        ${checks.map(c=>`<tr>
+          <td style="padding:4px 8px;border:1px solid var(--b1)">${c.it}</td>
+          <td style="padding:4px 8px;border:1px solid var(--b1);text-align:center;font-weight:700;color:${c.ok?'#34d399':'#f87171'}">${c.ok?'✓ PASS':'✗ FAIL'}</td>
+          <td style="padding:4px 8px;border:1px solid var(--b1);font-size:9px;color:var(--txt3)">${c.note}</td>
+        </tr>`).join('')}
+      </table>
+    </div>`;
+  }
+
   return`
 <div class="card">
-  <div class="ct">OK Complete Safety Summary  -  ${p}/${t} checks pass</div>
-  ${vd(p===t,p===t?'ALL '+t+' CHECKS PASS  -  Design is safe':(t-p)+' checks fail  -  revise before construction drawings')}
-  <table>
-    <tr><th>Check</th><th>Result</th><th>Values</th></tr>
-    ${checks.map(c=>`<tr><td>${c.it}</td><td class="${c.ok?'ok':'ng'}">${c.ok?'OK PASS':'X FAIL'}</td><td>${c.note}</td></tr>`).join('')}
-  </table>
+  <div class="ct">🛡️ Complete Safety Summary — ${p}/${t} checks pass</div>
+
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;padding:14px;border-radius:8px;background:${p===t?'rgba(52,211,153,0.08)':'rgba(248,113,113,0.08)'}">
+    <div style="font-size:32px">${p===t?'✅':'⚠️'}</div>
+    <div>
+      <div style="font-size:14px;font-weight:800;color:${p===t?'#34d399':'#f87171'}">${p===t?'ALL CHECKS PASS — Design is safe':(t-p)+' CHECK'+(t-p>1?'S':'')+' FAIL — Revise before construction'}</div>
+      <div style="font-size:10px;color:var(--txt3);margin-top:2px">IS 456:2000 | IS 1893:2016 | IS 13920:2016 | IS 875 Part 2&3</div>
+    </div>
+  </div>
+
+  ${failChecks.length>0?`
+  <div style="margin-bottom:16px;padding:12px;background:rgba(248,113,113,0.06);border:1px solid rgba(248,113,113,0.2);border-radius:8px">
+    <div style="font-size:11px;font-weight:700;color:#f87171;margin-bottom:8px">\u26a0 FAILURES REQUIRING ATTENTION</div>
+    ${failChecks.map(c=>`<div style="font-size:10px;color:#fca5a5;padding:3px 0">\u2022 <strong>${c.it}:</strong> ${c.note}</div>`).join('')}
+  </div>
+  <div style="margin-bottom:16px;padding:12px;background:rgba(52,211,153,0.04);border:1.5px solid rgba(52,211,153,0.2);border-radius:8px">
+    <div style="font-size:11px;font-weight:700;color:#34d399;margin-bottom:6px">🔧 Smart Fix — Choose How to Fix Each Failure Type</div>
+    <div style="font-size:10px;color:#94a3b8;margin-bottom:10px">Select your preferred fix for each member type below, then click Apply.</div>
+
+    <!-- SLAB -->
+    ${(!slab.ld_ok||!slab.ok)?`
+    <div style="margin-bottom:8px;padding:10px;background:rgba(56,189,248,0.06);border:1px solid rgba(56,189,248,0.25);border-radius:8px">
+      <div style="font-size:11px;font-weight:700;color:#38bdf8;margin-bottom:4px">⬛ SLAB — ${!slab.ld_ok?"l/d ratio fail":"Moment fail"}</div>
+      <div style="font-size:10px;color:#94a3b8;margin-bottom:6px">Recommended: increase to ${Math.ceil((slab.lx*1000/26+S.coverSlab+5)/25)*25}mm (now ${S.slabThk||150}mm)</div>
+      <label style="display:flex;align-items:center;gap:6px;font-size:10px;color:#e2e8f0;cursor:pointer">
+        <input type="checkbox" id="fix-slab" checked style="width:14px;height:14px">
+        Increase slab thickness → ${Math.ceil((slab.lx*1000/26+S.coverSlab+5)/25)*25}mm
+      </label>
+    </div>`:``}
+
+    <!-- BEAMS -->
+    ${beamChecks.some(c=>!c.ok)?`
+    <div style="margin-bottom:8px;padding:10px;background:rgba(251,191,36,0.06);border:1px solid rgba(251,191,36,0.25);border-radius:8px">
+      <div style="font-size:11px;font-weight:700;color:#fbbf24;margin-bottom:4px">🟧 BEAMS — ${beamChecks.filter(c=>!c.ok).length} failures</div>
+      ${beamChecks.filter(c=>!c.ok&&c.beam).slice(0,3).map(c=>{
+        const b=c.beam; const recD=!b.deflOK?Math.ceil(b.D*Math.pow(b.dfl/b.dall,1/3)/25+1)*25:b.D; const recB=!b.shearSafe?Math.max(b.b+50,Math.ceil(b.b*1.25/25)*25):b.b;
+        return `<div style="font-size:9px;color:#94a3b8">• ${b.label}: ${!b.deflOK?"D "+b.D+"→"+recD+"mm":""}${!b.shearSafe?" b "+b.b+"→"+recB+"mm":""}</div>`;
+      }).join("")}
+      ${beamChecks.filter(c=>!c.ok&&c.beam).length>3?`<div style="font-size:9px;color:#64748b">+ ${beamChecks.filter(c=>!c.ok&&c.beam).length-3} more...</div>`:""}
+      <label style="display:flex;align-items:center;gap:6px;font-size:10px;color:#e2e8f0;cursor:pointer;margin-top:6px">
+        <input type="checkbox" id="fix-beams" checked style="width:14px;height:14px">
+        Apply minimum recommended sizes to all failing beams
+      </label>
+    </div>`:``}
+
+    <!-- COLUMNS -->
+    ${colChecks.some(c=>!c.ok)?`
+    <div style="margin-bottom:8px;padding:10px;background:rgba(167,139,250,0.06);border:1px solid rgba(167,139,250,0.25);border-radius:8px">
+      <div style="font-size:11px;font-weight:700;color:#a78bfa;margin-bottom:4px">🏛 COLUMNS — ${colChecks.filter(c=>!c.ok).length} failures</div>
+      <label style="display:flex;align-items:center;gap:6px;font-size:10px;color:#e2e8f0;cursor:pointer">
+        <input type="checkbox" id="fix-cols" checked style="width:14px;height:14px">
+        Increase column sizes to meet axial capacity
+      </label>
+    </div>`:``}
+
+    <!-- FOOTINGS -->
+    ${ftgChecks.some(c=>!c.ok)?`
+    <div style="margin-bottom:8px;padding:10px;background:rgba(248,113,113,0.06);border:1px solid rgba(248,113,113,0.25);border-radius:8px">
+      <div style="font-size:11px;font-weight:700;color:#f87171;margin-bottom:4px">🟡 FOOTINGS — ${ftgChecks.filter(c=>!c.ok).length} failures</div>
+      <div style="font-size:10px;color:#94a3b8;margin-bottom:8px">Choose fix for development length failures (all ${ftgs.filter(f=>!f.Ld_ok).length} failing footings):</div>
+      <div style="display:flex;flex-direction:column;gap:5px;margin-bottom:8px">
+        <label style="display:flex;align-items:flex-start;gap:8px;padding:6px 8px;background:rgba(52,211,153,0.06);border-radius:6px;cursor:pointer">
+          <input type="radio" name="ftg-fix" id="ftg-opt-A" value="hook" style="margin-top:2px" ${ftgs.filter(f=>!f.Ld_ok).every(f=>f.Lda>=(f.Ldr_straight||f.Ldr/0.7)*0.7)?"checked":""}>
+          <div><div style="font-size:10px;font-weight:700;color:#34d399">A: 90° Hook on all failing footings</div>
+          <div style="font-size:9px;color:#64748b">IS 456 Cl 26.2.2.1 — reduces Ld needed by 30%. ${ftgs.filter(f=>!f.Ld_ok).every(f=>f.Lda>=(f.Ldr_straight||f.Ldr/0.7)*0.7)?"✅ Fixes all":"⚠ May not fix all — check after"}</div></div>
+        </label>
+        <label style="display:flex;align-items:flex-start;gap:8px;padding:6px 8px;background:rgba(56,189,248,0.06);border-radius:6px;cursor:pointer">
+          <input type="radio" name="ftg-fix" id="ftg-opt-B" value="widen" style="margin-top:2px">
+          <div><div style="font-size:10px;font-weight:700;color:#38bdf8">B: Widen each footing for more grip length</div>
+          <div style="font-size:9px;color:#64748b">Sets minimum Bf so bar fits. Isolated footings only — most reliable fix.</div></div>
+        </label>
+        <label style="display:flex;align-items:flex-start;gap:8px;padding:6px 8px;background:rgba(251,191,36,0.06);border-radius:6px;cursor:pointer">
+          <input type="radio" name="ftg-fix" id="ftg-opt-C" value="t10" style="margin-top:2px" ${!ftgs.filter(f=>!f.Ld_ok).every(f=>f.Lda>=(f.Ldr_straight||f.Ldr/0.7)*0.7)&&ftgs.filter(f=>!f.Ld_ok).every(f=>f.Lda>=(f.Ldr_straight||f.Ldr/0.7)*10/12*0.7)?"checked":""}>
+          <div><div style="font-size:10px;font-weight:700;color:#fbbf24">C: T10 bars + 90° hook (best practice)</div>
+          <div style="font-size:9px;color:#64748b">Smaller bar = shorter Ld needed + hook reduction. ${ftgs.filter(f=>!f.Ld_ok).every(f=>f.Lda>=(f.Ldr_straight||f.Ldr/0.7)*10/12*0.7)?"✅ Fixes all":""}</div></div>
+        </label>
+        <label style="display:flex;align-items:flex-start;gap:8px;padding:6px 8px;background:rgba(245,158,11,0.06);border-radius:6px;cursor:pointer">
+          <input type="radio" name="ftg-fix" id="ftg-opt-D" value="t8" style="margin-top:2px">
+          <div><div style="font-size:10px;font-weight:700;color:#f59e0b">D: T8 bars + 90° hook</div>
+          <div style="font-size:9px;color:#64748b">Maximum reduction — use only if T10 still not enough.</div></div>
+        </label>
+      </div>
+      <label style="display:flex;align-items:center;gap:6px;font-size:10px;color:#e2e8f0;cursor:pointer">
+        <input type="checkbox" id="fix-ftgs" checked style="width:14px;height:14px">
+        Apply selected footing fix to all ${ftgs.filter(f=>!f.Ld_ok).length} failing footings
+      </label>
+    </div>`:``}
+
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+      <button onclick="applySmartFix()" style="padding:8px 20px;background:rgba(52,211,153,0.15);border:1.5px solid #34d399;border-radius:8px;color:#34d399;cursor:pointer;font-size:12px;font-weight:700">
+        ✓ Apply Selected Fixes & Re-analyse
+      </button>
+      ${(typeof window._memberOverrides!=="undefined"&&window._memberOverrides&&Object.keys(window._memberOverrides).length>0)?`
+      <button onclick="window._memberOverrides={};runWithOverrides('Reset all to auto')" style="padding:8px 16px;background:transparent;border:1px solid #64748b;border-radius:8px;color:#64748b;cursor:pointer;font-size:11px">
+        ↺ Reset All Overrides
+      </button>`:""}
+    </div>
+    <div style="font-size:9px;color:#475569;margin-top:8px">💡 After re-analysis, history bar shows before/after comparison.</div>
+  </div>
+  `:``}
+
+  ${renderGroup('SLAB','\ud83d\udd32','var(--cyan)',slabChecks)}
+  ${renderGroup('BEAMS','\ud83d\udfe7','var(--orange)',beamChecks)}
+  ${renderGroup('COLUMNS','\ud83c\udfdb','#a78bfa',colChecks)}
+  ${renderGroup('FOOTINGS','\ud83d\udfe8','#fbbf24',ftgChecks)}
+
+  <div style="margin-top:10px;padding:10px;background:var(--bg1);border-radius:8px;font-size:9px;color:var(--txt3)">
+    \ud83d\udca1 This summary checks every structural member. A single failure means the design is NOT safe for construction.
+    Click on individual member pages (Beam, Column, Footing) for detailed failure explanations and override controls.
+  </div>
 </div>`;}
+
 
 // =======================================================
 // REFERENCE DESIGN PAGE
 // =======================================================
+
+// == 08_reference.js ==
+
+// ================================================================
+// MODULE: 08_reference
+// Reference design page
+// ================================================================
+
+
 
 function secBOQ(){
   if(!RES || !RES.boq) return '<div class="card"><div class="ct">Bill of Quantities</div><p style="color:var(--txt3)">Run analysis first to generate the bill of quantities.</p></div>';
@@ -13220,15 +14038,15 @@ function secXSections() {
     let s = '';
     if (horiz) {
       const my = y1 + offset;
-      s += `<line x1="${x1}" y1="${y1}" x2="${x1}" y2="${my}" stroke="#475569" stroke-width="0.5" stroke-dasharray="2,2"/>`;
-      s += `<line x1="${x2}" y1="${y2}" x2="${x2}" y2="${my}" stroke="#475569" stroke-width="0.5" stroke-dasharray="2,2"/>`;
-      s += `<line x1="${x1}" y1="${my}" x2="${x2}" y2="${my}" stroke="#475569" stroke-width="0.8" marker-start="url(#arr)" marker-end="url(#arr)"/>`;
+      s += `<line x1="${x1}" y1="${y1}" x2="${x1}" y2="${my}" stroke="#64748b" stroke-width="0.5" stroke-dasharray="2,2"/>`;
+      s += `<line x1="${x2}" y1="${y2}" x2="${x2}" y2="${my}" stroke="#64748b" stroke-width="0.5" stroke-dasharray="2,2"/>`;
+      s += `<line x1="${x1}" y1="${my}" x2="${x2}" y2="${my}" stroke="#64748b" stroke-width="0.8" marker-start="url(#arr)" marker-end="url(#arr)"/>`;
       s += `<text x="${(x1+x2)/2}" y="${my+(offset>0?9:-4)}" fill="#64748b" font-size="8" text-anchor="middle" font-family="monospace">${label}</text>`;
     } else {
       const mx = x1 + offset;
-      s += `<line x1="${x1}" y1="${y1}" x2="${mx}" y2="${y1}" stroke="#475569" stroke-width="0.5" stroke-dasharray="2,2"/>`;
-      s += `<line x1="${x2}" y1="${y2}" x2="${mx}" y2="${y2}" stroke="#475569" stroke-width="0.5" stroke-dasharray="2,2"/>`;
-      s += `<line x1="${mx}" y1="${y1}" x2="${mx}" y2="${y2}" stroke="#475569" stroke-width="0.8" marker-start="url(#arr)" marker-end="url(#arr)"/>`;
+      s += `<line x1="${x1}" y1="${y1}" x2="${mx}" y2="${y1}" stroke="#64748b" stroke-width="0.5" stroke-dasharray="2,2"/>`;
+      s += `<line x1="${x2}" y1="${y2}" x2="${mx}" y2="${y2}" stroke="#64748b" stroke-width="0.5" stroke-dasharray="2,2"/>`;
+      s += `<line x1="${mx}" y1="${y1}" x2="${mx}" y2="${y2}" stroke="#64748b" stroke-width="0.8" marker-start="url(#arr)" marker-end="url(#arr)"/>`;
       s += `<text x="${mx+(offset>0?4:-4)}" y="${(y1+y2)/2+3}" fill="#64748b" font-size="8" text-anchor="${offset>0?'start':'end'}" font-family="monospace">${label}</text>`;
     }
     return s;
@@ -13236,13 +14054,13 @@ function secXSections() {
 
   const arrowDef = `<defs>
     <marker id="arr" markerWidth="5" markerHeight="5" refX="2.5" refY="2.5" orient="auto">
-      <polygon points="0,0 5,2.5 0,5" fill="#475569"/>
+      <polygon points="0,0 5,2.5 0,5" fill="#64748b"/>
     </marker>
     <marker id="arrrev" markerWidth="5" markerHeight="5" refX="2.5" refY="2.5" orient="auto-start-reverse">
-      <polygon points="0,0 5,2.5 0,5" fill="#475569"/>
+      <polygon points="0,0 5,2.5 0,5" fill="#64748b"/>
     </marker>
     <pattern id="hatch" patternUnits="userSpaceOnUse" width="6" height="6" patternTransform="rotate(45)">
-      <line x1="0" y1="0" x2="0" y2="6" stroke="#475569" stroke-width="0.5"/>
+      <line x1="0" y1="0" x2="0" y2="6" stroke="#64748b" stroke-width="0.5"/>
     </pattern>
   </defs>`;
 
@@ -13463,9 +14281,12 @@ function secXSections() {
 
   // ── FOOTING CROSS-SECTION ────────────────────────────────────
   function svgFtg(f) {
+    const ftgType = S.ftgType || 'isolated';
     const W = 300, H = 200;
-    const fScale = Math.min(200 / (f.Bf * 1000), 0.14);
-    const fw = f.Bf * 1000 * fScale;
+    // Combined footing: show elongated shape
+    const displayBf = ftgType === 'combined' ? f.Bf * 1.8 : f.Bf;
+    const fScale = Math.min(200 / (displayBf * 1000), 0.14);
+    const fw = displayBf * 1000 * fScale;
     const fh = Math.min(70, Math.max(35, f.D * fScale * 2));
     const colW = (f.col || 300) * fScale;
     const ox = (W - fw) / 2, oy = 30;
@@ -13518,6 +14339,9 @@ function secXSections() {
     s += `<text x="${ox+5+barR+4}" y="${legY+4}" fill="#94a3b8" font-size="8" font-family="monospace">T${f.dBf}@${f.spf}mm c/c both ways (Ast=${r0(f.Af)}mm²)</text>`;
     s += `<text x="${ox}" y="${legY+16}" fill="#64748b" font-size="8" font-family="monospace">Cover=75mm (earth face, IS 456 Cl 26.4.2.2) | d_eff=${r0(f.d)}mm</text>`;
     const ok = f.punch_ok && f.ow_ok && f.Ld_ok;
+    const ftgTypeLbl = {'isolated':'Isolated Pad','combined':'Combined Footing','raft':'Raft Foundation'}[S.ftgType||'isolated']||'Isolated Pad';
+    const ftgTypeClr = {'isolated':'#34d399','combined':'#f59e0b','raft':'#f87171'}[S.ftgType||'isolated']||'#34d399';
+    s += `<text x="${W/2}" y="${oy-20}" fill="${ftgTypeClr}" font-size="8" font-weight="700" text-anchor="middle" font-family="monospace">⬛ ${ftgTypeLbl.toUpperCase()}</text>`;
     s += `<text x="${ox}" y="${legY+28}" fill="${ok?'#34d399':'#f87171'}" font-size="8" font-weight="bold" font-family="monospace">${ok?'All checks PASS':'Needs revision - see footing design section'}</text>`;
 
     s += `<text x="${W/2}" y="14" fill="#fbbf24" font-size="10" font-weight="bold" text-anchor="middle" font-family="monospace">${(f.lbl||'Footing').slice(0,20)} — ${r2(f.Bf)}m x ${r2(f.Bf)}m</text>`;
@@ -13541,7 +14365,7 @@ function secXSections() {
     // Footings
     for (let i = 0; i <= nBay; i++) {
       const fx = startX + i * spanPx;
-      s += `<rect x="${fx-14}" y="${startY}" width="28" height="10" fill="#334155" stroke="#64748b" stroke-width="1.5"/>`;
+      s += `<rect x="${fx-14}" y="${startY}" width="28" height="10" fill="#64748b" stroke="#64748b" stroke-width="1.5"/>`;
     }
 
     // Columns + beams per storey
@@ -13561,7 +14385,7 @@ function secXSections() {
       }
       // Floor height label
       s += `<text x="${startX-28}" y="${baseY-storyH/2}" fill="#94a3b8" font-size="7" text-anchor="end" font-family="monospace">${S.floorHt}m</text>`;
-      s += `<line x1="${startX-24}" y1="${baseY-storyH}" x2="${startX-24}" y2="${baseY}" stroke="#475569" stroke-width="0.5"/>`;
+      s += `<line x1="${startX-24}" y1="${baseY-storyH}" x2="${startX-24}" y2="${baseY}" stroke="#64748b" stroke-width="0.5"/>`;
     }
 
     s += `<text x="${W/2}" y="12" fill="#38bdf8" font-size="10" font-weight="bold" text-anchor="middle" font-family="monospace">FRAME ELEVATION — ${nBay} Bay x ${nStory} Storey</text>`;
@@ -18275,15 +19099,33 @@ function secMemberSchedule(){
           const{pD,pB}=practicalBeam(b.D,b.b);
           const util=Math.min(1.0,b.deflUtil||0);
           const utilColor=util>0.85?'#fbbf24':util>0.5?'#34d399':'#38bdf8';
-          // Recommended: use calculated (already minimum required)
-          const recD=b.D, recB=b.b;
+          // Recommended size logic:
+          // FAIL → size up to pass (deflection: D prop cube root; shear: increase b)
+          // OVER-DESIGNED → size down to save material (if deflUtil<0.4 AND momUtil<0.4)
+          // OK → keep as-is
+          let recD=b.D, recB=b.b, recNote='', recColor='#34d399';
+          if(!b.deflOK){
+            recD=Math.ceil(b.D*Math.pow(b.dfl/b.dall,1/3)/25+1)*25;
+            recNote='↑ Defl fail: increase D';
+            recColor='#f87171';
+          } else if(!b.shearSafe){
+            recB=Math.max(b.b+50, Math.ceil(b.b*1.25/25)*25);
+            recNote='↑ Shear fail: increase b';
+            recColor='#f87171';
+          } else if((b.deflUtil||1)<0.4 && (b.momUtil||1)<0.4 && b.D>250){
+            recD=Math.max(200, Math.ceil(b.D*0.85/25)*25);
+            recNote='↓ Over-designed: can reduce';
+            recColor='#60a5fa';
+          } else {
+            recNote='OK as designed';
+          }
           const endShort={'Both ends continuous':'Both fixed','One end continuous':'One pinned','Simply supported':'SS','cantilever':'Cantilever'}[b.endCond]||b.endCond||'auto';
           return`<tr style="background:${i%2===0?'transparent':'rgba(255,255,255,0.02)'}">
             <td style="padding:5px 8px;border:1px solid var(--b1);font-weight:600;color:var(--orange);white-space:nowrap">${b.label}</td>
             <td style="padding:5px 8px;border:1px solid var(--b1);text-align:center">${b.dir}</td>
             <td style="padding:5px 8px;border:1px solid var(--b1);text-align:right">${r2(b.L)}</td>
             <td style="padding:5px 8px;border:1px solid var(--b1);text-align:center;font-weight:700">${b.D}×${b.b}</td>
-            <td style="padding:5px 8px;border:1px solid var(--b1);text-align:center;color:#34d399;font-weight:700">${recD}×${recB}</td>
+            <td style="padding:5px 8px;border:1px solid var(--b1);text-align:center;color:${recColor};font-weight:700">${recD}×${recB}<br><span style="font-size:8px;font-weight:400;color:var(--txt3)">${recNote}</span></td>
             <td style="padding:5px 8px;border:1px solid var(--b1);font-size:9px">${endShort}</td>
             <td style="padding:5px 8px;border:1px solid var(--b1);text-align:right">${r2(b.wu)}</td>
             <td style="padding:5px 8px;border:1px solid var(--b1);text-align:right">${r2(b.Mmax)}</td>
@@ -18298,6 +19140,14 @@ function secMemberSchedule(){
             <td style="padding:5px 8px;border:1px solid var(--b1);text-align:center;font-weight:700;color:${ok?'#34d399':'#f87171'}">${ok?'✓':'✗'}</td>
           </tr>`;
         }).join('')}
+        <tr style="border-top:2px solid var(--b1)"><td colspan="13" style="padding:6px 8px;font-size:9px;color:var(--txt3)">
+          ${scheduleBeams.filter(b=>{
+            const clearW=b.b-2*S.coverBeam-2*8;
+            const minSpacing=Math.max(20,20); // 20mm or bar dia
+            const maxBars=Math.floor((clearW+minSpacing)/(20+minSpacing));
+            return b.nm>maxBars;
+          }).length>0?'<span style="color:#f87171;font-weight:700">⚠ Some beams have too many bars for the width — consider 2 layers or increase b.</span>':'<span style="color:#34d399">✔ All bar arrangements are practically buildable in single layer.</span>'}
+        </td></tr>
       </tbody>
     </table>
     ${beamFloors.length>1?`
@@ -18349,6 +19199,32 @@ function secMemberSchedule(){
           const nodeFloors=allCols.filter(x=>x.nodeId===c.nodeId).sort((a,b2)=>a.floor-b2.floor);
           const sizeRange=[...new Set(nodeFloors.map(x=>x.size))];
           const sizeLabel=sizeRange.length>1?`${Math.max(...sizeRange)}→${Math.min(...sizeRange)}`:`${c.size}`;
+          // Recommended column size:
+          // FAIL → size up until Pcap >= Pu
+          // OVER-DESIGNED (Pu/Pcap < 0.5 and size > 300) → suggest smaller
+          // OK → keep as-is
+          let recSize=c.size, recColNote='', recColColor='#34d399';
+          if(!ok){
+            // Iterate up by 25mm until capacity exceeds demand
+            recSize=c.size;
+            for(let sz=c.size+25; sz<=800; sz+=25){
+              const Ag2=sz*sz;
+              const Af2=Math.max(0.008*Ag2,(c.Pu*1000-0.4*S.fck*Ag2)/(0.67*S.fy-0.4*S.fck));
+              const dB2=c.Pu>800?20:16;
+              const nb2=Math.max(4,Math.ceil(Af2/(Math.PI*dB2*dB2/4)));
+              const Ap2=nb2*(Math.PI*dB2*dB2/4);
+              const Pcap2=(0.4*S.fck*(Ag2-Ap2)+0.67*S.fy*Ap2)/1000;
+              if(Pcap2>=c.Pu){ recSize=sz; break; }
+            }
+            recColNote='↑ Fails: increase to '+recSize;
+            recColColor='#f87171';
+          } else if(c.Pcap>0 && c.Pu/c.Pcap<0.5 && c.size>300){
+            recSize=Math.max(300,Math.ceil(c.size*0.85/25)*25);
+            recColNote='↓ Over-designed: can reduce';
+            recColColor='#60a5fa';
+          } else {
+            recColNote='OK as designed';
+          }
           return`<tr style="background:${i%2===0?'transparent':'rgba(255,255,255,0.02)'}">
             <td style="padding:5px 8px;border:1px solid var(--b1);font-weight:600;color:#a78bfa;white-space:nowrap">${c.label||c.baseLabel}</td>
             <td style="padding:5px 8px;border:1px solid var(--b1);font-size:9px">${posType}<br><span style="color:var(--txt3)">R${String.fromCharCode(65+c.row)}C${c.col+1}</span></td>
@@ -18356,7 +19232,7 @@ function secMemberSchedule(){
             <td style="padding:5px 8px;border:1px solid var(--b1);text-align:right">${r0(c.Ps)}</td>
             <td style="padding:5px 8px;border:1px solid var(--b1);text-align:right">${r0(c.Pu)}</td>
             <td style="padding:5px 8px;border:1px solid var(--b1);text-align:center;font-weight:700">${c.size}×${c.size}</td>
-            <td style="padding:5px 8px;border:1px solid var(--b1);text-align:center;color:#34d399;font-weight:700">${c.size}×${c.size}</td>
+            <td style="padding:5px 8px;border:1px solid var(--b1);text-align:center;color:${recColColor};font-weight:700">${recSize}×${recSize}<br><span style="font-size:8px;font-weight:400;color:var(--txt3)">${recColNote}</span></td>
             <td style="padding:5px 8px;border:1px solid var(--b1);text-align:center;font-weight:600">${c.nb}-D${c.dB}</td>
             <td style="padding:5px 8px;border:1px solid var(--b1);text-align:right">${r2(c.pt)}</td>
             <td style="padding:5px 8px;border:1px solid var(--b1);text-align:center">D8@${c.ts}</td>
@@ -18375,7 +19251,7 @@ function secMemberSchedule(){
 
   <!-- ── SLAB SCHEDULE ───────────────────────────────────────── -->
   <div style="margin-bottom:20px">
-    <div style="font-size:12px;font-weight:800;color:var(--blue);margin-bottom:4px">
+    <div style="font-size:12px;font-weight:800;color:var(--cyan);margin-bottom:4px">
       🔲 SLAB PANEL SCHEDULE — Typical Floor
     </div>
     <table style="width:100%;border-collapse:collapse;font-size:10px;min-width:900px">
@@ -18383,7 +19259,7 @@ function secMemberSchedule(){
         <tr style="background:rgba(56,189,248,0.12)">
           ${['Panel','lx m','ly m','Ratio','Case','D mm','d mm','wu kN/m²','Mx kN.m','My kN.m',
              'Bot. Short','Bot. Long','Top Short','Top Long','l/d','Status']
-             .map(h=>`<th style="padding:6px 8px;border:1px solid var(--b1);color:var(--blue);white-space:nowrap">${h}</th>`).join('')}
+             .map(h=>`<th style="padding:6px 8px;border:1px solid var(--b1);color:var(--cyan);white-space:nowrap">${h}</th>`).join('')}
         </tr>
       </thead>
       <tbody>
