@@ -1862,38 +1862,15 @@ function goJourneyApp(){
 }
 
 function openLearningModule(modId){
-  // If no project open yet, create one first then open the module
-  if(!_autoSaveProjId){
-    // Create a learning project silently, then open module
-    fetch(SUPA_URL+'/rest/v1/projects',{
-      method:'POST',
-      headers:{'Authorization':'Bearer '+SUPA_KEY,'apikey':SUPA_KEY,'Content-Type':'application/json','Prefer':'return=representation'},
-      body:JSON.stringify({profile_id:P.id, name:'Learning Project', analysis_count:0, state_json:{name:'Learning Project'}})
-    }).then(function(r){ return r.json(); }).then(function(data){
-      var p = Array.isArray(data)?data[0]:data;
-      if(p){
-        projects.unshift(p);
-        _autoSaveProjId = p.id;
-        // Open the app and navigate to the Learning Modules tab inside the iframe
-        goTo('app');
-        setTimeout(function(){
-          var fr = document.getElementById('app-iframe');
-          if(fr && fr.contentWindow){
-            fr.contentWindow.postMessage({type:'OPEN_MODULE', modId:modId}, '*');
-          }
-        }, 1200);
-      }
-    }).catch(function(e){ console.error('Learning project create error:',e); goTo('app'); });
-  } else {
-    // Project already open — go to app and open the module
-    goTo('app');
-    setTimeout(function(){
-      var fr = document.getElementById('app-iframe');
-      if(fr && fr.contentWindow){
-        fr.contentWindow.postMessage({type:'OPEN_MODULE', modId:modId}, '*');
-      }
-    }, 600);
-  }
+  // Learning Journey is independent of projects — never create a project for it
+  // Just open the app and send the OPEN_MODULE message directly
+  goTo('app');
+  setTimeout(function(){
+    var fr = document.getElementById('app-iframe');
+    if(fr && fr.contentWindow){
+      fr.contentWindow.postMessage({type:'OPEN_MODULE', modId:modId}, '*');
+    }
+  }, 800);
 }
 function filterP(){
   const s=document.getElementById('f-search').value.toLowerCase();
