@@ -14723,7 +14723,8 @@ async function startConstructionPDF() {
     // ================================================================
     // SHEET 1 — TITLE PAGE
     // ================================================================
-    log('Sheet 1: Title page...',8);
+    {
+log('Sheet 1: Title page...',8);
     drawPage('ST/TP01/R0','TITLE PAGE & DRAWING INDEX','NTS');
     let y=DR_Y+12;
     const DX=DR_X+4,DW2=DR_W-8;
@@ -14832,7 +14833,9 @@ async function startConstructionPDF() {
     // ================================================================
     // SHEET 2 — TECHNICAL NOTES
     // ================================================================
-    log('Sheet 2: Technical notes...',16);
+    }
+{
+log('Sheet 2: Technical notes...',16);
     doc.addPage();drawPage('ST/TN01/R0','TECHNICAL NOTES','NTS');
     y=DR_Y+12;
     F(8,'bold',0,0,100);Txt('GENERAL NOTES & TECHNICAL NOTES',DX+DW2/2,y,{align:'center'});
@@ -14923,7 +14926,9 @@ async function startConstructionPDF() {
     // ================================================================
     // SHEET 3 — FOOTING LAYOUT PLAN
     // ================================================================
-    log('Sheet 3: Footing layout...',24);
+    }
+{
+log('Sheet 3: Footing layout...',24);
     doc.addPage();drawPage('ST/FD01/R0','LAYOUT OF FOOTING','1:100');
     y=DR_Y+14;
 
@@ -15015,7 +15020,9 @@ async function startConstructionPDF() {
     // ================================================================
     // SHEET 4 — FOOTING DETAIL
     // ================================================================
-    log('Sheet 4: Footing detail...',34);
+    }
+{
+log('Sheet 4: Footing detail...',34);
     doc.addPage();drawPage('ST/FD02/R0','FOUNDATION DETAIL','1:25');
     y=DR_Y+14;
 
@@ -15250,7 +15257,9 @@ async function startConstructionPDF() {
     // ================================================================
     // SHEET 5 — COLUMN LAYOUT
     // ================================================================
-    log('Sheet 5: Column layout...',42);
+    }
+{
+log('Sheet 5: Column layout...',42);
     doc.addPage();drawPage('ST/CL01/R0','COLUMN MARKING LAYOUT','1:100');
     y=DR_Y+14;
     const cpX0=DR_X+(DR_W-planW)/2, cpY0=y+16;
@@ -15295,7 +15304,9 @@ async function startConstructionPDF() {
     // ================================================================
     // SHEET 6 — COLUMN DETAIL
     // ================================================================
-    log('Sheet 6: Column detail...',50);
+    }
+{
+log('Sheet 6: Column detail...',50);
     doc.addPage();drawPage('ST/CL02/R0','COLUMN DETAIL','1:25');
     y=DR_Y+14;
 
@@ -15425,7 +15436,9 @@ async function startConstructionPDF() {
     // ================================================================
     // SHEET 7 — BEAM LAYOUT PLAN
     // ================================================================
-    log('Sheet 7: Beam layout...',56);
+    }
+{
+log('Sheet 7: Beam layout...',56);
     doc.addPage();drawPage('ST/BM01/R0','BEAM LAYOUT PLAN','1:100');
     y=DR_Y+14;
     const bpX0=DR_X+(DR_W-planW)/2, bpY0=y+16;
@@ -15508,7 +15521,9 @@ async function startConstructionPDF() {
     // ================================================================
     // SHEET 8 — BEAM DETAIL
     // ================================================================
-    log('Sheet 8: Beam detail...',66);
+    }
+{
+log('Sheet 8: Beam detail...',66);
     doc.addPage();drawPage('ST/BM02/R0','BEAM DETAIL','1:25 / 1:50');
     y=DR_Y+14;
 
@@ -15644,7 +15659,9 @@ async function startConstructionPDF() {
     // ================================================================
     // SHEET 9 — SLAB DETAIL
     // ================================================================
-    log('Sheet 9: Slab detail...',72);
+    }
+{
+log('Sheet 9: Slab detail...',72);
     doc.addPage();drawPage('ST/SL01/R0','SLAB REINFORCEMENT DETAIL','1:50');
     y=DR_Y+14;
     F(8,'bold',0,0,100);Txt('SLAB REINFORCEMENT DETAIL  -  TYPICAL FLOOR ('+ftin(sl.slabD/1000)+' THICK)',DX+DW2/2,y,{align:'center'});
@@ -15762,7 +15779,9 @@ async function startConstructionPDF() {
     // ================================================================
     // SHEET 9A — SLAB REINFORCEMENT PLAN (full floor plan top-view)
     // ================================================================
-    log('Sheet 9A: Slab reinforcement plan...',74);
+    }
+{
+log('Sheet 9A: Slab reinforcement plan...',74);
     doc.addPage();drawPage('ST/SL02/R0','SLAB REINFORCEMENT PLAN - TYPICAL FLOOR','1:50');
     y=DR_Y+14;
 
@@ -15966,7 +15985,9 @@ async function startConstructionPDF() {
     // ================================================================
     // SHEET 9B — CENTRE LINE / SETTING-OUT PLAN
     // ================================================================
-    log('Sheet 9B: Centre line plan...',77);
+    }
+{
+log('Sheet 9B: Centre line plan...',77);
     doc.addPage();drawPage('ST/CL00/R0','CENTRE LINE PLAN - SETTING OUT','1:100');
     y=DR_Y+14;
 
@@ -16058,7 +16079,9 @@ async function startConstructionPDF() {
     // ================================================================
     // SHEET 9C — EXCAVATION PLAN
     // ================================================================
-    log('Sheet 9C: Excavation plan...',79);
+    }
+{
+log('Sheet 9C: Excavation plan...',79);
     doc.addPage();drawPage('ST/EX01/R0','EXCAVATION & FOOTING LAYOUT PLAN','1:100');
     y=DR_Y+14;
 
@@ -16189,7 +16212,9 @@ async function startConstructionPDF() {
 
     // SHEET 10 — BAR BENDING SCHEDULE
     // ================================================================
-    log('Sheet 10: BBS...',80);
+    }
+{
+log('Sheet 10: BBS...',80);
     doc.addPage();drawPage('ST/BB01/R0','BAR BENDING SCHEDULE (BBS)','NTS');
     y=DR_Y+14;
 
@@ -16319,7 +16344,9 @@ async function startConstructionPDF() {
     // ================================================================
     // SHEET 11 — BUILDING ELEVATION
     // ================================================================
-    log('Sheet 11: Building elevation...',88);
+    }
+{
+log('Sheet 11: Building elevation...',88);
     doc.addPage();drawPage('ST/EL01/R0','BUILDING ELEVATION','1:100');
     y=DR_Y+14;
 
@@ -16448,7 +16475,9 @@ async function startConstructionPDF() {
     // ================================================================
     // SHEET 12 — STAIRCASE DETAIL
     // ================================================================
-    log('Sheet 12: Staircase...',96);
+    }
+{
+log('Sheet 12: Staircase...',96);
     doc.addPage();drawPage('ST/SC01/R0','STAIRCASE DETAIL','1:25');
     y=DR_Y+14;
 
@@ -16606,7 +16635,8 @@ async function startConstructionPDF() {
     F(6,'italic',80,80,80);Txt('(=60xdia for slabs)',ssX+3,sy5+18);
 
     } // end hasStairBay
-    log('All done! Saving...',99);
+    }
+log('All done! Saving...',99);
     await new Promise(r=>setTimeout(r,80));
 
     const fname=s2(S.name||'Structure').replace(/\s+/g,'_').replace(/[^A-Za-z0-9_]/g,'')+'_Construction_Drawings.pdf';
@@ -21322,6 +21352,7 @@ function closeChallengePopup(){var el=document.getElementById("_challenge_popup"
 </script>
 <script>
 
+
 // ── ADMIN TAB VISIBILITY — loads directly from Supabase ──────
 (function(){
   var SUPA = 'https://rpjdveuxxjeoeomkwrfx.supabase.co';
@@ -21355,7 +21386,9 @@ function closeChallengePopup(){var el=document.getElementById("_challenge_popup"
   });
 })();
 
+
 </script>
+
 
 </body>
 </html>
