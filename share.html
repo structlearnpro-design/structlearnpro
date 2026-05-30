@@ -109,22 +109,16 @@ window.addEventListener('load', async function(){
       return;
     }
 
-    var p = data[0];
-    console.log('Project fetched:', p.name);
-    console.log('results_json type:', typeof p.results_json);
-    console.log('results_json value:', p.results_json);
-    console.log('state_json type:', typeof p.state_json);
-    renderProject(p);
+    renderProject(data[0]);
   } catch(e){
     showError('Failed to load project.', 'Please check your connection and try again.');
   }
 });
 
 function renderProject(p){
-  var state = {};
-  try { state = JSON.parse(p.state_json || '{}'); } catch(e){}
-  var RES = {};
-  try { RES = JSON.parse(p.results_json || '{}'); } catch(e){}
+  // Supabase returns JSON columns as already-parsed objects — no need to parse
+  var state = (typeof p.state_json === 'string') ? JSON.parse(p.state_json || '{}') : (p.state_json || {});
+  var RES   = (typeof p.results_json === 'string') ? JSON.parse(p.results_json || '{}') : (p.results_json || {});
 
   var S = state.S || state || {};
   var hasResults = p.safety_score !== null && p.safety_score !== undefined;

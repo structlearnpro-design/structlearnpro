@@ -2597,11 +2597,6 @@ async function handleSaveProject(data){
     updated_at:      new Date().toISOString(),
   };
 
-  // Debug logging
-  console.log('handleSaveProject — RES keys:', RES ? Object.keys(RES) : 'null');
-  console.log('allBeams count:', RES?.allBeams?.length);
-  console.log('payload size:', JSON.stringify(payload).length, 'chars');
-
   const resp = await fetch(SUPA_URL+'/rest/v1/projects?id=eq.'+pid+'&profile_id=eq.'+P.id, {
     method: 'PATCH',
     headers: {'Authorization':'Bearer '+SUPA_KEY,'apikey':SUPA_KEY,'Content-Type':'application/json'},
