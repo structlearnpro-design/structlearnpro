@@ -109,7 +109,12 @@ window.addEventListener('load', async function(){
       return;
     }
 
-    renderProject(data[0]);
+    var p = data[0];
+    console.log('Project fetched:', p.name);
+    console.log('results_json type:', typeof p.results_json);
+    console.log('results_json value:', p.results_json);
+    console.log('state_json type:', typeof p.state_json);
+    renderProject(p);
   } catch(e){
     showError('Failed to load project.', 'Please check your connection and try again.');
   }
