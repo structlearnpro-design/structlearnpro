@@ -16224,6 +16224,27 @@ window.addEventListener('popstate', function(e){
 });
 
 window.addEventListener('message', function(e) {
+  // ── SET_READONLY: hide all edit controls, show Full Report only ──
+  if(e.data && e.data.type === 'SET_READONLY'){
+    window._readOnly = true;
+    // Hide top nav bar completely
+    var nav = document.getElementById('nav');
+    if(nav) nav.style.display = 'none';
+    // Hide run analysis button
+    var runBtn = document.querySelector('button[onclick*="runNow"]');
+    if(runBtn) runBtn.style.display = 'none';
+    // Hide step navigation tabs (n0-n6)
+    document.querySelectorAll('.nav-i').forEach(function(el){
+      el.style.display = 'none';
+    });
+    // Add read-only banner
+    var banner = document.createElement('div');
+    banner.style.cssText = 'background:rgba(56,189,248,0.06);border-bottom:1px solid rgba(56,189,248,0.12);padding:8px 16px;font-size:11px;color:#38bdf8;text-align:center;font-family:Arial,sans-serif;letter-spacing:0.5px';
+    banner.textContent = '👁 Read-Only View — Full Report';
+    document.body.insertBefore(banner, document.body.firstChild);
+    return;
+  }
+
   // ── CLOSE_HUB: parent tells iframe to close learning hub overlay ──
   if(e.data && e.data.type === 'CLOSE_HUB'){
     var hub = document.getElementById('_module_hub');
