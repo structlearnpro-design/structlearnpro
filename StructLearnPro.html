@@ -3099,7 +3099,7 @@ if(typeof _beamFloor==='undefined'){var _beamFloor=1,_beamIdx=0,_colFloor=1,_col
 function showSec(s){
   RSEC=s;
   document.querySelectorAll('.tab').forEach(t=>{t.classList.toggle('active',t.textContent.toLowerCase()===s);});
-  const fns={overview:secOverview,seismic:secSeismic,wind:secWind,slab:secSlab,beams:secBeams,columns:secColumns,footings:secFootings,staircase:secStair,safety:secSafety,schedule:secMemberSchedule,snapshot:secSnapshot};
+  const fns={overview:secOverview,seismic:secSeismic,wind:secWind,slab:secSlab,beams:secBeams,columns:secColumns,footings:secFootings,staircase:secStair,safety:secSafety,schedule:secMemberSchedule,boq:secBOQ,snapshot:secSnapshot};
   const el=document.getElementById('secBody');
   if(el)(fns[s]||secOverview)().then?fns[s]().then(h=>el.innerHTML=h):el.innerHTML=(fns[s]||secOverview)();
   setTimeout(()=>{if(s==='seismic'&&RES)renderGridPrev&&renderGridPrev();},50);
@@ -3600,6 +3600,10 @@ function beamDetail(b){
     return sb('B-7','Floor-by-Floor Beam Summary (same span, varying load)',
       '<div style="font-size:10px;color:var(--txt3);margin-bottom:6px">D×b governed by deflection — constant on all floors. Load, steel and stirrups vary.</div>'+tblHtml+note,'or');
   })()}
+
+  <div style="margin-top:10px;padding:10px">
+    <button onclick="(function(){try{window.parent.postMessage({type:'OPEN_AI_FOR_MEMBER',member:'${b.label||'beam'}',issue:'${b.shearSafe===false?'shear fail':b.deflOK===false?'deflection fail':'design check'}',memberType:'beam'},'*');}catch(e){}})()" style="width:100%;padding:8px;background:linear-gradient(135deg,rgba(79,70,229,0.15),rgba(124,58,237,0.15));border:1.5px solid rgba(99,102,241,0.4);border-radius:8px;color:#818cf8;cursor:pointer;font-size:11px;font-weight:700;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px" onmouseover="this.style.borderColor='#6366f1'" onmouseout="this.style.borderColor='rgba(99,102,241,0.4)'">🤖 Ask AI about this beam →</button>
+  </div>
 </div>`;
 }
 

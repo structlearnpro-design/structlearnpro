@@ -667,7 +667,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
     <div class="tnav">
       <button class="tnav-btn on" id="n-proj" onclick="goTo('projects')">My Projects</button>
       <a href="/reference" target="_blank" style="padding:5px 10px;background:rgba(52,211,153,0.08);border:1px solid rgba(52,211,153,0.15);border-radius:6px;color:#34d399;font-size:11px;font-weight:700;text-decoration:none;white-space:nowrap">📖 IS Codes</a>
-      <button class="tnav-btn" id="n-app"  onclick="goTo('app')" title="Explore the design tool">Design Tool</button>
+      <button class="tnav-btn" id="n-app"  onclick="_autoSaveProjId?goTo('app'):goTo('projects')" title="Open design tool">Design Tool</button>
       <button class="tnav-btn" id="n-acc"  onclick="goTo('account')">Account</button>
     </div>
   </div>
