@@ -152,13 +152,16 @@ function injectProject(){
       goStep: 7
     }, '*');
 
-    // 3. Set read-only mode — hides nav, run button etc.
-    setTimeout(function(){
-      var fr3 = document.getElementById('report-iframe');
-      if(fr3 && fr3.contentWindow){
-        fr3.contentWindow.postMessage({ type:'SET_READONLY' }, '*');
-      }
-    }, 800);
+    // 3. Set read-only mode — hides nav, run button, learning panel etc.
+    // Send multiple times to catch late-rendered elements
+    [800, 1500, 2500, 4000].forEach(function(delay){
+      setTimeout(function(){
+        var fr3 = document.getElementById('report-iframe');
+        if(fr3 && fr3.contentWindow){
+          fr3.contentWindow.postMessage({ type:'SET_READONLY' }, '*');
+        }
+      }, delay);
+    });
 
   }, 600);
 }

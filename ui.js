@@ -16227,21 +16227,35 @@ window.addEventListener('message', function(e) {
   // ── SET_READONLY: hide all edit controls, show Full Report only ──
   if(e.data && e.data.type === 'SET_READONLY'){
     window._readOnly = true;
-    // Hide top nav bar completely
-    var nav = document.getElementById('nav');
-    if(nav) nav.style.display = 'none';
+
+    // Helper to hide element by selector
+    function hide(sel){ document.querySelectorAll(sel).forEach(function(el){ el.style.display='none'; }); }
+    function hideId(id){ var el=document.getElementById(id); if(el) el.style.display='none'; }
+
+    // Hide top nav bar
+    hide('#nav');
     // Hide run analysis button
-    var runBtn = document.querySelector('button[onclick*="runNow"]');
-    if(runBtn) runBtn.style.display = 'none';
-    // Hide step navigation tabs (n0-n6)
-    document.querySelectorAll('.nav-i').forEach(function(el){
-      el.style.display = 'none';
-    });
-    // Add read-only banner
-    var banner = document.createElement('div');
-    banner.style.cssText = 'background:rgba(56,189,248,0.06);border-bottom:1px solid rgba(56,189,248,0.12);padding:8px 16px;font-size:11px;color:#38bdf8;text-align:center;font-family:Arial,sans-serif;letter-spacing:0.5px';
-    banner.textContent = '👁 Read-Only View — Full Report';
-    document.body.insertBefore(banner, document.body.firstChild);
+    hide('button[onclick*="runNow"]');
+    // Hide step navigation tabs
+    hide('.nav-i');
+    // Hide learning journey panel (bottom right corner)
+    hideId('_cert_panel');
+    // Hide AI nudge / floating pills
+    hide('.ai-nudge');
+    hide('.ai-pill');
+    // Hide any floating action buttons
+    hide('[id*="float"]');
+    hide('[class*="float"]');
+    // Also repeatedly check for late-rendered elements
+    var _roTimer = setInterval(function(){
+      hideId('_cert_panel');
+      hide('.ai-nudge');
+      var panel = document.getElementById('_cert_panel');
+      if(panel) panel.remove();
+      // Stop after 5 seconds
+    }, 300);
+    setTimeout(function(){ clearInterval(_roTimer); }, 5000);
+
     return;
   }
 
