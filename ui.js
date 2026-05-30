@@ -13640,6 +13640,25 @@ function showCertificate(level) {
   const dateStr = new Date(cert.date).toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'});
   const svg = buildCertificateSVG(level, cert.id, cert.userName, dateStr);
 
+  // Load real QR code library and generate after render
+  function injectRealQR(certId, color) {
+    // Use QR Server API to get real QR as image (works when online)
+    var verifyURL = 'https://structlearnpro.com/cert?id=' + certId;
+    var qrAPI = 'https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=' + encodeURIComponent(verifyURL) + '&color=' + color.replace('#','') + '&bgcolor=ffffff&margin=2';
+    // Find the fake QR group in the SVG and replace with real image
+    var svgEl = document.querySelector('#_cert_view svg');
+    if(!svgEl) return;
+    // Add foreignObject with real QR image over the fake one
+    var fo = document.createElementNS('http://www.w3.org/2000/svg','image');
+    fo.setAttribute('href', qrAPI);
+    fo.setAttribute('x', '732');
+    fo.setAttribute('y', '626');
+    fo.setAttribute('width', '80');
+    fo.setAttribute('height', '80');
+    fo.setAttribute('id', 'real-qr-img');
+    svgEl.appendChild(fo);
+  }
+
   view.innerHTML = `
   <div style="max-width:900px;width:100%">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
@@ -13667,6 +13686,9 @@ function showCertificate(level) {
   </div>`;
 
   document.body.appendChild(view);
+  // Inject real scannable QR code after DOM is ready
+  var _certColors = {1:'#92400e', 2:'#1e3a5f', 3:'#3b0764'};
+  setTimeout(function(){ injectRealQR(cert.id, _certColors[level]||'#92400e'); }, 300);
 }
 
 // ── QUIZ ENGINE ───────────────────────────────────────────────
