@@ -324,7 +324,7 @@ function p6(){return`
 function p7(){
   if(!RES)return`<div class="card">Run analysis first.</div>`;
   return`
-<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;padding:10px;background:var(--bg1);border-radius:8px;border:1px solid var(--b1)">
+<div id="report-toolbar" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;padding:10px;background:var(--bg1);border-radius:8px;border:1px solid var(--b1)">
   <button class="btn gr" onclick="if(requirePro('PDF Report')) showPDFDialog()">↓ Download Report PDF <span style="font-size:9px;background:#f59e0b;color:#1a1208;padding:1px 5px;border-radius:3px;margin-left:4px;font-weight:700">PRO</span></button>
   ${typeof _userPlan!=='undefined'&&_userPlan!=='pro'?`
   <div style="width:100%;margin-top:6px;padding:8px 12px;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.3);border-radius:6px;font-size:11px;color:#94a3b8;display:flex;align-items:center;gap:8px">
@@ -16238,6 +16238,8 @@ window.addEventListener('message', function(e) {
     hide('button[onclick*="runNow"]');
     // Hide step navigation tabs
     hide('.nav-i');
+    // Hide report action toolbar (Download PDF, Save, Load, Export etc)
+    hideId('report-toolbar');
     // Hide learning journey panel (bottom right corner)
     hideId('_cert_panel');
     // Hide AI nudge / floating pills
@@ -16249,10 +16251,12 @@ window.addEventListener('message', function(e) {
     // Also repeatedly check for late-rendered elements
     var _roTimer = setInterval(function(){
       hideId('_cert_panel');
+      hideId('report-toolbar');
       hide('.ai-nudge');
       var panel = document.getElementById('_cert_panel');
       if(panel) panel.remove();
-      // Stop after 5 seconds
+      var tb = document.getElementById('report-toolbar');
+      if(tb) tb.style.display = 'none';
     }, 300);
     setTimeout(function(){ clearInterval(_roTimer); }, 5000);
 
