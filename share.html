@@ -78,7 +78,7 @@ body { background:#030712; color:#e2e8f0; font-family:Arial,sans-serif; height:1
 
 <!-- FULL REPORT IFRAME -->
 <div class="iframe-wrap" id="iframe-wrap">
-  <iframe id="report-iframe" src="StructLearnPro.html" onload="onIframeReady()"></iframe>
+  <iframe id="report-iframe" src="StructLearnPro.html"></iframe>
 </div>
 
 <script>
@@ -87,14 +87,21 @@ var SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJ
 
 var _project = null;
 var _iframeReady = false;
+var _injected = false;
+
+// Listen for IFRAME_READY from the iframe
+window.addEventListener('message', function(e){
+  if(e.data && e.data.type === 'IFRAME_READY'){
+    console.log('[share] IFRAME_READY received');
+    _iframeReady = true;
+    if(_project && !_injected) injectProject();
+  }
+});
 
 // Load project from Supabase
 window.addEventListener('load', async function(){
   var token = new URLSearchParams(window.location.search).get('token');
-  if(!token){
-    showError('No share token', 'Please check the link and try again.');
-    return;
-  }
+  if(!token){ showError('No share token', 'Please check the link and try again.'); return; }
 
   try {
     var resp = await fetch(
@@ -102,68 +109,47 @@ window.addEventListener('load', async function(){
       { headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY } }
     );
     var data = await resp.json();
-
     if(!Array.isArray(data) || !data.length){
       showError('Project not found', 'This share link may have been revoked or the project no longer exists.');
       return;
     }
 
     _project = data[0];
+    console.log('[share] Project loaded:', _project.name);
 
-    // Update title in top bar
     var titleEl = document.getElementById('proj-title');
     if(titleEl) titleEl.textContent = _project.name || 'Untitled Project';
     document.title = (_project.name || 'Shared Project') + ' — StructLearn Pro';
 
-    // Show iframe, hide loading
     document.getElementById('screen-loading').style.display = 'none';
     document.getElementById('iframe-wrap').style.display = 'block';
 
-    // If iframe already ready, inject now
-    if(_iframeReady) injectProject();
+    if(_iframeReady && !_injected) injectProject();
+
+    // Fallback if IFRAME_READY never fires
+    setTimeout(function(){ if(!_injected){ console.log('[share] Fallback inject'); injectProject(); } }, 4000);
 
   } catch(e) {
     showError('Failed to load', 'Please check your connection and try again.');
   }
 });
 
-// Called when StructLearnPro.html iframe finishes loading
-function onIframeReady(){
-  _iframeReady = true;
-  if(_project) injectProject();
-}
-
 function injectProject(){
+  if(_injected) return;
   var fr = document.getElementById('report-iframe');
   if(!fr || !fr.contentWindow || !_project) return;
+  _injected = true;
+  console.log('[share] Injecting project');
 
-  // Small delay to let the iframe JS fully initialise
-  setTimeout(function(){
-    var fr2 = document.getElementById('report-iframe');
-    if(!fr2 || !fr2.contentWindow) return;
+  fr.contentWindow.postMessage({ type:'USER_PLAN', plan:'pro', user:{} }, '*');
+  fr.contentWindow.postMessage({ type:'LOAD_PROJECT', project:_project, goStep:7 }, '*');
 
-    // 1. Send plan as pro so all tabs unlocked
-    fr2.contentWindow.postMessage({ type:'USER_PLAN', plan:'pro', user:{} }, '*');
-
-    // 2. Load the project — go directly to Full Report (page 7)
-    fr2.contentWindow.postMessage({
-      type: 'LOAD_PROJECT',
-      project: _project,
-      goStep: 7
-    }, '*');
-
-    // 3. Set read-only mode — hides nav, run button, learning panel etc.
-    // Send multiple times to catch late-rendered elements
-    [800, 1500, 2500, 4000].forEach(function(delay){
-      setTimeout(function(){
-        var fr3 = document.getElementById('report-iframe');
-        if(fr3 && fr3.contentWindow){
-          fr3.contentWindow.postMessage({ type:'SET_READONLY' }, '*');
-        }
-      }, delay);
-    });
-
-  }, 600);
+  [800, 1500, 2500, 4000].forEach(function(d){
+    setTimeout(function(){
+      var fr2 = document.getElementById('report-iframe');
+      if(fr2 && fr2.contentWindow) fr2.contentWindow.postMessage({ type:'SET_READONLY' }, '*');
+    }, d);
+  });
 }
 
 function showError(title, msg){

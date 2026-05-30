@@ -13481,8 +13481,7 @@ function buildLearningPanel() {
   setInterval(()=>{
     hintIdx = (hintIdx+1) % hints.length;
     const el = document.getElementById('_cert_hint');
-    if(el) { el.style.opacity='0'; setTimeout(()=>{ el.textContent=hints[hintIdx]; el.style.opacity='1'; },300); }
-    el.style.transition='opacity 0.3s';
+    if(el) { el.style.opacity='0'; el.style.transition='opacity 0.3s'; setTimeout(()=>{ el.textContent=hints[hintIdx]; el.style.opacity='1'; },300); }
   }, 30000);
 
   _BT.updateProgress();
@@ -16211,6 +16210,12 @@ _TRACK.init();
 // _BT._loadLocal() disabled — data loaded from Supabase via RESTORE_PROGRESS
 
 // ── RESTORE PROGRESS FROM SUPABASE (cross-device) ────────────
+// Signal parent that iframe is fully initialised and ready to receive messages
+try {
+  window.parent.postMessage({ type:'IFRAME_READY' }, '*');
+  console.log('[ui.js] IFRAME_READY sent to parent');
+} catch(e){}
+
 // Browser back button inside iframe — go back to previous page
 window.addEventListener('popstate', function(e){
   if(e.state && e.state.slpPage !== undefined){
@@ -16348,6 +16353,7 @@ window.addEventListener('message', function(e) {
       // Restore RES from results_json
       if(proj.results_json && typeof proj.results_json === 'object') {
         RES = proj.results_json;
+        console.log('[LOAD_PROJECT] RES restored, allBeams:', RES.allBeams ? RES.allBeams.length : 'none');
       }
       // Update project name in S
       if(proj.name) S.name = S.name || proj.name;
