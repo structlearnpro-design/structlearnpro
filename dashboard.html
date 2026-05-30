@@ -1403,20 +1403,7 @@ function showScreen(id){
 function goTo(tab){
   document.querySelectorAll('.tnav-btn').forEach(b=>b.classList.remove('on'));
   if(tab==='projects'){document.getElementById('n-proj').classList.add('on');showScreen('dash-screen');loadProjects();}
-  else if(tab==='app'){
-    document.getElementById('n-app').classList.add('on');
-    showScreen('app-screen');
-    tellIframe();
-    // If no project is loaded, send to welcome page (step 0)
-    if(!_autoSaveProjId){
-      setTimeout(function(){
-        var fr = document.getElementById('app-iframe');
-        if(fr && fr.contentWindow){
-          fr.contentWindow.postMessage({type:'LOAD_PROJECT', project:null, goStep:0}, '*');
-        }
-      }, 400);
-    }
-  }
+  else if(tab==='app'){document.getElementById('n-app').classList.add('on');showScreen('app-screen');tellIframe();}
   else if(tab==='account'){document.getElementById('n-acc').classList.add('on');showScreen('acc-screen');renderAcc();}
   // Push browser history so back button works within the app
   if(['projects','app','account'].includes(tab)){
