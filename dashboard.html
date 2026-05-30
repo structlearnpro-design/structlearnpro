@@ -2254,11 +2254,9 @@ function injectSaveToParent(fr){
     // Set project ID flag in iframe so gated auto-save works
     fr.contentWindow._slpProjectId = pid;
     fr.contentWindow.saveToParent = async function(status){
-      console.log('[saveToParent] called with status:', status, 'pid:', pid, 'P:', !!P);
       try{
         const iw = fr.contentWindow;
-        console.log('[saveToParent] iw.S:', !!iw.S, 'iw.RES:', !!iw.RES);
-        if(!iw.S) { console.warn('[saveToParent] No S - returning'); return; }
+        if(!iw.S) return;
         const payload = {
           name:            iw.S.name || 'Untitled',
           client:          iw.S.client || null,

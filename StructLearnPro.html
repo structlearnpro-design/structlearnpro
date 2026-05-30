@@ -4064,32 +4064,17 @@ function runNow(){
       RES=runCalcsFromGrid();
       if(!RES){alert('Calculation returned empty. Check inputs.');return;}
       go(7);
-      // Save to Supabase via parent
-      console.log('[runNow] Save block reached. _slpProjectId:', window._slpProjectId, 'saveToParent type:', typeof saveToParent);
+      // Save to Supabase — send data directly via postMessage
       try{
-        var _saveData = {
-          type:'SAVE_PROJECT',
+        window.parent.postMessage({
+          type: 'SAVE_PROJECT',
           projectId: window._slpProjectId,
           S: JSON.parse(JSON.stringify(S)),
           RES: JSON.parse(JSON.stringify(RES)),
           GRID: GRID ? {bays:GRID.bays, nodes:GRID.nodes} : null
-        };
-        if(typeof saveToParent === 'function'){
-          setTimeout(function(){ saveToParent('analysis'); }, 500);
-        } else {
-          // saveToParent not injected yet - send SAVE_PROJECT directly
-          setTimeout(function(){
-            try{
-              if(typeof saveToParent === 'function'){
-                saveToParent('analysis');
-              } else {
-                window.parent.postMessage(_saveData, '*');
-              }
-            }catch(e){}
-          }, 1500);
-          window.parent.postMessage(_saveData, '*');
-        }
-      }catch(e){ console.warn('save err',e); }
+        }, '*');
+        console.log('[runNow] SAVE_PROJECT sent to parent');
+      }catch(e){ console.warn('[runNow] save err:', e); }
     }catch(e){
       console.error('runCalcs error:',e);
       const m=document.getElementById('main');
