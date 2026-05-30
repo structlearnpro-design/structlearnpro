@@ -2397,6 +2397,37 @@ window.addEventListener('message', function(ev){
     return;
   }
 
+  // SAVE_CERTS — iframe earned a certificate, save to Supabase
+  if(ev.data && ev.data.type==='SAVE_CERTS' && ev.data.certs && P){
+    var certs = ev.data.certs;
+    var latest = certs[certs.length-1];
+    if(!latest) return;
+    var levelMap = {1:'foundation', 2:'proficiency', 3:'competent'};
+    fetch(SUPA_URL+'/rest/v1/certificates', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer '+SUPA_KEY,
+        'apikey': SUPA_KEY,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify({
+        cert_id:      latest.id,
+        student_name: P.full_name || P.mobile || 'Student',
+        level:        levelMap[latest.level] || 'foundation',
+        issued_date:  latest.date || new Date().toISOString(),
+        is_valid:     true
+      })
+    }).then(function(r){
+      if(r.ok || r.status===201){
+        console.log('Certificate saved:', latest.id);
+      } else {
+        r.text().then(function(t){ console.warn('Cert save failed:', r.status, t); });
+      }
+    }).catch(function(e){ console.warn('Cert save error:', e); });
+    return;
+  }
+
   // NAV_BACK — iframe tells parent a page-level back happened
   if(ev.data && ev.data.type==='NAV_BACK_DONE'){
     // iframe handled back - push its current page state
