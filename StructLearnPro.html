@@ -11962,5 +11962,40 @@ window.p8orig=p8;
 document.addEventListener('click',e=>{if(e.target.closest('[onclick*="go(8)"]'))setTimeout(drawRefGrid,100);});
 
 </script>
+
+<script>
+// ── ADMIN TAB VISIBILITY — loads directly from Supabase ──────
+(function(){
+  var SUPA = 'https://rpjdveuxxjeoeomkwrfx.supabase.co';
+  var KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJwamR2ZXV4eGplb2VvbWt3cmZ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg5MzY3NzIsImV4cCI6MjA5NDUxMjc3Mn0.3JvvMaCFKg2fB9-l2WJ5JMX5btGIKqvpMj_ZcxSRWaQ';
+
+  function applyHiddenTabs(tabs){
+    if(!tabs || !tabs.length) return;
+    window._disabledTabs = tabs;
+    tabs.forEach(function(tid){
+      var el = document.getElementById(tid);
+      if(el) el.style.display = 'none';
+    });
+  }
+
+  // Make globally available so message handler can call it
+  window.applyDisabledTabs = applyHiddenTabs;
+
+  // Fetch from Supabase on load
+  fetch(SUPA+'/rest/v1/platform_settings?key=eq.disabled_tabs&select=value',{
+    headers:{'apikey':KEY,'Authorization':'Bearer '+KEY}
+  }).then(function(r){return r.json();}).then(function(data){
+    var tabs=[];
+    if(data&&data[0]&&data[0].value){try{tabs=JSON.parse(data[0].value);}catch(e){}}
+    applyHiddenTabs(tabs);
+  }).catch(function(){});
+
+  // Also listen for postMessage from parent
+  window.addEventListener('message',function(e){
+    if(e.data&&e.data.type==='DISABLED_TABS') applyHiddenTabs(e.data.tabs||[]);
+    if(e.data&&e.data.type==='USER_PLAN'&&e.data.tabs) applyHiddenTabs(e.data.tabs);
+  });
+})();
+</script>
 </body>
 </html>
