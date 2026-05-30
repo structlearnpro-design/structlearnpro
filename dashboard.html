@@ -47,7 +47,8 @@
   <link rel="manifest" href="/manifest.json">
   <!-- ══════════════════════════════════════════════════════════ -->
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
 :root{
@@ -656,7 +657,12 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
       <div>👨‍🏫 Share with lecturer to join their batch</div>
       <div>🔒 Always visible in your Profile</div>
     </div>
-    <button class="abtn" onclick="plan=resolvePlan();updTop();loadAndRestoreProgress().then(function(){goTo('projects');});emailWelcome({...P,unique_id:document.getElementById('welcome-uid').textContent});emailAdminNewSignup({...P,unique_id:document.getElementById('welcome-uid').textContent});">Go to My Dashboard →</button>
+    <button class="abtn" onclick="plan=resolvePlan();updTop();loadAndRestoreProgress().then(function(){
+    // Check if user came from landing page pricing button
+    var pendingPlan = sessionStorage.getItem('slp_pending_plan');
+    if(pendingPlan){ sessionStorage.removeItem('slp_pending_plan'); setTimeout(function(){ openRazorpay(pendingPlan); }, 1000); }
+    goTo('projects');
+  });emailWelcome({...P,unique_id:document.getElementById('welcome-uid').textContent});emailAdminNewSignup({...P,unique_id:document.getElementById('welcome-uid').textContent});">Go to My Dashboard →</button>
   </div>
 </div>
 
@@ -2920,6 +2926,123 @@ async function saveAccEmail(){
 }
 
 // ── UPGRADE ──────────────────────────────────────────────────
+
+// ── RAZORPAY PAYMENT ─────────────────────────────────────────
+const RAZORPAY_KEY = 'rzp_test_SveJDHIoCjRSpW';
+
+async function openRazorpay(plan) {
+  if (!P) { toast('Please log in first.', '#f87171'); return; }
+
+  // Show loading
+  toast('Opening payment...', '#38bdf8');
+
+  try {
+    // Step 1: Create order
+    const orderResp = await fetch('/api/create-order', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ plan })
+    });
+    const orderData = await orderResp.json();
+    if (!orderResp.ok) { toast(orderData.error || 'Failed to create order', '#f87171'); return; }
+
+    // Step 2: Open Razorpay modal
+    const options = {
+      key: RAZORPAY_KEY,
+      amount: orderData.amount,
+      currency: orderData.currency,
+      name: 'StructLearn Pro',
+      description: plan === 'annual' ? 'Annual Pro Plan' : 'Monthly Pro Plan',
+      order_id: orderData.order_id,
+      prefill: {
+        name: P.full_name || '',
+        email: P.email || '',
+        contact: P.mobile || ''
+      },
+      theme: { color: '#1d4ed8' },
+      modal: {
+        ondismiss: function() { toast('Payment cancelled.', '#64748b'); }
+      },
+      handler: async function(response) {
+        // Step 3: Verify payment
+        toast('Verifying payment...', '#38bdf8');
+        try {
+          const verifyResp = await fetch('/api/verify-payment', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              razorpay_order_id:   response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature:  response.razorpay_signature,
+              plan: plan,
+              user_id: P.id
+            })
+          });
+          const verifyData = await verifyResp.json();
+          if (verifyData.success) {
+            // Update local state
+            P.plan = 'pro';
+            P.pro_expires_at = verifyData.expires_at;
+            plan_local = 'pro';
+            plan = resolvePlan();
+            updTop();
+            renderP(projects);
+            toast('🎉 Upgraded to Pro! Welcome!', '#34d399');
+            // Send confirmation email
+            if (P.email) {
+              emailProWelcome(P, plan_local, verifyData.expires_at);
+            }
+            // Notify admin
+            emailAdminNewPro(P, plan_local, verifyData.payment_id);
+          } else {
+            toast(verifyData.error || 'Payment verification failed', '#f87171');
+          }
+        } catch(e) {
+          toast('Network error during verification. Contact support.', '#f87171');
+        }
+      }
+    };
+
+    const rzp = new Razorpay(options);
+    rzp.on('payment.failed', function(resp) {
+      toast('Payment failed: ' + (resp.error.description || 'Unknown error'), '#f87171');
+    });
+    rzp.open();
+
+  } catch(e) {
+    toast('Error: ' + e.message, '#f87171');
+  }
+}
+
+// Email on Pro upgrade
+async function emailProWelcome(user, plan, expiresAt) {
+  if (!user.email) return;
+  var expDate = new Date(expiresAt).toLocaleDateString('en-IN', {day:'numeric',month:'long',year:'numeric'});
+  var planName = plan === 'annual' ? 'Annual' : 'Monthly';
+  var content = '<h2>Welcome to StructLearn Pro! 🎉</h2>'
+    + '<p>Hi ' + (user.full_name||'there') + ',</p>'
+    + '<p>Your <strong>' + planName + ' Pro</strong> subscription is now active.</p>'
+    + '<div class="highlight"><p style="margin:0">Valid until: <strong>' + expDate + '</strong></p></div>'
+    + '<p>You now have unlimited access to all Pro features:</p>'
+    + '<p>✅ Unlimited projects<br>✅ PDF drawing downloads<br>✅ Full construction drawing package<br>✅ BOQ and cost estimates</p>'
+    + '<a href="https://structlearnpro.com/app" class="btn">Open Your Workspace →</a>';
+  return sendEmail('billing@structlearnpro.com', user.email, 'Your StructLearn Pro subscription is active!', emailBase(content));
+}
+
+async function emailAdminNewPro(user, plan, paymentId) {
+  var content = '<h2>💰 New Pro Subscription</h2>'
+    + '<table>'
+    + '<tr><td style="color:#64748b;width:130px">User</td><td style="font-weight:700">' + (user.full_name||'—') + '</td></tr>'
+    + '<tr><td style="color:#64748b">Mobile</td><td>' + (user.mobile||'—') + '</td></tr>'
+    + '<tr><td style="color:#64748b">Email</td><td>' + (user.email||'—') + '</td></tr>'
+    + '<tr><td style="color:#64748b">Plan</td><td style="color:#34d399;font-weight:700">' + plan.toUpperCase() + '</td></tr>'
+    + '<tr><td style="color:#64748b">Payment ID</td><td style="font-family:monospace">' + (paymentId||'—') + '</td></tr>'
+    + '</table>'
+    + '<a href="https://structlearnpro.com/admin" class="btn" style="margin-top:16px">View in Admin →</a>';
+  return sendEmail('billing@structlearnpro.com', 'structlearnpro@gmail.com', '💰 New Pro: ' + (user.full_name||user.mobile||'User'), emailBase(content));
+}
+
+
 function showUp(){document.getElementById('up-modal').classList.add('show');}
 function hideUp(){document.getElementById('up-modal').classList.remove('show');}
 function selPlan(p){
@@ -2985,139 +3108,95 @@ function getDiscountedAmount(baseAmount){
 
 // ── PAYMENT ───────────────────────────────────────────────────
 async function startPay(){
-  if(!RZP_KEY){ toast('Payment not configured yet.'); return; }
   if(!P){ toast('Please log in first.'); return; }
 
-  // Load Razorpay script
-  if(!window.Razorpay){
-    await new Promise((resolve,reject)=>{
-      const s=document.createElement('script');
-      s.src='https://checkout.razorpay.com/v1/checkout.js';
-      s.onload=resolve; s.onerror=reject;
-      document.head.appendChild(s);
-    });
-  }
+  const planLabel = selPlanId==='monthly' ? 'Monthly Pro' : 'Annual Pro';
 
-  // Always use latest prices from Supabase
-  const baseAmt     = selPlanId==='monthly' ? PRICES.monthly : PRICES.annual;
-  const amt         = getDiscountedAmount(baseAmt); // in paise
-  const displayAmt  = Math.round(amt/100);
-  const planLabel   = selPlanId==='monthly' ? 'Monthly Pro' : 'Annual Pro';
-  const months      = selPlanId==='monthly' ? 1 : 12;
+  // Create order via secure backend
+  let orderData;
+  try {
+    const r = await fetch('/api/create-order', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ plan: selPlanId })
+    });
+    orderData = await r.json();
+    if(!r.ok){ toast(orderData.error||'Failed to create order','#f87171'); return; }
+  } catch(e){ toast('Network error. Please try again.','#f87171'); return; }
 
   const opts = {
-    key:         RZP_KEY,
-    amount:      amt,
-    currency:    'INR',
+    key:         'rzp_test_SveJDHIoCjRSpW',
+    amount:      orderData.amount,
+    currency:    orderData.currency,
+    order_id:    orderData.order_id,
     name:        'StructLearn Pro',
     description: planLabel + ' Subscription',
-    image:       'https://structlearnpro.vercel.app/favicon.ico',
     prefill: {
       contact: P.mobile ? P.mobile.replace('+91','') : '',
       email:   P.email || '',
       name:    P.full_name || '',
     },
-    notes: {
-      profile_id: P.id,
-      unique_id:  P.unique_id,
-      plan:       selPlanId,
-    },
+    notes: { profile_id: P.id, plan: selPlanId },
     theme: { color: '#1d4ed8' },
-
+    modal: { ondismiss: function(){ toast('Payment cancelled. Your free account is still active.'); } },
     handler: async function(r) {
-      // Payment successful
-      const exp = new Date();
-      exp.setMonth(exp.getMonth() + months);
-
-      // Update profile
-      await fetch(SUPA_URL+'/rest/v1/profiles?id=eq.'+P.id, {
-        method: 'PATCH',
-        headers: {'Authorization':'Bearer '+SUPA_KEY,'apikey':SUPA_KEY,'Content-Type':'application/json'},
-        body: JSON.stringify({
-          plan:                'pro',
-          plan_type:           selPlanId,
-          plan_expires_at:     exp.toISOString(),
-          razorpay_payment_id: r.razorpay_payment_id,
-          amount_paid:         displayAmt,
-          payment_date:        new Date().toISOString(),
-        })
-      });
-
-      // Record in payment_history
-      await fetch(SUPA_URL+'/rest/v1/payment_history', {
-        method: 'POST',
-        headers: {'Authorization':'Bearer '+SUPA_KEY,'apikey':SUPA_KEY,'Content-Type':'application/json'},
-        body: JSON.stringify({
-          profile_id:          P.id,
-          razorpay_payment_id: r.razorpay_payment_id,
-          amount:              amt,
-          plan:                selPlanId,
-          status:              'success',
-          coupon_used:         appliedCoupon ? appliedCoupon.code : null,
-        })
-      });
-
-      // Update coupon usage
-      if(appliedCoupon){
-        await fetch(SUPA_URL+'/rest/v1/coupons?id=eq.'+appliedCoupon.id, {
-          method: 'PATCH',
-          headers: {'Authorization':'Bearer '+SUPA_KEY,'apikey':SUPA_KEY,'Content-Type':'application/json'},
-          body: JSON.stringify({used_count: (appliedCoupon.used_count||0)+1})
+      toast('Verifying payment...','#38bdf8');
+      try {
+        const vr = await fetch('/api/verify-payment', {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({
+            razorpay_order_id:   r.razorpay_order_id,
+            razorpay_payment_id: r.razorpay_payment_id,
+            razorpay_signature:  r.razorpay_signature,
+            plan: selPlanId,
+            user_id: P.id
+          })
         });
-        appliedCoupon = null;
-        document.getElementById('coupon-input').value = '';
-        document.getElementById('coupon-msg').textContent = '';
-      }
+        const vd = await vr.json();
+        if(!vd.success){ toast(vd.error||'Verification failed','#f87171'); return; }
 
-      // Reload profile from Supabase to confirm update
-      try{
-        const freshResp = await fetch(SUPA_URL+'/rest/v1/profiles?id=eq.'+P.id+'&select=*',{
-          headers:{'Authorization':'Bearer '+SUPA_KEY,'apikey':SUPA_KEY}
-        });
-        const freshData = await freshResp.json();
-        if(freshData && freshData[0]) P = freshData[0];
-      }catch(e){}
-      plan = resolvePlan();
+        // Update local state
+        const exp = new Date(vd.expires_at);
+        P.plan = 'pro'; P.plan_type = selPlanId; P.pro_expires_at = vd.expires_at;
+        plan = resolvePlan();
 
-      // Show receipt
-      showPaymentReceipt(r.razorpay_payment_id, displayAmt, planLabel, exp);
+        // Reload profile from Supabase
+        try {
+          const fr = await fetch(SUPA_URL+'/rest/v1/profiles?id=eq.'+P.id+'&select=*',
+            {headers:{'Authorization':'Bearer '+SUPA_KEY,'apikey':SUPA_KEY}});
+          const fd = await fr.json();
+          if(fd && fd[0]) P = fd[0];
+        }catch(e){}
 
-      // Update UI
-      updTop();
-      hideUp();
-      renderAcc();
-      tellIframe();
-      toast('🎉 Welcome to Pro! All features unlocked.');
+        // Handle coupon
+        if(appliedCoupon){
+          await fetch(SUPA_URL+'/rest/v1/coupons?id=eq.'+appliedCoupon.id,{
+            method:'PATCH',
+            headers:{'Authorization':'Bearer '+SUPA_KEY,'apikey':SUPA_KEY,'Content-Type':'application/json'},
+            body:JSON.stringify({used_count:(appliedCoupon.used_count||0)+1})
+          }).catch(()=>{});
+          appliedCoupon=null;
+          const ci=document.getElementById('coupon-input'); if(ci) ci.value='';
+          const cm=document.getElementById('coupon-msg'); if(cm) cm.textContent='';
+        }
 
-      // Schedule renewal reminder
-      scheduleRenewalReminder(exp, selPlanId);
-    }
-  };
+        // Show receipt and update UI
+        showPaymentReceipt(r.razorpay_payment_id, Math.round(orderData.amount/100), planLabel, exp);
+        updTop(); hideUp(); renderAcc(); tellIframe();
+        toast('🎉 Welcome to Pro! All features unlocked.');
+        scheduleRenewalReminder(exp, selPlanId);
 
-  opts.modal = {
-    ondismiss: function(){
-      toast('Payment cancelled. Your free account is still active.');
+        // Send emails
+        if(P.email) emailProWelcome(P, selPlanId, vd.expires_at);
+        emailAdminNewPro(P, selPlanId, r.razorpay_payment_id);
+
+      } catch(e){ toast('Payment error: '+(e.message||'Please try again'),'#f87171'); }
     }
   };
 
   const rzp = new window.Razorpay(opts);
-
-  rzp.on('payment.failed', async function(response){
-    toast('Payment failed: '+(response.error.description||'Please try again.'));
-    // Record failed payment
-    await fetch(SUPA_URL+'/rest/v1/payment_history', {
-      method: 'POST',
-      headers: {'Authorization':'Bearer '+SUPA_KEY,'apikey':SUPA_KEY,'Content-Type':'application/json'},
-      body: JSON.stringify({
-        profile_id:     P.id,
-        amount:         amt,
-        plan:           selPlanId,
-        status:         'failed',
-        failure_reason: response.error.description || 'Unknown',
-      })
-    });
+  rzp.on('payment.failed', function(response){
+    toast('Payment failed: '+(response.error.description||'Please try again.'),'#f87171');
   });
-
   rzp.open();
 }
 
