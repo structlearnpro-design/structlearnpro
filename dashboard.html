@@ -1889,11 +1889,14 @@ function goJourneyApp(){
   openLearningModule('M1');
 }
 
+var _openModuleTimer = null;
+
 function openLearningModule(modId){
-  // Learning Journey is independent of projects — never create a project for it
-  // Just open the app and send the OPEN_MODULE message directly
+  // Cancel any pending module open
+  if(_openModuleTimer){ clearTimeout(_openModuleTimer); _openModuleTimer=null; }
   goTo('app');
-  setTimeout(function(){
+  _openModuleTimer = setTimeout(function(){
+    _openModuleTimer = null;
     var fr = document.getElementById('app-iframe');
     if(fr && fr.contentWindow){
       fr.contentWindow.postMessage({type:'OPEN_MODULE', modId:modId}, '*');
@@ -2016,6 +2019,8 @@ async function createNewProject(){
   }
 }
 async function openP(id, isNew){
+  // Cancel any pending Learning Module open — user chose a project instead
+  if(_openModuleTimer){ clearTimeout(_openModuleTimer); _openModuleTimer=null; }
   const resp = await fetch(SUPA_URL+'/rest/v1/projects?id=eq.'+id+'&select=*',{
     headers:{'Authorization':'Bearer '+SUPA_KEY,'apikey':SUPA_KEY}
   });
