@@ -2277,7 +2277,7 @@ function injectSaveToParent(fr){
           thumbnail_svg:   generateThumb(iw.S, iw.GRID),
           safety_score:    iw.RES  ? calcSafetyScore(iw.RES) : null,
           all_checks_pass: iw.RES  ? calcAllPass(iw.RES) : false,
-          analysis_count:  (projects.find(x=>x.id===pid)?.analysis_count||0),
+          analysis_count:  (projects.find(x=>x.id===pid)?.analysis_count||0) + (status==='analysis'?1:0),
           updated_at:      new Date().toISOString(),
         };
         // Debug: log what's being saved

@@ -428,7 +428,11 @@ function sdiv(t){return`<div class="sdiv"><div class="sdiv-l"></div><div class="
 
 function svgTribArea(type,spX,spY){
   const W=380,H=260,pad=40;
-  const bx=[pad,pad+spX*60,pad+spX*120],by=[pad,pad+spY*60,pad+spY*120];
+  // Scale to fit: 2 bays each direction, max scale so both fit in box
+  const scaleX=Math.min(60,(W-2*pad)/(2*spX));
+  const scaleY=Math.min(60,(H-2*pad)/(2*spY));
+  const sc=Math.min(scaleX,scaleY);
+  const bx=[pad,pad+spX*sc,pad+spX*sc*2],by=[pad,pad+spY*sc,pad+spY*sc*2];
   // shade trib area based on type
   const shades={corner:`M${bx[0]},${by[0]} L${(bx[0]+bx[1])/2},${by[0]} L${(bx[0]+bx[1])/2},${(by[0]+by[1])/2} L${bx[0]},${(by[0]+by[1])/2} Z`,
     edge:`M${bx[0]},${by[0]} L${(bx[0]+bx[1])/2},${by[0]} L${(bx[0]+bx[1])/2},${by[1]} L${bx[0]},${by[1]} Z`,
@@ -5265,12 +5269,13 @@ function colDetail(c){
 _ftgIdx=0;
 
 function secFootings(){
-  if(!RES.allFtgs||RES.allFtgs.length===0)return'<div class="card">No footing data.</div>';
+  if(!RES||!RES.allFtgs||RES.allFtgs.length===0)return'<div class="card"><div class="ct">Footings</div><p style="color:var(--txt3)">Run analysis first to see footing designs.</p></div>';
   if(_ftgIdx>=RES.allFtgs.length) _ftgIdx=0;
   const ftg=RES.allFtgs[_ftgIdx];
 
-  // Selector grid
-  const ny=GRID.ny, nx=GRID.nx;
+  // Selector grid - get nx/ny from GRID or from S
+  const nx=(GRID&&GRID.nx)||(S.spansX?S.spansX.length:3);
+  const ny=(GRID&&GRID.ny)||(S.spansY?S.spansY.length:3);
   // Build footing grid plan: (nx+2) columns = 1 row-label + (nx+1) node cells
   const allFtgsArr=RES.allFtgs||(RES.ftgs||[]);
   let nodeGrid='<div style="display:inline-grid;gap:3px;grid-template-columns:repeat('+(nx+2)+',auto)">';
