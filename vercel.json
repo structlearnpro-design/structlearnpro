@@ -1,7 +1,9 @@
 {
   "rewrites": [
-    { "source": "/app",   "destination": "/dashboard.html" },
-    { "source": "/admin", "destination": "/admin.html"     },
-    { "source": "/cert",  "destination": "/cert.html"      }
+    { "source": "/app",       "destination": "/dashboard.html" },
+    { "source": "/admin",     "destination": "/admin.html"     },
+    { "source": "/cert",      "destination": "/cert.html"      },
+    { "source": "/share",     "destination": "/share.html"     },
+    { "source": "/reference", "destination": "/reference.html" }
   ]
 }

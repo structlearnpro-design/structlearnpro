@@ -392,6 +392,8 @@ footer{background:#080d1c;padding:44px 28px 32px;border-top:1px solid var(--bord
     <li><a href="#showcase">How it works</a></li>
     <li><a href="#pricing">Pricing</a></li>
     <li><a href="#faq">FAQ</a></li>
+    <li><a href="/reference" style="color:var(--green,#34d399)">📖 IS Codes</a></li>
+    <li><a href="/cert" style="color:var(--blue2,#4f8ef7)">🎓 Verify Cert</a></li>
   </ul>
   <div class="ncta">
     <button class="nbg" onclick="showLogin('login')" id="nav-signin" style="display:flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="5" r="3" stroke="currentColor" stroke-width="1.4"/><path d="M1 13c0-3.3 2.7-6 6-6s6 2.7 6 6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg> My Workspace</button>
@@ -1112,73 +1114,6 @@ function closeMobileNav(){
     </div>
   </div>
 </section>
-
-<!-- TESTIMONIALS: INFINITE SCROLL MARQUEE -->
-<section id="testimonials" style="padding:80px 0;background:var(--bg);border-top:1px solid var(--border);overflow:hidden;">
-
-  <div style="text-align:center;margin-bottom:44px;padding:0 24px;">
-    <div style="font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;color:var(--blue2);letter-spacing:2px;text-transform:uppercase;margin-bottom:12px;display:flex;align-items:center;justify-content:center;gap:8px;"><span style="width:20px;height:1.5px;background:var(--blue2);display:block;"></span>What engineers say<span style="width:20px;height:1.5px;background:var(--blue2);display:block;"></span></div>
-    <h2 style="font-family:'Familjen Grotesk',sans-serif;font-size:clamp(26px,4vw,40px);font-weight:700;line-height:1.1;letter-spacing:-1px;color:#fff;margin-bottom:10px;" data-e="t-h" contenteditable="false" spellcheck="false">Real engineers. Real projects.</h2>
-    <p style="font-size:15px;color:var(--txt3);">Verified reviews from students and professionals across India.</p>
-
-    <!-- Write review button — only for logged in users -->
-    <div id="reviewBtnWrap" style="display:none;margin-top:16px;">
-      <button onclick="openReviewModal()" style="display:inline-flex;align-items:center;gap:8px;padding:10px 20px;background:rgba(79,142,247,0.1);border:1px solid rgba(79,142,247,0.3);border-radius:10px;color:var(--blue2);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;transition:all 0.2s;" onmouseover="this.style.background='rgba(79,142,247,0.18)'" onmouseout="this.style.background='rgba(79,142,247,0.1)'">✍️ Write a Review</button>
-    </div>
-  </div>
-
-  <!-- MARQUEE TRACK -->
-  <div style="position:relative;">
-    <!-- Left fade -->
-    <div style="position:absolute;left:0;top:0;bottom:0;width:120px;background:linear-gradient(90deg,var(--bg),transparent);z-index:2;pointer-events:none;"></div>
-    <!-- Right fade -->
-    <div style="position:absolute;right:0;top:0;bottom:0;width:120px;background:linear-gradient(270deg,var(--bg),transparent);z-index:2;pointer-events:none;"></div>
-
-    <!-- ROW 1: scrolls left -->
-    <div class="marquee-row" style="margin-bottom:14px;">
-      <div class="marquee-track" id="mtrack1">
-        <!-- cards injected by JS -->
-      </div>
-    </div>
-
-    <!-- ROW 2: scrolls right (opposite) -->
-    <div class="marquee-row">
-      <div class="marquee-track reverse" id="mtrack2">
-        <!-- cards injected by JS -->
-      </div>
-    </div>
-  </div>
-
-  <!-- Rating summary strip -->
-  <div style="display:flex;align-items:center;justify-content:center;gap:32px;flex-wrap:wrap;margin-top:44px;padding:0 24px;">
-    <div style="display:flex;align-items:center;gap:10px;">
-      <div style="font-family:'Familjen Grotesk',sans-serif;font-size:36px;font-weight:700;color:#fff;letter-spacing:-1px;" id="avgRating">4.9</div>
-      <div><div style="color:var(--amber);font-size:18px;letter-spacing:1px;">★★★★★</div><div style="font-size:11px;color:var(--txt3);font-family:'JetBrains Mono',monospace;margin-top:2px;" id="reviewCount">from early users</div></div>
-    </div>
-    <div style="width:1px;height:40px;background:var(--border);display:none;" class="sep-line"></div>
-    <div style="display:flex;gap:20px;flex-wrap:wrap;" id="ratingPills">
-      <div style="display:flex;align-items:center;gap:8px;background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:100px;padding:6px 14px;">
-        <span style="color:var(--green);font-size:14px;">✓</span><span style="font-size:13px;color:var(--txt2);">IS Accuracy <strong style="color:#fff;">4.9</strong></span>
-      </div>
-      <div style="display:flex;align-items:center;gap:8px;background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:100px;padding:6px 14px;">
-        <span style="color:var(--green);font-size:14px;">✓</span><span style="font-size:13px;color:var(--txt2);">Ease of Use <strong style="color:#fff;">4.8</strong></span>
-      </div>
-      <div style="display:flex;align-items:center;gap:8px;background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:100px;padding:6px 14px;">
-        <span style="color:var(--green);font-size:14px;">✓</span><span style="font-size:13px;color:var(--txt2);">Value for Money <strong style="color:#fff;">5.0</strong></span>
-      </div>
-    </div>
-  </div>
-
-</section>
-
-<!-- FULL REVIEW MODAL -->
-<div id="fullReviewModal" style="display:none;position:fixed;inset:0;z-index:9300;background:rgba(5,8,20,0.8);backdrop-filter:blur(14px);align-items:flex-end;justify-content:center;" onclick="if(event.target===this)closeFullReview()">
-  <div style="background:var(--bg2);border:1px solid var(--border2);border-radius:24px 24px 0 0;padding:8px 28px 44px;width:100%;max-width:520px;animation:su 0.35s cubic-bezier(0.34,1.1,0.64,1);position:relative;">
-    <div style="width:36px;height:4px;background:var(--border2);border-radius:2px;margin:14px auto 24px;"></div>
-    <button onclick="closeFullReview()" style="position:absolute;top:18px;right:18px;background:var(--bg3);border:none;color:var(--txt3);width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;font-weight:600;">✕</button>
-    <div id="fullReviewBody"></div>
-  </div>
-</div>
 
 <!-- REVIEW SUBMIT MODAL -->
 <div id="reviewModal" style="display:none;position:fixed;inset:0;z-index:9200;background:rgba(5,8,20,0.75);backdrop-filter:blur(12px);align-items:flex-end;justify-content:center;">
@@ -1951,11 +1886,6 @@ document.addEventListener('DOMContentLoaded',()=>{
 })();
 </script>
 
-<div style="background:#030712;border-top:1px solid rgba(56,189,248,0.08);padding:16px 24px;text-align:center">
-  <a href="/cert" style="display:inline-flex;align-items:center;gap:8px;color:#38bdf8;font-size:13px;font-weight:600;text-decoration:none;font-family:'JetBrains Mono',monospace;opacity:0.8;transition:opacity 0.2s" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.8'">
-    🎓 Verify a StructLearn Pro Certificate →
-  </a>
-</div>
 <footer><div class="fi-row"><div style="display:flex;align-items:center;gap:10px;"><div class="fmark">SL</div><div><div class="fname" data-e="f-nm" contenteditable="false" spellcheck="false">StructLearn Pro</div><div style="font-size:11px;color:var(--txt4);font-family:'JetBrains Mono',monospace;margin-top:1px;" data-e="f-tg" contenteditable="false" spellcheck="false">IS 456 · IS 1893 · IS 875 · IS 13920</div></div></div><div class="flinks"><a href="#" data-e="fl1" contenteditable="false" spellcheck="false">Privacy</a><a href="#" data-e="fl2" contenteditable="false" spellcheck="false">Terms</a><a href="#" data-e="fl3" contenteditable="false" spellcheck="false">Refunds</a><a href="mailto:structlearnpro@gmail.com" data-e="fl4" contenteditable="false" spellcheck="false">structlearnpro@gmail.com</a></div></div><div class="fcopy" data-e="f-cp" contenteditable="false" spellcheck="false">© 2026 StructLearn Pro · Made in India 🇮🇳</div></footer>
 
 <!-- LOGIN MODAL -->

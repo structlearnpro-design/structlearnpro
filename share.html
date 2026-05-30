@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shared Project — StructLearn Pro</title>
+<meta name="description" content="View this shared structural design project on StructLearn Pro.">
+<meta property="og:title" content="Structural Design Project — StructLearn Pro">
+<meta property="og:image" content="https://structlearnpro.com/og-image.png">
+<meta name="robots" content="noindex">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:#030712; color:#e2e8f0; font-family:Arial,sans-serif; min-height:100vh; }
+
+.topbar {
+  background:#060c18;
+  border-bottom:1px solid rgba(56,189,248,0.1);
+  padding:12px 24px;
+  display:flex; align-items:center; justify-content:space-between;
+  flex-wrap:wrap; gap:10px;
+}
+.logo { display:flex; align-items:center; gap:10px; text-decoration:none; }
+.logo-icon { width:32px; height:32px; background:linear-gradient(135deg,#1d4ed8,#38bdf8); border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:16px; }
+.logo-name { font-size:15px; font-weight:900; color:#f8fafc; letter-spacing:-0.5px; }
+.logo-name span { color:#38bdf8; }
+.share-badge { display:inline-flex; align-items:center; gap:6px; padding:4px 12px; background:rgba(56,189,248,0.08); border:1px solid rgba(56,189,248,0.2); border-radius:20px; font-size:11px; color:#38bdf8; font-weight:600; }
+.signup-btn { padding:8px 18px; background:linear-gradient(135deg,#1d4ed8,#38bdf8); border:none; border-radius:8px; color:#fff; font-size:12px; font-weight:700; cursor:pointer; text-decoration:none; display:inline-block; }
+
+.container { max-width:1100px; margin:0 auto; padding:32px 24px; }
+
+.proj-header { margin-bottom:28px; }
+.proj-name { font-size:28px; font-weight:900; color:#f1f5f9; margin-bottom:8px; }
+.proj-meta { display:flex; gap:16px; flex-wrap:wrap; font-size:12px; color:#475569; }
+.proj-meta span { display:flex; align-items:center; gap:4px; }
+
+.stats-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:12px; margin-bottom:28px; }
+.stat-card { background:#0a1628; border:1px solid rgba(255,255,255,0.06); border-radius:12px; padding:16px; text-align:center; }
+.stat-val { font-size:24px; font-weight:800; color:#38bdf8; margin-bottom:4px; }
+.stat-lbl { font-size:10px; color:#475569; letter-spacing:1px; }
+
+.section { background:#0a1628; border:1px solid rgba(255,255,255,0.06); border-radius:14px; padding:20px; margin-bottom:16px; }
+.section-title { font-size:13px; font-weight:700; color:#94a3b8; letter-spacing:1px; margin-bottom:14px; text-transform:uppercase; }
+.member-row { display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid rgba(255,255,255,0.04); font-size:12px; }
+.member-row:last-child { border-bottom:none; }
+.member-name { color:#e2e8f0; font-weight:600; }
+.member-val { color:#64748b; }
+.pass { color:#34d399; font-weight:700; }
+.fail { color:#f87171; font-weight:700; }
+
+.safety-bar { height:8px; background:#0f1f40; border-radius:4px; margin-top:8px; overflow:hidden; }
+.safety-fill { height:100%; border-radius:4px; transition:width 1s ease; }
+
+.cta-banner { background:linear-gradient(135deg,rgba(29,78,216,0.15),rgba(56,189,248,0.08)); border:1px solid rgba(56,189,248,0.2); border-radius:16px; padding:28px; text-align:center; margin-top:28px; }
+.cta-title { font-size:20px; font-weight:800; color:#f1f5f9; margin-bottom:8px; }
+.cta-sub { font-size:13px; color:#475569; margin-bottom:20px; line-height:1.7; }
+
+.loading { text-align:center; padding:80px 20px; }
+.loading-icon { font-size:40px; margin-bottom:16px; }
+.error { text-align:center; padding:80px 20px; }
+.error-icon { font-size:40px; margin-bottom:16px; }
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <a href="https://structlearnpro.com" class="logo">
+    <div class="logo-icon">🏗</div>
+    <div class="logo-name">STRUCT<span>LEARN</span> PRO</div>
+  </a>
+  <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+    <div class="share-badge">👁 Read-Only View</div>
+    <a href="https://structlearnpro.com" class="signup-btn">Try it Free →</a>
+  </div>
+</div>
+
+<!-- CONTENT -->
+<div class="container">
+  <div id="content">
+    <div class="loading">
+      <div class="loading-icon">⏳</div>
+      <div style="color:#475569;font-size:14px">Loading shared project...</div>
+    </div>
+  </div>
+</div>
+
+<script>
+var SUPA_URL = 'https://rpjdveuxxjeoeomkwrfx.supabase.co';
+var SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJwamR2ZXV4eGplb2VvbWt3cmZ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg5MzY3NzIsImV4cCI6MjA5NDUxMjc3Mn0.3JvvMaCFKg2fB9-l2WJ5JMX5btGIKqvpMj_ZcxSRWaQ';
+
+window.addEventListener('load', async function(){
+  var params = new URLSearchParams(window.location.search);
+  var token = params.get('token');
+
+  if(!token){
+    showError('No share token provided.', 'Please check the link and try again.');
+    return;
+  }
+
+  try {
+    var resp = await fetch(
+      SUPA_URL + '/rest/v1/projects?share_token=eq.' + token + '&select=*',
+      { headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY } }
+    );
+    var data = await resp.json();
+
+    if(!Array.isArray(data) || !data.length){
+      showError('Project not found.', 'This share link may have been revoked or the project no longer exists.');
+      return;
+    }
+
+    renderProject(data[0]);
+  } catch(e){
+    showError('Failed to load project.', 'Please check your connection and try again.');
+  }
+});
+
+function renderProject(p){
+  var state = {};
+  try { state = JSON.parse(p.state_json || '{}'); } catch(e){}
+  var RES = {};
+  try { RES = JSON.parse(p.results_json || '{}'); } catch(e){}
+
+  var S = state.S || state || {};
+  var hasResults = p.safety_score !== null && p.safety_score !== undefined;
+  var safetyScore = Math.round(p.safety_score || 0);
+  var safetyColor = p.all_checks_pass ? '#34d399' : hasResults ? '#f87171' : '#64748b';
+
+  var updDate = new Date(p.updated_at).toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'});
+  var creDate = new Date(p.created_at).toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'});
+
+  // Update page title
+  document.title = (p.name || 'Untitled') + ' — StructLearn Pro';
+
+  var html = '';
+
+  // Project header
+  html += '<div class="proj-header">';
+  html += '<div class="proj-name">' + esc(p.name || 'Untitled Project') + '</div>';
+  html += '<div class="proj-meta">';
+  if(S.numFloors) html += '<span>🏢 G+' + (S.numFloors-1) + ' Building</span>';
+  if(S.location)  html += '<span>📍 ' + esc(S.location) + '</span>';
+  if(S.seismicZone) html += '<span>⚡ Seismic Zone ' + S.seismicZone + '</span>';
+  if(S.fck)       html += '<span>🧱 M' + S.fck + ' Concrete</span>';
+  if(S.fy)        html += '<span>⚙️ Fe' + S.fy + ' Steel</span>';
+  html += '<span>📅 Last updated ' + updDate + '</span>';
+  html += '</div></div>';
+
+  // Stats
+  html += '<div class="stats-grid">';
+  var stats = [
+    { val: p.analysis_count || 0,      lbl: 'ANALYSES RUN' },
+    { val: (S.numFloors||1)+' floors',  lbl: 'BUILDING HEIGHT' },
+    { val: (S.spansX||[]).length+'×'+(S.spansY||[]).length, lbl: 'GRID' },
+    { val: hasResults ? safetyScore+'%' : '—', lbl: 'SAFETY SCORE', color: safetyColor },
+  ];
+  if(RES.allBeams) stats.push({ val: RES.allBeams.length, lbl: 'BEAMS DESIGNED' });
+  if(RES.allCols)  stats.push({ val: RES.allCols.length,  lbl: 'COLUMNS DESIGNED' });
+  if(RES.allFtgs)  stats.push({ val: RES.allFtgs.length,  lbl: 'FOOTINGS DESIGNED' });
+  if(RES.boq && RES.boq.steel) stats.push({ val: Math.round(RES.boq.steel.total/1000)+'MT', lbl: 'STEEL REQUIRED' });
+
+  stats.forEach(function(s){
+    html += '<div class="stat-card">';
+    html += '<div class="stat-val" style="color:' + (s.color||'#38bdf8') + '">' + s.val + '</div>';
+    html += '<div class="stat-lbl">' + s.lbl + '</div>';
+    html += '</div>';
+  });
+  html += '</div>';
+
+  // Safety score bar
+  if(hasResults){
+    html += '<div class="section">';
+    html += '<div class="section-title">Safety Summary</div>';
+    html += '<div style="display:flex;justify-content:space-between;margin-bottom:6px">';
+    html += '<span style="font-size:13px;color:#94a3b8">Overall Safety Score</span>';
+    html += '<span style="font-size:16px;font-weight:800;color:'+safetyColor+'">' + safetyScore + '% — ' + (p.all_checks_pass?'All Checks Pass':'Issues Found') + '</span>';
+    html += '</div>';
+    html += '<div class="safety-bar"><div class="safety-fill" style="width:'+safetyScore+'%;background:'+safetyColor+'"></div></div>';
+    html += '</div>';
+  }
+
+  // Beams summary
+  if(RES.allBeams && RES.allBeams.length){
+    html += '<div class="section">';
+    html += '<div class="section-title">Beam Design — ' + RES.allBeams.length + ' Members</div>';
+    RES.allBeams.slice(0,8).forEach(function(b){
+      html += '<div class="member-row">';
+      html += '<span class="member-name">' + esc(b.tag||b.id||'Beam') + '</span>';
+      html += '<span class="member-val">' + (b.b||200) + '×' + (b.D||400) + 'mm</span>';
+      html += '<span class="member-val">Ast = ' + Math.round(b.Am||b.Ast_bot||0) + ' mm²</span>';
+      html += '<span class="'+(b.shearSafe?'pass':'fail')+'">' + (b.shearSafe?'✅ PASS':'❌ FAIL') + '</span>';
+      html += '</div>';
+    });
+    if(RES.allBeams.length > 8) html += '<div style="font-size:11px;color:#334155;padding:8px 0">+ ' + (RES.allBeams.length-8) + ' more beams...</div>';
+    html += '</div>';
+  }
+
+  // Columns summary
+  if(RES.allCols && RES.allCols.length){
+    var gfCols = RES.allCols.filter(function(c){ return c.floor===1; });
+    html += '<div class="section">';
+    html += '<div class="section-title">Column Design — Ground Floor</div>';
+    gfCols.slice(0,8).forEach(function(c){
+      html += '<div class="member-row">';
+      html += '<span class="member-name">' + esc(c.tag||c.id||'Col') + '</span>';
+      html += '<span class="member-val">' + (c.size||300) + '×' + (c.size||300) + 'mm</span>';
+      html += '<span class="member-val">Asc = ' + Math.round(c.Asc_design||c.Asc||0) + ' mm²</span>';
+      html += '<span class="'+(c.safe?'pass':'fail')+'">' + (c.safe?'✅ PASS':'❌ FAIL') + '</span>';
+      html += '</div>';
+    });
+    if(gfCols.length > 8) html += '<div style="font-size:11px;color:#334155;padding:8px 0">+ ' + (gfCols.length-8) + ' more columns...</div>';
+    html += '</div>';
+  }
+
+  // Footings summary
+  if(RES.allFtgs && RES.allFtgs.length){
+    html += '<div class="section">';
+    html += '<div class="section-title">Footing Design — ' + RES.allFtgs.length + ' Footings</div>';
+    RES.allFtgs.slice(0,6).forEach(function(f){
+      html += '<div class="member-row">';
+      html += '<span class="member-name">' + esc(f.tag||f.id||'Ftg') + '</span>';
+      html += '<span class="member-val">' + Math.round((f.Bf||1.2)*100)/100 + 'm × ' + Math.round((f.Bf||1.2)*100)/100 + 'm</span>';
+      html += '<span class="member-val">D = ' + (f.D||300) + 'mm</span>';
+      html += '<span class="'+(f.punch_ok&&f.ow_ok?'pass':'fail')+'">' + (f.punch_ok&&f.ow_ok?'✅ PASS':'❌ FAIL') + '</span>';
+      html += '</div>';
+    });
+    if(RES.allFtgs.length > 6) html += '<div style="font-size:11px;color:#334155;padding:8px 0">+ ' + (RES.allFtgs.length-6) + ' more footings...</div>';
+    html += '</div>';
+  }
+
+  // BOQ if available
+  if(RES.boq && RES.boq.cost){
+    html += '<div class="section">';
+    html += '<div class="section-title">Bill of Quantities — Estimate</div>';
+    html += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px">';
+    [
+      { lbl:'Concrete', val: RES.boq.concrete.total + ' m³', color:'#38bdf8' },
+      { lbl:'Steel', val: Math.round(RES.boq.steel.total/1000) + ' MT', color:'#f97316' },
+      { lbl:'Formwork', val: RES.boq.formwork.total + ' m²', color:'#a78bfa' },
+      { lbl:'Est. Cost', val: '₹' + RES.boq.cost.total.toLocaleString('en-IN'), color:'#fbbf24' },
+    ].forEach(function(item){
+      html += '<div style="background:#060c18;border-radius:8px;padding:12px;border:1px solid rgba(255,255,255,0.04)">';
+      html += '<div style="font-size:16px;font-weight:800;color:'+item.color+'">'+item.val+'</div>';
+      html += '<div style="font-size:10px;color:#475569;margin-top:2px">'+item.lbl+'</div>';
+      html += '</div>';
+    });
+    html += '</div></div>';
+  }
+
+  // Seismic if available
+  if(RES.seis){
+    html += '<div class="section">';
+    html += '<div class="section-title">Seismic Analysis — IS 1893:2016</div>';
+    html += '<div class="member-row"><span class="member-name">Seismic Zone</span><span class="member-val">Zone ' + (S.seismicZone||'IV') + '</span></div>';
+    if(RES.seis.Vb) html += '<div class="member-row"><span class="member-name">Base Shear (Vb)</span><span class="member-val">' + Math.round(RES.seis.Vb) + ' kN</span></div>';
+    if(RES.seis.Wt) html += '<div class="member-row"><span class="member-name">Seismic Weight (W)</span><span class="member-val">' + Math.round(RES.seis.Wt) + ' kN</span></div>';
+    if(RES.seis.Ah) html += '<div class="member-row"><span class="member-name">Design Acc. (Ah)</span><span class="member-val">' + RES.seis.Ah.toFixed(3) + 'g</span></div>';
+    html += '</div>';
+  }
+
+  // CTA Banner
+  html += '<div class="cta-banner">';
+  html += '<div class="cta-title">Design your own building for free</div>';
+  html += '<div class="cta-sub">StructLearn Pro is a free IS code structural design tool for civil engineering students and engineers in India. Design complete RC buildings step-by-step to IS 456, IS 1893 and IS 875.</div>';
+  html += '<a href="https://structlearnpro.com" class="signup-btn" style="font-size:14px;padding:12px 28px">Start Designing Free →</a>';
+  html += '</div>';
+
+  document.getElementById('content').innerHTML = html;
+}
+
+function showError(title, msg){
+  document.getElementById('content').innerHTML =
+    '<div class="error">' +
+    '<div class="error-icon">❌</div>' +
+    '<div style="font-size:18px;font-weight:700;color:#f1f5f9;margin-bottom:8px">' + title + '</div>' +
+    '<div style="font-size:13px;color:#475569;margin-bottom:24px">' + msg + '</div>' +
+    '<a href="https://structlearnpro.com" class="signup-btn">Go to StructLearn Pro →</a>' +
+    '</div>';
+}
+
+function esc(str){
+  return (str||'').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+</script>
+</body>
+</html>

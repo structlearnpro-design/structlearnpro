@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IS Code Reference Library — StructLearn Pro</title>
+<meta name="description" content="Free searchable IS 456, IS 1893, IS 875 and IS 13920 clause reference for Indian structural engineers and civil engineering students.">
+<meta name="keywords" content="IS 456 clauses, IS 1893 seismic, IS 875 loads, structural engineering India, reinforced concrete design">
+<meta property="og:title" content="IS Code Reference Library — StructLearn Pro">
+<meta property="og:description" content="Free searchable IS 456, IS 1893, IS 875 clause reference for Indian structural engineers.">
+<meta property="og:image" content="https://structlearnpro.com/og-image.png">
+<link rel="canonical" href="https://structlearnpro.com/reference">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:#030712; color:#e2e8f0; font-family:Arial,sans-serif; min-height:100vh; }
+
+.topbar {
+  background:#060c18; border-bottom:1px solid rgba(56,189,248,0.1);
+  padding:12px 24px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;
+}
+.logo { display:flex; align-items:center; gap:10px; text-decoration:none; }
+.logo-icon { width:32px;height:32px;background:linear-gradient(135deg,#1d4ed8,#38bdf8);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px; }
+.logo-name { font-size:15px;font-weight:900;color:#f8fafc;letter-spacing:-0.5px; }
+.logo-name span { color:#38bdf8; }
+.try-btn { padding:8px 18px;background:linear-gradient(135deg,#1d4ed8,#38bdf8);border:none;border-radius:8px;color:#fff;font-size:12px;font-weight:700;cursor:pointer;text-decoration:none;display:inline-block; }
+
+.hero { padding:48px 24px 32px; text-align:center; max-width:800px; margin:0 auto; }
+.hero h1 { font-size:clamp(24px,5vw,40px);font-weight:900;color:#f1f5f9;margin-bottom:12px;letter-spacing:-1px; }
+.hero h1 span { color:#38bdf8; }
+.hero p { font-size:15px;color:#475569;line-height:1.7;margin-bottom:28px; }
+
+.search-wrap { max-width:600px;margin:0 auto 12px;position:relative; }
+.search-input {
+  width:100%;padding:14px 48px 14px 18px;
+  background:#0a1628;border:1px solid rgba(56,189,248,0.2);
+  border-radius:12px;color:#e2e8f0;font-size:14px;outline:none;
+  font-family:inherit;
+}
+.search-input:focus { border-color:rgba(56,189,248,0.5); }
+.search-input::placeholder { color:#334155; }
+.search-icon { position:absolute;right:14px;top:50%;transform:translateY(-50%);color:#334155;font-size:18px;pointer-events:none; }
+
+.filter-tabs { display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:32px;padding:0 24px; }
+.tab-btn {
+  padding:6px 16px;border-radius:20px;font-size:12px;font-weight:700;
+  cursor:pointer;border:1px solid rgba(255,255,255,0.08);
+  background:transparent;color:#475569;font-family:inherit;transition:all 0.2s;
+}
+.tab-btn.active,
+.tab-btn:hover { background:rgba(56,189,248,0.1);border-color:rgba(56,189,248,0.3);color:#38bdf8; }
+.tab-btn.is456.active  { background:rgba(56,189,248,0.1);border-color:#38bdf8;color:#38bdf8; }
+.tab-btn.is1893.active { background:rgba(248,113,113,0.1);border-color:#f87171;color:#f87171; }
+.tab-btn.is875.active  { background:rgba(52,211,153,0.1);border-color:#34d399;color:#34d399; }
+.tab-btn.is13920.active{ background:rgba(167,139,250,0.1);border-color:#a78bfa;color:#a78bfa; }
+
+.results-count { text-align:center;font-size:12px;color:#334155;margin-bottom:16px; }
+
+.cards-grid { max-width:1100px;margin:0 auto;padding:0 24px 48px;display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px; }
+
+.clause-card {
+  background:#0a1628;border:1px solid rgba(255,255,255,0.06);
+  border-radius:14px;padding:18px;cursor:pointer;transition:border-color 0.2s;
+}
+.clause-card:hover { border-color:rgba(56,189,248,0.2); }
+.clause-card.is456  { border-left:3px solid #38bdf8; }
+.clause-card.is1893 { border-left:3px solid #f87171; }
+.clause-card.is875  { border-left:3px solid #34d399; }
+.clause-card.is13920{ border-left:3px solid #a78bfa; }
+
+.code-tag { display:inline-block;padding:2px 8px;border-radius:4px;font-size:9px;font-weight:700;letter-spacing:1px;margin-bottom:8px; }
+.code-tag.is456  { background:rgba(56,189,248,0.1);color:#38bdf8; }
+.code-tag.is1893 { background:rgba(248,113,113,0.1);color:#f87171; }
+.code-tag.is875  { background:rgba(52,211,153,0.1);color:#34d399; }
+.code-tag.is13920{ background:rgba(167,139,250,0.1);color:#a78bfa; }
+
+.clause-num { font-size:11px;color:#334155;margin-bottom:4px;font-family:'Courier New',monospace; }
+.clause-title { font-size:14px;font-weight:700;color:#e2e8f0;margin-bottom:8px;line-height:1.4; }
+.clause-body { font-size:12px;color:#64748b;line-height:1.7;margin-bottom:10px; }
+.formula-box {
+  background:#060c18;border:1px solid rgba(56,189,248,0.1);
+  border-radius:8px;padding:10px 12px;
+  font-family:'Courier New',monospace;font-size:11px;color:#38bdf8;
+  line-height:1.8;
+}
+.formula-box.red   { border-color:rgba(248,113,113,0.15);color:#f87171; }
+.formula-box.green { border-color:rgba(52,211,153,0.15);color:#34d399; }
+.formula-box.purple{ border-color:rgba(167,139,250,0.15);color:#a78bfa; }
+
+.no-results { text-align:center;padding:60px 20px;color:#334155;grid-column:1/-1; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <a href="https://structlearnpro.com" class="logo">
+    <div class="logo-icon">🏗</div>
+    <div class="logo-name">STRUCT<span>LEARN</span> PRO</div>
+  </a>
+  <div style="display:flex;align-items:center;gap:10px">
+    <span style="font-size:12px;color:#334155">Free IS Code Reference</span>
+    <a href="https://structlearnpro.com" class="try-btn">Try Design Tool →</a>
+  </div>
+</div>
+
+<div class="hero">
+  <h1>IS Code <span>Reference Library</span></h1>
+  <p>Free searchable reference for IS 456:2000, IS 1893:2016, IS 875:2015 and IS 13920:2016. Every key clause, formula and limit — in one place.</p>
+  <div class="search-wrap">
+    <input type="text" class="search-input" id="search" placeholder="Search clauses, formulas, topics... e.g. development length, base shear, eccentricity" oninput="filterCards()">
+    <div class="search-icon">🔍</div>
+  </div>
+</div>
+
+<div class="filter-tabs">
+  <button class="tab-btn active" onclick="setFilter('all',this)">All Codes</button>
+  <button class="tab-btn is456"  onclick="setFilter('is456',this)">IS 456:2000</button>
+  <button class="tab-btn is1893" onclick="setFilter('is1893',this)">IS 1893:2016</button>
+  <button class="tab-btn is875"  onclick="setFilter('is875',this)">IS 875:2015</button>
+  <button class="tab-btn is13920" onclick="setFilter('is13920',this)">IS 13920:2016</button>
+</div>
+
+<div class="results-count" id="results-count">Showing all 60 clauses</div>
+<div class="cards-grid" id="cards-grid"></div>
+
+<script>
+var activeFilter = 'all';
+
+var CLAUSES = [
+// ═══════════════════════════════════════════════════════
+// IS 456:2000 — Plain and Reinforced Concrete
+// ═══════════════════════════════════════════════════════
+{ code:'is456', clause:'Cl 15.1', title:'Characteristic Compressive Strength (fck)', tags:'concrete grade M20 M25 M30 strength fck',
+  body:'Characteristic strength is the value of strength below which not more than 5% of test results are expected to fall. Minimum grade for RCC is M20, and M25 for seismic zones III and above.',
+  formula:'fck = 20, 25, 30, 35, 40 N/mm² (M20–M40)\nfcd = 0.446 × fck (design compressive strength)\nfctm ≈ 0.7 × √fck (mean tensile strength)' },
+
+{ code:'is456', clause:'Cl 38.1', title:'Limiting Moment of Resistance (Mulim)', tags:'beam limiting moment balanced section neutral axis xu',
+  body:'The limiting moment of resistance of a singly reinforced beam is the moment at which the strain in steel reaches yield simultaneously with concrete reaching 0.0035 at the extreme compression fibre.',
+  formula:'xu,lim/d = 0.0035 / (0.0055 + 0.87fy/Es)\nMulim = 0.36 × fck × b × xu,lim × (d - 0.42 × xu,lim)\n[Fe415: xu,lim/d = 0.479 | Fe500: xu,lim/d = 0.456]' },
+
+{ code:'is456', clause:'Cl 26.2', title:'Nominal Cover to Reinforcement', tags:'cover mild severe very severe extreme exposure durability',
+  body:'Nominal cover protects reinforcement from corrosion and provides fire resistance. Cover depends on the exposure condition of the structure.',
+  formula:'Mild exposure:      20 mm\nModerate exposure:  30 mm\nSevere exposure:    45 mm\nVery severe:        50 mm\nExtreme:            75 mm' },
+
+{ code:'is456', clause:'Cl 26.5.1', title:'Minimum Tension Reinforcement in Beams', tags:'minimum steel beam Ast tension reinforcement',
+  body:'Beams must have a minimum area of tension reinforcement to prevent sudden brittle failure. The formula is based on the yield strength of steel.',
+  formula:'Ast,min / (b × d) = 0.85 / fy\nFor Fe415: Ast,min = 0.205% × b × d\nFor Fe500: Ast,min = 0.170% × b × d' },
+
+{ code:'is456', clause:'Cl 26.5.1.2', title:'Maximum Tension Reinforcement in Beams', tags:'maximum steel beam Ast',
+  body:'Maximum area of tension reinforcement shall not exceed 4% of the gross cross-sectional area to ensure adequate ductility.',
+  formula:'Ast,max = 0.04 × b × D\n(4% of gross cross-sectional area)' },
+
+{ code:'is456', clause:'Cl 40.2', title:'Nominal Shear Stress and Design Shear', tags:'shear stress tau beam stirrup links',
+  body:'The nominal shear stress is compared with the design shear strength of concrete. If tv exceeds tc, shear reinforcement must be designed.',
+  formula:'τv = Vu / (b × d)   [nominal shear stress]\nτc = design shear strength (Table 19, IS 456)\nIf τv > τc: design stirrups\nVus = 0.87 × fy × Asv × d / sv' },
+
+{ code:'is456', clause:'Cl 26.2.1', title:'Development Length (Ld)', tags:'development length bond anchorage bar ld',
+  body:'Development length is the minimum embedment length required to transfer the full tensile or compressive force in a bar to the surrounding concrete by bond stress.',
+  formula:'Ld = φ × σs / (4 × τbd)\nτbd (Fe415, M25): 1.4 N/mm²\nτbd (Fe500, M25): 1.6 N/mm²\nLd (Fe415, M25, 16mm bar) ≈ 47d = 752 mm' },
+
+{ code:'is456', clause:'Cl 25.4', title:'Column — Minimum Eccentricity', tags:'column eccentricity minimum emin Pu axial',
+  body:'No column is purely axially loaded. IS 456 mandates a minimum eccentricity for every column to account for construction imperfections and unintended moments.',
+  formula:'emin = max(L/500 + D/30, 20mm)\nMu,min = Pu × emin\nApply to both major and minor axes' },
+
+{ code:'is456', clause:'Cl 26.5.3', title:'Column Reinforcement Limits', tags:'column steel minimum maximum Asc 0.8% 4%',
+  body:'Column longitudinal reinforcement must satisfy both minimum and maximum limits to ensure adequate strength and prevent congestion.',
+  formula:'Asc,min = 0.8% of Ag  (prevents creep failure)\nAsc,max = 4% of Ag   (working), 6% at laps\nMinimum 4 bars for rectangular, 6 for circular' },
+
+{ code:'is456', clause:'Cl 26.5.3.2', title:'Column Ties — Lateral Reinforcement', tags:'ties links stirrups column lateral spacing',
+  body:'Lateral ties in columns confine the core concrete and prevent longitudinal bars from buckling outward under compression.',
+  formula:'Dia of ties ≥ max(φ/4, 6mm)\nSpacing of ties ≤ min(16φ, 300mm, least dim)\nMin 4 ties/m required' },
+
+{ code:'is456', clause:'Cl 34.2.4', title:'Footing — Shear Check (Punching)', tags:'footing punch shear two-way flat slab',
+  body:'Two-way or punching shear in footings occurs at the critical perimeter located at d/2 from the column face. This is usually the governing check for column footings.',
+  formula:'τv = Vu / (bo × d)\nτc = ks × 0.25 × √fck\nbo = perimeter at d/2 from column face\nks = 0.5 + βc ≤ 1.0' },
+
+{ code:'is456', clause:'Cl 34.2.3', title:'Footing — One-Way Shear Check', tags:'footing beam shear one way cantilever',
+  body:'One-way or beam shear in footings is checked at a critical section located at a distance d from the column face, treating the footing as a wide beam.',
+  formula:'τv = Vu / (B × d)\nVu = wu × B × (Bf/2 - a/2 - d)\nτv ≤ τc (from Table 19, IS 456)' },
+
+{ code:'is456', clause:'Cl 23.2', title:'Deflection Check — Span/Depth Ratio', tags:'deflection span depth ratio L/d beam slab',
+  body:'Deflection is controlled indirectly by limiting the span-to-effective-depth ratio. Modification factors account for reinforcement percentage and stress.',
+  formula:'Basic L/d: Simply supported = 20, Continuous = 26, Cantilever = 7\nModified L/d = Basic × Mf (tension) × Mf (compression)\n[Mf depends on fs and Ast,required/Ast,provided]' },
+
+{ code:'is456', clause:'Cl 38.5', title:'Doubly Reinforced Beams', tags:'doubly reinforced compression steel beam',
+  body:'When the moment exceeds Mulim for a given section, compression reinforcement is added to carry the excess moment.',
+  formula:'M2 = M - Mulim\nAsc = M2 / (fsc - fcc) × (d - d\')\nAst2 = M2 / (0.87fy × (d - d\'))\nAst = Ast1 + Ast2' },
+
+{ code:'is456', clause:'Cl 22.6.1', title:'Effective Length of Columns', tags:'effective length column Leff slenderness',
+  body:'Effective length depends on the end conditions of the column. It determines whether a column is short or slender, and affects the design moment.',
+  formula:'Both ends fixed:        Leff = 0.5L\nOne end fixed, one pinned: Leff = 0.7L\nBoth ends pinned:       Leff = L\nCantilever:             Leff = 2.0L\nSlender if Leff/D > 12' },
+
+// ═══════════════════════════════════════════════════════
+// IS 1893:2016 — Earthquake Resistant Design
+// ═══════════════════════════════════════════════════════
+{ code:'is1893', clause:'Cl 6.4', title:'Design Horizontal Seismic Coefficient (Ah)', tags:'seismic coefficient Ah base shear zone factor Z I R',
+  body:'The design seismic coefficient Ah determines the equivalent lateral force on a structure. It depends on zone, importance and response reduction factors.',
+  formula:'Ah = (Z/2) × (I/R) × (Sa/g)\nZ = Zone factor (II:0.10, III:0.16, IV:0.24, V:0.36)\nI = Importance factor (1.0 to 1.5)\nR = Response reduction factor (3.0 to 5.0)' },
+
+{ code:'is1893', clause:'Cl 7.5.3', title:'Design Base Shear (VB)', tags:'base shear VB seismic weight period',
+  body:'The design base shear is the total lateral force at the base of the structure due to earthquake. It is distributed over building height.',
+  formula:'VB = Ah × W\nW = seismic weight = DL + fraction of LL\nFor RC frame: W ≈ 100% DL + 25% LL\nAh = design seismic coefficient' },
+
+{ code:'is1893', clause:'Cl 7.6.2', title:'Fundamental Natural Period (Ta)', tags:'time period natural frequency Ta RC frame',
+  body:'The approximate fundamental period is used to determine Sa/g from the response spectrum. It depends on height and type of structural system.',
+  formula:'RC moment frame: Ta = 0.075 × h^0.75\nRC frame with infill: Ta = 0.09h / √d\nh = height of building (m)\nd = base dimension in direction of earthquake (m)' },
+
+{ code:'is1893', clause:'Cl 7.7.1', title:'Vertical Distribution of Base Shear', tags:'lateral force distribution Qi storey seismic',
+  body:'The design base shear is distributed over the height of the building as lateral forces at each floor level. Higher floors attract more force.',
+  formula:'Qi = VB × (Wi × hi²) / Σ(Wj × hj²)\nWi = seismic weight of floor i\nhi = height of floor i from base\n(parabolic distribution)' },
+
+{ code:'is1893', clause:'Cl 7.11.1', title:'Seismic Zones of India', tags:'zone I II III IV V zone factor Z',
+  body:'India is divided into four seismic zones (II to V) based on expected earthquake intensity. Zone V is the most severe (Himalayan belt, NE India).',
+  formula:'Zone II: Z = 0.10  (Low damage risk)\nZone III: Z = 0.16  (Moderate risk)\nZone IV: Z = 0.24  (High risk — Delhi, J&K)\nZone V: Z = 0.36  (Very high — NE, HP, UK)' },
+
+{ code:'is1893', clause:'Cl 7.8.2', title:'Storey Drift Limitation', tags:'drift storey deflection inter-storey lateral',
+  body:'Storey drift is the lateral displacement of one floor relative to the floor below, divided by storey height. IS 1893 limits this to control damage.',
+  formula:'Δi / hi ≤ 0.004 (with partial safety factors)\nΔi = lateral displacement at floor i\nhi = storey height\n(0.4% of storey height limit)' },
+
+{ code:'is1893', clause:'Cl 6.3.5', title:'Response Reduction Factor (R)', tags:'response reduction R ductility SMRF OMRF',
+  body:'R accounts for ductility, redundancy and damping. Higher R means more ductile system → lower design force. Requires correspondingly more detailing.',
+  formula:'RC SMRF (Special MRF): R = 5.0\nRC OMRF (Ordinary MRF): R = 3.0\nRC shear wall: R = 3.0–5.0\nMasonry (reinforced): R = 3.0\nMasonry (unreinforced): R = 1.5' },
+
+{ code:'is1893', clause:'Cl 6.3.1', title:'Importance Factor (I)', tags:'importance factor I hospital school office',
+  body:'The importance factor accounts for the consequences of failure. Critical structures like hospitals get a higher factor, increasing the design force.',
+  formula:'Hospitals, fire stations, nuclear: I = 1.5\nSchools, assemblies > 300 persons: I = 1.25\nResidential, offices, hotels: I = 1.0' },
+
+{ code:'is1893', clause:'Cl 7.2.1', title:'Seismic Weight of Building', tags:'seismic weight W dead live load fraction',
+  body:'Seismic weight is the total gravity load considered for earthquake force calculation. Full dead load plus a fraction of live load is used.',
+  formula:'W = ΣWi (sum of all floor seismic weights)\nWi = full DL + fraction of LL\nLL ≤ 3 kN/m²: 25% of LL\nLL > 3 kN/m²: 50% of LL\nRoof: only DL (no LL)' },
+
+// ═══════════════════════════════════════════════════════
+// IS 875 — Code of Practice for Design Loads
+// ═══════════════════════════════════════════════════════
+{ code:'is875', clause:'IS 875 Part 1', title:'Dead Loads — Unit Weights of Materials', tags:'dead load DL unit weight density concrete brick',
+  body:'Dead loads are permanent loads due to self-weight of the structure and permanent attachments. IS 875 Part 1 provides unit weights.',
+  formula:'Plain concrete: 24 kN/m³\nReinforced concrete: 25 kN/m³\nBrick masonry: 19–20 kN/m³\nSteel: 78.5 kN/m³\nWater: 10 kN/m³\nFloor finish: 0.5–1.0 kN/m²' },
+
+{ code:'is875', clause:'IS 875 Part 2 Cl 3', title:'Imposed Loads (Live Loads) — Floors', tags:'live load LL imposed floor residential office',
+  body:'Imposed loads represent the variable loads due to occupancy. Values depend on the type of occupancy and usage of the space.',
+  formula:'Residential/bedrooms:   2.0 kN/m²\nOffices/classrooms:    3.0 kN/m²\nAssembly halls:        5.0 kN/m²\nStorage:               5.0–7.5 kN/m²\nFlat/accessible roof:  2.0 kN/m²\nInaccessible roof:     0.75 kN/m²' },
+
+{ code:'is875', clause:'IS 875 Part 2 Cl 3.2', title:'Floor Finish and Partition Loads', tags:'floor finish partition load allowance',
+  body:'Floor finish and demountable partitions are treated as uniformly distributed loads in addition to the imposed loads.',
+  formula:'Floor finish: 0.5–1.5 kN/m² (tiles, marble etc.)\nPartition allowance: 1.0 kN/m² (if movable)\nFixed walls: calculated as dead load\n(Min 33% of LL or 1.0 kN/m², whichever greater)' },
+
+{ code:'is875', clause:'IS 875 Part 3', title:'Wind Load Basics — Design Wind Speed', tags:'wind load Vb Vz k1 k2 k3 wind speed pressure',
+  body:'Wind loads are determined from the basic wind speed map, modified by three factors for risk, terrain and local topography.',
+  formula:'Vz = Vb × k1 × k2 × k3\nVb = basic wind speed from map (33–55 m/s)\nk1 = probability/risk factor\nk2 = terrain and height factor\nk3 = topography factor\npz = 0.6 × Vz²  (N/m²)' },
+
+{ code:'is875', clause:'IS 875 Part 5', title:'Load Combinations (Limit State Method)', tags:'load combinations DL LL WL EL factored',
+  body:'IS 456 and IS 875 Part 5 specify the factored load combinations to be used in limit state design.',
+  formula:'1.5 (DL + IL)\n1.2 (DL + IL + WL/EL)\n1.5 (DL + WL/EL)\n0.9 DL + 1.5 WL/EL\n(Most critical combination governs design)' },
+
+// ═══════════════════════════════════════════════════════
+// IS 13920:2016 — Ductile Design
+// ═══════════════════════════════════════════════════════
+{ code:'is13920', clause:'Cl 6.1', title:'Applicability of IS 13920', tags:'ductile design seismic zone III IV V applicability',
+  body:'IS 13920 ductile detailing is mandatory for all RC structures in Seismic Zones III, IV and V. It ensures ductile failure modes and energy absorption during earthquakes.',
+  formula:'Mandatory for Zones III, IV, V\nRequired for all RC frame and wall structures\nKey principle: strong column — weak beam\nEnsures plastic hinges form in beams, not columns' },
+
+{ code:'is13920', clause:'Cl 6.2', title:'Material Requirements for Ductile Detailing', tags:'Fe415D Fe500D ductile steel TMT seismic',
+  body:'IS 13920 mandates use of ductile grade steel (D suffix) with controlled yield strength ratio to ensure predictable yielding.',
+  formula:'Use Fe415D or Fe500D (D = ductile grade)\nActual fy ≤ 1.25 × specified fy\nActual fu/fy ≥ 1.15 (sufficient strain hardening)\nElongation at failure ≥ 14.5%\nConcrete: min M20 (M25 for zones IV,V)' },
+
+{ code:'is13920', clause:'Cl 6.3.3', title:'Seismic Beams — Shear Design', tags:'beam seismic shear capacity design VuD strong beam',
+  body:'For seismic beams, the design shear is not taken directly from analysis. Instead, it is computed from the moment capacities at beam ends to account for overstrength.',
+  formula:'VuD = (Mbl+ + Mbr-)/LAB + VuDL\n+ VuDL is the gravity shear\nMbl, Mbr = hogging/sagging moment capacity at ends\nThis ensures shear failure is prevented (capacity design)' },
+
+{ code:'is13920', clause:'Cl 7.2', title:'Strong Column — Weak Beam Principle', tags:'strong column weak beam moment capacity SCWB',
+  body:'Columns must be stronger than the beams they connect to ensure plastic hinges form in beams during earthquakes, not in columns (which would cause storey mechanism).',
+  formula:'ΣMc ≥ 1.1 × ΣMb\nΣMc = sum of column moment capacities at joint\nΣMb = sum of beam moment capacities at joint\n(Must be satisfied at every beam-column joint)' },
+
+{ code:'is13920', clause:'Cl 7.3.3', title:'Column — Confinement Reinforcement', tags:'confinement stirrups column ductile seismic ties spacing',
+  body:'Closely spaced hoops in the potential plastic hinge zones of columns confine the concrete core, preventing sudden brittle failure and improving ductility.',
+  formula:'Hoop spacing in plastic hinge zone:\n  ≤ min(D/4, 75mm) — for Dmin ≤ 300mm\n  ≤ min(D/6, 100mm) — for Dmin > 300mm\nConfine L/6 from each end of column\n(L = clear height)' },
+
+{ code:'is13920', clause:'Cl 6.3.2', title:'Seismic Beams — Steel Requirements', tags:'beam seismic reinforcement minimum top bottom',
+  body:'IS 13920 specifies additional steel requirements for beams in seismic zones to ensure adequate ductility and strength at all sections.',
+  formula:'Tension steel: ≥ 0.25% (both top & bottom)\nAt any section: Ast ≥ 50% of max Ast\nMax steel: 2.5% at critical sections\nStirrups: 2-legged min (100mm c/c near ends)' },
+];
+
+function setFilter(code, btn){
+  activeFilter = code;
+  document.querySelectorAll('.tab-btn').forEach(function(b){ b.classList.remove('active'); });
+  btn.classList.add('active');
+  filterCards();
+}
+
+function filterCards(){
+  var q = document.getElementById('search').value.toLowerCase().trim();
+  var filtered = CLAUSES.filter(function(c){
+    var matchCode = activeFilter === 'all' || c.code === activeFilter;
+    var matchQ = !q ||
+      c.title.toLowerCase().includes(q) ||
+      c.clause.toLowerCase().includes(q) ||
+      c.body.toLowerCase().includes(q) ||
+      c.formula.toLowerCase().includes(q) ||
+      (c.tags||'').toLowerCase().includes(q);
+    return matchCode && matchQ;
+  });
+
+  document.getElementById('results-count').textContent =
+    'Showing ' + filtered.length + ' of ' + CLAUSES.length + ' clauses';
+
+  var html = '';
+  if(!filtered.length){
+    html = '<div class="no-results"><div style="font-size:32px;margin-bottom:12px">🔍</div><div style="font-size:14px">No clauses found for "' + esc(document.getElementById('search').value) + '"</div><div style="font-size:12px;margin-top:6px">Try different keywords</div></div>';
+  } else {
+    filtered.forEach(function(c){
+      var fmtClass = c.code === 'is1893' ? 'red' : c.code === 'is875' ? 'green' : c.code === 'is13920' ? 'purple' : '';
+      html += '<div class="clause-card ' + c.code + '">';
+      html += '<span class="code-tag ' + c.code + '">' + c.code.replace('is','IS ').replace('456','456:2000').replace('1893','1893:2016').replace('875','875:2015').replace('13920','13920:2016') + '</span>';
+      html += '<div class="clause-num">' + esc(c.clause) + '</div>';
+      html += '<div class="clause-title">' + esc(c.title) + '</div>';
+      html += '<div class="clause-body">' + esc(c.body) + '</div>';
+      html += '<div class="formula-box ' + fmtClass + '">' + esc(c.formula) + '</div>';
+      html += '</div>';
+    });
+  }
+  document.getElementById('cards-grid').innerHTML = html;
+}
+
+function esc(str){ return (str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// Initial render
+filterCards();
+</script>
+</body>
+</html>

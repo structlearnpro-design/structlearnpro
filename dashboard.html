@@ -666,6 +666,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
     <div class="tlogo">StructLearn Pro</div>
     <div class="tnav">
       <button class="tnav-btn on" id="n-proj" onclick="goTo('projects')">My Projects</button>
+      <a href="/reference" target="_blank" style="padding:5px 10px;background:rgba(52,211,153,0.08);border:1px solid rgba(52,211,153,0.15);border-radius:6px;color:#34d399;font-size:11px;font-weight:700;text-decoration:none;white-space:nowrap">📖 IS Codes</a>
       <button class="tnav-btn" id="n-app"  onclick="_autoSaveProjId?goTo('app'):goTo('projects')" title="Open design tool">Design Tool</button>
       <button class="tnav-btn" id="n-acc"  onclick="goTo('account')">Account</button>
     </div>
@@ -1835,6 +1836,7 @@ function renderP(ps){
       <div style="font-size:10px;color:var(--txt3);margin-bottom:10px">Edited ${dt}</div>
       <div class="pcard-acts" onclick="event.stopPropagation()">
         <button class="cbtn op" onclick="openP('${p.id}')">Open</button>
+        <button class="cbtn" onclick="shareProject('${p.id}',event)" style="background:rgba(56,189,248,0.08);border:1px solid rgba(56,189,248,0.2);color:#38bdf8">🔗 Share</button>
         <button class="cbtn dl" onclick="delP('${p.id}',event)">🗑 Delete</button>
       </div>
     </div>`;
@@ -4714,6 +4716,125 @@ function dismissAIPromo(){
   el.style.opacity = '0';
   el.style.transition = 'opacity 0.3s';
   setTimeout(function(){ if(el.parentElement) el.remove(); }, 300);
+}
+
+
+// ══════════════════════════════════════════════════════════════
+// PROJECT SHARING
+// ══════════════════════════════════════════════════════════════
+
+async function shareProject(projId, evt){
+  if(evt) evt.stopPropagation();
+
+  // Check if project already has a share token
+  const proj = projects.find(function(p){ return p.id===projId; });
+  if(!proj) return;
+
+  // Show loading state on button
+  var btn = evt ? evt.target : null;
+  if(btn){ btn.textContent='⏳ Sharing...'; btn.disabled=true; }
+
+  try {
+    var token = proj.share_token;
+
+    if(!token) {
+      // Generate new share token
+      token = crypto.randomUUID ? crypto.randomUUID() : 
+        'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c){
+          var r=Math.random()*16|0, v=c=='x'?r:(r&0x3|0x8);
+          return v.toString(16);
+        });
+
+      // Save token to Supabase
+      var resp = await fetch(SUPA_URL+'/rest/v1/projects?id=eq.'+projId, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': 'Bearer '+SUPA_KEY,
+          'apikey': SUPA_KEY,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=minimal'
+        },
+        body: JSON.stringify({ share_token: token })
+      });
+
+      if(!resp.ok) throw new Error('Failed to save share token');
+
+      // Update local copy
+      proj.share_token = token;
+    }
+
+    var shareURL = 'https://structlearnpro.com/share?token=' + token;
+
+    // Show share modal
+    showShareModal(proj.name || 'Untitled', shareURL);
+
+  } catch(e) {
+    console.error('Share error:', e);
+    toast('Failed to generate share link. Please try again.', '#f87171');
+  } finally {
+    if(btn){ btn.textContent='🔗 Share'; btn.disabled=false; }
+  }
+}
+
+function showShareModal(projName, shareURL){
+  var old = document.getElementById('share-modal');
+  if(old) old.remove();
+
+  var modal = document.createElement('div');
+  modal.id = 'share-modal';
+  modal.style.cssText = 'position:fixed;inset:0;z-index:99000;background:rgba(3,7,18,0.8);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:20px';
+  modal.onclick = function(e){ if(e.target===modal) modal.remove(); };
+
+  modal.innerHTML =
+    '<div style="background:#0a1628;border:1px solid rgba(56,189,248,0.2);border-radius:20px;padding:32px;max-width:480px;width:100%;font-family:inherit">' +
+      '<div style="font-size:20px;font-weight:800;color:#f1f5f9;margin-bottom:6px">🔗 Share Project</div>' +
+      '<div style="font-size:12px;color:#475569;margin-bottom:20px">Anyone with this link can view <strong style="color:#94a3b8">' + projName + '</strong> in read-only mode. No login required.</div>' +
+
+      '<div style="background:#060c18;border:1px solid rgba(56,189,248,0.15);border-radius:10px;padding:12px 14px;margin-bottom:12px;display:flex;align-items:center;gap:10px">' +
+        '<div style="font-size:11px;color:#38bdf8;font-family:'Courier New',monospace;flex:1;word-break:break-all;line-height:1.5">' + shareURL + '</div>' +
+      '</div>' +
+
+      '<div style="display:flex;gap:8px;margin-bottom:16px">' +
+        '<button onclick="navigator.clipboard.writeText('' + shareURL + '').then(function(){var el=document.getElementById('share-copied');if(el){el.style.display='block';setTimeout(function(){el.style.display='none';},2500);}})" style="flex:1;padding:11px;background:linear-gradient(135deg,#1d4ed8,#38bdf8);border:none;border-radius:8px;color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">📋 Copy Link</button>' +
+        '<a href="https://www.linkedin.com/sharing/share-offsite/?url=' + encodeURIComponent(shareURL) + '" target="_blank" style="text-decoration:none"><button style="padding:11px 16px;background:rgba(56,189,248,0.08);border:1px solid rgba(56,189,248,0.2);border-radius:8px;color:#38bdf8;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">💼 LinkedIn</button></a>' +
+      '</div>' +
+
+      '<div id="share-copied" style="display:none;text-align:center;font-size:12px;color:#34d399;margin-bottom:12px">✅ Link copied to clipboard!</div>' +
+
+      '<div style="padding:10px 14px;background:rgba(52,211,153,0.04);border:1px solid rgba(52,211,153,0.1);border-radius:8px;font-size:11px;color:#475569;line-height:1.7;margin-bottom:16px">' +
+        '🔒 <strong style="color:#64748b">Read-only:</strong> Viewers can see all design results and drawings but cannot edit anything.<br>' +
+        '🔗 <strong style="color:#64748b">Permanent:</strong> This link will always work unless you revoke it.' +
+      '</div>' +
+
+      '<div style="display:flex;justify-content:space-between;align-items:center">' +
+        '<button onclick="revokeShareLink()" style="background:none;border:none;color:#f87171;font-size:12px;cursor:pointer;font-family:inherit">🗑 Revoke Link</button>' +
+        '<button onclick="document.getElementById('share-modal').remove()" style="padding:8px 20px;background:transparent;border:1px solid #334155;border-radius:8px;color:#64748b;font-size:12px;cursor:pointer;font-family:inherit">Close</button>' +
+      '</div>' +
+    '</div>';
+
+  document.body.appendChild(modal);
+}
+
+async function revokeShareLink(){
+  var modal = document.getElementById('share-modal');
+  var projId = null;
+  // Find project with a share token that matches current modal
+  // Simple approach: clear share_token for all shown modals
+  // Actually we store projId in modal data attr
+  if(!confirm('Revoke this share link? Anyone with the link will no longer be able to view the project.')) return;
+
+  // Find the project currently being shared
+  var proj = projects.find(function(p){ return p.share_token && ('https://structlearnpro.com/share?token='+p.share_token) === document.querySelector('#share-modal [style*="Courier"]').textContent.trim(); });
+  if(!proj) { if(modal) modal.remove(); return; }
+
+  await fetch(SUPA_URL+'/rest/v1/projects?id=eq.'+proj.id, {
+    method: 'PATCH',
+    headers: { 'Authorization':'Bearer '+SUPA_KEY,'apikey':SUPA_KEY,'Content-Type':'application/json','Prefer':'return=minimal' },
+    body: JSON.stringify({ share_token: null })
+  });
+  proj.share_token = null;
+  if(modal) modal.remove();
+  toast('Share link revoked ✅');
 }
 
 // ── CONTACT US ───────────────────────────────────────────────
