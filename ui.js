@@ -13388,8 +13388,8 @@ function buildCertificateSVG(level, certId, userName, dateStr) {
   <circle cx="60" cy="60" r="4.5" fill="${C1}"/>
   <path id="st" d="M 12,60 A 48,48 0 0,1 108,60" fill="none"/>
   <path id="sb" d="M 108,60 A 48,48 0 0,1 12,60" fill="none"/>
-  <text font-size="7.5" fill="${C1}" font-family="Arial,sans-serif" font-weight="700" letter-spacing="2.5"><textPath href="#st" startOffset="5%">${cfg.label}  ·  CERTIFIED  ·</textPath></text>
-  <text font-size="6.5" fill="${C1}" font-family="Arial,sans-serif" letter-spacing="2"><textPath href="#sb" startOffset="8%">STRUCTLEARN PRO  ·  2026  ·</textPath></text>
+  <text font-size="7" fill="${C1}" font-family="Arial,sans-serif" font-weight="700" letter-spacing="1.5"><textPath href="#st" startOffset="3%">${cfg.label} · CERTIFIED</textPath></text>
+  <text font-size="6.5" fill="${C1}" font-family="Arial,sans-serif" letter-spacing="1.5"><textPath href="#sb" startOffset="5%">STRUCTLEARN PRO · 2026</textPath></text>
 </g>
 
 <!-- RIGHT: Date, ID, QR -->
