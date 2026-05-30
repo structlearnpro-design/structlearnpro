@@ -13267,209 +13267,155 @@ function getCertCodes(level) {
 function getMedalEmoji(level) { return level===1?'🥉':level===2?'🥈':'🥇'; }
 
 function buildCertificateSVG(level, certId, userName, dateStr) {
-  const c = getCertColors(level);
-  const title = getCertTitle(level);
-  const subtitle = getCertSubtitle(level);
-  const body = getCertBody(level);
-  const codes = getCertCodes(level);
-  const medal = getMedalEmoji(level);
-  const verifyURL = `https://structlearnpro.com/cert?id=${certId}`;
+  const cfgs = {
+    1: { medal:'🥉', C1:'#92400e', C2:'#d97706', C3:'#f59e0b', BG:'#fffdf7', label:'FOUNDATION',  title:'Foundation',   desc:'IS 456:2000 reinforced concrete fundamentals, materials, loads and basic design.' },
+    2: { medal:'🥈', C1:'#1e3a5f', C2:'#2563eb', C3:'#60a5fa', BG:'#f5f8ff', label:'PROFICIENCY', title:'Proficiency',  desc:'IS 456:2000 beam, column and footing design with full limit state method.' },
+    3: { medal:'🥇', C1:'#3b0764', C2:'#7c3aed', C3:'#a78bfa', BG:'#fdf5ff', label:'COMPETENCE',  title:'Competence',   desc:'Advanced IS 456 design, IS 1893 seismic analysis and IS 13920 ductile detailing.' },
+  };
+  const cfg = cfgs[level] || cfgs[1];
+  const C1=cfg.C1, C2=cfg.C2, C3=cfg.C3, BG=cfg.BG;
 
-  // Build QR code as data URL using qrcode library
-  // We'll use a simple QR placeholder — real QR needs the library
-  const qrPlaceholder = `<text x="815" y="480" font-size="7" fill="${c.primary}" font-family="monospace" text-anchor="middle">${certId}</text>
-    <text x="815" y="492" font-size="6" fill="${c.secondary}" font-family="sans-serif" text-anchor="middle">Visit to verify</text>`;
+  // QR-like pattern from cert ID
+  function miniQR(id) {
+    var cells = '', seed = 0, cs = 7, size = 10;
+    for(var i=0;i<id.length;i++) seed += id.charCodeAt(i)*(i+1);
+    cells += '<rect width="'+(size*cs)+'" height="'+(size*cs)+'" fill="white"/>';
+    [[0,0],[0,size-3],[size-3,0]].forEach(function(p){
+      cells += '<rect x="'+(p[0]*cs)+'" y="'+(p[1]*cs)+'" width="'+(cs*3)+'" height="'+(cs*3)+'" fill="'+C1+'"/>';
+      cells += '<rect x="'+(p[0]*cs+cs)+'" y="'+(p[1]*cs+cs)+'" width="'+cs+'" height="'+cs+'" fill="white"/>';
+    });
+    var r = seed;
+    for(var row=0;row<size;row++){
+      for(var col=0;col<size;col++){
+        if((row<3&&col<3)||(row<3&&col>size-4)||(row>size-4&&col<3)) continue;
+        r = (r*1103515245+12345)&0x7fffffff;
+        if(r%2===0) cells += '<rect x="'+(col*cs+1)+'" y="'+(row*cs+1)+'" width="'+(cs-1)+'" height="'+(cs-1)+'" fill="'+C1+'"/>';
+      }
+    }
+    return cells;
+  }
 
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1123" height="794" viewBox="0 0 1123 794">
-  <!-- Background -->
-  <rect width="1123" height="794" fill="${c.bg}"/>
-  ${level===3?`
-  <radialGradient id="bgGlow" cx="50%" cy="50%" r="60%">
-    <stop offset="0%" stop-color="#f59e0b" stop-opacity="0.06"/>
-    <stop offset="100%" stop-color="${c.bg}" stop-opacity="0"/>
-  </radialGradient>
-  <rect width="1123" height="794" fill="url(#bgGlow)"/>
-  `:''}
+  var qr = miniQR(certId);
+  var qrW = 80; // QR box width
+  var verifyURL = 'https://structlearnpro.com/cert?id=' + certId;
 
-  <!-- Top band -->
-  <rect x="0" y="0" width="1123" height="${level===3?10:7}"
-    fill="${c.secondary}"/>
-  ${level===3?`<rect x="0" y="0" width="1123" height="10"
-    fill="url(#topBand)"/>
-  <linearGradient id="topBand" x1="0" y1="0" x2="1" y2="0">
-    <stop offset="0%" stop-color="#7f1d1d"/>
-    <stop offset="25%" stop-color="#b45309"/>
-    <stop offset="50%" stop-color="#f59e0b"/>
-    <stop offset="75%" stop-color="#b45309"/>
-    <stop offset="100%" stop-color="#7f1d1d"/>
-  </linearGradient>`:''}
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="1123" height="794" viewBox="0 0 1123 794" font-family="Georgia,serif">
+<defs>
+  <linearGradient id="hG" x1="0" y1="0" x2="1" y2="0">
+    <stop offset="0%" stop-color="${C1}"/>
+    <stop offset="40%" stop-color="${C2}"/>
+    <stop offset="60%" stop-color="${C2}"/>
+    <stop offset="100%" stop-color="${C1}"/>
+  </linearGradient>
+  <linearGradient id="bgG" x1="0" y1="0" x2="0.3" y2="1">
+    <stop offset="0%" stop-color="${BG}"/>
+    <stop offset="100%" stop-color="#ffffff"/>
+  </linearGradient>
+  <linearGradient id="sG" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0%" stop-color="${C2}"/><stop offset="100%" stop-color="${C1}"/>
+  </linearGradient>
+  <filter id="glow"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  <filter id="ns"><feDropShadow dx="1" dy="2" stdDeviation="2" flood-color="${C2}" flood-opacity="0.2"/></filter>
+</defs>
 
-  <!-- Bottom band -->
-  <rect x="0" y="${794-7}" width="1123" height="7" fill="${c.secondary}"/>
+<rect width="1123" height="794" fill="url(#bgG)"/>
+<text x="562" y="460" text-anchor="middle" font-size="340" fill="${C2}" opacity="0.022" font-weight="900">SLP</text>
 
-  <!-- Left/Right bars (level 2 only) -->
-  ${level===2?`
-  <rect x="0" y="0" width="8" height="794" fill="url(#sideBand)"/>
-  <rect x="1115" y="0" width="8" height="794" fill="url(#sideBand)"/>
-  <linearGradient id="sideBand" x1="0" y1="0" x2="0" y2="1">
-    <stop offset="0%" stop-color="#64748b"/>
-    <stop offset="50%" stop-color="#94a3b8"/>
-    <stop offset="100%" stop-color="#64748b"/>
-  </linearGradient>`:''}
+<rect x="0" y="0" width="1123" height="14" fill="url(#hG)"/>
+<rect x="0" y="780" width="1123" height="14" fill="url(#hG)"/>
+<rect x="0" y="14" width="9" height="766" fill="${C1}"/>
+<rect x="9" y="14" width="2" height="766" fill="${C2}" opacity="0.4"/>
+<rect x="1114" y="14" width="9" height="766" fill="${C1}"/>
+<rect x="1112" y="14" width="2" height="766" fill="${C2}" opacity="0.4"/>
 
-  <!-- Level 4: corner ornaments -->
-  ${level===3?`
-  <g stroke="${c.primary}" stroke-width="1.5" fill="none">
-    <line x1="10" y1="18" x2="10" y2="70"/>
-    <line x1="18" y1="10" x2="70" y2="10"/>
-    <circle cx="10" cy="10" r="5" fill="${c.primary}"/>
-    <line x1="10" y1="30" x2="30" y2="10" stroke="${c.accent}" stroke-width="0.5"/>
-    <line x1="10" y1="50" x2="50" y2="10" stroke="${c.accent}" stroke-width="0.5"/>
-  </g>
-  <g stroke="${c.primary}" stroke-width="1.5" fill="none" transform="translate(1123,0) scale(-1,1)">
-    <line x1="10" y1="18" x2="10" y2="70"/>
-    <line x1="18" y1="10" x2="70" y2="10"/>
-    <circle cx="10" cy="10" r="5" fill="${c.primary}"/>
-  </g>
-  <g stroke="${c.primary}" stroke-width="1.5" fill="none" transform="translate(0,794) scale(1,-1)">
-    <line x1="10" y1="18" x2="10" y2="70"/>
-    <line x1="18" y1="10" x2="70" y2="10"/>
-    <circle cx="10" cy="10" r="5" fill="${c.primary}"/>
-  </g>
-  <g stroke="${c.primary}" stroke-width="1.5" fill="none" transform="translate(1123,794) scale(-1,-1)">
-    <line x1="10" y1="18" x2="10" y2="70"/>
-    <line x1="18" y1="10" x2="70" y2="10"/>
-    <circle cx="10" cy="10" r="5" fill="${c.primary}"/>
-  </g>`:''}
+<rect x="20" y="20" width="1083" height="754" fill="none" stroke="${C2}" stroke-width="1.5"/>
+<rect x="28" y="28" width="1067" height="738" fill="none" stroke="${C1}" stroke-width="0.5" opacity="0.4"/>
 
-  <!-- Outer border -->
-  <rect x="12" y="12" width="1099" height="770" fill="none"
-    stroke="${c.primary}" stroke-width="${level===3?3:2}"/>
-  <!-- Inner border -->
-  <rect x="20" y="20" width="1083" height="754" fill="none"
-    stroke="${c.primary}" stroke-width="0.8" stroke-opacity="0.4"/>
-  ${level===3?`<rect x="26" y="26" width="1071" height="742" fill="none" stroke="${c.accent}" stroke-width="0.5" stroke-opacity="0.3"/>`:''}
+<text x="34" y="58" font-size="24" fill="${C2}" opacity="0.65">✦</text>
+<text x="1089" y="58" font-size="24" fill="${C2}" opacity="0.65" text-anchor="end">✦</text>
+<text x="34" y="774" font-size="24" fill="${C2}" opacity="0.65">✦</text>
+<text x="1089" y="774" font-size="24" fill="${C2}" opacity="0.65" text-anchor="end">✦</text>
 
-  <!-- Watermark star -->
-  <g opacity="0.04" transform="translate(562,397)">
-    <polygon points="0,-180 42,−55 171,-55 69,21 107,146 0,70 -107,146 -69,21 -171,-55 -42,-55"
-      fill="${c.primary}"/>
-  </g>
+<text x="562" y="62" text-anchor="middle" font-size="10" font-family="Arial,sans-serif" font-weight="800" letter-spacing="6" fill="${C1}">🏗  STRUCTLEARN PRO</text>
+<text x="562" y="78" text-anchor="middle" font-size="8" font-family="Arial,sans-serif" letter-spacing="4" fill="${C2}" opacity="0.8">IS CODE STRUCTURAL DESIGN PLATFORM · INDIA</text>
 
-  <!-- Medal badge -->
-  <text x="562" y="70" text-anchor="middle" font-size="22" font-family="sans-serif">${medal}</text>
-  <text x="562" y="90" text-anchor="middle" font-size="9" font-family="sans-serif" font-weight="700"
-    letter-spacing="4" fill="${c.secondary}" text-transform="uppercase">
-    ${level===1?'FOUNDATION CERTIFICATE':level===2?'PROFICIENCY CERTIFICATE':'COMPETENT STRUCTURAL DESIGNER'}
-  </text>
+<line x1="80" y1="88" x2="1043" y2="88" stroke="${C2}" stroke-width="0.8" opacity="0.5"/>
+<line x1="160" y1="92" x2="963" y2="92" stroke="${C2}" stroke-width="0.3" opacity="0.4"/>
 
-  <!-- Logo -->
-  <text x="562" y="118" text-anchor="middle" font-size="11" font-family="sans-serif"
-    font-weight="700" letter-spacing="3" fill="${c.primary}">🏗 STRUCTLEARN PRO 🏗</text>
+<rect x="426" y="100" width="271" height="27" rx="13.5" fill="${C1}"/>
+<text x="562" y="119" text-anchor="middle" font-size="9" font-family="Arial,sans-serif" font-weight="800" letter-spacing="3.5" fill="#fffdf7">${cfg.medal}  ${cfg.label} LEVEL CERTIFICATE</text>
 
-  <!-- Divider line -->
-  <line x1="382" y1="130" x2="742" y2="130" stroke="${c.primary}" stroke-width="2"/>
-  <line x1="442" y1="134" x2="682" y2="134" stroke="${c.accent}" stroke-width="0.5"/>
+<text x="562" y="170" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" letter-spacing="5" fill="${C2}" opacity="0.9">CERTIFICATE OF ACHIEVEMENT</text>
 
-  <!-- "Presents" text -->
-  <text x="562" y="154" text-anchor="middle" font-size="9" font-family="sans-serif"
-    letter-spacing="4" fill="${c.secondary}">STRUCTURAL DESIGN TRAINING PROGRAM</text>
+<line x1="120" y1="182" x2="480" y2="182" stroke="${C2}" stroke-width="1" opacity="0.5"/>
+<text x="562" y="187" text-anchor="middle" font-size="12" fill="${C2}">◆</text>
+<line x1="644" y1="182" x2="1003" y2="182" stroke="${C2}" stroke-width="1" opacity="0.5"/>
 
-  <!-- Certificate title -->
-  <text x="562" y="198" text-anchor="middle" font-size="36" font-family="Georgia,serif"
-    font-weight="700" fill="${c.text}">${title.split(' of ')[0]} of</text>
-  <text x="562" y="238" text-anchor="middle" font-size="42" font-family="Georgia,serif"
-    font-weight="700" fill="${c.secondary}">${title.split(' of ')[1]}</text>
+<text x="562" y="232" text-anchor="middle" font-size="40" font-weight="400" fill="#2a1000" letter-spacing="1">Certificate of</text>
+<text x="562" y="290" text-anchor="middle" font-size="64" font-weight="700" fill="${C1}" filter="url(#glow)">${cfg.title}</text>
 
-  <!-- Subtitle -->
-  <text x="562" y="262" text-anchor="middle" font-size="9" font-family="sans-serif"
-    letter-spacing="2" fill="${c.primary}">${subtitle}</text>
+<text x="562" y="326" text-anchor="middle" font-size="9" font-family="Arial,sans-serif" letter-spacing="4" fill="${C1}" opacity="0.8">THIS IS TO CERTIFY THAT</text>
 
-  <!-- "Awarded to" -->
-  <text x="562" y="298" text-anchor="middle" font-size="10" font-family="sans-serif"
-    letter-spacing="2" fill="${c.secondary}">THIS CERTIFICATE IS PROUDLY AWARDED TO</text>
+<text x="562" y="390" text-anchor="middle" font-size="66" font-style="italic" fill="#1a0800" filter="url(#ns)">${userName}</text>
 
-  <!-- Student name -->
-  <text x="562" y="348" text-anchor="middle" font-size="52" font-family="Georgia,serif"
-    font-style="italic" font-weight="700" fill="${c.text}">${userName}</text>
+<line x1="120" y1="405" x2="1003" y2="405" stroke="${C2}" stroke-width="2"/>
+<line x1="160" y1="410" x2="963" y2="410" stroke="${C2}" stroke-width="0.5" opacity="0.5"/>
 
-  <!-- Name underline -->
-  <line x1="212" y1="362" x2="912" y2="362" stroke="${c.accent}" stroke-width="2"/>
-  <line x1="262" y1="366" x2="862" y2="366" stroke="${c.primary}" stroke-width="0.5"/>
+<text x="562" y="442" text-anchor="middle" font-size="12" fill="#3d2008" letter-spacing="0.2">has successfully completed all modules of the <tspan font-style="italic" fill="${C1}">${cfg.label} Level</tspan> Structural Design Programme</text>
+<text x="562" y="460" text-anchor="middle" font-size="12" fill="#3d2008" letter-spacing="0.2">and demonstrated proficiency in <tspan font-style="italic" fill="${C1}">${cfg.desc}</tspan></text>
 
-  <!-- Body text (wrapped manually) -->
-  <text x="562" y="398" text-anchor="middle" font-size="12" font-family="Georgia,serif"
-    fill="#3d3020" width="700">${body.slice(0,80)}</text>
-  <text x="562" y="416" text-anchor="middle" font-size="12" font-family="Georgia,serif"
-    fill="#3d3020">${body.slice(80,160)}</text>
-  <text x="562" y="434" text-anchor="middle" font-size="12" font-family="Georgia,serif"
-    fill="#3d3020">${body.slice(160)}</text>
+<g transform="translate(268,474)"><rect width="128" height="25" rx="12.5" fill="none" stroke="${C1}" stroke-width="1.2"/><text x="64" y="17" text-anchor="middle" font-size="9" font-family="Arial,sans-serif" font-weight="700" letter-spacing="1.5" fill="${C1}">IS 456 : 2000</text></g>
+<g transform="translate(408,474)"><rect width="128" height="25" rx="12.5" fill="none" stroke="${C1}" stroke-width="1.2"/><text x="64" y="17" text-anchor="middle" font-size="9" font-family="Arial,sans-serif" font-weight="700" letter-spacing="1.5" fill="${C1}">IS 1893 : 2016</text></g>
+<g transform="translate(548,474)"><rect width="128" height="25" rx="12.5" fill="none" stroke="${C1}" stroke-width="1.2"/><text x="64" y="17" text-anchor="middle" font-size="9" font-family="Arial,sans-serif" font-weight="700" letter-spacing="1.5" fill="${C1}">IS 875 : 2015</text></g>
+<g transform="translate(688,474)"><rect width="138" height="25" rx="12.5" fill="none" stroke="${C1}" stroke-width="1.2"/><text x="69" y="17" text-anchor="middle" font-size="9" font-family="Arial,sans-serif" font-weight="700" letter-spacing="1.5" fill="${C1}">IS 13920 : 2016</text></g>
 
-  <!-- IS Code badges -->
-  ${codes.map((code, i) => {
-    const totalW = codes.length * 120 + (codes.length-1)*10;
-    const startX = 562 - totalW/2;
-    const x = startX + i*130;
-    return `<rect x="${x}" y="455" width="118" height="20" rx="10" fill="none" stroke="${c.primary}" stroke-width="1"/>
-    <text x="${x+59}" y="469" text-anchor="middle" font-size="9" font-family="sans-serif"
-      font-weight="700" letter-spacing="1" fill="${c.secondary}">${code}</text>`;
-  }).join('')}
+<line x1="36" y1="514" x2="1087" y2="514" stroke="url(#hG)" stroke-width="1" opacity="0.4"/>
 
-  <!-- Bottom section divider -->
-  <line x1="60" y1="500" x2="1063" y2="500" stroke="${c.primary}" stroke-width="0.5" stroke-opacity="0.3"/>
+<!-- LEFT: Signature -->
+<text x="190" y="572" text-anchor="middle" font-size="26" font-style="italic" fill="#2a1000">Satyam Ojha</text>
+<line x1="60" y1="585" x2="320" y2="585" stroke="${C1}" stroke-width="1.5"/>
+<text x="190" y="600" text-anchor="middle" font-size="8" font-family="Arial,sans-serif" font-weight="700" letter-spacing="2.5" fill="${C1}">FOUNDER &amp; DIRECTOR</text>
+<text x="190" y="614" text-anchor="middle" font-size="8" font-family="Arial,sans-serif" fill="${C2}">M-Structures · StructLearn Pro</text>
 
-  <!-- Left: Signature -->
-  <text x="160" y="560" text-anchor="middle" font-size="18" font-family="Georgia,serif"
-    font-style="italic" fill="${c.text}">StructLearn Pro</text>
-  <line x1="80" y1="570" x2="240" y2="570" stroke="${c.primary}" stroke-width="1"/>
-  <text x="160" y="584" text-anchor="middle" font-size="9" font-family="sans-serif"
-    letter-spacing="1" fill="${c.secondary}">AUTHORIZED SIGNATORY</text>
-  <text x="160" y="596" text-anchor="middle" font-size="8" font-family="sans-serif"
-    fill="${c.primary}">StructLearn Pro Platform</text>
+<!-- CENTER: Seal -->
+<g transform="translate(502,518)">
+  <circle cx="60" cy="60" r="60" fill="${C2}" opacity="0.06"/>
+  <circle cx="60" cy="60" r="56" fill="none" stroke="${C2}" stroke-width="2.5"/>
+  <circle cx="60" cy="60" r="49" fill="none" stroke="${C1}" stroke-width="0.8" opacity="0.6"/>
+  <circle cx="60" cy="60" r="48" fill="${BG}" opacity="0.4"/>
+  <polygon points="60,20 66,43 92,43 71,57 79,80 60,65 41,80 49,57 28,43 54,43" fill="url(#sG)"/>
+  <circle cx="60" cy="60" r="9" fill="${C3}"/>
+  <circle cx="60" cy="60" r="4.5" fill="${C1}"/>
+  <path id="st" d="M 12,60 A 48,48 0 0,1 108,60" fill="none"/>
+  <path id="sb" d="M 108,60 A 48,48 0 0,1 12,60" fill="none"/>
+  <text font-size="7.5" fill="${C1}" font-family="Arial,sans-serif" font-weight="700" letter-spacing="2.5"><textPath href="#st" startOffset="5%">${cfg.label}  ·  CERTIFIED  ·</textPath></text>
+  <text font-size="6.5" fill="${C1}" font-family="Arial,sans-serif" letter-spacing="2"><textPath href="#sb" startOffset="8%">STRUCTLEARN PRO  ·  2026  ·</textPath></text>
+</g>
 
-  <!-- Center: Seal -->
-  <g transform="translate(502,520)">
-    <circle cx="60" cy="52" r="48" stroke="${c.primary}" stroke-width="2.5" fill="${c.bg}" fill-opacity="0.5"/>
-    <circle cx="60" cy="52" r="42" stroke="${c.primary}" stroke-width="0.5" fill="none"/>
-    <polygon points="60,14 65,34 84,34 69,46 75,66 60,54 45,66 51,46 36,34 55,34"
-      fill="${c.primary}" opacity="0.85"/>
-    <circle cx="60" cy="52" r="9" fill="${c.accent}"/>
-    <path id="sealTop" d="M 18,52 A 42,42 0 0,1 102,52" fill="none"/>
-    <path id="sealBot" d="M 102,52 A 42,42 0 0,1 18,52" fill="none"/>
-    <text font-size="7" fill="${c.secondary}" font-family="sans-serif" font-weight="700" letter-spacing="1.5">
-      <textPath href="#sealTop" startOffset="5%">
-        ${level===1?'FOUNDATION':level===2?'PROFICIENCY':'COMPETENT DESIGNER'} · CERTIFIED
-      </textPath>
-    </text>
-    <text font-size="6" fill="${c.secondary}" font-family="sans-serif" letter-spacing="1">
-      <textPath href="#sealBot" startOffset="12%">STRUCTLEARN PRO · EXCELLENCE</textPath>
-    </text>
-  </g>
+<!-- RIGHT: Date, ID, QR -->
+<text x="880" y="540" text-anchor="middle" font-size="8" font-family="Arial,sans-serif" font-weight="700" letter-spacing="3" fill="${C1}" opacity="0.8">DATE OF ISSUE</text>
+<text x="880" y="560" text-anchor="middle" font-size="16" font-weight="700" fill="#2a1000">${dateStr}</text>
 
-  <!-- Right: Certificate ID + Date + QR placeholder -->
-  <rect x="760" y="510" width="80" height="80" fill="${c.primary}" fill-opacity="0.08"
-    stroke="${c.primary}" stroke-width="1"/>
-  <text x="800" y="556" text-anchor="middle" font-size="8" font-family="sans-serif"
-    fill="${c.secondary}">QR VERIFY</text>
-  <text x="800" y="568" text-anchor="middle" font-size="6" font-family="sans-serif"
-    fill="${c.primary}">${certId}</text>
+<rect x="730" y="572" width="296" height="42" rx="6" fill="${C1}" opacity="0.06"/>
+<rect x="730" y="572" width="296" height="42" rx="6" fill="none" stroke="${C1}" stroke-width="1.2"/>
+<text x="878" y="588" text-anchor="middle" font-size="7" font-family="Arial,sans-serif" letter-spacing="3" fill="${C2}" opacity="0.8">CERTIFICATE ID</text>
+<text x="878" y="607" text-anchor="middle" font-size="14" font-family="Courier New,monospace" font-weight="700" fill="${C1}" letter-spacing="1.5">${certId}</text>
 
-  <text x="870" y="530" font-size="9" font-family="monospace" fill="${c.primary}">${certId}</text>
-  <text x="870" y="545" font-size="8" font-family="sans-serif" fill="${c.secondary}">${dateStr}</text>
-  <text x="870" y="558" font-size="7" font-family="sans-serif" fill="${c.secondary}"
-    letter-spacing="1">CERTIFICATE ID</text>
-  <text x="870" y="574" font-size="7" font-family="sans-serif" fill="${c.primary}" letter-spacing="0.3">
-    structlearnpro.com/cert
-  </text>
-  <text x="870" y="586" font-size="7" font-family="sans-serif" fill="${c.secondary}" letter-spacing="0.3">
-    ?id=${certId}
-  </text>
-  <text x="870" y="600" font-size="6" font-family="sans-serif" fill="${c.secondary}" opacity="0.7">
-    Visit above URL to verify this certificate
-  </text>
+<rect x="730" y="624" width="${qrW+4}" height="${qrW+4}" rx="5" fill="white" stroke="${C1}" stroke-width="1.2"/>
+<g transform="translate(732,626)">${qr}</g>
+<text x="${730+(qrW+4)/2}" y="${624+qrW+18}" text-anchor="middle" font-size="7" font-family="Arial,sans-serif" fill="${C2}" font-weight="700">SCAN TO VERIFY</text>
+
+<text x="${730+qrW+18}" y="638" font-size="9" font-family="Arial,sans-serif" font-weight="700" fill="${C1}">HOW TO VERIFY THIS CERTIFICATE</text>
+<line x1="${730+qrW+18}" y1="643" x2="1088" y2="643" stroke="${C2}" stroke-width="0.5" opacity="0.5"/>
+<text x="${730+qrW+18}" y="658" font-size="9" font-family="Arial,sans-serif" fill="${C2}">① Visit  <tspan font-family="Courier New,monospace" font-weight="700">structlearnpro.com/cert</tspan></text>
+<text x="${730+qrW+18}" y="674" font-size="9" font-family="Arial,sans-serif" fill="${C2}">② Enter Certificate ID shown above</text>
+<text x="${730+qrW+18}" y="690" font-size="9" font-family="Arial,sans-serif" fill="${C2}">③ Or scan the QR code directly</text>
+<rect x="${730+qrW+14}" y="698" width="344" height="22" rx="4" fill="${C1}" opacity="0.06"/>
+<text x="${730+qrW+18}" y="713" font-size="8" font-family="Courier New,monospace" fill="${C1}" opacity="0.85">structlearnpro.com/cert?id=${certId}</text>
+
 </svg>`;
-  return svg;
 }
+
 
 // ── TOAST NOTIFICATION ────────────────────────────────────────
 function showCertToast(msg, color='#b8860b') {
