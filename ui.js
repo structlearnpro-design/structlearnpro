@@ -16213,7 +16213,6 @@ _TRACK.init();
 // Signal parent that iframe is fully initialised and ready to receive messages
 try {
   window.parent.postMessage({ type:'IFRAME_READY' }, '*');
-  console.log('[ui.js] IFRAME_READY sent to parent');
 } catch(e){}
 
 // Browser back button inside iframe — go back to previous page
@@ -16353,7 +16352,23 @@ window.addEventListener('message', function(e) {
       // Restore RES from results_json
       if(proj.results_json && typeof proj.results_json === 'object') {
         RES = proj.results_json;
-        console.log('[LOAD_PROJECT] RES restored, allBeams:', RES.allBeams ? RES.allBeams.length : 'none');
+      }
+      // Ensure GRID has nx/ny computed from S (needed for column/slab plan selectors)
+      if(GRID && S.spansX && S.spansY) {
+        GRID.nx = S.spansX.length;
+        GRID.ny = S.spansY.length;
+      }
+      // Also ensure GRID has nodes array for column grid selector
+      if(GRID && !GRID.nodes && GRID.bays) {
+        // Build minimal nodes from bays if missing
+        GRID.nodes = [];
+        if(S.spansX && S.spansY) {
+          for(var rr=0; rr<=S.spansY.length; rr++){
+            for(var cc=0; cc<=S.spansX.length; cc++){
+              GRID.nodes.push({row:rr, col:cc, hasColumn:true});
+            }
+          }
+        }
       }
       // Update project name in S
       if(proj.name) S.name = S.name || proj.name;
