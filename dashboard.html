@@ -4782,50 +4782,99 @@ function showShareModal(projName, shareURL){
 
   var modal = document.createElement('div');
   modal.id = 'share-modal';
-  modal.style.cssText = 'position:fixed;inset:0;z-index:99000;background:rgba(3,7,18,0.8);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:20px';
+  modal.style.cssText = 'position:fixed;inset:0;z-index:99000;background:rgba(3,7,18,0.8);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:20px;font-family:inherit';
   modal.onclick = function(e){ if(e.target===modal) modal.remove(); };
 
-  modal.innerHTML =
-    '<div style="background:#0a1628;border:1px solid rgba(56,189,248,0.2);border-radius:20px;padding:32px;max-width:480px;width:100%;font-family:inherit">' +
-      '<div style="font-size:20px;font-weight:800;color:#f1f5f9;margin-bottom:6px">🔗 Share Project</div>' +
-      '<div style="font-size:12px;color:#475569;margin-bottom:20px">Anyone with this link can view <strong style="color:#94a3b8">' + projName + '</strong> in read-only mode. No login required.</div>' +
+  var box = document.createElement('div');
+  box.style.cssText = 'background:#0a1628;border:1px solid rgba(56,189,248,0.2);border-radius:20px;padding:32px;max-width:480px;width:100%';
 
-      '<div style="background:#060c18;border:1px solid rgba(56,189,248,0.15);border-radius:10px;padding:12px 14px;margin-bottom:12px;display:flex;align-items:center;gap:10px">' +
-        '<div style="font-size:11px;color:#38bdf8;font-family:'Courier New',monospace;flex:1;word-break:break-all;line-height:1.5">' + shareURL + '</div>' +
-      '</div>' +
+  // Title
+  var title = document.createElement('div');
+  title.style.cssText = 'font-size:20px;font-weight:800;color:#f1f5f9;margin-bottom:6px';
+  title.textContent = '🔗 Share Project';
+  box.appendChild(title);
 
-      '<div style="display:flex;gap:8px;margin-bottom:16px">' +
-        '<button onclick="navigator.clipboard.writeText('' + shareURL + '').then(function(){var el=document.getElementById('share-copied');if(el){el.style.display='block';setTimeout(function(){el.style.display='none';},2500);}})" style="flex:1;padding:11px;background:linear-gradient(135deg,#1d4ed8,#38bdf8);border:none;border-radius:8px;color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">📋 Copy Link</button>' +
-        '<a href="https://www.linkedin.com/sharing/share-offsite/?url=' + encodeURIComponent(shareURL) + '" target="_blank" style="text-decoration:none"><button style="padding:11px 16px;background:rgba(56,189,248,0.08);border:1px solid rgba(56,189,248,0.2);border-radius:8px;color:#38bdf8;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">💼 LinkedIn</button></a>' +
-      '</div>' +
+  // Subtitle
+  var sub = document.createElement('div');
+  sub.style.cssText = 'font-size:12px;color:#475569;margin-bottom:20px';
+  sub.innerHTML = 'Anyone with this link can view <strong style="color:#94a3b8">' + projName + '</strong> in read-only mode. No login required.';
+  box.appendChild(sub);
 
-      '<div id="share-copied" style="display:none;text-align:center;font-size:12px;color:#34d399;margin-bottom:12px">✅ Link copied to clipboard!</div>' +
+  // URL display box
+  var urlBox = document.createElement('div');
+  urlBox.style.cssText = 'background:#060c18;border:1px solid rgba(56,189,248,0.15);border-radius:10px;padding:12px 14px;margin-bottom:12px';
+  var urlText = document.createElement('div');
+  urlText.style.cssText = 'font-size:11px;color:#38bdf8;font-family:Courier New,monospace;word-break:break-all;line-height:1.5';
+  urlText.textContent = shareURL;
+  urlBox.appendChild(urlText);
+  box.appendChild(urlBox);
 
-      '<div style="padding:10px 14px;background:rgba(52,211,153,0.04);border:1px solid rgba(52,211,153,0.1);border-radius:8px;font-size:11px;color:#475569;line-height:1.7;margin-bottom:16px">' +
-        '🔒 <strong style="color:#64748b">Read-only:</strong> Viewers can see all design results and drawings but cannot edit anything.<br>' +
-        '🔗 <strong style="color:#64748b">Permanent:</strong> This link will always work unless you revoke it.' +
-      '</div>' +
+  // Buttons row
+  var btnRow = document.createElement('div');
+  btnRow.style.cssText = 'display:flex;gap:8px;margin-bottom:16px';
 
-      '<div style="display:flex;justify-content:space-between;align-items:center">' +
-        '<button onclick="revokeShareLink()" style="background:none;border:none;color:#f87171;font-size:12px;cursor:pointer;font-family:inherit">🗑 Revoke Link</button>' +
-        '<button onclick="document.getElementById('share-modal').remove()" style="padding:8px 20px;background:transparent;border:1px solid #334155;border-radius:8px;color:#64748b;font-size:12px;cursor:pointer;font-family:inherit">Close</button>' +
-      '</div>' +
-    '</div>';
+  var copyBtn = document.createElement('button');
+  copyBtn.style.cssText = 'flex:1;padding:11px;background:linear-gradient(135deg,#1d4ed8,#38bdf8);border:none;border-radius:8px;color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit';
+  copyBtn.textContent = '📋 Copy Link';
+  copyBtn.onclick = function(){
+    navigator.clipboard.writeText(shareURL).then(function(){
+      var el = document.getElementById('share-copied');
+      if(el){ el.style.display='block'; setTimeout(function(){ el.style.display='none'; }, 2500); }
+    });
+  };
+  btnRow.appendChild(copyBtn);
 
+  var liBtn = document.createElement('button');
+  liBtn.style.cssText = 'padding:11px 16px;background:rgba(56,189,248,0.08);border:1px solid rgba(56,189,248,0.2);border-radius:8px;color:#38bdf8;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit';
+  liBtn.textContent = '💼 LinkedIn';
+  liBtn.onclick = function(){
+    window.open('https://www.linkedin.com/sharing/share-offsite/?url=' + encodeURIComponent(shareURL), '_blank');
+  };
+  btnRow.appendChild(liBtn);
+  box.appendChild(btnRow);
+
+  // Copied confirmation
+  var copied = document.createElement('div');
+  copied.id = 'share-copied';
+  copied.style.cssText = 'display:none;text-align:center;font-size:12px;color:#34d399;margin-bottom:12px';
+  copied.textContent = '✅ Link copied to clipboard!';
+  box.appendChild(copied);
+
+  // Info note
+  var note = document.createElement('div');
+  note.style.cssText = 'padding:10px 14px;background:rgba(52,211,153,0.04);border:1px solid rgba(52,211,153,0.1);border-radius:8px;font-size:11px;color:#475569;line-height:1.7;margin-bottom:16px';
+  note.innerHTML = '🔒 <strong style="color:#64748b">Read-only:</strong> Viewers can see all results but cannot edit.<br>🔗 <strong style="color:#64748b">Permanent:</strong> This link works until revoked.';
+  box.appendChild(note);
+
+  // Footer row
+  var footer = document.createElement('div');
+  footer.style.cssText = 'display:flex;justify-content:space-between;align-items:center';
+
+  var revokeBtn = document.createElement('button');
+  revokeBtn.style.cssText = 'background:none;border:none;color:#f87171;font-size:12px;cursor:pointer;font-family:inherit';
+  revokeBtn.textContent = '🗑 Revoke Link';
+  revokeBtn.onclick = function(){ revokeShareLink(shareURL); };
+  footer.appendChild(revokeBtn);
+
+  var closeBtn = document.createElement('button');
+  closeBtn.style.cssText = 'padding:8px 20px;background:transparent;border:1px solid #334155;border-radius:8px;color:#64748b;font-size:12px;cursor:pointer;font-family:inherit';
+  closeBtn.textContent = 'Close';
+  closeBtn.onclick = function(){ modal.remove(); };
+  footer.appendChild(closeBtn);
+  box.appendChild(footer);
+
+  modal.appendChild(box);
   document.body.appendChild(modal);
 }
 
-async function revokeShareLink(){
-  var modal = document.getElementById('share-modal');
-  var projId = null;
-  // Find project with a share token that matches current modal
-  // Simple approach: clear share_token for all shown modals
-  // Actually we store projId in modal data attr
+
+async function revokeShareLink(shareURL){
   if(!confirm('Revoke this share link? Anyone with the link will no longer be able to view the project.')) return;
 
-  // Find the project currently being shared
-  var proj = projects.find(function(p){ return p.share_token && ('https://structlearnpro.com/share?token='+p.share_token) === document.querySelector('#share-modal [style*="Courier"]').textContent.trim(); });
-  if(!proj) { if(modal) modal.remove(); return; }
+  // Find project by matching share token in URL
+  var token = shareURL ? shareURL.split('token=')[1] : null;
+  var proj = token ? projects.find(function(p){ return p.share_token === token; }) : null;
+  if(!proj){ toast('Could not find project to revoke.'); return; }
 
   await fetch(SUPA_URL+'/rest/v1/projects?id=eq.'+proj.id, {
     method: 'PATCH',
@@ -4833,6 +4882,7 @@ async function revokeShareLink(){
     body: JSON.stringify({ share_token: null })
   });
   proj.share_token = null;
+  var modal = document.getElementById('share-modal');
   if(modal) modal.remove();
   toast('Share link revoked ✅');
 }
