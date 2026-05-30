@@ -29,7 +29,13 @@ function addReportDisclaimer(){
 
 function go(n){
   if(n===7&&!RES)return;
+  var prevPage = PAGE;
   PAGE=n;
+  // Push browser history so back button works within design pages
+  // Only push if navigating to a different page (not same page refresh)
+  if(prevPage !== n){
+    try{ history.pushState({slpPage:n, prevPage:prevPage}, '', location.href); }catch(e){}
+  }
   // Add disclaimer to results pages
   if(n>=7) setTimeout(addReportDisclaimer, 100);
   try{
@@ -117,17 +123,6 @@ setTimeout(()=>{
 function p1(){return`
 <div class="card bl">
   <div class="ct">📋 Project Information</div>
-
-  <!-- ── EDITABLE NOTICE ── -->
-  <div style="background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.25);border-radius:8px;padding:10px 14px;margin-bottom:14px;display:flex;align-items:flex-start;gap:10px;">
-    <span style="font-size:18px;flex-shrink:0;margin-top:1px;">✏️</span>
-    <div>
-      <div style="font-size:12px;font-weight:700;color:var(--yellow);margin-bottom:2px;">These fields are for YOU to fill in — tap any field to edit</div>
-      <div style="font-size:11px;color:var(--txt3);line-height:1.6;">The values shown are just <strong style="color:var(--txt2);">example defaults</strong> to guide you. Change every field to match your actual building project.</div>
-    </div>
-  </div>
-  <!-- ── END EDITABLE NOTICE ── -->
-
   <div class="row">
     <div class="col2">
       ${tfld('name','Project Name','Name on report cover',S.name)}
@@ -16141,46 +16136,38 @@ _TRACK.init();
 // _BT._loadLocal() disabled — data loaded from Supabase via RESTORE_PROGRESS
 
 // ── RESTORE PROGRESS FROM SUPABASE (cross-device) ────────────
+// Browser back button inside iframe — go back to previous page
+window.addEventListener('popstate', function(e){
+  if(e.state && e.state.slpPage !== undefined){
+    var targetPage = e.state.prevPage !== undefined ? e.state.prevPage : Math.max(0, PAGE-1);
+    if(targetPage !== PAGE){
+      go(targetPage);
+      // Tell parent so it can manage its own history if needed
+      try{ window.parent.postMessage({type:'NAV_BACK_DONE', page:targetPage}, '*'); }catch(err){}
+    }
+  }
+});
+
 window.addEventListener('message', function(e) {
+  // ── NAV_BACK: parent back button pressed, navigate iframe back ──
+  if(e.data && e.data.type === 'NAV_BACK'){
+    var target = e.data.page !== undefined ? e.data.page : Math.max(0, PAGE-1);
+    go(target);
+    return;
+  }
+
   // ── OPEN_MODULE: parent asks us to open a specific learning module ──
   if(e.data && e.data.type === 'OPEN_MODULE') {
     try {
       var modId = e.data.modId || 'M1';
-      // Hide sidebar in learning mode for cleaner view
-      if(e.data.learningMode) {
-        var sidebar = document.querySelector('.sidebar, #sidebar, nav');
-        if(sidebar) sidebar.style.display = 'none';
-        var mainArea = document.querySelector('.main, #main, .content');
-        if(mainArea) mainArea.style.marginLeft = '0';
-      }
       if(typeof openLearningHub === 'function') {
         openLearningHub();
+        // After hub renders, open the specific module detail
         setTimeout(function(){
           if(typeof openModuleDetail === 'function') openModuleDetail(modId);
         }, 300);
       }
     } catch(err) { console.warn('OPEN_MODULE error:', err); }
-    return;
-  }
-
-  // ── OPEN_GUIDED_DESIGN: parent asks us to open guided design ──
-  if(e.data && e.data.type === 'OPEN_GUIDED_DESIGN') {
-    try { if(typeof startGuidedDesign === 'function') startGuidedDesign(); }
-    catch(err) { console.warn('OPEN_GUIDED_DESIGN error:', err); }
-    return;
-  }
-
-  // ── OPEN_LEARNING_HUB: parent asks us to open learning modules ──
-  if(e.data && e.data.type === 'OPEN_LEARNING_HUB') {
-    try { if(typeof openLearningHub === 'function') openLearningHub(); }
-    catch(err) { console.warn('OPEN_LEARNING_HUB error:', err); }
-    return;
-  }
-
-  // ── OPEN_STUDENT_GUIDE: parent asks us to open student guide ──
-  if(e.data && e.data.type === 'OPEN_STUDENT_GUIDE') {
-    try { if(typeof openStudentGuide === 'function') openStudentGuide(); }
-    catch(err) { console.warn('OPEN_STUDENT_GUIDE error:', err); }
     return;
   }
 

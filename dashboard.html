@@ -1319,7 +1319,32 @@ function goTo(tab){
   if(tab==='projects'){document.getElementById('n-proj').classList.add('on');showScreen('dash-screen');loadProjects();}
   else if(tab==='app'){document.getElementById('n-app').classList.add('on');showScreen('app-screen');tellIframe();}
   else if(tab==='account'){document.getElementById('n-acc').classList.add('on');showScreen('acc-screen');renderAcc();}
+  // Push browser history so back button works within the app
+  if(['projects','app','account'].includes(tab)){
+    history.pushState({slp:'tab', tab:tab}, '', '/app');
+  }
 }
+
+// Browser back/forward button handler
+window.addEventListener('popstate', function(e){
+  if(e.state && e.state.slp==='tab'){
+    // Navigate to the tab without pushing another history entry
+    var tab = e.state.tab;
+    document.querySelectorAll('.tnav-btn').forEach(b=>b.classList.remove('on'));
+    if(tab==='projects'){document.getElementById('n-proj').classList.add('on');showScreen('dash-screen');loadProjects();}
+    else if(tab==='app'){document.getElementById('n-app').classList.add('on');showScreen('app-screen');tellIframe();}
+    else if(tab==='account'){document.getElementById('n-acc').classList.add('on');showScreen('acc-screen');renderAcc();}
+  } else if(e.state && e.state.slp==='page'){
+    // Back inside design tool — tell iframe to go back
+    var fr = document.getElementById('app-iframe');
+    if(fr && fr.contentWindow){
+      fr.contentWindow.postMessage({type:'NAV_BACK', page:e.state.page}, '*');
+    }
+  } else if(!e.state){
+    // No state = user backed all the way — keep them in app at projects
+    if(U && P) goTo('projects');
+  }
+});
 
 // ── AUTH ─────────────────────────────────────────────────────
 function switchTab(t){
@@ -1543,6 +1568,8 @@ async function verifyOTP(){
       await loadAndRestoreProgress();
       updTop();
       goTo('projects');
+      // Push initial state so back button has somewhere to go within the app
+      history.replaceState({slp:'tab', tab:'projects'}, '', '/app');
       toast('Welcome back, ' + (P.full_name||mob) + '! 👋');
       maybeShowTour(); // show if they never completed the tour
     } else {
@@ -1584,6 +1611,7 @@ async function doSignup(mob, sessionToken){
     plan = 'free';
     updTop();
     goTo('projects');
+    history.replaceState({slp:'tab', tab:'projects'}, '', '/app');
     toast('Welcome to StructLearn Pro! Your ID: '+result.uniqueId+' 🎉');
     maybeShowTour(); // first-time welcome modal
   }catch(e){
@@ -2280,6 +2308,15 @@ window.addEventListener('message', function(ev){
   // Save snapshot to Supabase
   if(ev.data.type==='SAVE_SNAPSHOT' && ev.data.projectId){
     saveSnapshot(ev.data);
+    return;
+  }
+
+  // NAV_BACK — iframe tells parent a page-level back happened
+  if(ev.data && ev.data.type==='NAV_BACK_DONE'){
+    // iframe handled back - push its current page state
+    if(ev.data.page !== undefined){
+      history.pushState({slp:'page', page:ev.data.page}, '', '/app');
+    }
     return;
   }
 
