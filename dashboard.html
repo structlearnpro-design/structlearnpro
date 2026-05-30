@@ -4914,19 +4914,15 @@ async function revokeShareLink(shareURL){
 // All emails sent via Resend from structlearnpro.com domain
 // ══════════════════════════════════════════════════════════════
 
-var RESEND_KEY = 're_5ZHej8YE_GRgsfjpf5dufazU8fTSqGwsH';
-var RESEND_URL = 'https://api.resend.com/emails';
 
 async function sendEmail(from, to, subject, html){
   if(!to || !to.includes('@')) return; // skip if no valid email
   try {
-    var resp = await fetch(RESEND_URL, {
+    // Call Vercel serverless function (avoids CORS)
+    var resp = await fetch('/api/send-email', {
       method: 'POST',
-      headers: {
-        'Authorization': 'Bearer ' + RESEND_KEY,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ from: from, to: [to], subject: subject, html: html })
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ from: from, to: to, subject: subject, html: html })
     });
     var result = await resp.json();
     if(resp.ok) console.log('[Email] Sent:', subject, '→', to);
