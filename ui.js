@@ -16316,11 +16316,7 @@ try {
     if(data && data[0] && data[0].value){
       try{ tabs = JSON.parse(data[0].value); }catch(e){}
     }
-    window._disabledTabs = tabs;
-    tabs.forEach(function(tid){
-      var el = document.getElementById(tid);
-      if(el) el.style.display = 'none';
-    });
+    applyDisabledTabs(tabs);
     console.log('[Tabs] Disabled:', tabs);
   }).catch(function(e){ console.warn('[Tabs] Error:', e); });
 })();
@@ -16337,21 +16333,35 @@ window.addEventListener('popstate', function(e){
   }
 });
 
+function applyDisabledTabs(tabs){
+  if(!tabs || !tabs.length) return;
+  window._disabledTabs = tabs;
+  document.querySelectorAll('.nav-i').forEach(function(el){
+    el.style.display = '';
+  });
+  tabs.forEach(function(tid){
+    var el = document.getElementById(tid);
+    if(el){
+      el.style.display = 'none';
+      console.log('[Tabs] Hidden:', tid);
+    }
+  });
+}
+
 window.addEventListener('message', function(e) {
+  // ── USER_PLAN: set plan and hide disabled tabs ───────────────────
+  if(e.data && e.data.type === 'USER_PLAN'){
+    window._slpPlan = e.data.plan || 'free';
+    // Apply disabled tabs if sent with this message
+    if(e.data.disabledTabs || e.data.tabs){
+      applyDisabledTabs(e.data.disabledTabs || e.data.tabs);
+    }
+    return;
+  }
+
   // ── DISABLED_TABS: hide nav items toggled off in admin ───────────
   if(e.data && e.data.type === 'DISABLED_TABS'){
-    var tabs = e.data.tabs || [];
-    // Show all nav items first
-    document.querySelectorAll('.nav-i').forEach(function(el){
-      el.style.display = '';
-    });
-    // Hide disabled ones
-    tabs.forEach(function(tabId){
-      var el = document.getElementById(tabId);
-      if(el) el.style.display = 'none';
-    });
-    // Store for go() to check
-    window._disabledTabs = tabs;
+    applyDisabledTabs(e.data.tabs || []);
     return;
   }
 
