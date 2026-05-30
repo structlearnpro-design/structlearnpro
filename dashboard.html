@@ -1646,6 +1646,8 @@ async function verifyOTP(){
       // Push initial state so back button has somewhere to go within the app
       history.replaceState({slp:'tab', tab:'projects'}, '', '/app');
       toast('Welcome back, ' + (P.full_name||mob) + '! 👋');
+      // Check Pro expiry — send reminder if expiring within 7 days
+      checkProExpiry();
       maybeShowTour(); // show if they never completed the tour
     } else {
       // New user — go to role selection screen
@@ -1688,6 +1690,10 @@ async function doSignup(mob, sessionToken){
     goTo('projects');
     history.replaceState({slp:'tab', tab:'projects'}, '', '/app');
     toast('Welcome to StructLearn Pro! Your ID: '+result.uniqueId+' 🎉');
+    // Send welcome email to new user
+    emailWelcome({...result.profile, unique_id: result.uniqueId});
+    // Notify admin of new signup
+    emailAdminNewSignup({...result.profile, unique_id: result.uniqueId});
     maybeShowTour(); // first-time welcome modal
   }catch(e){
     console.error('doSignup error:', e);
@@ -2427,6 +2433,8 @@ window.addEventListener('message', function(ev){
     }).then(function(r){
       if(r.ok || r.status===201){
         console.log('Certificate saved:', latest.id);
+        // Send certificate email to student
+        emailCertificate(P, latest.id, latest.level);
       } else {
         r.text().then(function(t){ console.warn('Cert save failed:', r.status, t); });
       }
@@ -4583,6 +4591,8 @@ async function submitReview(){
     if(resp.ok || resp.status===201){
       _existingReview = {rating:_reviewRating,review_text:text.trim(),status:'pending',submitted_at:new Date().toISOString()};
       renderExistingReview(_existingReview);
+      // Notify admin of new review
+      emailAdminReview(P, _reviewRating, text.trim());
     } else {
       var body = await resp.text();
       throw new Error(body);
@@ -4891,6 +4901,261 @@ async function revokeShareLink(shareURL){
   toast('Share link revoked ✅');
 }
 
+
+// ══════════════════════════════════════════════════════════════
+// EMAIL SYSTEM — Resend API
+// All emails sent via Resend from structlearnpro.com domain
+// ══════════════════════════════════════════════════════════════
+
+var RESEND_KEY = 're_5ZHej8YE_GRgsfjpf5dufazU8fTSqGwsH';
+var RESEND_URL = 'https://api.resend.com/emails';
+
+async function sendEmail(from, to, subject, html){
+  if(!to || !to.includes('@')) return; // skip if no valid email
+  try {
+    var resp = await fetch(RESEND_URL, {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + RESEND_KEY,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ from: from, to: [to], subject: subject, html: html })
+    });
+    var result = await resp.json();
+    if(resp.ok) console.log('[Email] Sent:', subject, '→', to);
+    else console.warn('[Email] Failed:', result);
+    return resp.ok;
+  } catch(e) {
+    console.warn('[Email] Error:', e);
+    return false;
+  }
+}
+
+// ── EMAIL TEMPLATES ──────────────────────────────────────────
+
+function emailBase(content){
+  return `<!DOCTYPE html><html><head><meta charset="UTF-8">
+<style>
+  body{margin:0;padding:0;background:#f1f5f9;font-family:Arial,sans-serif;}
+  .wrap{max-width:580px;margin:32px auto;background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);}
+  .header{background:linear-gradient(135deg,#1d4ed8,#0ea5e9);padding:28px 32px;text-align:center;}
+  .header img{display:block;margin:0 auto 8px;}
+  .logo{font-size:22px;font-weight:900;color:#ffffff;letter-spacing:-0.5px;}
+  .logo span{color:#bae6fd;}
+  .tagline{font-size:11px;color:rgba(255,255,255,0.7);letter-spacing:2px;margin-top:4px;}
+  .body{padding:32px;}
+  .footer{background:#f8fafc;padding:20px 32px;text-align:center;border-top:1px solid #e2e8f0;}
+  .footer p{font-size:11px;color:#94a3b8;margin:0;line-height:1.8;}
+  .footer a{color:#3b82f6;text-decoration:none;}
+  .btn{display:inline-block;padding:12px 28px;background:linear-gradient(135deg,#1d4ed8,#0ea5e9);color:#ffffff;font-weight:700;border-radius:8px;text-decoration:none;font-size:14px;margin:16px 0;}
+  .highlight{background:#f0f9ff;border-left:4px solid #0ea5e9;padding:12px 16px;border-radius:0 8px 8px 0;margin:16px 0;}
+  .highlight code{font-family:monospace;font-size:16px;font-weight:700;color:#1d4ed8;letter-spacing:2px;}
+  h2{color:#1e293b;font-size:22px;margin:0 0 8px;}
+  p{color:#475569;font-size:14px;line-height:1.8;margin:0 0 12px;}
+  .badge{display:inline-block;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;}
+  .badge-gold{background:#fef3c7;color:#d97706;}
+  .badge-blue{background:#dbeafe;color:#1d4ed8;}
+  .badge-green{background:#dcfce7;color:#16a34a;}
+  .divider{height:1px;background:#e2e8f0;margin:24px 0;}
+</style>
+</head><body>
+<div class="wrap">
+  <div class="header">
+    <div class="logo">STRUCT<span>LEARN</span> PRO</div>
+    <div class="tagline">IS CODE STRUCTURAL DESIGN PLATFORM</div>
+  </div>
+  <div class="body">\${content}</div>
+  <div class="footer">
+    <p>StructLearn Pro · <a href="https://structlearnpro.com">structlearnpro.com</a><br>
+    IS 456 · IS 1893 · IS 875 · IS 13920 | Made for Indian Civil Engineers<br>
+    <a href="https://structlearnpro.com/app">Open App</a> &nbsp;·&nbsp; <a href="mailto:welcome@structlearnpro.com">Contact Us</a></p>
+  </div>
+</div>
+</body></html>`;
+}
+
+// ── 1. WELCOME EMAIL (on signup) ─────────────────────────────
+async function emailWelcome(user){
+  if(!user || !user.email) return;
+  var content = `
+    <h2>Welcome to StructLearn Pro! 🎉</h2>
+    <p>Hi \${user.full_name||'there'},</p>
+    <p>You've successfully joined StructLearn Pro — India's first IS code structural design platform for civil engineers and students.</p>
+    <div class="highlight">
+      <p style="margin:0 0 4px;font-size:12px;color:#64748b;">YOUR UNIQUE ID</p>
+      <code>\${user.unique_id||'—'}</code>
+    </div>
+    <p>Keep this ID safe — use it to verify your identity, earn certificates, and access your designs from any device.</p>
+    <div class="divider"></div>
+    <p><strong>Get started in 3 steps:</strong></p>
+    <p>① Click "New Project" → enter your building details<br>
+    ② Set spans, loads and materials → Run Analysis<br>
+    ③ Download your 12-sheet structural drawing set</p>
+    <a href="https://structlearnpro.com/app" class="btn">Start Designing →</a>
+    <p style="font-size:12px;color:#94a3b8;">Questions? Reply to this email or visit our <a href="https://structlearnpro.com/reference" style="color:#3b82f6;">IS Code Reference Library</a></p>
+  `;
+  return sendEmail('welcome@structlearnpro.com', user.email, 'Welcome to StructLearn Pro — Your Unique ID inside', emailBase(content));
+}
+
+// ── 2. CERTIFICATE EARNED ────────────────────────────────────
+async function emailCertificate(user, certId, level){
+  if(!user || !user.email) return;
+  var levelNames = {1:'Foundation', 2:'Proficiency', 3:'Competence'};
+  var levelName = levelNames[level] || 'Foundation';
+  var verifyURL = 'https://structlearnpro.com/cert?id=' + certId;
+  var content = `
+    <h2>Congratulations! Your Certificate is Ready 🎓</h2>
+    <p>Hi \${user.full_name||'there'},</p>
+    <p>You have successfully earned the <strong>IS 456 \${levelName} Level Certificate</strong> from StructLearn Pro.</p>
+    <div class="highlight">
+      <p style="margin:0 0 4px;font-size:12px;color:#64748b;">CERTIFICATE ID</p>
+      <code>\${certId}</code>
+    </div>
+    <p>Your certificate is now verified and publicly accessible. Share the verification link on LinkedIn to showcase your IS code knowledge.</p>
+    <a href="\${verifyURL}" class="btn">View & Verify Certificate →</a>
+    <div class="divider"></div>
+    <p style="font-size:12px;color:#94a3b8;">
+      <strong>How to verify:</strong> Share this link — <a href="\${verifyURL}" style="color:#3b82f6;">\${verifyURL}</a><br>
+      Anyone can open it to confirm your certificate is genuine.
+    </p>
+  `;
+  return sendEmail('certificates@structlearnpro.com', user.email, 'Your IS 456 ' + levelName + ' Certificate is Ready — ' + certId, emailBase(content));
+}
+
+// ── 3. REVIEW APPROVED ───────────────────────────────────────
+async function emailReviewApproved(user, reviewText, rating){
+  if(!user || !user.email) return;
+  var stars = '★'.repeat(rating) + '☆'.repeat(5-rating);
+  var content = `
+    <h2>Your Review is Now Live! ⭐</h2>
+    <p>Hi \${user.full_name||'there'},</p>
+    <p>Your review of StructLearn Pro has been verified and published on our website.</p>
+    <div class="highlight">
+      <p style="margin:0 0 4px;font-size:13px;color:#d97706;">\${stars}</p>
+      <p style="margin:0;font-style:italic;color:#475569;">&ldquo;\${reviewText}&rdquo;</p>
+    </div>
+    <p>Thank you for helping other civil engineers and students discover StructLearn Pro. Your feedback makes a real difference.</p>
+    <a href="https://structlearnpro.com" class="btn">See Your Review Live →</a>
+  `;
+  return sendEmail('reviews@structlearnpro.com', user.email, 'Your StructLearn Pro review is now live ✅', emailBase(content));
+}
+
+// ── 4. PRO EXPIRING REMINDER ─────────────────────────────────
+async function emailProExpiring(user, expiryDate, daysLeft){
+  if(!user || !user.email) return;
+  var content = `
+    <h2>Your Pro Access Expires in \${daysLeft} Days ⚡</h2>
+    <p>Hi \${user.full_name||'there'},</p>
+    <p>Your StructLearn Pro subscription expires on <strong>\${expiryDate}</strong>.</p>
+    <p>After expiry you will lose access to:</p>
+    <p>✗ PDF drawing downloads (12-sheet set)<br>
+    ✗ Full Report with all calculation details<br>
+    ✗ Unlimited projects<br>
+    ✗ BOQ and cost estimates</p>
+    <a href="https://structlearnpro.com/app" class="btn">Renew Pro Access →</a>
+    <p style="font-size:12px;color:#94a3b8;">Your existing projects and data will never be deleted — only Pro features will be locked after expiry.</p>
+  `;
+  return sendEmail('billing@structlearnpro.com', user.email, 'Your StructLearn Pro subscription expires in ' + daysLeft + ' days', emailBase(content));
+}
+
+// ── 5. ADMIN: NEW SIGNUP ─────────────────────────────────────
+async function emailAdminNewSignup(user){
+  var content = `
+    <h2>🆕 New User Registered</h2>
+    <table style="width:100%;border-collapse:collapse;font-size:13px;">
+      <tr><td style="padding:6px 0;color:#64748b;width:120px">Name</td><td style="color:#1e293b;font-weight:600">\${user.full_name||'—'}</td></tr>
+      <tr><td style="padding:6px 0;color:#64748b">Mobile</td><td style="color:#1e293b">\${user.mobile||'—'}</td></tr>
+      <tr><td style="padding:6px 0;color:#64748b">Email</td><td style="color:#1e293b">\${user.email||'Not provided'}</td></tr>
+      <tr><td style="padding:6px 0;color:#64748b">Role</td><td style="color:#1e293b">\${user.role||'—'}</td></tr>
+      <tr><td style="padding:6px 0;color:#64748b">City</td><td style="color:#1e293b">\${user.location||'—'}</td></tr>
+      <tr><td style="padding:6px 0;color:#64748b">College</td><td style="color:#1e293b">\${user.college||'—'}</td></tr>
+      <tr><td style="padding:6px 0;color:#64748b">Unique ID</td><td style="color:#1d4ed8;font-family:monospace;font-weight:700">\${user.unique_id||'—'}</td></tr>
+      <tr><td style="padding:6px 0;color:#64748b">Joined</td><td style="color:#1e293b">\${new Date().toLocaleString('en-IN')}</td></tr>
+    </table>
+    <a href="https://structlearnpro.com/admin" class="btn" style="margin-top:20px">Open Admin Panel →</a>
+  `;
+  return sendEmail('signups@structlearnpro.com', 'structlearnpro@gmail.com', '🆕 New signup: ' + (user.full_name||user.mobile||'Unknown'), emailBase(content));
+}
+
+// ── 6. ADMIN: CONTACT MESSAGE ────────────────────────────────
+async function emailAdminContact(user, topic, message){
+  var content = `
+    <h2>📬 New Contact Message</h2>
+    <table style="width:100%;border-collapse:collapse;font-size:13px;">
+      <tr><td style="padding:6px 0;color:#64748b;width:120px">From</td><td style="color:#1e293b;font-weight:600">\${user.full_name||user.mobile||'Unknown'}</td></tr>
+      <tr><td style="padding:6px 0;color:#64748b">Mobile</td><td style="color:#1e293b">\${user.mobile||'—'}</td></tr>
+      <tr><td style="padding:6px 0;color:#64748b">Email</td><td style="color:#1e293b">\${user.email||'Not provided'}</td></tr>
+      <tr><td style="padding:6px 0;color:#64748b">Plan</td><td style="color:#1e293b">\${user.plan||'free'}</td></tr>
+      <tr><td style="padding:6px 0;color:#64748b">Topic</td><td style="color:#1e293b">\${topic||'—'}</td></tr>
+    </table>
+    <div class="highlight" style="margin-top:16px">
+      <p style="margin:0;color:#1e293b;">\${message||'—'}</p>
+    </div>
+    \${user.email ? '<a href="mailto:'+user.email+'?subject=Re: '+topic+' — StructLearn Pro" class="btn">Reply via Email →</a>' : ''}
+    <a href="https://structlearnpro.com/admin" class="btn" style="background:linear-gradient(135deg,#475569,#334155)">Open Admin Panel →</a>
+  `;
+  return sendEmail('enquiries@structlearnpro.com', 'structlearnpro@gmail.com', '📬 Contact: ' + (topic||'General') + ' from ' + (user.full_name||user.mobile||'Unknown'), emailBase(content));
+}
+
+// ── 7. ADMIN: NEW REVIEW SUBMITTED ──────────────────────────
+async function emailAdminReview(user, rating, reviewText){
+  var stars = '★'.repeat(rating) + '☆'.repeat(5-rating);
+  var content = `
+    <h2>⭐ New Review Submitted</h2>
+    <table style="width:100%;border-collapse:collapse;font-size:13px;">
+      <tr><td style="padding:6px 0;color:#64748b;width:120px">From</td><td style="color:#1e293b;font-weight:600">\${user.full_name||'Unknown'}</td></tr>
+      <tr><td style="padding:6px 0;color:#64748b">Role</td><td style="color:#1e293b">\${user.role||'—'}</td></tr>
+      <tr><td style="padding:6px 0;color:#64748b">Rating</td><td style="color:#d97706;font-size:18px">\${stars}</td></tr>
+    </table>
+    <div class="highlight" style="margin-top:16px">
+      <p style="margin:0;font-style:italic;color:#1e293b;">&ldquo;\${reviewText}&rdquo;</p>
+    </div>
+    <a href="https://structlearnpro.com/admin" class="btn">Approve / Reject in Admin →</a>
+  `;
+  return sendEmail('feedback@structlearnpro.com', 'structlearnpro@gmail.com', '⭐ New ' + rating + '-star review from ' + (user.full_name||'a user'), emailBase(content));
+}
+
+// ── 8. ADMIN: BUG REPORT ────────────────────────────────────
+async function emailAdminBugReport(user, question, answer, note){
+  var content = `
+    <h2>🚩 New Bug Report</h2>
+    <table style="width:100%;border-collapse:collapse;font-size:13px;">
+      <tr><td style="padding:6px 0;color:#64748b;width:120px">From</td><td style="color:#1e293b;font-weight:600">\${user.full_name||user.mobile||'Unknown'}</td></tr>
+      <tr><td style="padding:6px 0;color:#64748b">Role</td><td style="color:#1e293b">\${user.role||'—'}</td></tr>
+      <tr><td style="padding:6px 0;color:#64748b">Mobile</td><td style="color:#1e293b">\${user.mobile||'—'}</td></tr>
+    </table>
+    <div class="divider"></div>
+    <p style="font-size:12px;font-weight:700;color:#64748b;">QUESTION ASKED</p>
+    <p>\${question||'—'}</p>
+    <p style="font-size:12px;font-weight:700;color:#64748b;">AI ANSWER FLAGGED</p>
+    <div class="highlight"><p style="margin:0;font-size:12px;color:#475569;">\${answer||'—'}</p></div>
+    \${note ? '<p style="font-size:12px;font-weight:700;color:#64748b;">USER NOTE</p><p>'+note+'</p>' : ''}
+    <a href="https://structlearnpro.com/admin" class="btn">Review in Admin Panel →</a>
+  `;
+  return sendEmail('bugs@structlearnpro.com', 'structlearnpro@gmail.com', '🚩 Bug report from ' + (user.full_name||user.mobile||'a user'), emailBase(content));
+}
+
+
+
+// ── PRO EXPIRY CHECK ──────────────────────────────────────────
+function checkProExpiry(){
+  if(!P || !P.email || plan !== 'pro' || !P.plan_expires_at) return;
+  var expiry = new Date(P.plan_expires_at);
+  var now = new Date();
+  var daysLeft = Math.ceil((expiry - now) / (1000*60*60*24));
+  // Only send if expiring within 7 days and not already expired
+  if(daysLeft > 0 && daysLeft <= 7){
+    // Check if we already notified today (avoid repeat emails)
+    var lastNotif = localStorage.getItem('slp_expiry_notif');
+    var today = new Date().toDateString();
+    if(lastNotif !== today){
+      localStorage.setItem('slp_expiry_notif', today);
+      var expiryStr = expiry.toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'});
+      emailProExpiring(P, expiryStr, daysLeft);
+    }
+  }
+}
+
 // ── CONTACT US ───────────────────────────────────────────────
 async function sendContactMessage(){
   const topic = (document.getElementById('contact-topic')||{}).value || '';
@@ -4939,6 +5204,8 @@ async function sendContactMessage(){
       document.getElementById('contact-topic').value = '';
       if(status) status.innerHTML='<span style="color:#34d399">✅ Message sent! We will reply within 24–48 hours.</span>';
       setTimeout(function(){ if(status) status.innerHTML=''; }, 6000);
+      // Notify admin of contact message
+      emailAdminContact(P, topicLabels[topic]||topic, msg.trim());
     } else {
       const body = await resp.text();
       throw new Error('Status ' + resp.status + ': ' + body);
@@ -5047,6 +5314,8 @@ async function submitBugReport() {
     console.log('[BugReport] Response:', resp.status, respBody);
     if(resp.ok || resp.status === 201 || resp.status === 200) {
       document.getElementById('_bug-report-modal').remove();
+      // Notify admin of bug report
+      emailAdminBugReport(P, question, aiAnswer, note);
       // Thank you toast
       var t = document.createElement('div');
       t.style.cssText = 'position:fixed;bottom:90px;right:24px;z-index:99200;background:#0a1628;border:1px solid rgba(52,211,153,0.3);border-radius:10px;padding:12px 18px;font-size:12px;color:#34d399;font-weight:700;box-shadow:0 4px 20px rgba(0,0,0,0.4);font-family:inherit';
