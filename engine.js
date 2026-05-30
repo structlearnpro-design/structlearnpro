@@ -4208,7 +4208,7 @@ function runCalcsFromGrid(){
     stair:{riser,tread,wD,wd,DLst,wust,Mst,Ast2,stsp,ss:stairSpan},
     allStairDesigns,
     warnings,
-    boq: computeBOQ({allBeams, allCols, allFtgs, slab:slabRes, S}),
+    boq: computeBOQ({allBeams, allCols, allFtgs, slab:slabFloor, S}),
     gridSummary:{
       nCols:colNodes.length,
       nMissing:missingCols.length,
