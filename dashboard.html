@@ -1242,6 +1242,17 @@ async function loadPrices(){
         }
       });
       updatePriceDisplay();
+      // Re-send disabled tabs to iframe now that we have the data
+      sendDisabledTabsToIframe();
+    }
+  } catch(e){}
+}
+
+function sendDisabledTabsToIframe(){
+  try {
+    var fr = document.getElementById('app-iframe');
+    if(fr && fr.contentWindow && _disabledTabs){
+      fr.contentWindow.postMessage({type:'DISABLED_TABS', tabs:_disabledTabs}, '*');
     }
   } catch(e){}
 }

@@ -31,6 +31,13 @@ function go(n){
   if(n===7&&!RES)return;
   // Block navigation to admin-disabled tabs
   if(window._disabledTabs && window._disabledTabs.indexOf('n'+n) > -1) return;
+  // Re-apply hidden tabs on every navigation (in case DOM re-rendered)
+  if(window._disabledTabs && window._disabledTabs.length){
+    window._disabledTabs.forEach(function(tid){
+      var el = document.getElementById(tid);
+      if(el) el.style.display = 'none';
+    });
+  }
   var prevPage = PAGE;
   PAGE=n;
   // Push browser history so back button works within design pages
