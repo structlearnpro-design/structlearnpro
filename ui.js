@@ -16305,6 +16305,26 @@ try {
   window.parent.postMessage({ type:'IFRAME_READY' }, '*');
 } catch(e){}
 
+// Load disabled tabs directly from Supabase (reliable - no timing issues)
+(function loadDisabledTabsDirect(){
+  var SUPA = 'https://rpjdveuxxjeoeomkwrfx.supabase.co';
+  var KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJwamR2ZXV4eGplb2VvbWt3cmZ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg5MzY3NzIsImV4cCI6MjA5NDUxMjc3Mn0.3JvvMaCFKg2fB9-l2WJ5JMX5btGIKqvpMj_ZcxSRWaQ';
+  fetch(SUPA+'/rest/v1/platform_settings?key=eq.disabled_tabs&select=value', {
+    headers: {'apikey': KEY, 'Authorization': 'Bearer '+KEY}
+  }).then(function(r){ return r.json(); }).then(function(data){
+    var tabs = [];
+    if(data && data[0] && data[0].value){
+      try{ tabs = JSON.parse(data[0].value); }catch(e){}
+    }
+    window._disabledTabs = tabs;
+    tabs.forEach(function(tid){
+      var el = document.getElementById(tid);
+      if(el) el.style.display = 'none';
+    });
+    console.log('[Tabs] Disabled:', tabs);
+  }).catch(function(e){ console.warn('[Tabs] Error:', e); });
+})();
+
 // Browser back button inside iframe — go back to previous page
 window.addEventListener('popstate', function(e){
   if(e.state && e.state.slpPage !== undefined){
