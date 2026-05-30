@@ -29,6 +29,8 @@ function addReportDisclaimer(){
 
 function go(n){
   if(n===7&&!RES)return;
+  // Block navigation to admin-disabled tabs
+  if(window._disabledTabs && window._disabledTabs.indexOf('n'+n) > -1) return;
   var prevPage = PAGE;
   PAGE=n;
   // Push browser history so back button works within design pages
@@ -16309,6 +16311,23 @@ window.addEventListener('popstate', function(e){
 });
 
 window.addEventListener('message', function(e) {
+  // ── DISABLED_TABS: hide nav items toggled off in admin ───────────
+  if(e.data && e.data.type === 'DISABLED_TABS'){
+    var tabs = e.data.tabs || [];
+    // Show all nav items first
+    document.querySelectorAll('.nav-i').forEach(function(el){
+      el.style.display = '';
+    });
+    // Hide disabled ones
+    tabs.forEach(function(tabId){
+      var el = document.getElementById(tabId);
+      if(el) el.style.display = 'none';
+    });
+    // Store for go() to check
+    window._disabledTabs = tabs;
+    return;
+  }
+
   // ── SET_READONLY: hide all edit controls, show Full Report only ──
   if(e.data && e.data.type === 'SET_READONLY'){
     window._readOnly = true;
