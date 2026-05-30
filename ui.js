@@ -16149,6 +16149,15 @@ window.addEventListener('popstate', function(e){
 });
 
 window.addEventListener('message', function(e) {
+  // ── CLOSE_HUB: parent tells iframe to close learning hub overlay ──
+  if(e.data && e.data.type === 'CLOSE_HUB'){
+    var hub = document.getElementById('_module_hub');
+    if(hub) hub.remove();
+    var detail = document.getElementById('_module_detail');
+    if(detail) detail.remove();
+    return;
+  }
+
   // ── NAV_BACK: parent back button pressed, navigate iframe back ──
   if(e.data && e.data.type === 'NAV_BACK'){
     var target = e.data.page !== undefined ? e.data.page : Math.max(0, PAGE-1);

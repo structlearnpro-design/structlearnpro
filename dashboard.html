@@ -2027,6 +2027,11 @@ async function openP(id, isNew){
   startAutoSave(id);
   showBackBtn(p.name);
   goTo('app');
+  // Close any open Learning Hub overlay in the iframe
+  try {
+    var fr0 = document.getElementById('app-iframe');
+    if(fr0 && fr0.contentWindow) fr0.contentWindow.postMessage({type:'CLOSE_HUB'}, '*');
+  } catch(e){}
   // onIframeLoad() will inject saveToParent after iframe loads
   // Send project data after a short delay
   setTimeout(()=>{
