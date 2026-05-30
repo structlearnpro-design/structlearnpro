@@ -123,6 +123,12 @@ function renderProject(p){
 
   var S = state.S || state || {};
   var hasResults = p.safety_score !== null && p.safety_score !== undefined;
+  // Normalise: older projects use RES.beams, newer use RES.allBeams
+  if(RES.beams && !RES.allBeams) RES.allBeams = RES.beams;
+  if(RES.cols  && !RES.allCols)  RES.allCols  = RES.cols;
+  if(RES.ftgs  && !RES.allFtgs)  RES.allFtgs  = RES.ftgs;
+  // Also check seis
+  if(RES.seis) RES.seis = RES.seis;
   var safetyScore = Math.round(p.safety_score || 0);
   var safetyColor = p.all_checks_pass ? '#34d399' : hasResults ? '#f87171' : '#64748b';
 
@@ -140,9 +146,10 @@ function renderProject(p){
   html += '<div class="proj-meta">';
   if(S.numFloors) html += '<span>🏢 G+' + (S.numFloors-1) + ' Building</span>';
   if(S.location)  html += '<span>📍 ' + esc(S.location) + '</span>';
-  if(S.seismicZone) html += '<span>⚡ Seismic Zone ' + S.seismicZone + '</span>';
-  if(S.fck)       html += '<span>🧱 M' + S.fck + ' Concrete</span>';
-  if(S.fy)        html += '<span>⚙️ Fe' + S.fy + ' Steel</span>';
+  var zone = S.seismicZone || S.zone || S.Zone;
+  if(zone) html += '<span>⚡ Seismic Zone ' + zone + '</span>';
+  if(S.fck) html += '<span>🧱 M' + S.fck + ' Concrete</span>';
+  if(S.fy)  html += '<span>⚙️ Fe' + S.fy + ' Steel</span>';
   html += '<span>📅 Last updated ' + updDate + '</span>';
   html += '</div></div>';
 
@@ -151,7 +158,7 @@ function renderProject(p){
   var stats = [
     { val: p.analysis_count || 0,      lbl: 'ANALYSES RUN' },
     { val: (S.numFloors||1)+' floors',  lbl: 'BUILDING HEIGHT' },
-    { val: (S.spansX||[]).length+'×'+(S.spansY||[]).length, lbl: 'GRID' },
+    { val: (S.spansX||S.gridX||[]).length+'×'+(S.spansY||S.gridY||[]).length, lbl: 'GRID' },
     { val: hasResults ? safetyScore+'%' : '—', lbl: 'SAFETY SCORE', color: safetyColor },
   ];
   if(RES.allBeams) stats.push({ val: RES.allBeams.length, lbl: 'BEAMS DESIGNED' });
@@ -256,6 +263,21 @@ function renderProject(p){
     if(RES.seis.Wt) html += '<div class="member-row"><span class="member-name">Seismic Weight (W)</span><span class="member-val">' + Math.round(RES.seis.Wt) + ' kN</span></div>';
     if(RES.seis.Ah) html += '<div class="member-row"><span class="member-name">Design Acc. (Ah)</span><span class="member-val">' + RES.seis.Ah.toFixed(3) + 'g</span></div>';
     html += '</div>';
+  }
+
+  // Debug info (shows what data is available) — hidden unless no member data
+  if(!RES.allBeams && !RES.allCols){
+    html += '<div class="section" style="border-color:rgba(251,191,36,0.2)">';
+    html += '<div class="section-title" style="color:#fbbf24">Design Data</div>';
+    html += '<div style="font-size:12px;color:#475569;margin-bottom:8px">The following data is available for this project:</div>';
+    var resKeys = Object.keys(RES).filter(function(k){ return k !== 'sanityWarnings' && k !== 'gridSummary'; });
+    html += '<div style="font-size:11px;color:#64748b;font-family:monospace;line-height:2">';
+    resKeys.forEach(function(k){
+      var val = RES[k];
+      var display = Array.isArray(val) ? k + ' [' + val.length + ' items]' : k + ': ' + (typeof val === 'object' ? '{...}' : val);
+      html += display + '<br>';
+    });
+    html += '</div></div>';
   }
 
   // CTA Banner
