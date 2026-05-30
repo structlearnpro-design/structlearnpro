@@ -656,7 +656,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
       <div>👨‍🏫 Share with lecturer to join their batch</div>
       <div>🔒 Always visible in your Profile</div>
     </div>
-    <button class="abtn" onclick="goTo('projects')">Go to My Dashboard →</button>
+    <button class="abtn" onclick="plan=resolvePlan();updTop();loadAndRestoreProgress().then(function(){goTo('projects');});emailWelcome({...P,unique_id:document.getElementById('welcome-uid').textContent});emailAdminNewSignup({...P,unique_id:document.getElementById('welcome-uid').textContent});">Go to My Dashboard →</button>
   </div>
 </div>
 
@@ -1650,10 +1650,21 @@ async function verifyOTP(){
       checkProExpiry();
       maybeShowTour(); // show if they never completed the tour
     } else {
-      // New user — go to role selection screen
+      // New user — skip role screen (already collected in signup form)
+      // Go directly to registration details with pending data pre-filled
       regMobile = mob;
       regSessionToken = result.sessionToken || '';
-      showScreen('reg-role-screen');
+      regRole = pending.purpose || 'student';
+      // Pre-select the role
+      selectRole(regRole);
+      // Pre-fill name and email from signup form
+      setTimeout(function(){
+        var nameEl = document.getElementById('reg-name');
+        var emailEl = document.getElementById('reg-email');
+        if(nameEl && pending.name) nameEl.value = pending.name;
+        if(emailEl && pending.email) emailEl.value = pending.email;
+      }, 100);
+      showScreen('reg-detail-screen');
     }
   }catch(e){
     console.error('verifyOTP error:', e);
@@ -1690,10 +1701,6 @@ async function doSignup(mob, sessionToken){
     goTo('projects');
     history.replaceState({slp:'tab', tab:'projects'}, '', '/app');
     toast('Welcome to StructLearn Pro! Your ID: '+result.uniqueId+' 🎉');
-    // Send welcome email to new user
-    emailWelcome({...result.profile, unique_id: result.uniqueId});
-    // Notify admin of new signup
-    emailAdminNewSignup({...result.profile, unique_id: result.uniqueId});
     maybeShowTour(); // first-time welcome modal
   }catch(e){
     console.error('doSignup error:', e);
