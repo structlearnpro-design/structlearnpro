@@ -4065,6 +4065,7 @@ function runNow(){
       if(!RES){alert('Calculation returned empty. Check inputs.');return;}
       go(7);
       // Save to Supabase via parent
+      console.log('[runNow] Save block reached. _slpProjectId:', window._slpProjectId, 'saveToParent type:', typeof saveToParent);
       try{
         var _saveData = {
           type:'SAVE_PROJECT',
