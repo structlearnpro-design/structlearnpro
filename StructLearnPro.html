@@ -14384,7 +14384,7 @@ function showConstructionPDFDialog() {
     </div>
     <div style="display:flex;gap:12px;justify-content:flex-end">
       <button onclick="document.getElementById('cpdDlg').remove()" style="padding:9px 20px;background:transparent;border:1px solid #64748b;border-radius:6px;color:#94a3b8;cursor:pointer;font-size:12px">Cancel</button>
-      <button onclick="document.getElementById('cpdDlg').remove();startConstructionPDF()" style="padding:9px 22px;background:#1d4ed8;border:none;border-radius:6px;color:#fff;cursor:pointer;font-size:12px;font-weight:700">Generate 12 Sheets</button>
+      <button onclick="document.getElementById('cpdDlg').remove();startConstructionPDF()" style="padding:9px 22px;background:#1d4ed8;border:none;border-radius:6px;color:#fff;cursor:pointer;font-size:12px;font-weight:700">Generate 15 Sheets</button>
     </div>
   </div>`;
   document.body.appendChild(d);
@@ -14420,6 +14420,7 @@ async function startConstructionPDF() {
     const DR_W=PW-MARGIN-NC_W-MARGIN-1;  // 349mm
     const DRAW_BOT=PH-MARGIN-TB_H;       // 250mm (top of title block)
     const DR_H=DRAW_BOT-DR_Y;            // 244mm drawing height
+    const DX=DR_X+4, DW2=DR_W-8; // shared across all sheets
     const TB_X=DR_X+DR_W-TB_W;           // title block x start
 
     // ── SAFE TEXT ─────────────────────────────────────────────────
@@ -14727,7 +14728,7 @@ async function startConstructionPDF() {
 log('Sheet 1: Title page...',8);
     drawPage('ST/TP01/R0','TITLE PAGE & DRAWING INDEX','NTS');
     let y=DR_Y+12;
-    const DX=DR_X+4,DW2=DR_W-8;
+    // DX and DW2 defined at function level
 
     // Project banner (compact)
     FC(0,40,100);Rect(DX,y,DW2,14,'F');
@@ -21353,6 +21354,8 @@ function closeChallengePopup(){var el=document.getElementById("_challenge_popup"
 <script>
 
 
+
+
 // ── ADMIN TAB VISIBILITY — loads directly from Supabase ──────
 (function(){
   var SUPA = 'https://rpjdveuxxjeoeomkwrfx.supabase.co';
@@ -21387,7 +21390,11 @@ function closeChallengePopup(){var el=document.getElementById("_challenge_popup"
 })();
 
 
+
+
 </script>
+
+
 
 
 </body>
