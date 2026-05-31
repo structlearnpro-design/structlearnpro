@@ -3154,6 +3154,13 @@ async function startPay(){
     handler: async function(r) {
       toast('Verifying payment...','#38bdf8');
       try {
+        console.log('[Payment] Verifying:', {
+          order_id: r.razorpay_order_id,
+          payment_id: r.razorpay_payment_id,
+          signature_len: r.razorpay_signature?.length,
+          plan: selPlanId,
+          user_id: P.id
+        });
         const vr = await fetch('/api/verify-payment', {
           method:'POST', headers:{'Content-Type':'application/json'},
           body: JSON.stringify({
@@ -3165,6 +3172,7 @@ async function startPay(){
           })
         });
         const vd = await vr.json();
+        console.log('[Payment] Verify response:', vd);
         if(!vd.success){ toast(vd.error||'Verification failed','#f87171'); return; }
 
         // Update local state
