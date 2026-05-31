@@ -1220,7 +1220,7 @@ const SUPA_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIs
 const SGH_KEY   = 'pHI9xQGkXEmXXmLmcGgwSQ';
 const SGH_SID   = 'PLNZOT';
 const SGH_TPL   = '1007725697928317760'; // ← PLANZAA approved template
-const RZP_KEY   = 'rzp_test_SqMUESMbiO37mb'; // ← paste Razorpay Key ID here when sister sets up
+const RZP_KEY   = 'rzp_live_Svnd311bVgF8hA'; // ← paste Razorpay Key ID here when sister sets up
 const FREE_LIM  = 3;
 const TEST_MODE = false; // ← DLT template now active (PLANZAA template)
 const TEST_OTP  = '123456'; // ← test OTP code
@@ -2928,7 +2928,7 @@ async function saveAccEmail(){
 // ── UPGRADE ──────────────────────────────────────────────────
 
 // ── RAZORPAY PAYMENT ─────────────────────────────────────────
-const RAZORPAY_KEY = 'rzp_test_SveJDHIoCjRSpW';
+const RAZORPAY_KEY = 'rzp_live_Svnd311bVgF8hA';
 
 async function openRazorpay(plan) {
   if (!P) { toast('Please log in first.', '#f87171'); return; }
@@ -3124,7 +3124,7 @@ async function startPay(){
   } catch(e){ toast('Network error. Please try again.','#f87171'); return; }
 
   const opts = {
-    key:         'rzp_test_SveJDHIoCjRSpW',
+    key:         'rzp_live_Svnd311bVgF8hA',
     amount:      orderData.amount,
     currency:    orderData.currency,
     order_id:    orderData.order_id,
