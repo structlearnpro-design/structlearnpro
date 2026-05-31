@@ -1035,6 +1035,16 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
           <div class="acc-row"><span class="acc-lbl">Plan</span><span class="acc-val" id="a-plan">Free</span></div>
           <div class="acc-row" id="a-expiry-row" style="display:none"><span class="acc-lbl">Valid Until</span><span class="acc-val" id="a-expiry-val">—</span></div>
           <div class="acc-row"><span class="acc-lbl">Projects</span><span class="acc-val" id="a-proj">—</span></div>
+          <div id="a-cancel-row" style="display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--b1)">
+            <button onclick="cancelSubscription()" style="width:100%;padding:8px;background:transparent;border:1px solid #f87171;border-radius:8px;color:#f87171;font-size:11px;cursor:pointer;font-family:inherit">Cancel Subscription</button>
+            <div style="font-size:10px;color:var(--txt3);margin-top:6px;text-align:center">Access continues until expiry date</div>
+          </div>
+        </div>
+
+        <!-- Payment History -->
+        <div class="acc-card" id="a-payment-hist-card" style="display:none">
+          <div class="acc-ct">Payment History</div>
+          <div id="a-payment-hist-rows" style="font-size:12px;color:var(--txt3)">Loading...</div>
         </div>
 
         <!-- My Activity -->
@@ -2712,6 +2722,17 @@ function renderAcc(){
   // Expiry
   const expiryRow = el('a-expiry-row');
   const expiryVal = el('a-expiry-val');
+  // Show/hide cancel button and payment history for Pro users
+  const cancelRow = el('a-cancel-row');
+  const histCard  = el('a-payment-hist-card');
+  if(plan === 'pro'){
+    if(cancelRow) cancelRow.style.display = 'block';
+    if(histCard)  histCard.style.display  = 'block';
+    loadPaymentHistory();
+  } else {
+    if(cancelRow) cancelRow.style.display = 'none';
+    if(histCard)  histCard.style.display  = 'none';
+  }
   if(P?.plan_expires_at && plan==='pro'){
     const expDate = new Date(P.plan_expires_at);
     const daysLeft = Math.ceil((expDate-new Date())/(1000*60*60*24));
@@ -3050,6 +3071,105 @@ async function emailAdminNewPro(user, plan, paymentId) {
     + '</table>'
     + '<a href="https://structlearnpro.com/admin" class="btn" style="margin-top:16px">View in Admin →</a>';
   return sendEmail('billing@structlearnpro.com', 'structlearnpro@gmail.com', '💰 New Pro: ' + (user.full_name||user.mobile||'User'), emailBase(content));
+}
+
+
+
+// ── CANCEL SUBSCRIPTION ──────────────────────────────────────
+async function cancelSubscription(){
+  if(!P || plan !== 'pro') return;
+
+  const expiry = P.pro_expires_at ? new Date(P.pro_expires_at).toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'}) : 'your expiry date';
+
+  const confirmed = confirm(
+    'Cancel your Pro subscription?\n\n' +
+    '• You will keep Pro access until ' + expiry + '\n' +
+    '• No refund for current period\n' +
+    '• You can re-subscribe anytime\n\n' +
+    'Are you sure?'
+  );
+  if(!confirmed) return;
+
+  try {
+    // Mark as cancelled in Supabase (access continues until expiry)
+    const resp = await fetch(SUPA_URL+'/rest/v1/profiles?id=eq.'+P.id, {
+      method: 'PATCH',
+      headers: {'Authorization':'Bearer '+SUPA_KEY,'apikey':SUPA_KEY,'Content-Type':'application/json'},
+      body: JSON.stringify({ plan_cancelled: true, updated_at: new Date().toISOString() })
+    });
+
+    if(resp.ok || resp.status === 204){
+      P.plan_cancelled = true;
+      toast('Subscription cancelled. Access continues until ' + expiry, '#f59e0b');
+      // Email user confirmation
+      if(P.email){
+        var content = '<h2>Subscription Cancelled</h2>'
+          + '<p>Hi ' + (P.full_name||'there') + ',</p>'
+          + '<p>Your StructLearn Pro subscription has been cancelled.</p>'
+          + '<div class="highlight"><p style="margin:0">Your Pro access continues until <strong>' + expiry + '</strong></p></div>'
+          + '<p>After that your account will return to the free plan. You can re-subscribe anytime.</p>'
+          + '<p>We hope to see you back!</p>'
+          + '<a href="https://structlearnpro.com/app" class="btn">Back to App →</a>';
+        sendEmail('billing@structlearnpro.com', P.email, 'Your StructLearn Pro subscription has been cancelled', emailBase(content));
+      }
+      renderAcc();
+    } else {
+      toast('Failed to cancel. Please contact support.', '#f87171');
+    }
+  } catch(e){
+    toast('Error: ' + e.message, '#f87171');
+  }
+}
+
+// ── PAYMENT HISTORY ──────────────────────────────────────────
+async function loadPaymentHistory(){
+  const el = document.getElementById('a-payment-hist-rows');
+  if(!el || !P) return;
+
+  try {
+    // Check payment_history table
+    const resp = await fetch(SUPA_URL+'/rest/v1/payment_history?profile_id=eq.'+P.id+'&order=created_at.desc&limit=5&select=*',{
+      headers:{'Authorization':'Bearer '+SUPA_KEY,'apikey':SUPA_KEY}
+    });
+
+    if(!resp.ok){ el.innerHTML = '<div style="color:var(--txt3)">No payment records found.</div>'; return; }
+
+    const data = await resp.json();
+    if(!data || !data.length){
+      // Fallback: show from profile if no payment_history table
+      if(P.razorpay_payment_id){
+        var expDate = P.pro_expires_at ? new Date(P.pro_expires_at).toLocaleDateString('en-IN') : '—';
+        el.innerHTML = '<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--b1)">'
+          + '<div><div style="font-size:12px;font-weight:600;color:var(--txt1)">Pro Subscription</div>'
+          + '<div style="font-size:10px;color:var(--txt3)">' + P.razorpay_payment_id + '</div></div>'
+          + '<div style="text-align:right"><div style="font-size:12px;color:#34d399;font-weight:700">Active</div>'
+          + '<div style="font-size:10px;color:var(--txt3)">Until ' + expDate + '</div></div></div>';
+      } else {
+        el.innerHTML = '<div style="color:var(--txt3);font-size:12px">No payments yet.</div>';
+      }
+      return;
+    }
+
+    el.innerHTML = data.map(function(p){
+      var date = p.created_at ? new Date(p.created_at).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}) : '—';
+      var amt = p.amount ? '₹' + Math.round(p.amount/100) : '—';
+      var status = p.status === 'success' ? '<span style="color:#34d399">✅ Paid</span>' : '<span style="color:#f87171">❌ Failed</span>';
+      return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--b1)">'
+        + '<div><div style="font-size:12px;font-weight:600;color:var(--txt1)">' + (p.plan==='annual'?'Annual':'Monthly') + ' Pro</div>'
+        + '<div style="font-size:10px;color:var(--txt3)">' + date + ' · ' + (p.razorpay_payment_id||'—') + '</div></div>'
+        + '<div style="text-align:right"><div style="font-size:13px;font-weight:700;color:var(--txt1)">' + amt + '</div>'
+        + '<div style="font-size:11px">' + status + '</div></div></div>';
+    }).join('');
+  } catch(e){
+    el.innerHTML = '<div style="color:var(--txt3);font-size:12px">Could not load payment history.</div>';
+  }
+}
+
+// ── SCHEDULE RENEWAL REMINDER ────────────────────────────────
+function scheduleRenewalReminder(expiryDate, planType){
+  // Store expiry in localStorage for background check
+  localStorage.setItem('slp_pro_expiry', expiryDate.toISOString());
+  localStorage.setItem('slp_pro_plan', planType || 'monthly');
 }
 
 
