@@ -3117,7 +3117,10 @@ async function startPay(){
   try {
     const r = await fetch('/api/create-order', {
       method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ plan: selPlanId })
+      body: JSON.stringify({ 
+        plan: selPlanId,
+        amount: getDiscountedAmount(selPlanId==='monthly' ? PRICES.monthly : PRICES.annual)
+      })
     });
     orderData = await r.json();
     if(!r.ok){ toast(orderData.error||'Failed to create order','#f87171'); return; }
