@@ -1583,6 +1583,16 @@ async function submitRegistration() {
     U = {id: result.profile.id, mobile: regMobile};
     plan = 'free';
 
+    // Also save email directly to profiles (edge function may not save it)
+    var regEmailVal = document.getElementById('reg-email')?.value?.trim();
+    if(regEmailVal && P.id){
+      fetch(SUPA_URL+'/rest/v1/profiles?id=eq.'+P.id,{
+        method:'PATCH',
+        headers:{'Authorization':'Bearer '+SUPA_KEY,'apikey':SUPA_KEY,'Content-Type':'application/json'},
+        body:JSON.stringify({email: regEmailVal})
+      }).then(function(){ P.email = regEmailVal; }).catch(function(){});
+    }
+
     // Show welcome screen with unique ID
     document.getElementById('welcome-name').textContent = 'Hi ' + name.split(' ')[0] + ' 👋  Your account is ready';
     document.getElementById('welcome-uid').textContent = result.uniqueId;
@@ -3286,6 +3296,13 @@ async function startPay(){
         });
         const vd = await vr.json();
         if(!vd.success){ toast(vd.error||'Verification failed','#f87171'); return; }
+
+        // Record payment in history
+        fetch(SUPA_URL+'/rest/v1/payment_history',{
+          method:'POST',
+          headers:{'Authorization':'Bearer '+SUPA_KEY,'apikey':SUPA_KEY,'Content-Type':'application/json'},
+          body:JSON.stringify({profile_id:P.id, razorpay_payment_id:r.razorpay_payment_id, amount:orderData.amount, plan:selPlanId, status:'success'})
+        }).catch(function(){});
 
         // Update local state
         const exp = new Date(vd.expires_at);
