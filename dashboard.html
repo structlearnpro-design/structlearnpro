@@ -2743,8 +2743,8 @@ function renderAcc(){
     if(cancelRow) cancelRow.style.display = 'none';
     if(histCard)  histCard.style.display  = 'none';
   }
-  if(P?.plan_expires_at && plan==='pro'){
-    const expDate = new Date(P.plan_expires_at);
+  if((P?.pro_expires_at||P?.plan_expires_at) && plan==='pro'){
+    const expDate = new Date(P.pro_expires_at||P.plan_expires_at);
     const daysLeft = Math.ceil((expDate-new Date())/(1000*60*60*24));
     const isLifetime = expDate.getFullYear()>=2099;
     if(expiryRow) expiryRow.style.display='flex';
@@ -3300,9 +3300,10 @@ async function startPay(){
         // Record payment in history
         fetch(SUPA_URL+'/rest/v1/payment_history',{
           method:'POST',
-          headers:{'Authorization':'Bearer '+SUPA_KEY,'apikey':SUPA_KEY,'Content-Type':'application/json'},
+          headers:{'Authorization':'Bearer '+SUPA_KEY,'apikey':SUPA_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},
           body:JSON.stringify({profile_id:P.id, razorpay_payment_id:r.razorpay_payment_id, amount:orderData.amount, plan:selPlanId, status:'success'})
-        }).catch(function(){});
+        }).then(function(r2){ console.log('[PayHist] Insert status:', r2.status); })
+          .catch(function(e){ console.warn('[PayHist] Insert failed:', e); });
 
         // Update local state
         const exp = new Date(vd.expires_at);
