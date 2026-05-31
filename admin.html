@@ -213,6 +213,7 @@ tr:hover td{background:rgba(59,130,246,0.04)}
   <div class="nav-section">System</div>
   <div class="nav-item" onclick="showPage('settings')"><span class="icon">⚙️</span>Settings</div>
   <div class="nav-item" onclick="showPage('features')"><span class="icon">🎛</span>Feature Flags</div>
+  <div class="nav-item" onclick="showPage('landing')"><span class="icon">🌐</span>Landing Page</div>
 </div>
 
 <!-- MAIN CONTENT -->
@@ -728,7 +729,109 @@ tr:hover td{background:rgba(59,130,246,0.04)}
 <!-- ═══════════════════════════════════════════════════════
      PAGE: LEADERBOARD
 ═══════════════════════════════════════════════════════ -->
-<div id="page-leaderboard" class="page">
+<div 
+
+<!-- ═══════════════════════════════════
+     LANDING PAGE CONTROLS
+════════════════════════════════════════ -->
+<div id="page-landing" class="page" style="display:none">
+  <div class="page-header">
+    <div class="page-title">🌐 Landing Page Controls</div>
+    <div class="page-sub">Changes go live instantly — no deployment needed</div>
+  </div>
+
+  <div style="display:grid;gap:20px;max-width:800px">
+
+    <!-- ANNOUNCEMENT BANNER -->
+    <div class="card">
+      <div class="card-title">📢 Announcement Banner</div>
+      <div class="card-sub">Shows at the top of the landing page. Great for offers and announcements.</div>
+      <div style="margin-top:16px;display:flex;flex-direction:column;gap:12px">
+        <div style="display:flex;align-items:center;gap:12px">
+          <label style="font-size:13px;color:var(--txt2)">Enable Banner</label>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+            <input type="checkbox" id="lp-banner-enabled" style="width:16px;height:16px">
+            <span id="lp-banner-status" style="font-size:12px;font-weight:700;color:#f87171">OFF</span>
+          </label>
+        </div>
+        <div>
+          <label style="font-size:12px;color:var(--txt3);display:block;margin-bottom:6px">Banner Text</label>
+          <input id="lp-banner-text" type="text" placeholder="🎉 Special offer: 50% OFF Annual Plan this week!" 
+            style="width:100%;padding:10px;background:var(--bg1);border:1px solid var(--b1);border-radius:8px;color:var(--txt1);font-size:13px">
+        </div>
+        <div>
+          <label style="font-size:12px;color:var(--txt3);display:block;margin-bottom:6px">Banner Color</label>
+          <select id="lp-banner-color" style="padding:8px;background:var(--bg1);border:1px solid var(--b1);border-radius:8px;color:var(--txt1);font-size:13px">
+            <option value="linear-gradient(90deg,#1d4ed8,#0ea5e9)">Blue (default)</option>
+            <option value="linear-gradient(90deg,#059669,#10b981)">Green</option>
+            <option value="linear-gradient(90deg,#d97706,#f59e0b)">Orange</option>
+            <option value="linear-gradient(90deg,#dc2626,#ef4444)">Red</option>
+            <option value="linear-gradient(90deg,#7c3aed,#8b5cf6)">Purple</option>
+          </select>
+        </div>
+        <button onclick="saveLandingSettings()" class="btn-primary">Save Banner Settings</button>
+      </div>
+    </div>
+
+    <!-- PRICING -->
+    <div class="card">
+      <div class="card-title">💰 Displayed Prices</div>
+      <div class="card-sub">Updates the price shown on the landing page. Also update Razorpay env variables for actual charges.</div>
+      <div style="margin-top:16px;display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div>
+          <label style="font-size:12px;color:var(--txt3);display:block;margin-bottom:6px">Monthly Price (₹)</label>
+          <input id="lp-price-monthly" type="number" placeholder="299" 
+            style="width:100%;padding:10px;background:var(--bg1);border:1px solid var(--b1);border-radius:8px;color:var(--txt1);font-size:13px">
+        </div>
+        <div>
+          <label style="font-size:12px;color:var(--txt3);display:block;margin-bottom:6px">Annual Price (₹/month)</label>
+          <input id="lp-price-annual" type="number" placeholder="249"
+            style="width:100%;padding:10px;background:var(--bg1);border:1px solid var(--b1);border-radius:8px;color:var(--txt1);font-size:13px">
+        </div>
+      </div>
+      <button onclick="saveLandingSettings()" class="btn-primary" style="margin-top:12px">Save Prices</button>
+    </div>
+
+    <!-- OFFER BADGE -->
+    <div class="card">
+      <div class="card-title">🏷️ Offer Badge on Monthly Plan</div>
+      <div class="card-sub">Shows a badge on the monthly pricing card. Leave empty to hide.</div>
+      <div style="margin-top:16px">
+        <input id="lp-offer-badge" type="text" placeholder="🔥 Most Popular · Save 30%" 
+          style="width:100%;padding:10px;background:var(--bg1);border:1px solid var(--b1);border-radius:8px;color:var(--txt1);font-size:13px;margin-bottom:12px">
+        <button onclick="saveLandingSettings()" class="btn-primary">Save Badge</button>
+      </div>
+    </div>
+
+    <!-- HERO TEXT -->
+    <div class="card">
+      <div class="card-title">✏️ Hero Section Text</div>
+      <div class="card-sub">The main headline and badge on the landing page.</div>
+      <div style="margin-top:16px;display:flex;flex-direction:column;gap:12px">
+        <div>
+          <label style="font-size:12px;color:var(--txt3);display:block;margin-bottom:6px">Hero Badge Text</label>
+          <input id="lp-hero-badge" type="text" placeholder="IS 456 · IS 1893 · IS 875 · AI Assistant"
+            style="width:100%;padding:10px;background:var(--bg1);border:1px solid var(--b1);border-radius:8px;color:var(--txt1);font-size:13px">
+        </div>
+        <div>
+          <label style="font-size:12px;color:var(--txt3);display:block;margin-bottom:6px">Headline Line 1 (white)</label>
+          <input id="lp-hero-h1a" type="text" placeholder="The complete IS 456"
+            style="width:100%;padding:10px;background:var(--bg1);border:1px solid var(--b1);border-radius:8px;color:var(--txt1);font-size:13px">
+        </div>
+        <div>
+          <label style="font-size:12px;color:var(--txt3);display:block;margin-bottom:6px">Headline Line 2 (blue gradient)</label>
+          <input id="lp-hero-h1b" type="text" placeholder="design environment."
+            style="width:100%;padding:10px;background:var(--bg1);border:1px solid var(--b1);border-radius:8px;color:var(--txt1);font-size:13px">
+        </div>
+        <button onclick="saveLandingSettings()" class="btn-primary">Save Hero Text</button>
+      </div>
+    </div>
+
+    <div id="landing-msg" style="font-size:13px;text-align:center;color:#34d399;display:none">✅ Settings saved! Landing page updated.</div>
+  </div>
+</div>
+
+id="page-leaderboard" class="page">
   <div class="page-title">🏆 Student Leaderboard</div>
   <div class="page-sub">Ranked by Design Confidence and learning progress</div>
 
@@ -1249,7 +1352,68 @@ async function checkAdminAccess() {
 // ═══════════════════════════════════════════════════════════
 // NAVIGATION
 // ═══════════════════════════════════════════════════════════
+async function loadLandingSettings(){
+  const rows = await api('platform_settings?key=like.lp_%25&select=key,value') || [];
+  const s = {};
+  rows.forEach(r => s[r.key] = r.value);
+
+  const get = id => document.getElementById(id);
+  if(s.lp_banner_enabled){ const el=get('lp-banner-enabled'); if(el) el.checked = s.lp_banner_enabled==='true'; }
+  if(s.lp_banner_text)   { const el=get('lp-banner-text');    if(el) el.value = s.lp_banner_text; }
+  if(s.lp_banner_color)  { const el=get('lp-banner-color');   if(el) el.value = s.lp_banner_color; }
+  if(s.lp_price_monthly) { const el=get('lp-price-monthly');  if(el) el.value = s.lp_price_monthly; }
+  if(s.lp_price_annual)  { const el=get('lp-price-annual');   if(el) el.value = s.lp_price_annual; }
+  if(s.lp_offer_badge)   { const el=get('lp-offer-badge');    if(el) el.value = s.lp_offer_badge; }
+  if(s.lp_hero_badge)    { const el=get('lp-hero-badge');     if(el) el.value = s.lp_hero_badge; }
+  if(s.lp_hero_h1a)      { const el=get('lp-hero-h1a');       if(el) el.value = s.lp_hero_h1a; }
+  if(s.lp_hero_h1b)      { const el=get('lp-hero-h1b');       if(el) el.value = s.lp_hero_h1b; }
+
+  // Update banner status label
+  const chk = get('lp-banner-enabled');
+  const lbl = get('lp-banner-status');
+  if(chk && lbl){ lbl.textContent = chk.checked ? 'ON' : 'OFF'; lbl.style.color = chk.checked ? '#34d399' : '#f87171'; }
+  if(chk) chk.onchange = function(){ if(lbl){ lbl.textContent=this.checked?'ON':'OFF'; lbl.style.color=this.checked?'#34d399':'#f87171'; } };
+}
+
+async function saveLandingSettings(){
+  const get = id => document.getElementById(id)?.value?.trim();
+  const isChecked = id => document.getElementById(id)?.checked;
+
+  const settings = [
+    { key: 'lp_banner_enabled', value: isChecked('lp-banner-enabled') ? 'true' : 'false' },
+    { key: 'lp_banner_text',    value: get('lp-banner-text')    || '' },
+    { key: 'lp_banner_color',   value: get('lp-banner-color')   || '' },
+    { key: 'lp_price_monthly',  value: get('lp-price-monthly')  || '' },
+    { key: 'lp_price_annual',   value: get('lp-price-annual')   || '' },
+    { key: 'lp_offer_badge',    value: get('lp-offer-badge')    || '' },
+    { key: 'lp_hero_badge',     value: get('lp-hero-badge')     || '' },
+    { key: 'lp_hero_h1a',       value: get('lp-hero-h1a')       || '' },
+    { key: 'lp_hero_h1b',       value: get('lp-hero-h1b')       || '' },
+  ];
+
+  for(const setting of settings){
+    const existing = await api('platform_settings?key=eq.'+setting.key+'&select=key') || [];
+    if(existing.length){
+      await api('platform_settings?key=eq.'+setting.key, { method:'PATCH', body: JSON.stringify({value: setting.value}) });
+    } else {
+      await api('platform_settings', { method:'POST', body: JSON.stringify({key: setting.key, value: setting.value}) });
+    }
+  }
+
+  const msg = document.getElementById('landing-msg');
+  if(msg){ msg.style.display='block'; setTimeout(()=>msg.style.display='none', 3000); }
+}
+
 function showPage(id) {
+  if(id==='landing'){
+    document.querySelectorAll('.page').forEach(p=>p.style.display='none');
+    document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+    const page = document.getElementById('page-landing');
+    if(page) page.style.display='block';
+    event.currentTarget.classList.add('active');
+    loadLandingSettings();
+    return;
+  }
   if(id==='contactmessages'){
     document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
     document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));

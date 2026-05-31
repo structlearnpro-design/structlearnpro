@@ -1663,8 +1663,18 @@ async function verifyOTP(){
       // Push initial state so back button has somewhere to go within the app
       history.replaceState({slp:'tab', tab:'projects'}, '', '/app');
       toast('Welcome back, ' + (P.full_name||mob) + '! 👋');
+      // Check for pending plan from landing page
+      var pendingPlan = sessionStorage.getItem('slp_pending_plan');
+      if(pendingPlan){ sessionStorage.removeItem('slp_pending_plan'); setTimeout(function(){ startPay(); selPlanId=pendingPlan; }, 1500); }
       // Check Pro expiry — send reminder if expiring within 7 days
       checkProExpiry();
+      // Check for pending plan from landing page (user was already logged in)
+      var _pendingPlan = sessionStorage.getItem('slp_pending_plan');
+      if(_pendingPlan && plan !== 'pro'){
+        sessionStorage.removeItem('slp_pending_plan');
+        selPlanId = _pendingPlan;
+        setTimeout(function(){ showUp(); }, 1500);
+      }
       maybeShowTour(); // show if they never completed the tour
     } else {
       // New user — skip role screen (already collected in signup form)

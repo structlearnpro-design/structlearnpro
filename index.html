@@ -378,6 +378,11 @@ footer{background:#080d1c;padding:44px 28px 32px;border-top:1px solid var(--bord
 </style>
 </head>
 <body>
+<!-- ANNOUNCEMENT BANNER - controlled by admin -->
+<div id="ann-banner" style="display:none;background:linear-gradient(90deg,#1d4ed8,#0ea5e9);color:#fff;text-align:center;padding:10px 20px;font-size:13px;font-weight:600;position:relative;z-index:1000">
+  <span id="ann-banner-text"></span>
+  <button onclick="document.getElementById('ann-banner').style.display='none'" style="position:absolute;right:16px;top:50%;transform:translateY(-50%);background:none;border:none;color:#fff;font-size:18px;cursor:pointer;line-height:1">×</button>
+</div>
 
 <button id="atg" onclick="toggleEdit()" style="display:none;"><div class="tdot"></div><span id="atgl">Edit</span></button>
 <div id="etb"><span class="etl">EDITING</span><button class="ets" onclick="saveEdits()">Save</button><button class="etd" onclick="discardEdits()">Discard</button></div>
@@ -1109,8 +1114,8 @@ function closeMobileNav(){
     </div>
     <div class="pgrid rv">
       <div class="pcard"><div class="ptier" data-e="p1t" contenteditable="false" spellcheck="false">Free</div><div class="pprice">₹<span data-e="p1a" contenteditable="false" spellcheck="false">0</span></div><div class="pcad" data-e="p1c" contenteditable="false" spellcheck="false">forever · no card needed</div><div class="pdiv"></div><ul class="pfeats"><li data-e="p1f1" contenteditable="false" spellcheck="false">Full IS 456 design engine</li><li data-e="p1f2" contenteditable="false" spellcheck="false">All 28 guided steps</li><li data-e="p1f3" contenteditable="false" spellcheck="false">Seismic and wind analysis</li><li data-e="p1f4" contenteditable="false" spellcheck="false">Learning modules + certificates</li><li class="no" data-e="p1f5" contenteditable="false" spellcheck="false">PDF report download</li><li class="no" data-e="p1f6" contenteditable="false" spellcheck="false">Construction drawings</li></ul><button class="pbtn pbo" onclick="goToApp('signup')">Get started free</button></div>
-      <div class="pcard pop"><div class="pbadge" data-e="p2badge" contenteditable="false" spellcheck="false">Most popular</div><div class="ptier" data-e="p2t" contenteditable="false" spellcheck="false">Pro Monthly</div><div class="pprice"><sup>₹</sup><span data-e="p2a" contenteditable="false" spellcheck="false">299</span></div><div class="pcad" data-e="p2c" contenteditable="false" spellcheck="false">per month · cancel anytime</div><div class="pdiv"></div><ul class="pfeats"><li data-e="p2f1" contenteditable="false" spellcheck="false">Everything in Free</li><li data-e="p2f2" contenteditable="false" spellcheck="false">PDF report download</li><li data-e="p2f3" contenteditable="false" spellcheck="false">Construction drawings</li><li data-e="p2f4" contenteditable="false" spellcheck="false">Unlimited saved projects</li><li data-e="p2f5" contenteditable="false" spellcheck="false">AI design assistant</li></ul><button class="pbtn pbs" onclick="sessionStorage.setItem('slp_pending_plan','monthly');goToApp('signup')">Get Pro →</button></div>
-      <div class="pcard"><div class="ptier" data-e="p3t" contenteditable="false" spellcheck="false">Pro Annual</div><div class="pprice"><sup>₹</sup><span data-e="p3a" contenteditable="false" spellcheck="false">249</span></div><div class="pcad" data-e="p3c" contenteditable="false" spellcheck="false">per month · ₹2,990/year</div><div class="pdiv"></div><ul class="pfeats"><li data-e="p3f1" contenteditable="false" spellcheck="false">Everything in Pro Monthly</li><li data-e="p3f2" contenteditable="false" spellcheck="false">2 months free — save ₹600</li><li data-e="p3f3" contenteditable="false" spellcheck="false">Priority support</li><li data-e="p3f4" contenteditable="false" spellcheck="false">Early access to new features</li></ul><button class="pbtn pbs" onclick="sessionStorage.setItem('slp_pending_plan','annual');goToApp('signup')">Get Annual →</button></div>
+      <div class="pcard pop"><div class="pbadge" data-e="p2badge" contenteditable="false" spellcheck="false">Most popular</div><div class="ptier" data-e="p2t" contenteditable="false" spellcheck="false">Pro Monthly</div><div class="pprice"><sup>₹</sup><span data-e="p2a" id="lp-price-monthly" contenteditable="false" spellcheck="false">299</span></div><div class="pcad" data-e="p2c" contenteditable="false" spellcheck="false">per month · cancel anytime</div><div class="pdiv"></div><ul class="pfeats"><li data-e="p2f1" contenteditable="false" spellcheck="false">Everything in Free</li><li data-e="p2f2" contenteditable="false" spellcheck="false">PDF report download</li><li data-e="p2f3" contenteditable="false" spellcheck="false">Construction drawings</li><li data-e="p2f4" contenteditable="false" spellcheck="false">Unlimited saved projects</li><li data-e="p2f5" contenteditable="false" spellcheck="false">AI design assistant</li></ul><button class="pbtn pbs" onclick="(function(){sessionStorage.setItem('slp_pending_plan','monthly');var mob=localStorage.getItem('slp_session_mob'),tok=localStorage.getItem('slp_session_tok');window.location.href=mob&&tok?'/app':'/app';})()">Get Pro →</button></div>
+      <div class="pcard"><div class="ptier" data-e="p3t" contenteditable="false" spellcheck="false">Pro Annual</div><div class="pprice"><sup>₹</sup><span data-e="p3a" id="lp-price-annual" contenteditable="false" spellcheck="false">249</span></div><div class="pcad" data-e="p3c" contenteditable="false" spellcheck="false">per month · ₹2,990/year</div><div class="pdiv"></div><ul class="pfeats"><li data-e="p3f1" contenteditable="false" spellcheck="false">Everything in Pro Monthly</li><li data-e="p3f2" contenteditable="false" spellcheck="false">2 months free — save ₹600</li><li data-e="p3f3" contenteditable="false" spellcheck="false">Priority support</li><li data-e="p3f4" contenteditable="false" spellcheck="false">Early access to new features</li></ul><button class="pbtn pbs" onclick="(function(){sessionStorage.setItem('slp_pending_plan','annual');var mob=localStorage.getItem('slp_session_mob'),tok=localStorage.getItem('slp_session_tok');window.location.href=mob&&tok?'/app':'/app';})()">Get Annual →</button></div>
     </div>
   </div>
 </section>
@@ -2187,6 +2192,43 @@ if('serviceWorker' in navigator){
   });
 }
 function goToApp(mode){var mob=localStorage.getItem("slp_session_mob"),tok=localStorage.getItem("slp_session_tok");if(mob&&tok){window.location.href="/app";}else{showLogin(mode||"signup");}}
+</script>
+
+<script>
+// ── LANDING PAGE DYNAMIC SETTINGS ───────────────────────────
+(function loadLandingSettings(){
+  var SUPA = 'https://rpjdveuxxjeoeomkwrfx.supabase.co';
+  var KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJwamR2ZXV4eGplb2VvbWt3cmZ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg5MzY3NzIsImV4cCI6MjA5NDUxMjc3Mn0.3JvvMaCFKg2fB9-l2WJ5JMX5btGIKqvpMj_ZcxSRWaQ';
+  fetch(SUPA+'/rest/v1/platform_settings?key=like.lp_%25&select=key,value',{
+    headers:{'apikey':KEY,'Authorization':'Bearer '+KEY}
+  }).then(function(r){return r.json();}).then(function(rows){
+    if(!rows||!rows.length) return;
+    var s = {};
+    rows.forEach(function(r){ s[r.key] = r.value; });
+
+    // Announcement banner
+    if(s.lp_banner_enabled==='true' && s.lp_banner_text){
+      var banner=document.getElementById('ann-banner');
+      var txt=document.getElementById('ann-banner-text');
+      if(banner&&txt){ txt.textContent=s.lp_banner_text; banner.style.display='block'; }
+      if(s.lp_banner_color && banner) banner.style.background=s.lp_banner_color;
+    }
+
+    // Prices
+    if(s.lp_price_monthly){ var e=document.getElementById('lp-price-monthly'); if(e) e.textContent=s.lp_price_monthly; }
+    if(s.lp_price_annual)  { var e=document.getElementById('lp-price-annual');  if(e) e.textContent=s.lp_price_annual;  }
+
+    // Offer badge
+    if(s.lp_offer_badge){ var e=document.getElementById('lp-offer-badge-monthly'); if(e){ e.textContent=s.lp_offer_badge; e.style.display='block'; } }
+
+    // Hero badge
+    if(s.lp_hero_badge){ var e=document.querySelector('[data-e="hbadge"]'); if(e) e.textContent=s.lp_hero_badge; }
+
+    // Headlines
+    if(s.lp_hero_h1a){ var e=document.querySelector('[data-e="h1a"]'); if(e) e.textContent=s.lp_hero_h1a; }
+    if(s.lp_hero_h1b){ var e=document.querySelector('[data-e="h1b"]'); if(e) e.textContent=s.lp_hero_h1b; }
+  }).catch(function(){});
+})();
 </script>
 </body>
 </html>
